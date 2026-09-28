@@ -26,6 +26,12 @@
     padding: 0;
 }
 
+button {
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+}
+
 body {
     background: var(--paper);
     color: var(--ink);
@@ -367,33 +373,47 @@ body {
 
 /* Form Submit Button */
 .btn-auth-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
-    padding: 15px;
+    padding: 14px 20px;
+    border: none;
+    outline: none;
     border-radius: var(--radius-s);
     background: linear-gradient(135deg, #FFB800 0%, #F5A623 100%);
     color: #12110E;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.05rem;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 1rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
     cursor: pointer;
-    box-shadow: var(--shadow-amber);
-    transition: all 0.18s var(--ease-out);
-    margin-top: 6px;
+    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.32), 0 1px 2px rgba(18, 17, 14, 0.04);
+    transition: all 0.2s var(--ease-out);
+    margin-top: 10px;
 }
 
 .btn-auth-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px -4px rgba(245, 166, 35, 0.55);
+    background: linear-gradient(135deg, #FFC01E 0%, #F7AC2D 100%);
+    transform: translateY(-1.5px);
+    box-shadow: 0 8px 22px rgba(245, 166, 35, 0.42), 0 2px 5px rgba(18, 17, 14, 0.06);
 }
 
 .btn-auth-submit:active {
     transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(245, 166, 35, 0.25);
+}
+
+.btn-auth-submit:focus-visible {
+    outline: 2px solid var(--amber-deep);
+    outline-offset: 2px;
 }
 
 .btn-auth-submit:disabled {
     opacity: 0.65;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
 }
 
 /* Error & Success Messages */
@@ -585,12 +605,12 @@ body {
     }
 }
 
-/* Guest Access Button */
+/* Guest Access Section */
 .auth-guest-divider {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 8px 0;
+    margin: 20px 0 16px;
     position: relative;
 }
 
@@ -598,16 +618,17 @@ body {
 .auth-guest-divider::after {
     content: '';
     flex: 1;
-    border-bottom: 1px solid var(--line-subtle);
+    height: 1px;
+    background: var(--line);
 }
 
 .auth-guest-divider span {
-    padding: 0 10px;
-    font-size: 0.78rem;
-    font-weight: 600;
+    padding: 0 14px;
+    font-size: 0.72rem;
+    font-weight: 700;
     color: var(--ink-40);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
 }
 
 .btn-guest-action {
@@ -616,23 +637,53 @@ body {
     justify-content: center;
     gap: 8px;
     width: 100%;
-    padding: 12px 16px;
+    padding: 13px 18px;
     border-radius: var(--radius-s);
-    background: #FFFBEB;
-    border: 1.5px solid #FCD34D;
-    color: #92400E;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 700;
+    background: #FFFFFF;
+    border: 1.5px solid var(--line);
+    color: var(--ink-80);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
     text-decoration: none;
-    transition: all 0.16s ease;
-    box-shadow: 0 2px 8px rgba(245, 166, 35, 0.12);
+    transition: all 0.2s var(--ease-out);
+    box-shadow: 0 1px 3px rgba(18, 17, 14, 0.03);
+}
+
+.btn-guest-action .guest-bolt-icon {
+    flex-shrink: 0;
+    transition: transform 0.2s var(--ease-out);
+}
+
+.btn-guest-action .guest-arrow {
+    flex-shrink: 0;
+    color: var(--ink-40);
+    transition: transform 0.2s var(--ease-out), color 0.2s var(--ease-out);
 }
 
 .btn-guest-action:hover {
-    background: #FEF3C7;
-    border-color: #F59E0B;
-    color: #78350F;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(245, 166, 35, 0.2);
+    background: #FFFCF7;
+    border-color: var(--amber-border);
+    color: var(--ink);
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 18px rgba(245, 166, 35, 0.12), 0 2px 6px rgba(18, 17, 14, 0.04);
+}
+
+.btn-guest-action:hover .guest-bolt-icon {
+    transform: scale(1.12);
+}
+
+.btn-guest-action:hover .guest-arrow {
+    transform: translateX(3px);
+    color: var(--amber-deep);
+}
+
+.btn-guest-action:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(18, 17, 14, 0.03);
+}
+
+.btn-guest-action:focus-visible {
+    outline: 2px solid var(--amber-deep);
+    outline-offset: 2px;
 }
