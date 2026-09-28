@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Instant Crew — Log In / Sign Up</title>
+    <meta name="description"
+        content="Log in or sign up to Instant Crew as an Employer (Hirer) or Crew Member (Applicant)." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+
+<body>
+
+    <!-- ── Header ── -->
+    <header class="login-header">
+        <div class="login-header-wrap">
+            <a href="index.html" class="login-logo" aria-label="Instant Crew Home">
+                <img src="images/logo.png" alt="Instant Crew">
+            </a>
+            <a href="index.html" class="back-home-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Home
+            </a>
+        </div>
+    </header>
+
+    <!-- ── Main Auth Card ── -->
+    <main class="auth-main">
+        <div class="auth-container">
+
+            <!-- Role Selector: Hirer (Employer) vs Applicant (Employee) -->
+            <div class="role-selector-wrapper">
+                <span class="role-selector-label">I am using Instant Crew as:</span>
+                <div class="role-tabs" role="tablist">
+                    <button type="button" class="role-tab-btn active" id="roleBtnHirer" role="tab" aria-selected="true">
+                        <span class="role-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor"
+                                stroke="currentColor" stroke-width="3" viewBox="0 0 256 256">
+                                <path
+                                    d="M248,208H232V96a8,8,0,0,0,0-16H184V48a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16V208H24a8,8,0,0,0,0,16H248a8,8,0,0,0,0-16ZM216,96V208H184V96ZM56,48H168V208H144V160a8,8,0,0,0-8-8H88a8,8,0,0,0-8,8v48H56Zm72,160H96V168h32ZM72,80a8,8,0,0,1,8-8H96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,80Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H128A8,8,0,0,1,120,80ZM72,120a8,8,0,0,1,8-8H96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,120Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H128A8,8,0,0,1,120,120Z">
+                                </path>
+                            </svg>
+                        </span>
+                        <span class="role-title">Employer</span>
+                        <span class="role-sub">I need staff for this job</span>
+                    </button>
+                    <button type="button" class="role-tab-btn" id="roleBtnApplicant" role="tab" aria-selected="false">
+                        <span class="role-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor"
+                                stroke="currentColor" stroke-width="3" viewBox="0 0 256 256">
+                                <path
+                                    d="M96.26,37A8,8,0,0,1,102,27.29a104.11,104.11,0,0,1,52,0,8,8,0,0,1-2,15.75,8.15,8.15,0,0,1-2-.26,88,88,0,0,0-44,0A8,8,0,0,1,96.26,37ZM33.35,110a8,8,0,0,0,9.85-5.57,87.88,87.88,0,0,1,22-38.09A8,8,0,0,0,53.8,55.14a103.92,103.92,0,0,0-26,45A8,8,0,0,0,33.35,110ZM150,213.22a88,88,0,0,1-44,0,8,8,0,0,0-4,15.49,104.11,104.11,0,0,0,52,0,8,8,0,0,0-4-15.49Zm62.8-108.77a8,8,0,0,0,15.42-4.28,104,104,0,0,0-26-45,8,8,0,1,0-11.41,11.21A88.14,88.14,0,0,1,212.79,104.45Zm15.44,51.39a103.68,103.68,0,0,1-30.68,49.47A8,8,0,0,1,185.07,203a64,64,0,0,0-114.14,0,8,8,0,0,1-12.48,2.32,103.74,103.74,0,0,1-30.68-49.49,8,8,0,0,1,15.42-4.27,87.58,87.58,0,0,0,19,34.88,79.57,79.57,0,0,1,36.1-28.77,48,48,0,1,1,59.38,0,79.57,79.57,0,0,1,36.1,28.77,87.58,87.58,0,0,0,19-34.88,8,8,0,1,1,15.42,4.28ZM128,152a32,32,0,1,0-32-32A32,32,0,0,0,128,152Z">
+                                </path>
+                            </svg>
+                        </span>
+                        <span class="role-title">Applicant</span>
+                        <span class="role-sub">I want to work & earn</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Header based on Role & Mode -->
+            <div class="auth-header">
+                <h1 id="authMainTitle">Welcome back, Employer</h1>
+            </div>
+
+            <!-- Mode Selector: Log In vs Sign Up -->
+            <div class="mode-switch-row">
+                <button type="button" class="mode-tab-btn active" id="modeLoginBtn">Log In</button>
+                <button type="button" class="mode-tab-btn" id="modeSignupBtn">Create Account</button>
+            </div>
+
+            <!-- Notification Messages -->
+            <div class="auth-msg auth-msg-error" id="authErrorMsg"></div>
+            <div class="auth-msg auth-msg-success" id="authSuccessMsg"></div>
+
+            <!-- ── Hirer Log In Form ── -->
+            <form id="formHirerLogin" class="auth-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="hirerLoginEmail">Business Email</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        <input type="email" id="hirerLoginEmail" class="form-input" placeholder="sample@gmail.com"
+                            required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <label for="hirerLoginPassword">Password</label>
+                        <button type="button" class="forgot-password-link" id="hirerForgotPassBtn">Forgot
+                            password?</button>
+                    </div>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <input type="password" id="hirerLoginPassword" class="form-input form-input-password"
+                            placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="password-toggle-btn" aria-label="Show password"
+                            title="Toggle password visibility">
+                            <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: none;">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                </path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-submit" id="btnSubmitHirerLogin">Log In to Employer</button>
+                <div class="auth-guest-divider">
+                    <span>or</span>
+                </div>
+                <a href="employer-guest.html" class="btn-guest-action" id="btnGuestEmployerLogin">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                        <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="#D97706" />
+                    </svg>
+                    <span>Browse as Guest Employer (Instant Crew Only)</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </a>
+            </form>
+
+            <!-- ── Hirer Sign Up Form ── -->
+            <form id="formHirerSignup" class="auth-form" style="display:none;" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="hirerCompanyName">Company / Business Name</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </span>
+                        <input type="text" id="hirerCompanyName" class="form-input" placeholder="e.g. Metro Bistro Co."
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="hirerContactName">Contact Person</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" id="hirerContactName" class="form-input" placeholder="e.g. David Santos"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="hirerSignupEmail">Business Email</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        <input type="email" id="hirerSignupEmail" class="form-input" placeholder="manager@bistro.com"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="hirerSignupPassword">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <input type="password" id="hirerSignupPassword" class="form-input form-input-password"
+                            placeholder="Create strong password" required>
+                        <button type="button" class="password-toggle-btn" aria-label="Show password"
+                            title="Toggle password visibility">
+                            <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: none;">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                </path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-submit" id="btnSubmitHirerSignup">Create Employer Account</button>
+                <div class="auth-guest-divider">
+                    <span>or</span>
+                </div>
+                <a href="employer-guest.html" class="btn-guest-action" id="btnGuestEmployerSignup">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                        <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="#D97706" />
+                    </svg>
+                    <span>Browse as Guest Employer (Instant Crew Only)</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </a>
+            </form>
+
+            <!-- ── Applicant (Employee) Log In Form ── -->
+            <form id="formApplicantLogin" class="auth-form" style="display:none;" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="appLoginEmail">Email Address</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        <input type="email" id="appLoginEmail" class="form-input" placeholder="crew@gmail.com" required
+                            autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <label for="appLoginPassword">Password</label>
+                        <button type="button" class="forgot-password-link" id="appForgotPassBtn">Forgot
+                            password?</button>
+                    </div>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <input type="password" id="appLoginPassword" class="form-input form-input-password"
+                            placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="password-toggle-btn" aria-label="Show password"
+                            title="Toggle password visibility">
+                            <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: none;">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                </path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-submit" id="btnSubmitApplicantLogin">Log In to Crew</button>
+            </form>
+
+            <!-- ── Applicant (Employee) Sign Up Form ── -->
+            <form id="formApplicantSignup" class="auth-form" style="display:none;" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="appFullName">Full Legal Name</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <input type="text" id="appFullName" class="form-input" placeholder="e.g. Alex Rivera" required>
+                    </div>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="appSignupEmail">Email Address</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                        <input type="email" id="appSignupEmail" class="form-input" placeholder="alex.rivera@gmail.com"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="appSignupPassword">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <input type="password" id="appSignupPassword" class="form-input form-input-password"
+                            placeholder="Create password" required>
+                        <button type="button" class="password-toggle-btn" aria-label="Show password"
+                            title="Toggle password visibility">
+                            <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="display: none;">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                </path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-submit" id="btnSubmitApplicantSignup">Join as Crew Member</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- ── Forgot Password Modal ── -->
+    <div class="auth-modal-overlay" id="forgotPassModal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="auth-modal-card">
+            <button type="button" class="auth-modal-close" id="forgotPassCloseBtn" aria-label="Close dialog">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+
+            <!-- Reset Request Form View -->
+            <div id="forgotFormView">
+                <div class="auth-modal-icon-badge">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+
+                <div class="auth-modal-header">
+                    <h2 class="auth-modal-title" id="forgotModalTitle">Reset your password</h2>
+                    <p class="auth-modal-desc" id="forgotModalDesc">Enter your account email and we'll send you a secure
+                        link to reset your password.</p>
+                </div>
+
+                <form id="forgotPassForm" onsubmit="return false;">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="forgotEmailInput">Email Address</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                    </path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                            </span>
+                            <input type="email" id="forgotEmailInput" class="form-input" placeholder="name@domain.com"
+                                required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="auth-msg auth-msg-error" id="forgotErrorMsg"
+                        style="margin-top: 12px; margin-bottom: 4px;"></div>
+
+                    <button type="submit" class="btn-auth-submit" id="btnSubmitForgot" style="margin-top: 16px;">Send
+                        Reset Link</button>
+                </form>
+            </div>
+
+            <!-- Reset Success Sent View -->
+            <div id="forgotSuccessView" style="display: none;">
+                <div class="forgot-success-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <div class="auth-modal-header" style="margin-bottom: 8px;">
+                    <h2 class="auth-modal-title">Check your inbox</h2>
+                </div>
+                <div class="forgot-success-box">
+                    <p class="forgot-success-text">
+                        We've sent a password reset link to <strong id="forgotSentEmailText">your email</strong>. Please
+                        check your inbox and follow the instructions.
+                    </p>
+                    <button type="button" class="btn-auth-submit" id="forgotDoneBtn">Back to Log In</button>
+                    <p class="resend-text">
+                        Didn't receive the email? <button type="button" class="resend-btn" id="forgotResendBtn">Click to
+                            resend</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Authentication State & Logic Script ── -->
+    <script>
+        (function () {
+            'use strict';
+
+            const SESSION_KEY_EMPLOYER = 'ic_employer_session';
+            const SESSION_KEY_WORKER = 'ic_worker_session';
+
+            let currentRole = 'hirer'; // 'hirer' or 'applicant'
+            let currentMode = 'login'; // 'login' or 'signup'
+
+            const SVG_CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px;"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10"/></svg>`;
+
+            // Elements
+            const roleBtnHirer = document.getElementById('roleBtnHirer');
+            const roleBtnApplicant = document.getElementById('roleBtnApplicant');
+            const modeLoginBtn = document.getElementById('modeLoginBtn');
+            const modeSignupBtn = document.getElementById('modeSignupBtn');
+
+            const authMainTitle = document.getElementById('authMainTitle');
+            const authSubtitle = document.getElementById('authSubtitle');
+            const authErrorMsg = document.getElementById('authErrorMsg');
+            const authSuccessMsg = document.getElementById('authSuccessMsg');
+
+            const formHirerLogin = document.getElementById('formHirerLogin');
+            const formHirerSignup = document.getElementById('formHirerSignup');
+            const formApplicantLogin = document.getElementById('formApplicantLogin');
+            const formApplicantSignup = document.getElementById('formApplicantSignup');
+
+            // Password Visibility Toggle Handlers
+            document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const wrapper = btn.closest('.input-wrapper');
+                    const input = wrapper ? wrapper.querySelector('input') : null;
+                    const eyeOpen = btn.querySelector('.eye-open');
+                    const eyeClosed = btn.querySelector('.eye-closed');
+                    if (!input) return;
+
+                    const isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    if (isPassword) {
+                        eyeOpen.style.display = 'none';
+                        eyeClosed.style.display = 'block';
+                        btn.setAttribute('aria-label', 'Hide password');
+                    } else {
+                        eyeOpen.style.display = 'block';
+                        eyeClosed.style.display = 'none';
+                        btn.setAttribute('aria-label', 'Show password');
+                    }
+                });
+            });
+
+            // If already logged in, link logo and back button to active dashboard
+            try {
+                const loggedWorker = sessionStorage.getItem(SESSION_KEY_WORKER);
+                const loggedEmployer = sessionStorage.getItem(SESSION_KEY_EMPLOYER);
+                const loginLogoLink = document.querySelector('.login-logo');
+                const backHomeLink = document.querySelector('.back-home-link');
+
+                if (loggedWorker) {
+                    if (loginLogoLink) loginLogoLink.href = 'applicant.html';
+                    if (backHomeLink) {
+                        backHomeLink.href = 'applicant.html';
+                        backHomeLink.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Dashboard`;
+                    }
+                } else if (loggedEmployer) {
+                    if (loginLogoLink) loginLogoLink.href = 'employer.html';
+                    if (backHomeLink) {
+                        backHomeLink.href = 'employer.html';
+                        backHomeLink.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Dashboard`;
+                    }
+                }
+            } catch (e) { }
+
+            // Read URL Params for direct role targeting (e.g. ?role=applicant)
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialRole = urlParams.get('role');
+            if (initialRole === 'applicant' || initialRole === 'employee' || initialRole === 'crew') {
+                currentRole = 'applicant';
+            }
+
+            function updateUI() {
+                // Clear notices
+                authErrorMsg.style.display = 'none';
+                authSuccessMsg.style.display = 'none';
+
+                // Role Tab styling
+                roleBtnHirer.classList.toggle('active', currentRole === 'hirer');
+                roleBtnHirer.setAttribute('aria-selected', currentRole === 'hirer');
+                roleBtnApplicant.classList.toggle('active', currentRole === 'applicant');
+                roleBtnApplicant.setAttribute('aria-selected', currentRole === 'applicant');
+
+                // Mode Button styling
+                modeLoginBtn.classList.toggle('active', currentMode === 'login');
+                modeSignupBtn.classList.toggle('active', currentMode === 'signup');
+
+                // Dynamic Header Text
+                if (currentRole === 'hirer') {
+                    if (currentMode === 'login') {
+                        if (authMainTitle) authMainTitle.textContent = 'Welcome back, Employer';
+                    } else {
+                        if (authMainTitle) authMainTitle.textContent = 'Register Your Business';
+                    }
+                } else {
+                    if (currentMode === 'login') {
+                        if (authMainTitle) authMainTitle.textContent = 'Welcome back, Crew';
+                    } else {
+                        if (authMainTitle) authMainTitle.textContent = 'Join the Instant Crew';
+                    }
+                }
+
+                // Show correct form
+                formHirerLogin.style.display = (currentRole === 'hirer' && currentMode === 'login') ? 'flex' : 'none';
+                formHirerSignup.style.display = (currentRole === 'hirer' && currentMode === 'signup') ? 'flex' : 'none';
+                formApplicantLogin.style.display = (currentRole === 'applicant' && currentMode === 'login') ? 'flex' : 'none';
+                formApplicantSignup.style.display = (currentRole === 'applicant' && currentMode === 'signup') ? 'flex' : 'none';
+            }
+
+            // Tab Click Handlers
+            roleBtnHirer.addEventListener('click', () => {
+                currentRole = 'hirer';
+                updateUI();
+            });
+
+            roleBtnApplicant.addEventListener('click', () => {
+                currentRole = 'applicant';
+                updateUI();
+            });
+
+            modeLoginBtn.addEventListener('click', () => {
+                currentMode = 'login';
+                updateUI();
+            });
+
+            modeSignupBtn.addEventListener('click', () => {
+                currentMode = 'signup';
+                updateUI();
+            });
+
+            // ── Form Submissions ──
+
+            // 1. Hirer Log In
+            formHirerLogin.addEventListener('submit', () => {
+                const email = document.getElementById('hirerLoginEmail').value.trim().toLowerCase();
+                const pass = document.getElementById('hirerLoginPassword').value;
+                const submitBtn = document.getElementById('btnSubmitHirerLogin');
+
+                authErrorMsg.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Logging in…';
+
+                setTimeout(() => {
+                    if ((email === 'sample@gmail.com' && pass === 'sample123') || (email && pass.length >= 4)) {
+                        // Store session expected by employer.html & employer.js
+                        sessionStorage.setItem(SESSION_KEY_EMPLOYER, JSON.stringify({
+                            name: email === 'sample@gmail.com' ? 'Sample Employer' : email.split('@')[0],
+                            email: email,
+                            company: 'Sample Co.',
+                            joinedYear: 2026,
+                            bookings: []
+                        }));
+
+                        authSuccessMsg.innerHTML = `${SVG_CHECK}Login successful! Redirecting to Employer Dashboard…`;
+                        authSuccessMsg.style.display = 'block';
+                        submitBtn.textContent = 'Redirecting…';
+
+                        setTimeout(() => {
+                            window.location.href = 'employer.html';
+                        }, 500);
+                    } else {
+                        authErrorMsg.textContent = 'Invalid credentials. Please check your email and password.';
+                        authErrorMsg.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Log In to Employer Dashboard';
+                    }
+                }, 400);
+            });
+
+            // 2. Hirer Sign Up
+            formHirerSignup.addEventListener('submit', () => {
+                const company = document.getElementById('hirerCompanyName').value.trim();
+                const contact = document.getElementById('hirerContactName').value.trim();
+                const email = document.getElementById('hirerSignupEmail').value.trim().toLowerCase();
+                const submitBtn = document.getElementById('btnSubmitHirerSignup');
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating account…';
+
+                setTimeout(() => {
+                    sessionStorage.setItem(SESSION_KEY_EMPLOYER, JSON.stringify({
+                        name: contact || 'Employer',
+                        email: email,
+                        company: company || 'Company',
+                        joinedYear: 2026,
+                        bookings: []
+                    }));
+
+                    authSuccessMsg.innerHTML = `${SVG_CHECK}Account registered! Opening your Employer Dashboard…`;
+                    authSuccessMsg.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = 'employer.html';
+                    }, 600);
+                }, 450);
+            });
+
+            // 3. Applicant Log In
+            formApplicantLogin.addEventListener('submit', () => {
+                const email = document.getElementById('appLoginEmail').value.trim().toLowerCase();
+                const pass = document.getElementById('appLoginPassword').value;
+                const submitBtn = document.getElementById('btnSubmitApplicantLogin');
+
+                authErrorMsg.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Logging in…';
+
+                setTimeout(() => {
+                    if ((email === 'crew@instantcrew.com' && pass === 'crew123') || (email && pass.length >= 4)) {
+                        sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
+                            name: email === 'crew@instantcrew.com' ? 'Angelo Lopez' : email.split('@')[0],
+                            email: email,
+                            role: 'Crew Member',
+                            services: ['Line Cook', 'Motorcycle Rider'],
+                            rating: 4.9,
+                            completedShifts: 142,
+                            active: true
+                        }));
+
+                        authSuccessMsg.innerHTML = `${SVG_CHECK}Login successful! Redirecting to Crew Portal…`;
+                        authSuccessMsg.style.display = 'block';
+                        submitBtn.textContent = 'Redirecting…';
+
+                        setTimeout(() => {
+                            window.location.href = 'applicant.html';
+                        }, 500);
+                    } else {
+                        authErrorMsg.textContent = 'Invalid credentials. Please check your email and password.';
+                        authErrorMsg.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Log In to Crew Portal';
+                    }
+                }, 400);
+            });
+
+            // 4. Applicant Sign Up
+            formApplicantSignup.addEventListener('submit', () => {
+                const name = document.getElementById('appFullName').value.trim();
+                const email = document.getElementById('appSignupEmail').value.trim().toLowerCase();
+                const submitBtn = document.getElementById('btnSubmitApplicantSignup');
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Joining Instant Crew…';
+
+                setTimeout(() => {
+                    sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
+                        name: name || 'Crew Pro',
+                        email: email,
+                        role: 'Crew Member',
+                        services: [],
+                        rating: 5.0,
+                        completedShifts: 0,
+                        active: true
+                    }));
+
+                    authSuccessMsg.innerHTML = `${SVG_CHECK}Welcome to Instant Crew! Launching your worker portal…`;
+                    authSuccessMsg.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = 'applicant.html';
+                    }, 600);
+                }, 450);
+            });
+
+            // ── Forgot Password Modal Handlers ──
+            const forgotPassModal = document.getElementById('forgotPassModal');
+            const forgotPassCloseBtn = document.getElementById('forgotPassCloseBtn');
+            const forgotDoneBtn = document.getElementById('forgotDoneBtn');
+            const forgotResendBtn = document.getElementById('forgotResendBtn');
+            const forgotFormView = document.getElementById('forgotFormView');
+            const forgotSuccessView = document.getElementById('forgotSuccessView');
+            const forgotPassForm = document.getElementById('forgotPassForm');
+            const forgotEmailInput = document.getElementById('forgotEmailInput');
+            const forgotSentEmailText = document.getElementById('forgotSentEmailText');
+            const forgotErrorMsg = document.getElementById('forgotErrorMsg');
+            const btnSubmitForgot = document.getElementById('btnSubmitForgot');
+
+            function openForgotModal(prefillEmail) {
+                forgotFormView.style.display = 'block';
+                forgotSuccessView.style.display = 'none';
+                forgotErrorMsg.style.display = 'none';
+                forgotErrorMsg.textContent = '';
+                btnSubmitForgot.disabled = false;
+                btnSubmitForgot.textContent = 'Send Reset Link';
+                forgotEmailInput.value = prefillEmail || '';
+                forgotPassModal.classList.add('open');
+                forgotPassModal.setAttribute('aria-hidden', 'false');
+                setTimeout(() => {
+                    forgotEmailInput.focus();
+                }, 80);
+            }
+
+            function closeForgotModal() {
+                forgotPassModal.classList.remove('open');
+                forgotPassModal.setAttribute('aria-hidden', 'true');
+            }
+
+            const hirerForgotPassBtn = document.getElementById('hirerForgotPassBtn');
+            if (hirerForgotPassBtn) {
+                hirerForgotPassBtn.addEventListener('click', () => {
+                    const email = document.getElementById('hirerLoginEmail').value.trim();
+                    openForgotModal(email || '');
+                });
+            }
+
+            const appForgotPassBtn = document.getElementById('appForgotPassBtn');
+            if (appForgotPassBtn) {
+                appForgotPassBtn.addEventListener('click', () => {
+                    const email = document.getElementById('appLoginEmail').value.trim();
+                    openForgotModal(email || '');
+                });
+            }
+
+            if (forgotPassCloseBtn) {
+                forgotPassCloseBtn.addEventListener('click', closeForgotModal);
+            }
+            if (forgotDoneBtn) {
+                forgotDoneBtn.addEventListener('click', closeForgotModal);
+            }
+
+            // Click outside card to close
+            if (forgotPassModal) {
+                forgotPassModal.addEventListener('click', (e) => {
+                    if (e.target === forgotPassModal) {
+                        closeForgotModal();
+                    }
+                });
+            }
+
+            // ESC key to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && forgotPassModal.classList.contains('open')) {
+                    closeForgotModal();
+                }
+            });
+
+
+
+            // Form Submit Simulation
+            if (forgotPassForm) {
+                forgotPassForm.addEventListener('submit', () => {
+                    const email = forgotEmailInput.value.trim().toLowerCase();
+                    if (!email || !email.includes('@')) {
+                        forgotErrorMsg.textContent = 'Please enter a valid email address.';
+                        forgotErrorMsg.style.display = 'block';
+                        return;
+                    }
+                    forgotErrorMsg.style.display = 'none';
+                    btnSubmitForgot.disabled = true;
+                    btnSubmitForgot.textContent = 'Sending reset link…';
+
+                    setTimeout(() => {
+                        forgotSentEmailText.textContent = email;
+                        forgotFormView.style.display = 'none';
+                        forgotSuccessView.style.display = 'block';
+                    }, 400);
+                });
+            }
+
+            // Resend link click
+            if (forgotResendBtn) {
+                forgotResendBtn.addEventListener('click', () => {
+                    forgotResendBtn.disabled = true;
+                    forgotResendBtn.textContent = 'Resending…';
+                    setTimeout(() => {
+                        forgotResendBtn.textContent = 'Link resent!';
+                        setTimeout(() => {
+                            forgotResendBtn.disabled = false;
+                            forgotResendBtn.textContent = 'Click to resend';
+                        }, 2500);
+                    }, 500);
+                });
+            }
+
+            // Initialize UI on load
+            updateUI();
+        })();
+    </script>
+
+</body>
+
+</html>

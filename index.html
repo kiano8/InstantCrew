@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Instant Crew — Get Trusted Crew in Minutes</title>
+    <meta name="description"
+        content="Need staff for an urgent shift or looking to work flexible shifts? Instant Crew matches verified kitchen, delivery, and event staff with businesses in minutes." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+        (function () {
+            try {
+                // If user is already logged in, route to their active portal
+                const workerSession = sessionStorage.getItem('ic_worker_session');
+                const employerSession = sessionStorage.getItem('ic_employer_session');
+                if (workerSession) {
+                    window.location.replace('applicant.html');
+                } else if (employerSession) {
+                    window.location.replace('employer.html');
+                }
+            } catch (e) { }
+        })();
+    </script>
+</head>
+
+<body>
+
+    <!-- ── Top Header: Logo on the left & Log In on the right ── -->
+    <header class="site-header">
+        <div class="wrap nav-container">
+            <a href="index.html" class="brand-logo" aria-label="Instant Crew Home">
+                <img src="images/logo.png" alt="Instant Crew" class="brand-logo-img">
+            </a>
+
+            <div class="nav-actions">
+                <a href="login.html" class="nav-login-btn" id="headerLoginBtn">Log In</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ── Hero Section (Matches Reference Mockup) ── -->
+        <section class="hero-section">
+            <div class="wrap hero-grid">
+                <!-- Left Column: Courier Runner Illustration with Speed Lines -->
+                <div class="hero-visual">
+                    <div class="hero-visual-wrapper">
+                        <img src="images/instadelivery.png" alt="Instant Crew Courier on the move" class="hero-courier-img">
+                        <div class="hero-ground-shadow" aria-hidden="true"></div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Brand Headline, Tagline, & Single Instant Crew CTA -->
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <span class="badge-dot" aria-hidden="true"></span>
+                        On-Demand Workforce Dispatched In Real Time
+                    </div>
+
+                    <h1 class="hero-title">
+                        Need help<br>
+                        right now?<br>
+                        <span class="title-amber">We got you.</span>
+                    </h1>
+
+                    <p class="hero-subtitle">
+                        Get your instant crew in minutes.<br>
+                        No stress. No hassle.
+                    </p>
+
+                    <!-- Single prominent "Instant Crew" CTA -->
+                    <div class="hero-cta-wrapper">
+                        <a href="login.html" class="btn-instant-crew" id="heroInstantCrewBtn">
+                            <span>Instant Crew</span>
+                            <span class="btn-icon" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-backdrop-skyline" aria-hidden="true"></div>
+        </section>
+    </main>
+
+    <!-- ── Site Footer ── -->
+    <footer class="site-footer">
+        <div class="wrap">
+            <span>© 2026 Instant Crew</span>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

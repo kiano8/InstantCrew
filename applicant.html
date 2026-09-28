@@ -1,0 +1,3330 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Instant Crew — Crew Member Portal</title>
+    <meta name="description"
+        content="Crew member portal. Manage the services you offer, update your profile, accept available shifts, and track your earnings." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/employer.css">
+    <link rel="stylesheet" href="css/applicant.css">
+
+</head>
+
+<body>
+
+    <!-- ════ Header (Matches Employer Navigation) ════ -->
+    <header class="db-header">
+        <div class="db-header-inner app-header-inner">
+            <a href="applicant.html" class="logo" id="headerLogoLink" style="text-decoration:none;"
+                aria-label="Instant Crew Applicant Portal">
+                <img src="images/logo.png" alt="Instant Crew" style="height:32px; width:auto; display:block;">
+            </a>
+
+            <div style="display:flex; align-items:center; gap:12px;">
+                <!-- Notification Bell -->
+                <div class="db-notif-wrap">
+                    <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
+                        title="Notifications">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
+                        <span class="db-notif-badge" id="notifBadge" style="display:none;">0</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div class="db-notif-dropdown" id="notifDropdown" hidden>
+                        <div class="db-notif-dropdown-header">
+                            <h4>Notifications</h4>
+                            <button type="button" class="db-notif-clear-btn" id="clearNotifsBtn">Clear all</button>
+                        </div>
+                        <div class="db-notif-list" id="notifList"></div>
+                    </div>
+                </div>
+
+                <!-- Crew Profile Avatar (top-right) -->
+                <button type="button" class="db-profile-avatar-btn" id="openProfilePanel" aria-label="Open profile">
+                    <span class="db-profile-initials" id="profileInitials">AL</span>
+                    <span class="db-profile-dot" id="headerProfileDot"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ════ Crew Profile & Services Panel (Slide-over drawer) ════ -->
+    <div class="db-profile-overlay" id="profileOverlay" aria-hidden="true">
+        <div class="db-profile-panel" role="dialog" aria-labelledby="profilePanelTitle">
+
+            <!-- Panel Header -->
+            <div class="db-profile-panel-header">
+                <div class="db-profile-header-title-wrap">
+                    <h2 class="db-profile-panel-title" id="profilePanelTitle">Crew Profile</h2>
+                    <span class="db-profile-card-badge">Applicant</span>
+                </div>
+                <button type="button" class="db-profile-close-btn" id="closeProfilePanel" aria-label="Close panel">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 4l8 8M12 4L4 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Panel Scrollable Body -->
+            <div class="db-profile-body">
+                <!-- User Card with Active / Offline Switch -->
+                <div class="db-profile-card">
+                    <div class="db-profile-card-avatar" id="panelAvatarInitials">AL</div>
+                    <div class="db-profile-card-info">
+                        <p class="db-profile-card-name" id="panelUserName">Angelo Lopez</p>
+                        <p class="db-profile-card-email" id="panelUserEmail">crew@instantcrew.com</p>
+                    </div>
+                    <!-- Active / Offline Switch inside card -->
+                    <div class="db-profile-card-status">
+                        <div class="profile-card-status-badge">
+                            <span class="profile-status-dot" id="profileStatusDot"></span>
+                            <span class="profile-card-status-text" id="profileStatusTitle">Active</span>
+                        </div>
+                        <label class="profile-status-switch" for="workerStatusSwitch"
+                            title="Toggle Active / Offline status">
+                            <input type="checkbox" id="workerStatusSwitch" checked role="switch" aria-checked="true"
+                                aria-label="Toggle Active or Offline shift status">
+                            <span class="profile-switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ── Unified Matching Preferences Card (Clean, modern, auto-saved) ── -->
+                <div class="app-drawer-preferences-card" id="profileLocSection">
+                    <div class="app-drawer-pref-card-header">
+                        <div class="app-drawer-pref-card-title-group">
+                            <span class="app-drawer-pref-card-title">Matching Preferences</span>
+                            <span class="app-drawer-pref-card-subtitle">Filters shifts matched to your profile</span>
+                        </div>
+                        <span class="app-drawer-auto-saved-tag">
+                            <span class="app-drawer-auto-saved-dot"></span>
+                            <span>Auto-saved</span>
+                        </span>
+                    </div>
+
+                    <!-- Item 1: Employment Availability -->
+                    <div class="app-drawer-pref-item">
+                        <div class="app-drawer-pref-item-head">
+                            <label class="app-drawer-pref-item-title">Employment Availability</label>
+                            <span class="app-drawer-pref-item-sub" id="profileEmpNote">Only matching jobs show in
+                                feed</span>
+                        </div>
+                        <div class="db-emp-toggle-group" id="profileEmpToggleGroup" role="group"
+                            aria-label="Employment type availability">
+                            <button type="button" class="db-emp-toggle" data-emp="full-time" id="btnEmpFullTime">
+                                Full-Time
+                            </button>
+                            <button type="button" class="db-emp-toggle" data-emp="part-time" id="btnEmpPartTime">
+                                Part-Time
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="app-drawer-pref-divider"></div>
+
+                    <!-- Item 2: Where You Are Located -->
+                    <div class="app-drawer-pref-item">
+                        <div class="app-drawer-pref-item-head">
+                            <label class="app-drawer-pref-item-title">Where You Are Located</label>
+                            <span class="app-drawer-pref-item-sub" id="profileLocNote">Matches with employer's shift
+                                location</span>
+                        </div>
+                        <div class="db-location-row">
+                            <div class="db-select-custom" id="workerLocationDropdown">
+                                <button type="button" class="db-select-custom-trigger" id="workerLocationTrigger"
+                                    aria-expanded="false" aria-haspopup="listbox">
+                                    <div class="db-select-trigger-content">
+                                        <svg class="db-pin-icon-inline" width="15" height="15" viewBox="0 0 16 16"
+                                            fill="none">
+                                            <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
+                                                stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                                            <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.6" />
+                                        </svg>
+                                        <span class="db-select-custom-text" id="workerLocationText">Cebu City</span>
+                                    </div>
+                                    <svg class="db-select-custom-chevron" width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+
+                                <div class="db-select-custom-menu db-location-menu" id="workerLocationMenu"
+                                    role="listbox" hidden>
+                                    <div class="db-custom-search-wrap">
+                                        <svg class="db-custom-search-icon" width="13" height="13" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input type="text" id="workerLocationSearch" class="db-custom-search-input"
+                                            placeholder="Search city…" autocomplete="off" />
+                                    </div>
+                                    <div class="db-select-options-scroll" id="workerLocationOptionsList" tabindex="-1">
+                                        <!-- Populated dynamically via JS -->
+                                    </div>
+                                    <div class="db-custom-empty" id="workerLocationEmptyMsg" style="display:none;">
+                                        No matching city found
+                                    </div>
+                                </div>
+
+                                <!-- Hidden native select for location options matching employer locations -->
+                                <select id="workerLocationSelect" style="display:none;" aria-hidden="true"
+                                    tabindex="-1">
+                                    <option value="Cebu City" selected>Cebu City</option>
+                                    <option value="Manila">Manila</option>
+                                    <option value="Davao City">Davao City</option>
+                                    <option value="Quezon City">Quezon City</option>
+                                    <option value="Makati City">Makati City</option>
+                                    <option value="Taguig">Taguig</option>
+                                    <option value="Pasig">Pasig</option>
+                                    <option value="Mandaluyong">Mandaluyong</option>
+                                    <option value="Pasay">Pasay</option>
+                                    <option value="Iloilo City">Iloilo City</option>
+                                    <option value="Bacolod">Bacolod</option>
+                                    <option value="Cagayan de Oro">Cagayan de Oro</option>
+                                </select>
+                            </div>
+
+                            <button type="button" class="db-use-current-btn" id="workerUseCurrentBtn">
+                                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
+                                        stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                                    <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.4" />
+                                </svg>
+                                Use Current
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hidden legacy save triggers for 100% script compatibility -->
+                    <div style="display:none;" aria-hidden="true">
+                        <button type="button" id="btnSaveEmpPreference"></button>
+                        <span id="saveEmpIndicator"></span>
+                        <button type="button" id="btnSaveLocationPreference"></button>
+                        <span id="saveLocationIndicator"></span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs inside Profile -->
+                <div class="db-bookings-tabs three-tabs" role="tablist" aria-label="Profile navigation tabs">
+                    <button type="button" class="db-bookings-tab active" id="tabServices" role="tab"
+                        aria-selected="true">
+                        Services (<span id="servicesCountBadge">0</span>)
+                    </button>
+                    <button type="button" class="db-bookings-tab" id="tabActiveJobs" role="tab" aria-selected="false">
+                        Active Jobs (<span id="activeJobsCountBadge">0</span>)
+                    </button>
+                    <button type="button" class="db-bookings-tab" id="tabEndedJobs" role="tab" aria-selected="false">
+                        Ended Jobs (<span id="endedJobsCountBadge">0</span>)
+                    </button>
+                </div>
+
+                <!-- ── Section 1: Services Offered (Configurable into Profile) ── -->
+                <div id="panelServicesSection">
+                    <div class="services-picker-header">
+                        <p class="services-picker-title">Select What Services You Offer</p>
+                    </div>
+
+                    <!-- Category: Kitchen -->
+                    <div class="service-category-block">
+                        <div class="service-category-header">
+                            <div class="service-category-label">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="icon icon-tabler icons-tabler-outline icon-tabler-chef-hat">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path
+                                        d="M12 3c1.918 0 3.52 1.35 3.91 3.151a4 4 0 0 1 2.09 7.723l0 7.126h-12v-7.126a4 4 0 1 1 2.092 -7.723a4 4 0 0 1 3.908 -3.151" />
+                                    <path d="M6.161 17.009l11.839 -.009" />
+                                </svg>
+                                <span>Kitchen Services</span>
+                            </div>
+                            <span class="service-cat-count" id="kitchenCountBadge">0 selected</span>
+                        </div>
+
+                        <!-- Alive Dropdown Selector -->
+                        <div class="alive-dropdown" id="kitchenDropdown" data-category="kitchen">
+                            <button type="button" class="alive-dropdown-trigger" id="kitchenDropdownTrigger"
+                                aria-expanded="false" aria-haspopup="listbox">
+                                <span class="alive-trigger-text placeholder" id="kitchenTriggerText">Choose kitchen
+                                    roles…</span>
+                                <span class="alive-trigger-right">
+                                    <span class="alive-mini-pill" id="kitchenMiniPill" style="display:none;">0</span>
+                                    <svg class="alive-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </span>
+                            </button>
+
+                            <div class="alive-dropdown-menu" id="kitchenDropdownMenu" role="listbox"
+                                aria-multiselectable="true" hidden>
+                                <div class="alive-menu-header">
+                                    <span class="alive-menu-title">Kitchen Roles</span>
+                                    <div class="alive-menu-actions">
+                                        <button type="button" class="alive-btn-action" data-action="all"
+                                            data-category="kitchen">Select All</button>
+                                        <span class="alive-action-sep">•</span>
+                                        <button type="button" class="alive-btn-action" data-action="clear"
+                                            data-category="kitchen">Clear</button>
+                                    </div>
+                                </div>
+                                <div class="alive-options-list" id="kitchenOptionsList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category: Delivery -->
+                    <div class="service-category-block">
+                        <div class="service-category-header">
+                            <div class="service-category-label">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="icon icon-tabler icons-tabler-outline icon-tabler-moped">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M16 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                    <path
+                                        d="M5 16v1a2 2 0 0 0 4 0v-5h-3a3 3 0 0 0 -3 3v1h10a6 6 0 0 1 5 -4v-5a2 2 0 0 0 -2 -2h-1" />
+                                    <path d="M6 9l3 0" />
+                                </svg>
+                                <span>Delivery Services</span>
+                            </div>
+                            <span class="service-cat-count" id="deliveryCountBadge">0 selected</span>
+                        </div>
+
+                        <!-- Alive Dropdown Selector -->
+                        <div class="alive-dropdown" id="deliveryDropdown" data-category="delivery">
+                            <button type="button" class="alive-dropdown-trigger" id="deliveryDropdownTrigger"
+                                aria-expanded="false" aria-haspopup="listbox">
+                                <span class="alive-trigger-text placeholder" id="deliveryTriggerText">Choose
+                                    delivery roles…</span>
+                                <span class="alive-trigger-right">
+                                    <span class="alive-mini-pill" id="deliveryMiniPill" style="display:none;">0</span>
+                                    <svg class="alive-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </span>
+                            </button>
+
+                            <div class="alive-dropdown-menu" id="deliveryDropdownMenu" role="listbox"
+                                aria-multiselectable="true" hidden>
+                                <div class="alive-menu-header">
+                                    <span class="alive-menu-title">Delivery Roles</span>
+                                    <div class="alive-menu-actions">
+                                        <button type="button" class="alive-btn-action" data-action="all"
+                                            data-category="delivery">Select All</button>
+                                        <span class="alive-action-sep">•</span>
+                                        <button type="button" class="alive-btn-action" data-action="clear"
+                                            data-category="delivery">Clear</button>
+                                    </div>
+                                </div>
+                                <div class="alive-options-list" id="deliveryOptionsList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category: Helpers & Logistics -->
+                    <div class="service-category-block">
+                        <div class="service-category-header">
+                            <div class="service-category-label">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="icon icon-tabler icons-tabler-outline icon-tabler-stretching">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M15 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                                    <path d="M5 20l5 -.5l1 -2" />
+                                    <path d="M18 20v-5h-5.5l2.5 -6.5l-5.5 1l1.5 2" />
+                                </svg>
+                                <span>Helpers & Operations</span>
+                            </div>
+                            <span class="service-cat-count" id="helpersCountBadge">0 selected</span>
+                        </div>
+
+                        <!-- Alive Dropdown Selector -->
+                        <div class="alive-dropdown" id="helpersDropdown" data-category="helpers">
+                            <button type="button" class="alive-dropdown-trigger" id="helpersDropdownTrigger"
+                                aria-expanded="false" aria-haspopup="listbox">
+                                <span class="alive-trigger-text placeholder" id="helpersTriggerText">Choose
+                                    operations roles…</span>
+                                <span class="alive-trigger-right">
+                                    <span class="alive-mini-pill" id="helpersMiniPill" style="display:none;">0</span>
+                                    <svg class="alive-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </span>
+                            </button>
+
+                            <div class="alive-dropdown-menu" id="helpersDropdownMenu" role="listbox"
+                                aria-multiselectable="true" hidden>
+                                <div class="alive-menu-header">
+                                    <span class="alive-menu-title">Operations Roles</span>
+                                    <div class="alive-menu-actions">
+                                        <button type="button" class="alive-btn-action" data-action="all"
+                                            data-category="helpers">Select All</button>
+                                        <span class="alive-action-sep">•</span>
+                                        <button type="button" class="alive-btn-action" data-action="clear"
+                                            data-category="helpers">Clear</button>
+                                    </div>
+                                </div>
+                                <div class="alive-options-list" id="helpersOptionsList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Worker Offered Rate & Timing Preference ── -->
+                    <div class="worker-preferences-box">
+                        <div class="worker-pref-header">
+                            <h4 class="worker-pref-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                </svg>
+                                <span>Input Your Offered Rate</span>
+                            </h4>
+                            <p class="worker-pref-sub">Specify your minimum expected amount</p>
+                        </div>
+
+                        <div class="db-rate-input-row" style="margin-bottom: 18px;">
+                            <div class="db-rate-input-wrap">
+                                <span class="db-rate-currency">₱</span>
+                                <input type="number" id="workerOfferedRate" class="db-rate-input" value="95" min="1"
+                                    max="9999" aria-label="Offered rate amount">
+                            </div>
+                            <!-- Custom Modern Rate Period Dropdown -->
+                            <div class="db-select-custom-wrap db-period-dropdown" id="workerRatePeriodDropdown">
+                                <button type="button" class="db-select-custom-trigger" id="workerRatePeriodTrigger"
+                                    aria-haspopup="listbox" aria-expanded="false" aria-label="Select rate period">
+                                    <span class="db-select-custom-text" id="workerRatePeriodTriggerText">per hour</span>
+                                    <svg class="db-select-custom-chevron" width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="db-select-custom-menu db-period-menu" id="workerRatePeriodMenu"
+                                    role="listbox" hidden>
+                                    <div class="db-select-options-scroll">
+                                        <div class="db-select-custom-item selected" data-value="per hour" role="option"
+                                            aria-selected="true">
+                                            <span class="db-select-item-dot"></span>
+                                            <span class="db-select-item-label">per hour</span>
+                                            <svg class="db-select-item-check" width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2.6"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="db-select-custom-item" data-value="per day" role="option"
+                                            aria-selected="false">
+                                            <span class="db-select-item-dot"></span>
+                                            <span class="db-select-item-label">per day</span>
+                                            <svg class="db-select-item-check" width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2.6"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="db-select-custom-item" data-value="per week" role="option"
+                                            aria-selected="false">
+                                            <span class="db-select-item-dot"></span>
+                                            <span class="db-select-item-label">per week</span>
+                                            <svg class="db-select-item-check" width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2.6"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                        <div class="db-select-custom-item" data-value="per month" role="option"
+                                            aria-selected="false">
+                                            <span class="db-select-item-dot"></span>
+                                            <span class="db-select-item-label">per month</span>
+                                            <svg class="db-select-item-check" width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2.6"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden native select for form & session compatibility -->
+                                <select id="workerRatePeriod" style="display:none;" aria-hidden="true" tabindex="-1">
+                                    <option value="per hour" selected>per hour</option>
+                                    <option value="per day">per day</option>
+                                    <option value="per week">per week</option>
+                                    <option value="per month">per month</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="worker-pref-header">
+                            <h4 class="worker-pref-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Preferred Availability</span>
+                            </h4>
+                        </div>
+
+                        <div class="db-emp-toggle-group" id="workerTimingToggleGroup" role="group"
+                            aria-label="Shift timing availability">
+                            <button type="button" class="db-emp-toggle active" data-timing="instant"
+                                id="btnTimingInstant">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M13 3l-7 10h6l-2 8l9 -12h-6l2 -6" />
+                                </svg>
+                                Instant
+                            </button>
+                            <button type="button" class="db-emp-toggle" data-timing="later" id="btnTimingLater">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                Later
+                            </button>
+                        </div>
+
+                        <!-- Scheduled Date and Time Fields (Visible when 'Later' is selected) -->
+                        <div id="workerLaterScheduleFields" class="worker-schedule-card" style="display:none;">
+                            <!-- Top Summary / Status Header -->
+                            <div class="worker-schedule-header">
+                                <div>
+                                    <span class="worker-schedule-header-title">Preferred Start Date &amp; Time</span>
+                                    <p class="worker-schedule-header-sub" id="workerScheduleSummaryLine">Mon, Sep 28,
+                                        2026 at 9:00 AM</p>
+                                </div>
+                            </div>
+
+                            <!-- Custom Month Navigator -->
+                            <div class="worker-cal-nav">
+                                <button type="button" class="worker-cal-nav-btn" id="workerCalPrevBtn"
+                                    aria-label="Previous month">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                                <span class="worker-cal-month-label" id="workerCalMonthLabel">September 2026</span>
+                                <button type="button" class="worker-cal-nav-btn" id="workerCalNextBtn"
+                                    aria-label="Next month">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Weekday Headers -->
+                            <div class="worker-cal-weekdays">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            <!-- Calendar Days Grid -->
+                            <div class="worker-cal-grid" id="workerCalDaysGrid" role="grid" aria-label="Days of month">
+                            </div>
+
+                            <!-- ════ Modern Drum / Wheel Time Selector (Matches Theme) ════ -->
+                            <div class="worker-wheel-time-card">
+                                <div class="worker-wheel-title">Time</div>
+
+                                <!-- 3-Column Scroll Wheel Picker -->
+                                <div class="worker-wheel-container">
+                                    <!-- Center Highlight Capsule Lens -->
+                                    <div class="worker-wheel-lens" aria-hidden="true"></div>
+
+                                    <!-- Hours Wheel Column -->
+                                    <div class="worker-wheel-col" id="workerWheelHoursCol" role="listbox"
+                                        aria-label="Hour">
+                                        <!-- Injected by JavaScript (1 to 12) -->
+                                    </div>
+
+                                    <!-- Colon Separator -->
+                                    <div class="worker-wheel-colon" aria-hidden="true">:</div>
+
+                                    <!-- Minutes Wheel Column -->
+                                    <div class="worker-wheel-col" id="workerWheelMinutesCol" role="listbox"
+                                        aria-label="Minute">
+                                        <!-- Injected by JavaScript (00 to 59) -->
+                                    </div>
+
+                                    <!-- AM/PM Wheel Column -->
+                                    <div class="worker-wheel-col worker-wheel-ampm-col" id="workerWheelAmPmCol"
+                                        role="listbox" aria-label="AM or PM">
+                                        <div class="worker-wheel-item selected" data-val="am">am</div>
+                                        <div class="worker-wheel-item" data-val="pm">pm</div>
+                                    </div>
+                                </div>
+
+                                <!-- Presets Section -->
+                                <div class="worker-wheel-presets-wrap">
+                                    <span class="worker-wheel-presets-label">Presets</span>
+                                    <div class="worker-wheel-presets-row" role="group" aria-label="Time presets">
+                                        <button type="button" class="worker-wheel-preset-btn active" data-hour="9"
+                                            data-minute="00" data-ampm="am">9 am</button>
+                                        <button type="button" class="worker-wheel-preset-btn" data-hour="12"
+                                            data-minute="00" data-ampm="pm">12 pm</button>
+                                        <button type="button" class="worker-wheel-preset-btn" data-hour="4"
+                                            data-minute="00" data-ampm="pm">4 pm</button>
+                                        <button type="button" class="worker-wheel-preset-btn" data-hour="6"
+                                            data-minute="00" data-ampm="pm">6 pm</button>
+                                    </div>
+                                </div>
+
+                                <!-- Done Action Button -->
+                                <button type="button" class="worker-wheel-done-btn"
+                                    id="workerWheelDoneBtn">Done</button>
+                            </div>
+
+                            <!-- Hidden inputs for seamless session and form persistence -->
+                            <input type="hidden" id="workerPreferredDate" value="">
+                            <input type="hidden" id="workerPreferredTime" value="09:00">
+
+                            <!-- Selected Summary Banner -->
+                            <div class="worker-schedule-banner">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span id="workerScheduleBannerText">Available starting Today at 9:00 AM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="services-save-row" style="margin-top: 20px;">
+                        <button type="button" class="db-btn-primary db-btn-sm" id="btnSaveServices">
+                            Save Changes
+                        </button>
+                        <span class="save-indicator" id="saveIndicator" style="display:none;">Updated!</span>
+                    </div>
+                </div>
+
+                <!-- ── Section 2: Active Jobs ── -->
+                <div id="panelActiveJobsSection" style="display:none;">
+                    <div class="app-jobs-list" id="activeJobsListContainer"></div>
+                    <!-- Empty State for Active Jobs -->
+                    <div class="db-bookings-empty" id="activeJobsEmpty" style="display:none;">
+                        <div class="db-empty-icon">
+                            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB"
+                                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </div>
+                        <h3 class="db-empty-title">No active jobs</h3>
+                        <p class="db-empty-sub">Accept open shifts from your live feed to see active jobs here.</p>
+                    </div>
+                </div>
+
+                <!-- ── Section 3: Ended Jobs ── -->
+                <div id="panelEndedJobsSection" style="display:none;">
+                    <div class="app-jobs-list" id="endedJobsListContainer"></div>
+                    <!-- Empty State for Ended Jobs -->
+                    <div class="db-bookings-empty" id="endedJobsEmpty" style="display:none;">
+                        <div class="db-empty-icon">
+                            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB"
+                                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <h3 class="db-empty-title">No ended jobs yet</h3>
+                        <p class="db-empty-sub">Completed and concluded contracts will be archived here.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Panel Footer: Dedicated Logout -->
+            <div class="db-profile-footer">
+                <button type="button" class="db-logout-btn" id="logoutBtn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" />
+                        <path d="M11 11l3-3-3-3M6 8h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                    Log Out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ Main Dashboard Card ════ -->
+    <main class="db-main app-db-main">
+        <div class="db-card-wrapper app-card-wrapper">
+            <!-- Left Character Column (Desktop) -->
+            <aside class="app-char-col" aria-label="Applicant Crew Character">
+                <div class="app-char-sticky">
+                    <!-- Character Stage -->
+                    <div class="app-char-stage">
+                        <img src="images/phonecrew.png" alt="Instant Crew Courier" class="app-char-img">
+                        <div class="app-char-shadow"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Dashboard Card -->
+            <div class="db-card app-main-card" id="appMainCard">
+
+                <!-- Step Header (identical to Employer Step 1 Header) -->
+                <div class="db-step-header" style="margin-bottom: 20px;">
+                    <p class="db-step-label">Applicant Portal</p>
+                    <h2 id="crewGreeting">Welcome back, Angelo!</h2>
+                    <p class="app-greeting-sub">Opportunities matched with your profile in real-time. Review and accept
+                        shifts below.</p>
+                </div>
+
+                <!-- ── Services Offered Showcase Card (Directly in profile & main view) ── -->
+                <div class="app-services-box">
+                    <div class="app-services-header">
+                        <div>
+                            <h3 class="app-services-title">Services & Preferences</h3>
+                        </div>
+                        <button type="button" class="app-edit-services-btn" id="openServicesFromMain">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Edit Preferences
+                        </button>
+                    </div>
+
+                    <!-- Clean Preference Meta Strip -->
+                    <div class="app-pref-strip">
+                        <div class="app-pref-item">
+                            <span class="app-pref-label">Work Type</span>
+                            <strong class="app-pref-val" id="mainPrefTypeVal">Full-Time</strong>
+                        </div>
+                        <div class="app-pref-divider"></div>
+                        <div class="app-pref-item">
+                            <span class="app-pref-label">Hourly Rate</span>
+                            <strong class="app-pref-val" id="mainPrefRateVal">₱95 / hr</strong>
+                        </div>
+                        <div class="app-pref-divider"></div>
+                        <div class="app-pref-item">
+                            <span class="app-pref-label">Availability</span>
+                            <strong class="app-pref-val" id="mainPrefTimingVal"><span class="app-pref-dot"></span>
+                                Instant Ready</strong>
+                        </div>
+                    </div>
+
+                    <!-- Offered Roles Section -->
+                    <div class="app-offered-roles-block">
+                        <div class="app-offered-roles-header">
+                            <span class="app-offered-label">Offered Roles</span>
+                            <span class="app-offered-count" id="offeredRolesCount">2 Active</span>
+                        </div>
+                        <!-- Display list of current selected service chips -->
+                        <div class="app-services-chips-display" id="mainServicesDisplay"></div>
+                    </div>
+
+                    <!-- Alert if no services selected yet -->
+                    <div class="app-empty-services-alert" id="emptyServicesAlert" style="display:none;">
+                        <span style="display:inline-flex; align-items:center; gap:8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path d="M12 9v4" />
+                                <path d="M12 16v.01" />
+                                <path d="M12 3l9 17h-18l9 -17" />
+                            </svg>
+                            <span>You have not selected any services you offer yet. Add your services in your profile to
+                                be
+                                matched with instant shifts!</span>
+                        </span>
+                        <button type="button" class="db-btn-primary db-btn-sm" id="btnPromptAddServices">
+                            Add Services Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Performance & Employment Stats ── -->
+                <div class="app-stats-row">
+                    <div class="app-stat-card">
+                        <span class="app-stat-num" id="statMatchedJobs">0</span>
+                        <span class="app-stat-title">Matched Job</span>
+                    </div>
+                    <div class="app-stat-card">
+                        <span class="app-stat-num" id="statAcceptedJobs">142</span>
+                        <span class="app-stat-title">Accepted Jobs</span>
+                    </div>
+                    <div class="app-stat-card">
+                        <span class="app-stat-num" id="statRating"
+                            style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path
+                                    d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
+                            </svg>
+                            <span>4.9</span>
+                        </span>
+                        <span class="app-stat-title">Crew Rating</span>
+                    </div>
+                </div>
+
+                <!-- ── Active Work / Contracts (Live capacity & End Contract action) ── -->
+                <div class="app-active-contracts-box" id="activeContractsBox" style="display:none;">
+                    <div class="app-active-contracts-header">
+                        <h3 class="app-active-contracts-title">
+                            <span></span> Active Work & Contracts
+                        </h3>
+                        <span class="app-capacity-pill" id="capacityPill">Available</span>
+                    </div>
+                    <div id="activeContractsContainer"></div>
+                </div>
+
+                <!-- ── Live Shift Opportunities Feed ── -->
+                <div class="db-step-header" style="margin-top: 26px; margin-bottom: 16px;">
+                    <div class="app-feed-header-flex">
+                        <div>
+                            <p class="db-step-label">Live Matching Feed</p>
+                            <h2>Available Jobs For You</h2>
+                        </div>
+                        <div class="app-location-chip" id="feedLocationPill" role="button" tabindex="0"
+                            title="Click to change your work location">
+                            <span class="app-location-dot"></span>
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
+                                    stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                                <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.8" />
+                            </svg>
+                            <span class="app-location-label">Where you are:</span>
+                            <strong class="app-location-name" id="feedLocationText">Cebu City</strong>
+                            <span class="app-location-edit-tag">Change</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-shifts-list" id="shiftsListContainer"></div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- ── Toast Feedback ── -->
+    <div class="app-toast" id="appToast">
+        <span class="app-toast-icon" id="appToastIcon" style="display:inline-flex; align-items:center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                <path d="M9 12l2 2l4 -4" />
+            </svg>
+        </span>
+        <span id="appToastMsg">Accepted!</span>
+    </div>
+
+    <!-- ════ Footer (Matches Employer Footer) ════ -->
+    <footer class="db-footer">
+        <span>© 2026 Instant Crew</span>
+        <div class="db-footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Contact</a>
+        </div>
+    </footer>
+
+    <!-- ════ Location Detail Modal (View Detail from Shift Card) ════ -->
+    <div class="app-modal-overlay" id="appLocationDetailModal" aria-hidden="true" role="dialog" aria-modal="true"
+        style="display:none;">
+        <div class="app-modal-card app-location-modal-card">
+            <div class="app-loc-modal-header">
+                <div class="app-loc-modal-title-wrap">
+                    <div class="app-loc-modal-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                                fill="#EA4335" />
+                            <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="app-loc-modal-title" id="locModalVenueTitle">Work Location & Directions</h3>
+                        <p class="app-loc-modal-sub" id="locModalRoleSub">Matched Shift Details</p>
+                    </div>
+                </div>
+                <button type="button" class="app-modal-close-btn" id="closeLocModalBtn"
+                    aria-label="Close location modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="app-loc-modal-body">
+                <!-- Main Employer Location Card -->
+                <div class="app-loc-info-card">
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Venue / Employer</span>
+                        <strong class="app-loc-info-val" id="locModalVenueName">Sample Employer's Shift</strong>
+                    </div>
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Employer's Location</span>
+                        <span class="app-loc-info-val highlight" id="locModalAddress">Ayala Malls Central Bloc, Cebu
+                            I.T. Park</span>
+                    </div>
+                </div>
+
+                <!-- Google Maps Direction Banner -->
+                <div class="app-loc-map-preview">
+                    <div class="app-loc-map-art">
+                        <div class="app-map-roads"></div>
+                        <div class="app-map-pulse-pin">
+                            <div class="app-pin-glow"></div>
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                                    fill="#EA4335" />
+                                <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="app-map-preview-hint">Location verified by employer for Google Maps navigation</p>
+                </div>
+            </div>
+
+            <div class="app-loc-modal-footer">
+                <button type="button" class="app-btn-copy-address" id="copyLocAddressBtn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copy Location</span>
+                </button>
+                <a href="#" target="_blank" rel="noopener noreferrer" class="app-btn-open-google-maps"
+                    id="openGoogleMapsActionBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                    <span>Open in Google Maps</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ Application Logic Scripts ════ -->
+    <script src="js/shared-data.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            const SESSION_KEY_WORKER = 'ic_worker_session';
+
+            // Available services catalog matching employer.js ROLES
+            const SERVICES_CATALOG = {
+                kitchen: [
+                    'Line Cook',
+                    'Chef',
+                    'Sous Chef',
+                    'Prep Assistant',
+                    'Kitchen Helper',
+                    'Dishwasher',
+                    'Pastry Chef',
+                    'Grill Cook',
+                    'Barista',
+                    'Bartender',
+                    'Food Runner',
+                    'Buffet Server',
+                    'Kitchen Steward',
+                    'Catering Assistant'
+                ],
+                delivery: [
+                    'Motorcycle Rider',
+                    'Food Delivery Rider',
+                    'Car Driver',
+                    'Bicycle Courier',
+                    'E-Scooter Courier',
+                    'Van Driver',
+                    'Express Messenger',
+                    'Pickup Truck Driver',
+                    'Heavy Truck Driver',
+                    'Document Courier',
+                    'Warehouse Dispatch Driver',
+                    'Last-Mile Delivery Specialist'
+                ],
+                helpers: [
+                    'Event Helper',
+                    'Banquet Server',
+                    'Warehouse Helper',
+                    'Inventory & Stock Assistant',
+                    'Loading & Unloading Crew',
+                    'Office Helper',
+                    'Moving Helper',
+                    'Cleaning Crew',
+                    'Sanitation Staff',
+                    'Staging & Booth Builder',
+                    'General Laborer',
+                    'Retail Store Assistant',
+                    'Maintenance Assistant',
+                    'Security / Usher Assistant'
+                ]
+            };
+
+            // Load or initialize worker session
+            function getWorkerSession() {
+                try {
+                    const raw = sessionStorage.getItem(SESSION_KEY_WORKER);
+                    if (raw) return JSON.parse(raw);
+                } catch (e) { }
+
+                // Default demo session if none found
+                return {
+                    name: 'Angelo Lopez',
+                    email: 'crew@instantcrew.com',
+                    role: 'Crew Member',
+                    services: ['Line Cook', 'Motorcycle Rider'],
+                    rating: 4.9,
+                    acceptedJobs: 142,
+                    completedShifts: 142,
+                    earnings: 1240,
+                    active: true,
+                    employmentPreference: 'full-time',
+                    location: 'Cebu City',
+                    acceptedShifts: []
+                };
+            }
+
+            function saveWorkerSession(session) {
+                sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify(session));
+            }
+
+            let session = getWorkerSession();
+            if (!session.employmentPreference) {
+                session.employmentPreference = 'full-time';
+                saveWorkerSession(session);
+            }
+            if (!session.location) {
+                session.location = 'Cebu City';
+                saveWorkerSession(session);
+            }
+            let pendingLocation = session.location || 'Cebu City';
+
+            if (session.offeredRate === undefined) {
+                session.offeredRate = '95';
+                session.ratePeriod = 'per hour';
+                session.timingPreference = 'instant';
+                session.preferredDate = '';
+                session.preferredTime = '09:00';
+                saveWorkerSession(session);
+            }
+            if (session.acceptedJobs === undefined) {
+                session.acceptedJobs = session.completedShifts || 142;
+                saveWorkerSession(session);
+            }
+            let pendingEmploymentPreference = session.employmentPreference || 'full-time';
+            let selectedServices = Array.isArray(session.services) ? [...session.services] : [];
+            let isOnline = session.active !== false;
+
+            // DOM Elements
+            const profileInitialsEl = document.getElementById('profileInitials');
+            const panelAvatarInitialsEl = document.getElementById('panelAvatarInitials');
+            const panelUserNameEl = document.getElementById('panelUserName');
+            const panelUserEmailEl = document.getElementById('panelUserEmail');
+            const panelRatingEl = document.getElementById('panelRating');
+
+            // Location DOM references
+            const workerLocationDropdown = document.getElementById('workerLocationDropdown');
+            const workerLocationTrigger = document.getElementById('workerLocationTrigger');
+            const workerLocationText = document.getElementById('workerLocationText');
+            const workerLocationMenu = document.getElementById('workerLocationMenu');
+            const workerLocationSearch = document.getElementById('workerLocationSearch');
+            const workerLocationOptionsList = document.getElementById('workerLocationOptionsList');
+            const workerLocationEmptyMsg = document.getElementById('workerLocationEmptyMsg');
+            const workerLocationSelect = document.getElementById('workerLocationSelect');
+            const workerUseCurrentBtn = document.getElementById('workerUseCurrentBtn');
+            const btnSaveLocationPreference = document.getElementById('btnSaveLocationPreference');
+            const saveLocationIndicator = document.getElementById('saveLocationIndicator');
+            const feedLocationPill = document.getElementById('feedLocationPill');
+            const feedLocationText = document.getElementById('feedLocationText');
+            const crewGreetingEl = document.getElementById('crewGreeting');
+            const statMatchedJobsEl = document.getElementById('statMatchedJobs') || document.getElementById('statEarnings');
+            const statAcceptedJobsEl = document.getElementById('statAcceptedJobs') || document.getElementById('statCompleted');
+            const statRatingEl = document.getElementById('statRating');
+
+            const workerStatusSwitch = document.getElementById('workerStatusSwitch');
+            const profileStatusCard = document.getElementById('profileStatusCard');
+            const profileStatusDot = document.getElementById('profileStatusDot');
+            const profileStatusTitle = document.getElementById('profileStatusTitle');
+            const profileStatusChip = document.getElementById('profileStatusChip');
+            const profileStatusDesc = document.getElementById('profileStatusDesc');
+            const headerProfileDot = document.getElementById('headerProfileDot');
+
+            const openProfilePanelBtn = document.getElementById('openProfilePanel');
+            const closeProfilePanelBtn = document.getElementById('closeProfilePanel');
+            const profileOverlay = document.getElementById('profileOverlay');
+            const openServicesFromMainBtn = document.getElementById('openServicesFromMain');
+            const btnPromptAddServices = document.getElementById('btnPromptAddServices');
+
+            const tabServicesBtn = document.getElementById('tabServices');
+            const tabActiveJobsBtn = document.getElementById('tabActiveJobs');
+            const tabEndedJobsBtn = document.getElementById('tabEndedJobs');
+            const panelServicesSection = document.getElementById('panelServicesSection');
+            const panelActiveJobsSection = document.getElementById('panelActiveJobsSection');
+            const panelEndedJobsSection = document.getElementById('panelEndedJobsSection');
+
+            const servicesCountBadge = document.getElementById('servicesCountBadge');
+            const activeJobsCountBadge = document.getElementById('activeJobsCountBadge');
+            const endedJobsCountBadge = document.getElementById('endedJobsCountBadge');
+            const btnSaveServices = document.getElementById('btnSaveServices');
+            const saveIndicator = document.getElementById('saveIndicator');
+
+            const mainServicesDisplay = document.getElementById('mainServicesDisplay');
+            const emptyServicesAlert = document.getElementById('emptyServicesAlert');
+            const shiftsListContainer = document.getElementById('shiftsListContainer');
+            const activeJobsListContainer = document.getElementById('activeJobsListContainer');
+            const activeJobsEmpty = document.getElementById('activeJobsEmpty');
+            const endedJobsListContainer = document.getElementById('endedJobsListContainer');
+            const endedJobsEmpty = document.getElementById('endedJobsEmpty');
+
+            const activeContractsBox = document.getElementById('activeContractsBox');
+            const activeContractsContainer = document.getElementById('activeContractsContainer');
+            const capacityPill = document.getElementById('capacityPill');
+
+            // Profile Employment Preference Elements
+            const btnEmpFullTime = document.getElementById('btnEmpFullTime');
+            const btnEmpPartTime = document.getElementById('btnEmpPartTime');
+            const btnSaveEmpPreference = document.getElementById('btnSaveEmpPreference');
+            const saveEmpIndicator = document.getElementById('saveEmpIndicator');
+            const profileEmpNote = document.getElementById('profileEmpNote');
+
+            // Worker Rate & Timing Preference Elements
+            const workerOfferedRateInput = document.getElementById('workerOfferedRate');
+            const workerRatePeriodSelect = document.getElementById('workerRatePeriod');
+            const workerRatePeriodDropdown = document.getElementById('workerRatePeriodDropdown');
+            const workerRatePeriodTrigger = document.getElementById('workerRatePeriodTrigger');
+            const workerRatePeriodTriggerText = document.getElementById('workerRatePeriodTriggerText');
+            const workerRatePeriodMenu = document.getElementById('workerRatePeriodMenu');
+            const btnTimingInstant = document.getElementById('btnTimingInstant');
+            const btnTimingLater = document.getElementById('btnTimingLater');
+            const workerLaterScheduleFields = document.getElementById('workerLaterScheduleFields');
+            const workerPreferredDateInput = document.getElementById('workerPreferredDate');
+            const workerPreferredTimeInput = document.getElementById('workerPreferredTime');
+
+            let currentTimingPreference = session.timingPreference || 'instant';
+
+            const appToast = document.getElementById('appToast');
+            const appToastMsg = document.getElementById('appToastMsg');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // Notification refs
+            const notifBtn = document.getElementById('notifBtn');
+            const notifBadge = document.getElementById('notifBadge');
+            const notifDropdown = document.getElementById('notifDropdown');
+            const notifList = document.getElementById('notifList');
+            const clearNotifsBtn = document.getElementById('clearNotifsBtn');
+
+            // ════ Location Detail Modal (View Detail from Shift Card) ════
+            const appLocationDetailModal = document.getElementById('appLocationDetailModal');
+            const closeLocModalBtn = document.getElementById('closeLocModalBtn');
+            const locModalVenueTitle = document.getElementById('locModalVenueTitle');
+            const locModalVenueName = document.getElementById('locModalVenueName');
+            const locModalRoleSub = document.getElementById('locModalRoleSub');
+            const locModalAddress = document.getElementById('locModalAddress');
+            const openGoogleMapsActionBtn = document.getElementById('openGoogleMapsActionBtn');
+            const copyLocAddressBtn = document.getElementById('copyLocAddressBtn');
+
+            let currentLocModalAddress = '';
+
+            function openLocationDetailModal(shift) {
+                if (!appLocationDetailModal) return;
+                const venue = shift.venue || shift.employerName || 'Employer Shift';
+                const role = (shift.title || shift.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
+                const emp = shift.employmentType === 'full-time' ? 'Full-Time' : 'Part-Time';
+                const timing = shift.timing || 'ASAP';
+                const address = shift.mapLocation || (shift.notes ? shift.notes.split('·')[0].trim() : (shift.location || 'Cebu City'));
+                const mapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(address) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
+
+                currentLocModalAddress = address;
+
+                if (locModalVenueTitle) locModalVenueTitle.textContent = `${venue} Location`;
+                if (locModalVenueName) locModalVenueName.textContent = venue;
+                if (locModalRoleSub) locModalRoleSub.textContent = `${role} · ${emp} · ${timing}`;
+                if (locModalAddress) locModalAddress.textContent = address;
+                if (openGoogleMapsActionBtn) openGoogleMapsActionBtn.href = mapsUrl;
+
+                appLocationDetailModal.style.display = 'flex';
+                appLocationDetailModal.classList.add('open');
+                appLocationDetailModal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeLocationDetailModal() {
+                if (!appLocationDetailModal) return;
+                appLocationDetailModal.classList.remove('open');
+                appLocationDetailModal.style.display = 'none';
+                appLocationDetailModal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            if (closeLocModalBtn) closeLocModalBtn.addEventListener('click', closeLocationDetailModal);
+
+            if (appLocationDetailModal) {
+                appLocationDetailModal.addEventListener('click', (e) => {
+                    if (e.target === appLocationDetailModal) closeLocationDetailModal();
+                });
+            }
+
+            if (copyLocAddressBtn) {
+                copyLocAddressBtn.addEventListener('click', () => {
+                    if (currentLocModalAddress && navigator.clipboard) {
+                        navigator.clipboard.writeText(currentLocModalAddress).then(() => {
+                            showToast('Address copied to clipboard!');
+                        }).catch(() => {
+                            showToast('Address: ' + currentLocModalAddress);
+                        });
+                    } else if (currentLocModalAddress) {
+                        showToast('Address: ' + currentLocModalAddress);
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && appLocationDetailModal && appLocationDetailModal.classList.contains('open')) {
+                    closeLocationDetailModal();
+                }
+            });
+
+            // Helper for tracking push notification toasts in session
+            const TOASTED_NOTIFS_KEY = 'ic_toasted_worker_notifs';
+            function getToastedNotifIds() {
+                try {
+                    return JSON.parse(sessionStorage.getItem(TOASTED_NOTIFS_KEY)) || [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function markNotifToasted(id) {
+                try {
+                    const list = getToastedNotifIds();
+                    if (!list.includes(String(id))) {
+                        list.push(String(id));
+                        sessionStorage.setItem(TOASTED_NOTIFS_KEY, JSON.stringify(list.slice(-50)));
+                    }
+                } catch { }
+            }
+
+            // Audio unlock on first user gesture
+            let audioUnlocked = false;
+            function unlockAudio() {
+                if (audioUnlocked) return;
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        const ctx = new AudioCtx();
+                        ctx.resume().then(() => {
+                            audioUnlocked = true;
+                            ctx.close();
+                        }).catch(() => { });
+                    }
+                } catch { }
+            }
+            document.addEventListener('click', unlockAudio, { once: true });
+
+            // Request Desktop Notification Permission on user interaction if supported
+            if ('Notification' in window && Notification.permission === 'default') {
+                const reqNotifPerm = () => {
+                    try {
+                        Notification.requestPermission();
+                    } catch { }
+                    document.removeEventListener('click', reqNotifPerm);
+                };
+                document.addEventListener('click', reqNotifPerm, { once: true });
+            }
+
+            // Toast helper
+            function showToast(msg, isError = false) {
+                const toastIcon = document.getElementById('appToastIcon');
+                if (toastIcon && window.InstantCrewShared) {
+                    toastIcon.innerHTML = isError
+                        ? window.InstantCrewShared.ICONS.alert(20, '#F59E0B')
+                        : window.InstantCrewShared.ICONS.checkCircle(20, '#10B981');
+                }
+                appToastMsg.textContent = msg;
+                appToast.style.display = 'flex';
+                setTimeout(() => {
+                    appToast.style.display = 'none';
+                }, 3500);
+            }
+
+            // Init User Profile View
+            function renderProfileInfo() {
+                const name = session.name || 'Angelo Lopez';
+                const email = session.email || 'crew@instantcrew.com';
+                const parts = name.split(' ');
+                const initials = parts.map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AL';
+
+                if (profileInitialsEl) profileInitialsEl.textContent = initials;
+                if (panelAvatarInitialsEl) panelAvatarInitialsEl.textContent = initials;
+                if (panelUserNameEl) panelUserNameEl.textContent = name;
+                if (panelUserEmailEl) panelUserEmailEl.textContent = email;
+                if (crewGreetingEl) crewGreetingEl.textContent = `Welcome back, ${parts[0]}!`;
+
+                if (panelRatingEl) panelRatingEl.textContent = session.rating || '4.9';
+                if (statRatingEl) {
+                    const starSvg = window.InstantCrewShared ? window.InstantCrewShared.ICONS.star(18) : '';
+                    statRatingEl.innerHTML = `${starSvg}<span>${session.rating || '4.9'}</span>`;
+                }
+                if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs || session.completedShifts || '142';
+
+                updateStatusUI();
+            }
+
+            // Status Switch UI (Active / Offline)
+            function updateStatusUI() {
+                if (workerStatusSwitch) {
+                    if (workerStatusSwitch.checked !== isOnline) {
+                        workerStatusSwitch.checked = isOnline;
+                    }
+                    workerStatusSwitch.setAttribute('aria-checked', isOnline ? 'true' : 'false');
+                }
+                const profileCard = document.querySelector('.db-profile-card');
+                if (profileCard) {
+                    profileCard.classList.toggle('offline', !isOnline);
+                }
+                if (profileStatusTitle) {
+                    profileStatusTitle.textContent = isOnline ? 'Active' : 'Offline';
+                }
+                if (headerProfileDot) {
+                    headerProfileDot.style.background = isOnline ? '#10B981' : '#9CA3AF';
+                }
+            }
+
+            if (workerStatusSwitch) {
+                workerStatusSwitch.addEventListener('change', () => {
+                    isOnline = workerStatusSwitch.checked;
+                    session.active = isOnline;
+                    saveWorkerSession(session);
+                    updateStatusUI();
+                    if (typeof renderShiftsFeed === 'function') renderShiftsFeed();
+                    showToast(isOnline ? 'Status: Active (Available for Shifts)' : 'Status: Offline / On Break');
+                });
+            }
+
+            // ── Alive Category Dropdown Config & Logic ───────────────────
+            const SERVICE_CATEGORIES = [
+                {
+                    key: 'kitchen',
+                    dropdownId: 'kitchenDropdown',
+                    triggerId: 'kitchenDropdownTrigger',
+                    menuId: 'kitchenDropdownMenu',
+                    textId: 'kitchenTriggerText',
+                    miniPillId: 'kitchenMiniPill',
+                    optionsListId: 'kitchenOptionsList',
+                    badgeId: 'kitchenCountBadge',
+                    placeholder: 'Choose kitchen roles…'
+                },
+                {
+                    key: 'delivery',
+                    dropdownId: 'deliveryDropdown',
+                    triggerId: 'deliveryDropdownTrigger',
+                    menuId: 'deliveryDropdownMenu',
+                    textId: 'deliveryTriggerText',
+                    miniPillId: 'deliveryMiniPill',
+                    optionsListId: 'deliveryOptionsList',
+                    badgeId: 'deliveryCountBadge',
+                    placeholder: 'Choose delivery roles…'
+                },
+                {
+                    key: 'helpers',
+                    dropdownId: 'helpersDropdown',
+                    triggerId: 'helpersDropdownTrigger',
+                    menuId: 'helpersDropdownMenu',
+                    textId: 'helpersTriggerText',
+                    miniPillId: 'helpersMiniPill',
+                    optionsListId: 'helpersOptionsList',
+                    badgeId: 'helpersCountBadge',
+                    placeholder: 'Choose operations roles…'
+                }
+            ];
+
+            function renderCategoryDropdown(catConfig) {
+                const triggerTextEl = document.getElementById(catConfig.textId);
+                const miniPillEl = document.getElementById(catConfig.miniPillId);
+                const optionsListEl = document.getElementById(catConfig.optionsListId);
+                const badgeEl = document.getElementById(catConfig.badgeId);
+
+                const catalog = SERVICES_CATALOG[catConfig.key] || [];
+                const catSelected = catalog.filter(role => selectedServices.includes(role));
+                const count = catSelected.length;
+
+                // 1. Update Category Header Count Badge
+                if (badgeEl) {
+                    badgeEl.textContent = count === 1 ? '1 selected' : `${count} selected`;
+                    badgeEl.classList.toggle('has-selected', count > 0);
+                }
+
+                // 2. Update Trigger Text & Mini Pill
+                if (triggerTextEl) {
+                    if (count === 0) {
+                        triggerTextEl.textContent = catConfig.placeholder;
+                        triggerTextEl.classList.add('placeholder');
+                    } else if (count === 1) {
+                        triggerTextEl.textContent = `${catSelected[0]} (1 selected)`;
+                        triggerTextEl.classList.remove('placeholder');
+                    } else {
+                        triggerTextEl.textContent = `${catSelected[0]}, ${catSelected[1]}${count > 2 ? ` (+${count - 2} more)` : ''}`;
+                        triggerTextEl.classList.remove('placeholder');
+                    }
+                }
+
+                if (miniPillEl) {
+                    if (count > 0) {
+                        miniPillEl.textContent = count;
+                        miniPillEl.style.display = 'inline-flex';
+                    } else {
+                        miniPillEl.style.display = 'none';
+                    }
+                }
+
+                // 3. Populate Options in Dropdown Menu
+                if (optionsListEl) {
+                    optionsListEl.innerHTML = '';
+                    catalog.forEach(role => {
+                        const isSelected = selectedServices.includes(role);
+                        const row = document.createElement('div');
+                        row.className = `alive-option-row ${isSelected ? 'selected' : ''}`;
+                        row.setAttribute('role', 'option');
+                        row.setAttribute('aria-selected', String(isSelected));
+                        row.innerHTML = `
+                            <div class="alive-checkbox">
+                                <svg class="alive-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span class="alive-option-label">${role}</span>
+                            ${isSelected ? '<span class="alive-active-badge">Active</span>' : ''}
+                        `;
+
+                        row.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            toggleService(role);
+                        });
+
+                        optionsListEl.appendChild(row);
+                    });
+                }
+            }
+
+            function toggleService(serviceName) {
+                const idx = selectedServices.indexOf(serviceName);
+                if (idx > -1) {
+                    selectedServices.splice(idx, 1);
+                    showToast(`Removed ${serviceName}`);
+                } else {
+                    selectedServices.push(serviceName);
+                    showToast(`Added ${serviceName}`);
+                }
+                renderAllServicePickers();
+            }
+
+            function addService(serviceName) {
+                if (!selectedServices.includes(serviceName)) {
+                    selectedServices.push(serviceName);
+                    renderAllServicePickers();
+                    showToast(`Added ${serviceName}`);
+                }
+            }
+
+            function removeService(serviceName) {
+                const idx = selectedServices.indexOf(serviceName);
+                if (idx > -1) {
+                    selectedServices.splice(idx, 1);
+                    renderAllServicePickers();
+                    showToast(`Removed ${serviceName}`);
+                }
+            }
+
+            function renderAllServicePickers() {
+                SERVICE_CATEGORIES.forEach(renderCategoryDropdown);
+                updateServicesCounters();
+            }
+
+            function updateServicesCounters() {
+                if (servicesCountBadge) servicesCountBadge.textContent = selectedServices.length;
+            }
+
+            function closeAllAliveDropdowns() {
+                document.querySelectorAll('.alive-dropdown').forEach(dd => {
+                    dd.classList.remove('open');
+                    const trigger = dd.querySelector('.alive-dropdown-trigger');
+                    const menu = dd.querySelector('.alive-dropdown-menu');
+                    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+                    if (menu) menu.hidden = true;
+                });
+            }
+
+            function initCategoryDropdownListeners() {
+                SERVICE_CATEGORIES.forEach(catConfig => {
+                    const dropdown = document.getElementById(catConfig.dropdownId);
+                    const trigger = document.getElementById(catConfig.triggerId);
+                    const menu = document.getElementById(catConfig.menuId);
+
+                    if (!dropdown || !trigger || !menu) return;
+
+                    trigger.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isOpen = dropdown.classList.contains('open');
+                        closeAllAliveDropdowns();
+                        if (!isOpen) {
+                            dropdown.classList.add('open');
+                            trigger.setAttribute('aria-expanded', 'true');
+                            menu.hidden = false;
+                        }
+                    });
+
+                    // Quick action buttons inside menu (Select All & Clear)
+                    const actionBtns = menu.querySelectorAll('.alive-btn-action');
+                    actionBtns.forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const action = btn.dataset.action;
+                            const catalog = SERVICES_CATALOG[catConfig.key] || [];
+                            if (action === 'all') {
+                                catalog.forEach(r => {
+                                    if (!selectedServices.includes(r)) selectedServices.push(r);
+                                });
+                                showToast(`Added all ${catConfig.key} roles`);
+                            } else if (action === 'clear') {
+                                selectedServices = selectedServices.filter(r => !catalog.includes(r));
+                                showToast(`Cleared ${catConfig.key} roles`);
+                            }
+                            renderAllServicePickers();
+                        });
+                    });
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.alive-dropdown')) {
+                        closeAllAliveDropdowns();
+                    }
+                });
+
+                // Close dropdown on Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeAllAliveDropdowns();
+                    }
+                });
+            }
+
+            /* ─── Custom Worker Rate Period Dropdown Logic ─── */
+            function closeWorkerRatePeriodDropdown() {
+                if (!workerRatePeriodDropdown || !workerRatePeriodMenu) return;
+                workerRatePeriodDropdown.classList.remove('open');
+                workerRatePeriodMenu.hidden = true;
+                if (workerRatePeriodTrigger) workerRatePeriodTrigger.setAttribute('aria-expanded', 'false');
+            }
+
+            function openWorkerRatePeriodDropdown() {
+                if (!workerRatePeriodDropdown || !workerRatePeriodMenu) return;
+                closeAllAliveDropdowns();
+                workerRatePeriodDropdown.classList.add('open');
+                workerRatePeriodMenu.hidden = false;
+                if (workerRatePeriodTrigger) workerRatePeriodTrigger.setAttribute('aria-expanded', 'true');
+            }
+
+            function selectWorkerRatePeriod(val) {
+                if (workerRatePeriodSelect) {
+                    workerRatePeriodSelect.value = val;
+                }
+                if (workerRatePeriodTriggerText) {
+                    workerRatePeriodTriggerText.textContent = val;
+                }
+                if (workerRatePeriodMenu) {
+                    workerRatePeriodMenu.querySelectorAll('.db-select-custom-item').forEach(item => {
+                        const isMatch = item.dataset.value === val;
+                        item.classList.toggle('selected', isMatch);
+                        item.setAttribute('aria-selected', String(isMatch));
+                    });
+                }
+                closeWorkerRatePeriodDropdown();
+            }
+
+            if (workerRatePeriodTrigger) {
+                workerRatePeriodTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (workerRatePeriodDropdown && workerRatePeriodDropdown.classList.contains('open')) {
+                        closeWorkerRatePeriodDropdown();
+                    } else {
+                        openWorkerRatePeriodDropdown();
+                    }
+                });
+            }
+
+            if (workerRatePeriodMenu) {
+                workerRatePeriodMenu.querySelectorAll('.db-select-custom-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectWorkerRatePeriod(item.dataset.value);
+                    });
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (workerRatePeriodDropdown && !workerRatePeriodDropdown.contains(e.target)) {
+                    closeWorkerRatePeriodDropdown();
+                }
+            });
+
+            // Close dropdown on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeWorkerRatePeriodDropdown();
+                }
+            });
+
+            // ════ Custom Calendar & Time Selector for Applicant Profile ════
+            const WORKER_MONTH_NAMES = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            const WORKER_WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            const workerCalMonthLabel = document.getElementById('workerCalMonthLabel');
+            const workerCalDaysGrid = document.getElementById('workerCalDaysGrid');
+            const workerCalPrevBtn = document.getElementById('workerCalPrevBtn');
+            const workerCalNextBtn = document.getElementById('workerCalNextBtn');
+            const workerWheelHoursCol = document.getElementById('workerWheelHoursCol');
+            const workerWheelMinutesCol = document.getElementById('workerWheelMinutesCol');
+            const workerWheelAmPmCol = document.getElementById('workerWheelAmPmCol');
+            const workerWheelPresetBtns = document.querySelectorAll('.worker-wheel-preset-btn');
+            const workerWheelDoneBtn = document.getElementById('workerWheelDoneBtn');
+            const workerScheduleSummaryLine = document.getElementById('workerScheduleSummaryLine');
+            const workerScheduleBannerText = document.getElementById('workerScheduleBannerText');
+            const workerTimePreview = document.getElementById('workerTimePreview');
+
+            const WORKER_TODAY = new Date();
+            WORKER_TODAY.setHours(0, 0, 0, 0);
+
+            let workerCalViewYear = WORKER_TODAY.getFullYear();
+            let workerCalViewMonth = WORKER_TODAY.getMonth();
+            let workerSelectedDate = new Date(WORKER_TODAY);
+            let workerSelectedTime = '09:00';
+            let workerCustomAmPm = 'AM';
+            let workerCalInitialized = false;
+
+            function formatWorkerDateString(d) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+
+            function parseWorkerDateString(str) {
+                if (!str) return new Date(WORKER_TODAY);
+                const parts = str.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    d.setHours(0, 0, 0, 0);
+                    if (!isNaN(d.getTime())) return d;
+                }
+                return new Date(WORKER_TODAY);
+            }
+
+            function formatWorkerTimeDisplay(timeStr) {
+                if (!timeStr) return '9:00 AM';
+                const parts = timeStr.split(':');
+                let h = parseInt(parts[0], 10);
+                const m = parts[1] || '00';
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                if (h === 0) h = 12;
+                return `${h}:${m} ${ampm}`;
+            }
+
+            function formatWorkerDateDisplay(d) {
+                const weekday = WORKER_WEEKDAY_NAMES[d.getDay()];
+                const month = WORKER_MONTH_NAMES[d.getMonth()].slice(0, 3);
+                return `${weekday}, ${month} ${d.getDate()}, ${d.getFullYear()}`;
+            }
+
+            function updateWorkerScheduleLabels() {
+                const formattedDate = formatWorkerDateDisplay(workerSelectedDate);
+                const formattedTime = formatWorkerTimeDisplay(workerSelectedTime);
+                const dateYMD = formatWorkerDateString(workerSelectedDate);
+
+                if (workerPreferredDateInput) workerPreferredDateInput.value = dateYMD;
+                if (workerPreferredTimeInput) workerPreferredTimeInput.value = workerSelectedTime;
+
+                if (workerScheduleSummaryLine) {
+                    workerScheduleSummaryLine.textContent = `${formattedDate} at ${formattedTime}`;
+                }
+
+                if (workerTimePreview) {
+                    workerTimePreview.textContent = formattedTime;
+                }
+
+                const diffDays = Math.round((workerSelectedDate.getTime() - WORKER_TODAY.getTime()) / (1000 * 60 * 60 * 24));
+                let relDay = formattedDate;
+                if (diffDays === 0) relDay = 'Today';
+                else if (diffDays === 1) relDay = 'Tomorrow';
+
+                if (workerScheduleBannerText) {
+                    workerScheduleBannerText.textContent = `Available starting ${relDay} at ${formattedTime}`;
+                }
+            }
+
+            function renderWorkerCalendar() {
+                if (!workerCalDaysGrid || !workerCalMonthLabel) return;
+                workerCalMonthLabel.textContent = `${WORKER_MONTH_NAMES[workerCalViewMonth]} ${workerCalViewYear}`;
+                workerCalDaysGrid.innerHTML = '';
+
+                const firstDayIndex = new Date(workerCalViewYear, workerCalViewMonth, 1).getDay();
+                const daysInMonth = new Date(workerCalViewYear, workerCalViewMonth + 1, 0).getDate();
+
+                const currentYear = WORKER_TODAY.getFullYear();
+                const currentMonth = WORKER_TODAY.getMonth();
+                if (workerCalPrevBtn) {
+                    const isPastMonth = (workerCalViewYear < currentYear) || (workerCalViewYear === currentYear && workerCalViewMonth <= currentMonth);
+                    workerCalPrevBtn.disabled = isPastMonth;
+                    workerCalPrevBtn.style.opacity = isPastMonth ? '0.35' : '1';
+                    workerCalPrevBtn.style.cursor = isPastMonth ? 'not-allowed' : 'pointer';
+                }
+
+                for (let i = 0; i < firstDayIndex; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'worker-cal-day empty';
+                    emptyCell.setAttribute('aria-hidden', 'true');
+                    workerCalDaysGrid.appendChild(emptyCell);
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'worker-cal-day';
+                    btn.textContent = d;
+
+                    const cellDate = new Date(workerCalViewYear, workerCalViewMonth, d);
+                    cellDate.setHours(0, 0, 0, 0);
+
+                    const isPast = cellDate < WORKER_TODAY;
+                    const isToday = cellDate.getTime() === WORKER_TODAY.getTime();
+                    const isSelected = cellDate.getTime() === workerSelectedDate.getTime();
+
+                    if (isPast) {
+                        btn.classList.add('disabled');
+                        btn.setAttribute('aria-disabled', 'true');
+                        btn.disabled = true;
+                    } else {
+                        if (isToday) btn.classList.add('today');
+                        if (isSelected) btn.classList.add('selected');
+
+                        btn.addEventListener('click', () => {
+                            workerSelectedDate = new Date(cellDate);
+                            renderWorkerCalendar();
+                            updateWorkerScheduleLabels();
+                        });
+                    }
+
+                    workerCalDaysGrid.appendChild(btn);
+                }
+            }
+
+            // ════ Wheel Picker Dimensions & State ════
+            const WHEEL_ITEM_H = 34;
+            let wheelScrollTimeout = null;
+
+            function buildWheelColumns() {
+                if (!workerWheelHoursCol || !workerWheelMinutesCol) return;
+                if (workerWheelHoursCol.children.length > 0) return; // already built
+
+                // 1. Build Hours (1 to 12)
+                for (let h = 1; h <= 12; h++) {
+                    const it = document.createElement('div');
+                    it.className = 'worker-wheel-item';
+                    it.dataset.val = String(h);
+                    it.textContent = h;
+                    it.addEventListener('click', () => {
+                        workerWheelHoursCol.scrollTo({ top: (h - 1) * WHEEL_ITEM_H, behavior: 'smooth' });
+                    });
+                    workerWheelHoursCol.appendChild(it);
+                }
+
+                // 2. Build Minutes (00 to 59)
+                for (let m = 0; m <= 59; m++) {
+                    const mStr = String(m).padStart(2, '0');
+                    const it = document.createElement('div');
+                    it.className = 'worker-wheel-item';
+                    it.dataset.val = mStr;
+                    it.textContent = mStr;
+                    it.addEventListener('click', () => {
+                        workerWheelMinutesCol.scrollTo({ top: m * WHEEL_ITEM_H, behavior: 'smooth' });
+                    });
+                    workerWheelMinutesCol.appendChild(it);
+                }
+
+                // 3. Attach click on am/pm items
+                if (workerWheelAmPmCol) {
+                    const apItems = workerWheelAmPmCol.querySelectorAll('.worker-wheel-item');
+                    apItems.forEach((it, idx) => {
+                        it.addEventListener('click', () => {
+                            workerWheelAmPmCol.scrollTo({ top: idx * WHEEL_ITEM_H, behavior: 'smooth' });
+                        });
+                    });
+                }
+            }
+
+            function updateWheelVisuals(col) {
+                if (!col) return 0;
+                const idx = Math.round(col.scrollTop / WHEEL_ITEM_H);
+                const items = col.querySelectorAll('.worker-wheel-item');
+                items.forEach((it, i) => {
+                    it.classList.toggle('selected', i === idx);
+                });
+                return idx;
+            }
+
+            function getWheelSelectedTime() {
+                if (!workerWheelHoursCol || !workerWheelMinutesCol || !workerWheelAmPmCol) return '09:00';
+                const hItems = workerWheelHoursCol.querySelectorAll('.worker-wheel-item');
+                const mItems = workerWheelMinutesCol.querySelectorAll('.worker-wheel-item');
+                const apItems = workerWheelAmPmCol.querySelectorAll('.worker-wheel-item');
+
+                if (hItems.length === 0 || mItems.length === 0) return workerSelectedTime || '09:00';
+
+                const hIdx = Math.min(Math.max(0, Math.round(workerWheelHoursCol.scrollTop / WHEEL_ITEM_H)), hItems.length - 1);
+                const mIdx = Math.min(Math.max(0, Math.round(workerWheelMinutesCol.scrollTop / WHEEL_ITEM_H)), mItems.length - 1);
+                const apIdx = Math.min(Math.max(0, Math.round(workerWheelAmPmCol.scrollTop / WHEEL_ITEM_H)), apItems.length - 1);
+
+                let h12 = hItems[hIdx] ? parseInt(hItems[hIdx].dataset.val, 10) : 9;
+                const mStr = mItems[mIdx] ? mItems[mIdx].dataset.val : '00';
+                const ampm = apItems[apIdx] ? apItems[apIdx].dataset.val : 'am';
+
+                let h24 = h12;
+                if (ampm === 'pm' && h12 < 12) h24 += 12;
+                if (ampm === 'am' && h12 === 12) h24 = 0;
+
+                return `${String(h24).padStart(2, '0')}:${mStr}`;
+            }
+
+            function scrollWheelToTime(h12, minute, ampm, smooth = false) {
+                buildWheelColumns();
+                const behavior = smooth ? 'smooth' : 'auto';
+                const hIdx = Math.max(0, h12 - 1);
+                const mIdx = Math.max(0, parseInt(minute, 10) || 0);
+                const apIdx = (String(ampm).toLowerCase() === 'pm') ? 1 : 0;
+
+                if (workerWheelHoursCol) workerWheelHoursCol.scrollTo({ top: hIdx * WHEEL_ITEM_H, behavior });
+                if (workerWheelMinutesCol) workerWheelMinutesCol.scrollTo({ top: mIdx * WHEEL_ITEM_H, behavior });
+                if (workerWheelAmPmCol) workerWheelAmPmCol.scrollTo({ top: apIdx * WHEEL_ITEM_H, behavior });
+
+                setTimeout(() => {
+                    updateWheelVisuals(workerWheelHoursCol);
+                    updateWheelVisuals(workerWheelMinutesCol);
+                    updateWheelVisuals(workerWheelAmPmCol);
+                    updateWheelPresetButtonsActive();
+                }, smooth ? 260 : 30);
+            }
+
+            function syncWheelToTimeString(timeStr, smooth = false) {
+                const parts = (timeStr || '09:00').split(':');
+                let h24 = parseInt(parts[0], 10);
+                if (isNaN(h24)) h24 = 9;
+                const mStr = parts[1] || '00';
+                const ampm = (h24 >= 12) ? 'pm' : 'am';
+                let h12 = h24 % 12;
+                if (h12 === 0) h12 = 12;
+                scrollWheelToTime(h12, mStr, ampm, smooth);
+            }
+
+            function updateWheelPresetButtonsActive() {
+                const currentTime = getWheelSelectedTime();
+                const [hStr, mStr] = currentTime.split(':');
+                const h24 = parseInt(hStr, 10);
+                const ampm = h24 >= 12 ? 'pm' : 'am';
+                let h12 = h24 % 12;
+                if (h12 === 0) h12 = 12;
+
+                workerWheelPresetBtns.forEach(btn => {
+                    const bH = parseInt(btn.dataset.hour, 10);
+                    const bM = btn.dataset.minute;
+                    const bAp = btn.dataset.ampm;
+                    const isMatch = (bH === h12 && bM === mStr && bAp === ampm);
+                    btn.classList.toggle('active', isMatch);
+                });
+            }
+
+            function onWheelScrolled() {
+                updateWheelVisuals(workerWheelHoursCol);
+                updateWheelVisuals(workerWheelMinutesCol);
+                updateWheelVisuals(workerWheelAmPmCol);
+
+                if (wheelScrollTimeout) clearTimeout(wheelScrollTimeout);
+                wheelScrollTimeout = setTimeout(() => {
+                    workerSelectedTime = getWheelSelectedTime();
+                    updateWheelPresetButtonsActive();
+                    updateWorkerScheduleLabels();
+                }, 80);
+            }
+
+            function initWorkerCalendarControls() {
+                if (workerCalInitialized) return;
+                workerCalInitialized = true;
+
+                buildWheelColumns();
+
+                // Hook scroll events on wheel columns
+                if (workerWheelHoursCol) workerWheelHoursCol.addEventListener('scroll', onWheelScrolled, { passive: true });
+                if (workerWheelMinutesCol) workerWheelMinutesCol.addEventListener('scroll', onWheelScrolled, { passive: true });
+                if (workerWheelAmPmCol) workerWheelAmPmCol.addEventListener('scroll', onWheelScrolled, { passive: true });
+
+                // Preset button handlers
+                workerWheelPresetBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const h = parseInt(btn.dataset.hour, 10);
+                        const m = btn.dataset.minute;
+                        const ap = btn.dataset.ampm;
+                        scrollWheelToTime(h, m, ap, true);
+                        workerWheelPresetBtns.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        let h24 = h;
+                        if (ap === 'pm' && h < 12) h24 += 12;
+                        if (ap === 'am' && h === 12) h24 = 0;
+                        workerSelectedTime = `${String(h24).padStart(2, '0')}:${m}`;
+                        updateWorkerScheduleLabels();
+                    });
+                });
+
+                // Done button handler
+                if (workerWheelDoneBtn) {
+                    workerWheelDoneBtn.addEventListener('click', () => {
+                        workerSelectedTime = getWheelSelectedTime();
+                        updateWorkerScheduleLabels();
+
+                        // Visual tactile confirmation on Done button
+                        const originalText = workerWheelDoneBtn.textContent;
+                        workerWheelDoneBtn.textContent = '✓ Done';
+                        workerWheelDoneBtn.style.background = '#10B981';
+                        workerWheelDoneBtn.style.color = '#FFFFFF';
+                        setTimeout(() => {
+                            workerWheelDoneBtn.textContent = originalText;
+                            workerWheelDoneBtn.style.background = '';
+                            workerWheelDoneBtn.style.color = '';
+                        }, 1200);
+
+                        showToast(`Start time set to ${formatWorkerTimeDisplay(workerSelectedTime)}.`);
+                    });
+                }
+
+                // Month navigation
+                if (workerCalPrevBtn) {
+                    workerCalPrevBtn.addEventListener('click', () => {
+                        const currentYear = WORKER_TODAY.getFullYear();
+                        const currentMonth = WORKER_TODAY.getMonth();
+                        if (workerCalViewYear > currentYear || (workerCalViewYear === currentYear && workerCalViewMonth > currentMonth)) {
+                            workerCalViewMonth--;
+                            if (workerCalViewMonth < 0) {
+                                workerCalViewMonth = 11;
+                                workerCalViewYear--;
+                            }
+                            renderWorkerCalendar();
+                        }
+                    });
+                }
+
+                if (workerCalNextBtn) {
+                    workerCalNextBtn.addEventListener('click', () => {
+                        workerCalViewMonth++;
+                        if (workerCalViewMonth > 11) {
+                            workerCalViewMonth = 0;
+                            workerCalViewYear++;
+                        }
+                        renderWorkerCalendar();
+                    });
+                }
+            }
+
+            function updateRateAndTimingUI() {
+                if (workerOfferedRateInput) workerOfferedRateInput.value = session.offeredRate || '95';
+                const period = session.ratePeriod || 'per hour';
+                if (workerRatePeriodSelect) workerRatePeriodSelect.value = period;
+                selectWorkerRatePeriod(period);
+
+                currentTimingPreference = session.timingPreference || 'instant';
+                if (btnTimingInstant) btnTimingInstant.classList.toggle('active', currentTimingPreference === 'instant');
+                if (btnTimingLater) btnTimingLater.classList.toggle('active', currentTimingPreference === 'later');
+                if (workerLaterScheduleFields) {
+                    workerLaterScheduleFields.style.display = currentTimingPreference === 'later' ? 'block' : 'none';
+                }
+
+                // Initialize Calendar & Wheel Time state
+                initWorkerCalendarControls();
+
+                if (session.preferredDate) {
+                    workerSelectedDate = parseWorkerDateString(session.preferredDate);
+                } else {
+                    workerSelectedDate = new Date(WORKER_TODAY);
+                }
+                workerCalViewYear = workerSelectedDate.getFullYear();
+                workerCalViewMonth = workerSelectedDate.getMonth();
+
+                if (session.preferredTime) {
+                    workerSelectedTime = session.preferredTime;
+                } else {
+                    workerSelectedTime = '09:00';
+                }
+
+                syncWheelToTimeString(workerSelectedTime, false);
+                renderWorkerCalendar();
+                updateWorkerScheduleLabels();
+            }
+
+            if (btnTimingInstant) {
+                btnTimingInstant.addEventListener('click', () => {
+                    currentTimingPreference = 'instant';
+                    btnTimingInstant.classList.add('active');
+                    if (btnTimingLater) btnTimingLater.classList.remove('active');
+                    if (workerLaterScheduleFields) workerLaterScheduleFields.style.display = 'none';
+                });
+            }
+
+            if (btnTimingLater) {
+                btnTimingLater.addEventListener('click', () => {
+                    currentTimingPreference = 'later';
+                    btnTimingLater.classList.add('active');
+                    if (btnTimingInstant) btnTimingInstant.classList.remove('active');
+                    if (workerLaterScheduleFields) {
+                        workerLaterScheduleFields.style.display = 'block';
+                        renderWorkerCalendar();
+                        updateWorkerScheduleLabels();
+                    }
+                });
+            }
+
+            // Save services, rates & timing to profile
+            btnSaveServices.addEventListener('click', () => {
+                session.services = [...selectedServices];
+                if (pendingEmploymentPreference) {
+                    session.employmentPreference = pendingEmploymentPreference;
+                }
+
+                // Save Offered Rate and Rate Period
+                if (workerOfferedRateInput) {
+                    session.offeredRate = workerOfferedRateInput.value.trim() || '95';
+                }
+                if (workerRatePeriodSelect) {
+                    session.ratePeriod = workerRatePeriodSelect.value || 'per hour';
+                }
+
+                // Save Timing Preference
+                session.timingPreference = currentTimingPreference;
+                if (workerPreferredDateInput) {
+                    session.preferredDate = workerPreferredDateInput.value || '';
+                }
+                if (workerPreferredTimeInput) {
+                    session.preferredTime = workerPreferredTimeInput.value || '';
+                }
+
+                saveWorkerSession(session);
+
+                saveIndicator.style.display = 'inline-block';
+                setTimeout(() => {
+                    saveIndicator.style.display = 'none';
+                }, 2500);
+
+                if (profileEmpNote) {
+                    profileEmpNote.textContent = 'Only matching jobs show in feed';
+                    profileEmpNote.style.color = '';
+                }
+
+                updateEmploymentPreferenceUI();
+                renderMainServicesDisplay();
+                renderShiftsFeed();
+                showToast(`Preferences updated! Offering ${selectedServices.length} service${selectedServices.length === 1 ? '' : 's'}.`);
+            });
+
+            // Render current services & preference on Main Dashboard Card
+            function renderMainServicesDisplay() {
+                const mainPrefTypeVal = document.getElementById('mainPrefTypeVal');
+                const mainPrefRateVal = document.getElementById('mainPrefRateVal');
+                const mainPrefTimingVal = document.getElementById('mainPrefTimingVal');
+                const offeredRolesCount = document.getElementById('offeredRolesCount');
+
+                // 1. Update Work Type
+                const pref = session.employmentPreference || 'full-time';
+                if (mainPrefTypeVal) {
+                    mainPrefTypeVal.textContent = pref === 'full-time' ? 'Full-Time' : 'Part-Time';
+                }
+
+                // 2. Update Offered Rate
+                const rateVal = session.offeredRate || '95';
+                const ratePeriod = session.ratePeriod || 'hr';
+                const cleanPeriod = ratePeriod.replace(/per\s*/i, '').trim();
+                if (mainPrefRateVal) {
+                    mainPrefRateVal.textContent = `₱${rateVal} / ${cleanPeriod}`;
+                }
+
+                // 3. Update Availability / Timing
+                const timingPref = session.timingPreference || 'instant';
+                if (mainPrefTimingVal) {
+                    if (timingPref === 'instant') {
+                        mainPrefTimingVal.innerHTML = '<span class="app-pref-dot"></span> Instant Ready';
+                    } else {
+                        const dateStr = session.preferredDate || 'Scheduled';
+                        const timeStr = session.preferredTime ? ` (${session.preferredTime})` : '';
+                        mainPrefTimingVal.innerHTML = `
+                            <svg class="app-pref-cal-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span>${dateStr}${timeStr}</span>
+                        `;
+                    }
+                }
+
+                // 4. Update Offered Services Roles
+                if (mainServicesDisplay) {
+                    mainServicesDisplay.innerHTML = '';
+                    const servicesList = session.services || [];
+
+                    if (offeredRolesCount) {
+                        offeredRolesCount.textContent = `${servicesList.length} Active`;
+                    }
+
+                    if (servicesList.length === 0) {
+                        if (emptyServicesAlert) emptyServicesAlert.style.display = 'flex';
+                    } else if (servicesList.length === 1) {
+                        if (emptyServicesAlert) emptyServicesAlert.style.display = 'none';
+                        const badge = document.createElement('span');
+                        badge.className = 'app-role-chip';
+                        badge.innerHTML = `<span class="app-role-chip-dot"></span><span>${servicesList[0]}</span>`;
+                        mainServicesDisplay.appendChild(badge);
+                    } else {
+                        // Multiple offered roles: render interactive dropdown
+                        if (emptyServicesAlert) emptyServicesAlert.style.display = 'none';
+
+                        const previewList = servicesList.slice(0, 2).join(', ');
+                        const remainingCount = servicesList.length - 2;
+                        const previewText = remainingCount > 0
+                            ? `${previewList}, +${remainingCount} more`
+                            : previewList;
+
+                        const dropdownWrap = document.createElement('div');
+                        dropdownWrap.className = 'app-roles-dropdown-wrap';
+                        dropdownWrap.id = 'rolesDropdownWrap';
+
+                        dropdownWrap.innerHTML = `
+                            <button type="button" class="app-roles-dropdown-trigger" id="rolesDropdownTrigger" aria-expanded="false" title="Click to view all ${servicesList.length} offered roles">
+                                <div class="app-roles-dropdown-left">
+                                    <span class="app-roles-count-tag">${servicesList.length} Roles Offered</span>
+                                    <span class="app-roles-preview-text">${previewText}</span>
+                                </div>
+                                <div class="app-roles-dropdown-right">
+                                    <span class="app-roles-toggle-text">View all</span>
+                                    <svg class="app-roles-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="app-roles-dropdown-panel" id="rolesDropdownPanel" style="display:none;">
+                                <div class="app-roles-panel-header">
+                                    <span class="app-roles-panel-title">Active Offered Roles (${servicesList.length})</span>
+                                    <span class="app-roles-panel-hint">Matched with employer requests</span>
+                                </div>
+                                <div class="app-roles-panel-chips">
+                                    ${servicesList.map(svc => `
+                                        <span class="app-role-chip">
+                                            <span class="app-role-chip-dot"></span>
+                                            <span>${svc}</span>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+
+                        mainServicesDisplay.appendChild(dropdownWrap);
+
+                        const triggerBtn = dropdownWrap.querySelector('#rolesDropdownTrigger');
+                        const panel = dropdownWrap.querySelector('#rolesDropdownPanel');
+                        const toggleText = dropdownWrap.querySelector('.app-roles-toggle-text');
+
+                        if (triggerBtn && panel) {
+                            triggerBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const isOpen = panel.style.display !== 'none';
+                                if (isOpen) {
+                                    panel.style.display = 'none';
+                                    triggerBtn.classList.remove('open');
+                                    triggerBtn.setAttribute('aria-expanded', 'false');
+                                    if (toggleText) toggleText.textContent = 'View all';
+                                } else {
+                                    panel.style.display = 'block';
+                                    triggerBtn.classList.add('open');
+                                    triggerBtn.setAttribute('aria-expanded', 'true');
+                                    if (toggleText) toggleText.textContent = 'Hide';
+                                }
+                            });
+
+                            document.addEventListener('click', (e) => {
+                                if (!dropdownWrap.contains(e.target) && panel.style.display !== 'none') {
+                                    panel.style.display = 'none';
+                                    triggerBtn.classList.remove('open');
+                                    triggerBtn.setAttribute('aria-expanded', 'false');
+                                    if (toggleText) toggleText.textContent = 'View all';
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+
+            /* ═══════════════════════════════════════════════════════════
+               PROFILE WORK PREFERENCE (FULL-TIME / PART-TIME)
+               ═══════════════════════════════════════════════════════════ */
+
+            function updateEmploymentPreferenceUI() {
+                const savedPref = session.employmentPreference || 'full-time';
+                const activeInDrawer = pendingEmploymentPreference || savedPref;
+
+                // Sync toggle buttons inside profile drawer to pending state
+                if (btnEmpFullTime) {
+                    btnEmpFullTime.classList.toggle('active', activeInDrawer === 'full-time');
+                }
+                if (btnEmpPartTime) {
+                    btnEmpPartTime.classList.toggle('active', activeInDrawer === 'part-time');
+                }
+            }
+
+            // Click toggle buttons updates and saves immediately
+            function selectPendingEmploymentPreference(pref) {
+                pendingEmploymentPreference = pref;
+                session.employmentPreference = pref;
+                saveWorkerSession(session);
+                updateEmploymentPreferenceUI();
+                renderMainServicesDisplay();
+                renderShiftsFeed();
+
+                if (profileEmpNote) {
+                    profileEmpNote.textContent = 'Only matching jobs show in feed';
+                    profileEmpNote.style.color = '';
+                }
+
+                showToast(pref === 'full-time'
+                    ? '✓ Showing Full-Time shifts'
+                    : '✓ Showing Part-Time shifts'
+                );
+            }
+
+            // Save preference explicitly (fallback)
+            function saveEmploymentPreference() {
+                const chosenPref = pendingEmploymentPreference || session.employmentPreference || 'full-time';
+                session.employmentPreference = chosenPref;
+                saveWorkerSession(session);
+
+                if (profileEmpNote) {
+                    profileEmpNote.textContent = 'Only matching jobs show in feed';
+                    profileEmpNote.style.color = '';
+                }
+
+                updateEmploymentPreferenceUI();
+                renderMainServicesDisplay();
+                renderShiftsFeed();
+
+                showToast(chosenPref === 'full-time'
+                    ? '✓ Showing Full-Time shifts'
+                    : '✓ Showing Part-Time shifts'
+                );
+            }
+
+            if (btnEmpFullTime) {
+                btnEmpFullTime.addEventListener('click', () => selectPendingEmploymentPreference('full-time'));
+            }
+            if (btnEmpPartTime) {
+                btnEmpPartTime.addEventListener('click', () => selectPendingEmploymentPreference('part-time'));
+            }
+            if (btnSaveEmpPreference) {
+                btnSaveEmpPreference.addEventListener('click', saveEmploymentPreference);
+            }
+
+            /* ═══════════════════════════════════════════════════════════
+               APPLICANT LOCATION PREFERENCE & FILTERING
+               ═══════════════════════════════════════════════════════════ */
+
+            function renderWorkerLocationOptions(query = '') {
+                if (!workerLocationOptionsList || !workerLocationSelect) return;
+                workerLocationOptionsList.innerHTML = '';
+
+                const q = query.trim().toLowerCase();
+                const opts = Array.from(workerLocationSelect.options);
+                let matchCount = 0;
+
+                opts.forEach(opt => {
+                    const text = opt.textContent;
+                    const val = opt.value;
+                    const matches = !q || text.toLowerCase().includes(q);
+
+                    if (matches) {
+                        matchCount++;
+                        const isSelected = pendingLocation === val;
+                        const item = document.createElement('div');
+                        item.className = `db-select-custom-item${isSelected ? ' selected' : ''}`;
+                        item.setAttribute('role', 'option');
+                        item.setAttribute('aria-selected', String(isSelected));
+                        item.dataset.value = val;
+
+                        item.innerHTML = `
+                            <span class="db-select-item-dot"></span>
+                            <span class="db-select-item-label">${text}</span>
+                            <svg class="db-select-item-check" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        `;
+
+                        item.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            selectWorkerLocation(val);
+                        });
+
+                        workerLocationOptionsList.appendChild(item);
+                    }
+                });
+
+                if (workerLocationEmptyMsg) {
+                    workerLocationEmptyMsg.style.display = matchCount === 0 ? 'block' : 'none';
+                }
+            }
+
+            function closeWorkerLocationDropdown() {
+                if (!workerLocationDropdown || !workerLocationMenu) return;
+                workerLocationDropdown.classList.remove('open');
+                workerLocationMenu.hidden = true;
+                if (workerLocationTrigger) workerLocationTrigger.setAttribute('aria-expanded', 'false');
+            }
+
+            function openWorkerLocationDropdown() {
+                if (!workerLocationDropdown || !workerLocationMenu) return;
+                workerLocationDropdown.classList.add('open');
+                workerLocationMenu.hidden = false;
+                if (workerLocationTrigger) workerLocationTrigger.setAttribute('aria-expanded', 'true');
+                if (workerLocationSearch) {
+                    workerLocationSearch.value = '';
+                    renderWorkerLocationOptions('');
+                    setTimeout(() => workerLocationSearch.focus(), 50);
+                }
+            }
+
+            function selectWorkerLocation(val) {
+                pendingLocation = val;
+                if (workerLocationSelect) workerLocationSelect.value = val;
+                if (workerLocationText) workerLocationText.textContent = val;
+                renderWorkerLocationOptions('');
+                closeWorkerLocationDropdown();
+                saveLocationPreference();
+            }
+
+            function saveLocationPreference() {
+                session.location = pendingLocation;
+                saveWorkerSession(session);
+
+                updateLocationDisplayElements();
+
+                if (saveLocationIndicator) {
+                    saveLocationIndicator.style.display = 'inline-block';
+                    setTimeout(() => {
+                        saveLocationIndicator.style.display = 'none';
+                    }, 2400);
+                }
+
+                renderShifts(true);
+
+                showToast(`📍 Location updated to ${session.location}! Shifts matched.`);
+            }
+
+            function updateLocationDisplayElements() {
+                const loc = session.location || 'Cebu City';
+                if (workerLocationText) workerLocationText.textContent = loc;
+                if (workerLocationSelect) workerLocationSelect.value = loc;
+                if (feedLocationText) feedLocationText.textContent = loc;
+            }
+
+            if (workerLocationTrigger) {
+                workerLocationTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (workerLocationDropdown && workerLocationDropdown.classList.contains('open')) {
+                        closeWorkerLocationDropdown();
+                    } else {
+                        openWorkerLocationDropdown();
+                    }
+                });
+            }
+
+            if (workerLocationSearch) {
+                workerLocationSearch.addEventListener('input', () => {
+                    renderWorkerLocationOptions(workerLocationSearch.value);
+                });
+                workerLocationSearch.addEventListener('click', (e) => e.stopPropagation());
+            }
+
+            document.addEventListener('click', (e) => {
+                if (workerLocationDropdown && !workerLocationDropdown.contains(e.target)) {
+                    closeWorkerLocationDropdown();
+                }
+            });
+
+            if (btnSaveLocationPreference) {
+                btnSaveLocationPreference.addEventListener('click', saveLocationPreference);
+            }
+
+            function openLocationSelector() {
+                if (openProfilePanelBtn) openProfilePanelBtn.click();
+                setTimeout(() => {
+                    const locSec = document.getElementById('profileLocSection');
+                    if (locSec) {
+                        locSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        locSec.style.transition = 'box-shadow 0.3s ease';
+                        locSec.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.4)';
+                        setTimeout(() => locSec.style.boxShadow = '', 1600);
+                    }
+                }, 200);
+            }
+
+            if (feedLocationPill) {
+                feedLocationPill.addEventListener('click', openLocationSelector);
+                feedLocationPill.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openLocationSelector();
+                    }
+                });
+            }
+
+            if (workerUseCurrentBtn) {
+                workerUseCurrentBtn.addEventListener('click', () => {
+                    const originalHTML = workerUseCurrentBtn.innerHTML;
+                    workerUseCurrentBtn.innerHTML = `
+                        <span class="db-btn-spinner" style="border-left-color:#111827; width:12px; height:12px;"></span>
+                        Detecting…
+                    `;
+                    workerUseCurrentBtn.disabled = true;
+
+                    setTimeout(() => {
+                        selectWorkerLocation('Cebu City');
+                        saveLocationPreference();
+                        workerUseCurrentBtn.innerHTML = `✓ Detected!`;
+                        setTimeout(() => {
+                            workerUseCurrentBtn.innerHTML = originalHTML;
+                            workerUseCurrentBtn.disabled = false;
+                        }, 1800);
+                    }, 700);
+                });
+            }
+
+            /* ═══════════════════════════════════════════════════════════
+               ACTIVE CONTRACTS & CAPACITY ENGINE
+               ═══════════════════════════════════════════════════════════ */
+
+            function getActiveContractsList() {
+                if (!window.InstantCrewShared) return [];
+                return InstantCrewShared.getActiveContracts().filter(c => c.status === 'active');
+            }
+
+            function updateCapacityUI() {
+                const activeContracts = getActiveContractsList();
+                const hasFullTime = activeContracts.some(c => c.employmentType === 'full-time');
+                const partTimeCount = activeContracts.filter(c => c.employmentType === 'part-time').length;
+
+                if (capacityPill) {
+                    if (hasFullTime) {
+                        capacityPill.textContent = 'Full-Time Active (Max Capacity)';
+                        capacityPill.className = 'app-capacity-pill full';
+                    } else if (partTimeCount >= 2) {
+                        capacityPill.textContent = 'Part-Time Active (2/2 Max)';
+                        capacityPill.className = 'app-capacity-pill full';
+                    } else if (partTimeCount === 1) {
+                        capacityPill.textContent = 'Part-Time (1/2 Active · 1 Slot Left)';
+                        capacityPill.className = 'app-capacity-pill';
+                    } else {
+                        capacityPill.textContent = 'Available (0/2 Active)';
+                        capacityPill.className = 'app-capacity-pill';
+                    }
+                }
+
+                renderActiveContractsBanner(activeContracts);
+            }
+
+            let lastActiveContractsBannerSig = null;
+
+            function renderActiveContractsBanner(activeContracts) {
+                if (!activeContractsBox || !activeContractsContainer) return;
+
+                const bannerSig = (activeContracts || []).map(c => `${c.id}_${c.status}_${c.venue}_${c.rate}`).join('|');
+                if (bannerSig === lastActiveContractsBannerSig) return;
+                lastActiveContractsBannerSig = bannerSig;
+
+                if (activeContracts.length === 0) {
+                    activeContractsBox.style.display = 'none';
+                    activeContractsContainer.innerHTML = '';
+                    return;
+                }
+
+                activeContractsBox.style.display = 'block';
+                activeContractsContainer.innerHTML = '';
+
+                activeContracts.forEach(contract => {
+                    const item = document.createElement('div');
+                    item.className = 'app-contract-item';
+                    const empBadge = contract.employmentType === 'full-time'
+                        ? '<span class="app-badge-emp full-time"> Full-Time</span>'
+                        : '<span class="app-badge-emp part-time"> Part-Time</span>';
+
+                    const contractIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(contract, 18) : '';
+                    const cleanContractTitle = (contract.title || contract.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
+                    item.innerHTML = `
+                        <div class="app-contract-info">
+                            <div class="app-contract-role">
+                                <span style="display:inline-flex; align-items:center; vertical-align:-3px; margin-right:4px;">${contractIcon}</span>
+                                <span>${cleanContractTitle}</span>
+                                ${empBadge}
+                            </div>
+                            <p class="app-contract-meta"> ${contract.venue} &bull; Rate: ${contract.rate}/hr &bull; Started: ${contract.startedAt || 'Today'}</p>
+                        </div>
+                        <button type="button" class="db-btn-end-contract" data-contract-id="${contract.id}">
+                            End Job
+                        </button>
+                    `;
+
+                    item.querySelector('.db-btn-end-contract').addEventListener('click', () => {
+                        if (confirm(`Conclude and end your work contract for ${contract.title}?`)) {
+                            endWorkerContract(contract.id);
+                        }
+                    });
+
+                    activeContractsContainer.appendChild(item);
+                });
+            }
+
+            function endWorkerContract(contractId) {
+                if (!window.InstantCrewShared) return;
+                const res = InstantCrewShared.endContract(contractId, 'worker', session.name || 'Angelo Lopez');
+                if (res.success) {
+                    // Increment worker completed count & earnings
+                    session.completedShifts = (session.completedShifts || 142) + 1;
+                    session.earnings = (session.earnings || 1240) + 380;
+                    saveWorkerSession(session);
+
+                    renderProfileInfo();
+                    updateCapacityUI();
+                    renderShiftsFeed(true);
+                    renderAcceptedShiftsList(true);
+                    InstantCrewShared.showPushToast('Contract Ended', 'Your work contract has concluded. Capacity restored!', 'end');
+                }
+            }
+
+            /* ═══════════════════════════════════════════════════════════
+               LIVE SHIFTS FEED WITH VANISHING & CAPACITY CHECKS
+               ═══════════════════════════════════════════════════════════ */
+
+            let lastShiftsFeedSig = null;
+
+            function renderShiftsFeed(force = false) {
+                if (!window.InstantCrewShared || !shiftsListContainer) return;
+
+                if (!isOnline) {
+                    const offlineSig = 'offline';
+                    if (!force && lastShiftsFeedSig === offlineSig) return;
+                    lastShiftsFeedSig = offlineSig;
+
+                    if (statMatchedJobsEl) statMatchedJobsEl.textContent = '0';
+                    shiftsListContainer.innerHTML = `
+                        <div style="text-align:center; padding:36px 20px; background:var(--surface); border:1.5px dashed var(--border); border-radius:var(--radius-m); color:var(--muted);">
+                            <h3 style="font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:6px;">
+                                You are Currently Offline
+                            </h3>
+                            <p style="font-size:0.84rem; margin:0 0 14px 0; color:var(--muted); line-height:1.4; max-width:320px; margin-inline:auto;">
+                                Your shift availability is paused. Switch to <strong>Active</strong> in your profile to receive shift offers and matches.
+                            </p>
+                            <button type="button" class="app-feed-pref-btn" style="padding:7px 16px; font-size:0.82rem; font-weight:600; cursor:pointer;" onclick="document.getElementById('openProfilePanel').click()">
+                                Open Profile to Go Active
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const allJobs = InstantCrewShared.getJobs();
+                const rejectedIds = InstantCrewShared.getRejectedJobIds();
+                const activeContracts = getActiveContractsList();
+                const hasFullTime = activeContracts.some(c => c.employmentType === 'full-time');
+                const partTimeCount = activeContracts.filter(c => c.employmentType === 'part-time').length;
+
+                // Active contract job IDs for this worker
+                const activeJobIds = activeContracts.map(c => c.jobId);
+
+                // Filter jobs
+                const targetPref = session.employmentPreference || 'full-time';
+                const workerLocation = (session.location || 'Cebu City').trim().toLowerCase();
+
+                // Build flat list of worker's selected services for matching
+                const workerServices = Array.isArray(session.services) ? session.services : [];
+
+                // CAPACITY CONSTRAINTS:
+                // 1. After applicant accepted 1 fulltime job, other offers in the feed disappear.
+                // 2. If applicant accepted 1 part time job, other part time offers still show.
+                // 3. When applicant accepted 2 part time jobs, other jobs in the feed disappear.
+                const isMaxCapacity = hasFullTime || partTimeCount >= 2;
+
+                const visibleJobs = isMaxCapacity ? [] : allJobs.filter(job => {
+                    // If rejected by this worker, vanished
+                    if (rejectedIds.includes(job.id)) return false;
+                    // If already accepted by this worker, vanished from feed!
+                    if (activeJobIds.includes(job.id)) return false;
+                    if (job.acceptedCrew && job.acceptedCrew.includes(session.name)) return false;
+                    // If contract already ended, vanished
+                    if (job.contractStatus === 'ended') return false;
+                    // If filled to neededCrew, vanished for everyone!
+                    if ((job.acceptedCount || 0) >= (job.neededCrew || 1)) return false;
+
+                    // ── STRICT SERVICE MATCHING ──
+                    // Only show jobs whose role matches one of the worker's selected services.
+                    // If the worker has no services selected, show nothing.
+                    if (workerServices.length === 0) return false;
+                    if (!workerServices.includes(job.role)) return false;
+
+                    // If holding 1 part-time job, full-time jobs cannot be taken (only 1 more part-time)
+                    if (partTimeCount > 0 && job.employmentType === 'full-time') {
+                        return false;
+                    }
+
+                    // FILTER STRICTLY BY PROFILE EMPLOYMENT PREFERENCE:
+                    // All shifts (including employer requests) must match the applicant's selected preference
+                    if (job.employmentType !== targetPref) {
+                        return false;
+                    }
+
+                    // ── STRICT LOCATION MATCHING ──
+                    // Shift location must match where the applicant is located!
+                    const jobLoc = (job.location || 'Cebu City').trim().toLowerCase();
+                    const locMatches = (jobLoc === workerLocation) ||
+                        jobLoc.includes(workerLocation) ||
+                        workerLocation.includes(jobLoc);
+                    if (!locMatches) {
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                // Update Number of Matches Job & Accepted Jobs stats
+                if (statMatchedJobsEl) {
+                    statMatchedJobsEl.textContent = visibleJobs.length;
+                }
+                if (statAcceptedJobsEl) {
+                    statAcceptedJobsEl.textContent = session.acceptedJobs || session.completedShifts || '142';
+                }
+
+                const currentFeedSig = JSON.stringify({
+                    online: isOnline,
+                    pref: targetPref,
+                    loc: workerLocation,
+                    services: workerServices,
+                    isMaxCapacity,
+                    hasFullTime,
+                    partTimeCount,
+                    jobs: visibleJobs.map(j => `${j.id}_${j.role}_${j.neededCrew}_${j.acceptedCount}_${j.contractStatus}`)
+                });
+
+                if (!force && currentFeedSig === lastShiftsFeedSig) {
+                    // Feed data has not changed. Skip DOM reconstruction to keep hover and light effects stable.
+                    return;
+                }
+                lastShiftsFeedSig = currentFeedSig;
+
+                shiftsListContainer.innerHTML = '';
+
+                if (visibleJobs.length === 0) {
+                    const prefTitle = targetPref === 'full-time' ? 'Full-Time' : 'Part-Time';
+                    const hasServices = workerServices.length > 0;
+
+                    // Full-time capacity reached message
+                    if (hasFullTime) {
+                        shiftsListContainer.innerHTML = `
+                            <div style="text-align:center; padding:36px 20px; background:var(--surface); border:1.5px dashed var(--border); border-radius:var(--radius-m); color:var(--muted);">
+                                <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:#EDE9FE; color:#7C3AED; margin-bottom:10px;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg>
+                                </div>
+                                <h3 style="font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:6px;">
+                                    Full-Time Job Accepted
+                                </h3>
+                                <p style="font-size:0.84rem; margin:0 0 14px 0; color:var(--muted); line-height:1.4; max-width:340px; margin-inline:auto;">
+                                    You have accepted 1 Full-Time contract. Other offers have disappeared from your feed.
+                                </p>
+                                <button type="button" class="app-feed-pref-btn" style="padding:7px 16px; font-size:0.82rem; font-weight:600; cursor:pointer;" onclick="document.getElementById('openProfilePanel').click()">
+                                    View Active Contract in Profile
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // 2 Part-time jobs capacity reached message
+                    if (partTimeCount >= 2) {
+                        shiftsListContainer.innerHTML = `
+                            <div style="text-align:center; padding:36px 20px; background:var(--surface); border:1.5px dashed var(--border); border-radius:var(--radius-m); color:var(--muted);">
+                                <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:#EDE9FE; color:#7C3AED; margin-bottom:10px;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg>
+                                </div>
+                                <h3 style="font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:6px;">
+                                    2 Part-Time Jobs Accepted
+                                </h3>
+                                <p style="font-size:0.84rem; margin:0 0 14px 0; color:var(--muted); line-height:1.4; max-width:340px; margin-inline:auto;">
+                                    You have accepted 2 Part-Time contracts (maximum capacity). Other offers have disappeared from your feed.
+                                </p>
+                                <button type="button" class="app-feed-pref-btn" style="padding:7px 16px; font-size:0.82rem; font-weight:600; cursor:pointer;" onclick="document.getElementById('openProfilePanel').click()">
+                                    View Active Contracts in Profile
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    shiftsListContainer.innerHTML = `
+                        <div style="text-align:center; padding:36px 20px; background:var(--surface); border:1.5px dashed var(--border); border-radius:var(--radius-m); color:var(--muted);">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:#FEF3C7; color:#D97706; margin-bottom:10px;">
+                                <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                                    <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.8"/>
+                                </svg>
+                            </div>
+                            <h3 style="font-size:1rem; font-weight:700; color:var(--ink); margin-bottom:6px;">
+                                ${hasServices ? `No Matching Jobs in ${session.location || 'Cebu City'}` : 'No Services Selected'}
+                            </h3>
+                            <p style="font-size:0.84rem; margin:0 0 14px 0; color:var(--muted); line-height:1.4; max-width:340px; margin-inline:auto;">
+                                ${hasServices
+                            ? `No open jobs found in <strong>${session.location || 'Cebu City'}</strong> matching your services and ${prefTitle} availability. Try changing your work location or services.`
+                            : 'Please choose your services in your profile to see matching employer requests.'}
+                            </p>
+                            <div style="display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="app-feed-pref-btn" style="padding:7px 16px; font-size:0.82rem; font-weight:600; cursor:pointer;" onclick="document.getElementById('openProfilePanel').click()">
+                                    Change Location / Services
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                visibleJobs.forEach(shift => {
+                    const matchesService = (session.services || []).includes(shift.role);
+                    const isFullTime = shift.employmentType === 'full-time';
+                    const needed = shift.neededCrew || 1;
+                    const hired = shift.acceptedCount || 0;
+                    const remaining = needed - hired;
+
+                    const isEmployerShift = (shift.id && shift.id.startsWith('emp-shift-')) || Boolean(shift.bookingRefId);
+
+                    // Determine if worker can accept this shift based on capacity
+                    let canAccept = true;
+                    let lockedReason = '';
+
+                    if (hasFullTime) {
+                        canAccept = false;
+                        lockedReason = 'Locked (Full-Time Active)';
+                    } else if (isFullTime && partTimeCount > 0) {
+                        canAccept = false;
+                        lockedReason = 'Locked (Part-Time Active)';
+                    } else if (!isFullTime && partTimeCount >= 2) {
+                        canAccept = false;
+                        lockedReason = 'Locked (Max 2/2 Jobs)';
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `app-shift-item ${matchesService ? 'matched' : ''}`;
+                    card.id = `shiftCard-${shift.id}`;
+
+                    const empBadge = isFullTime
+                        ? '<span class="app-badge-emp full-time"> Full-Time</span>'
+                        : '<span class="app-badge-emp part-time"> Part-Time</span>';
+
+                    const slotsBadge = `<span class="app-slots-badge"> Needed: ${needed} crew (${hired > 0 ? `${hired} hired · ${remaining} left` : 'open'})</span>`;
+
+                    const cleanShiftTitle = (shift.title || shift.role || 'Crew')
+                        .replace(/\s*\((Full-Time|Part-Time)\)/gi, '')
+                        .trim();
+
+                    const shiftMapLoc = shift.mapLocation || (shift.notes ? shift.notes.split('·')[0].trim() : (shift.location || 'Cebu City'));
+                    const shiftMapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(shiftMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shiftMapLoc)}`);
+
+                    const shiftIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(shift, 20) : (shift.emoji || '');
+                    card.innerHTML = `
+                        <div class="app-shift-top">
+                            <div style="flex:1; min-width:0;">
+                                <div class="app-shift-title-row" style="flex-wrap:wrap; gap:6px;">
+                                    <span class="app-shift-emoji">${shiftIcon}</span>
+                                    <span class="app-shift-role">${cleanShiftTitle}</span>
+                                    ${empBadge}
+                                    ${slotsBadge}
+                                    <span class="app-badge-location-match">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="display:inline-block; vertical-align:middle;">
+                                            <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                                            <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.6"/>
+                                        </svg>
+                                        ${shift.location || 'Cebu City'}
+                                    </span>
+                                </div>
+                                <div class="app-shift-venue-row" style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:4px;">
+                                    <div class="app-shift-venue">
+                                        ${shift.venue} · <strong>${shift.location || 'Cebu City'}</strong>
+                                    </div>
+                                    <button type="button" class="app-shift-view-detail-btn" data-job-id="${shift.id}" title="Click to view employer's location & Google Maps">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335"/>
+                                            <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
+                                        </svg>
+                                        <span>View detail</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inline Location Expansion -->
+                        <div class="app-shift-location-drawer" id="locDrawer-${shift.id}" style="display:none; margin-top:2px;">
+                            <div class="app-loc-drawer-inner">
+                                <div class="app-loc-drawer-left">
+                                    <div class="app-loc-tag">Employer's Map Location</div>
+                                    <div class="app-loc-address-text">${shiftMapLoc}</div>
+                                </div>
+                                <a href="${shiftMapsUrl}" target="_blank" rel="noopener noreferrer" class="app-loc-direct-link" title="Direct to Google Maps">
+                                    <span>Open in Google Maps</span>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="app-shift-footer">
+                            <div class="app-shift-rate-wrap">
+                                <div class="app-shift-rate">${shift.rate} <span>/hr</span></div>
+                                <span class="app-shift-rate-note">Instant daily payout</span>
+                            </div>
+                            <div class="app-shift-actions">
+                                <button type="button" class="app-btn-reject" title="Decline and remove shift from feed">
+                                    Decline
+                                </button>
+                                <button type="button" class="app-btn-accept" ${canAccept ? '' : 'disabled'} title="${lockedReason}">
+                                    ${canAccept ? 'Accept Job' : lockedReason}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // View detail button in grey area
+                    const viewDetailBtn = card.querySelector('.app-shift-view-detail-btn');
+                    if (viewDetailBtn) {
+                        viewDetailBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const drawer = card.querySelector(`#locDrawer-${shift.id}`);
+                            if (drawer) {
+                                const isHidden = drawer.style.display === 'none' || !drawer.style.display;
+                                drawer.style.display = isHidden ? 'block' : 'none';
+                                viewDetailBtn.classList.toggle('active', isHidden);
+                            }
+                            openLocationDetailModal({
+                                ...shift,
+                                mapLocation: shiftMapLoc,
+                                googleMapsUrl: shiftMapsUrl
+                            });
+                        });
+                    }
+
+                    // Decline button
+                    card.querySelector('.app-btn-reject').addEventListener('click', () => {
+                        dismissShift(shift, card);
+                    });
+
+                    // Accept button
+                    const acceptBtn = card.querySelector('.app-btn-accept');
+                    if (canAccept) {
+                        acceptBtn.addEventListener('click', () => {
+                            acceptWorkerShift(shift, card);
+                        });
+                    }
+
+                    shiftsListContainer.appendChild(card);
+                });
+            }
+
+            // Dismiss (Reject) Shift Action
+            function dismissShift(shift, cardEl) {
+                cardEl.style.transition = 'all 0.25s ease';
+                cardEl.style.opacity = '0';
+                cardEl.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    InstantCrewShared.rejectJob(shift.id);
+                    renderShiftsFeed();
+                    showToast('Shift declined and removed from feed.');
+                }, 250);
+            }
+
+            // Accept Shift Action
+            function acceptWorkerShift(shift, cardEl) {
+                const res = InstantCrewShared.acceptJob(shift.id, session.name || 'Angelo Lopez');
+                if (!res.success) {
+                    showToast(res.reason, true);
+                    return;
+                }
+
+                // Increment accepted jobs counter
+                session.acceptedJobs = (session.acceptedJobs || session.completedShifts || 142) + 1;
+                saveWorkerSession(session);
+                if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs;
+
+                // Vanish card smoothly
+                cardEl.style.transition = 'all 0.25s ease';
+                cardEl.style.opacity = '0';
+                cardEl.style.transform = 'scale(0.95)';
+
+                setTimeout(() => {
+                    updateCapacityUI();
+                    renderShiftsFeed();
+                    renderAcceptedShiftsList();
+                    InstantCrewShared.showPushToast('Shift Accepted!', `You accepted ${shift.title}! Dispatch details added to your contracts.`, 'party');
+                }, 250);
+            }
+
+
+            /* ═══════════════════════════════════════════════════════════
+               PROFILE DRAWER: ACTIVE & ENDED JOBS
+               ═══════════════════════════════════════════════════════════ */
+
+            function createJobCard(item, isEnded = false) {
+                const card = document.createElement('div');
+                card.className = `app-job-card ${isEnded ? 'ended' : ''}`;
+
+                const empType = item.employmentType || 'part-time';
+                const empClass = empType === 'full-time' ? 'full-time' : 'part-time';
+                const empLabel = empType === 'full-time' ? 'Full-Time' : 'Part-Time';
+
+                const statusBadgeHtml = isEnded
+                    ? `<span class="app-job-status-badge ended">Ended</span>`
+                    : `<span class="app-job-status-badge active"><span class="dot"></span>Active</span>`;
+
+                const cardRoleIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(item, 22) : (item.emoji || '');
+                card.innerHTML = `
+                    <div class="app-job-card-header">
+                        <div class="app-job-card-left">
+                            <div class="app-job-card-icon">${cardRoleIcon}</div>
+                            <div class="app-job-card-title-col">
+                                <div class="app-job-card-title-row">
+                                    <h4 class="app-job-card-title">${(item.title || item.role || 'Crew Member').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim()}</h4>
+                                    <span class="app-job-emp-badge ${empClass}">${empLabel}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ${statusBadgeHtml}
+                    </div>
+
+                    <div class="app-job-card-meta">
+                        <div class="app-job-meta-line">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            <span>${item.venue || 'On-site Location'}</span>
+                        </div>
+                        <div class="app-job-meta-line app-job-location-line" style="display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335"/>
+                                    <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
+                                </svg>
+                                <span>${item.mapLocation || item.location || 'Cebu City'}</span>
+                            </div>
+                            <button type="button" class="app-job-view-detail-btn" style="background:none; border:none; color:#EA4335; font-size:0.78rem; font-weight:700; cursor:pointer; padding:2px 4px;">
+                                View detail ↗
+                            </button>
+                        </div>
+                        <div class="app-job-meta-line">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>${item.timing || 'Standard Shift'}</span>
+                        </div>
+                        ${item.rate ? `
+                        <div class="app-job-meta-line" style="color:var(--ink); font-weight:600;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                            <span>Rate: ${item.rate}/hr</span>
+                        </div>` : ''}
+                        ${isEnded && (item.endedAt || item.endedBy) ? `
+                        <div class="app-job-meta-line" style="color:#64748B; font-size:0.76rem;">
+                            <span>${item.endedAt ? `Concluded at ${item.endedAt}` : 'Concluded'}</span>
+                        </div>` : ''}
+                    </div>
+
+                    ${!isEnded ? `
+                    <div class="app-job-card-footer">
+                        <span style="font-size:0.75rem; color:#64748B;">Contract in progress</span>
+                        <button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">
+                            End Job
+                        </button>
+                    </div>` : ''}
+                `;
+
+                const jobViewDetailBtn = card.querySelector('.app-job-view-detail-btn');
+                if (jobViewDetailBtn) {
+                    jobViewDetailBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openLocationDetailModal(item);
+                    });
+                }
+
+                if (!isEnded) {
+                    const endBtn = card.querySelector('.app-btn-end-contract-clean');
+                    if (endBtn) {
+                        endBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (confirm(`Conclude and end your work contract for ${item.title || item.role}?`)) {
+                                endWorkerContract(item.id);
+                            }
+                        });
+                    }
+                }
+
+                return card;
+            }
+
+            let lastAcceptedShiftsSig = null;
+
+            function renderAcceptedShiftsList(force = false) {
+                const contracts = InstantCrewShared ? InstantCrewShared.getActiveContracts() : [];
+                const activeContracts = contracts.filter(c => c.status === 'active');
+                const endedContracts = contracts.filter(c => c.status === 'ended' || c.status === 'completed');
+
+                if (activeJobsCountBadge) activeJobsCountBadge.textContent = activeContracts.length;
+                if (endedJobsCountBadge) endedJobsCountBadge.textContent = endedContracts.length;
+
+                const currentSig = JSON.stringify(contracts.map(c => `${c.id}_${c.status}_${c.endedAt || ''}`));
+                if (!force && currentSig === lastAcceptedShiftsSig) {
+                    return;
+                }
+                lastAcceptedShiftsSig = currentSig;
+
+                // Render Active Jobs
+                if (activeJobsListContainer && activeJobsEmpty) {
+                    activeJobsListContainer.innerHTML = '';
+                    if (activeContracts.length === 0) {
+                        activeJobsEmpty.style.display = 'flex';
+                    } else {
+                        activeJobsEmpty.style.display = 'none';
+                        activeContracts.forEach(contract => {
+                            activeJobsListContainer.appendChild(createJobCard(contract, false));
+                        });
+                    }
+                }
+
+                // Render Ended Jobs
+                if (endedJobsListContainer && endedJobsEmpty) {
+                    endedJobsListContainer.innerHTML = '';
+                    if (endedContracts.length === 0) {
+                        endedJobsEmpty.style.display = 'flex';
+                    } else {
+                        endedJobsEmpty.style.display = 'none';
+                        endedContracts.forEach(contract => {
+                            endedJobsListContainer.appendChild(createJobCard(contract, true));
+                        });
+                    }
+                }
+            }
+
+            // Open/Close Profile Slide-over Panel
+            function openProfilePanel(focusServices = false) {
+                profileOverlay.classList.add('open');
+                profileOverlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+
+                selectedServices = Array.isArray(session.services) ? [...session.services] : [];
+                pendingEmploymentPreference = session.employmentPreference || 'full-time';
+                pendingLocation = session.location || 'Cebu City';
+                if (profileEmpNote) {
+                    profileEmpNote.textContent = 'Only matching jobs show in feed';
+                    profileEmpNote.style.color = '';
+                }
+                updateEmploymentPreferenceUI();
+                updateLocationDisplayElements();
+                renderWorkerLocationOptions();
+                updateRateAndTimingUI();
+                renderAllServicePickers();
+                renderAcceptedShiftsList();
+
+                if (focusServices) {
+                    switchProfileTab('services');
+                }
+            }
+
+            function closeProfilePanel() {
+                profileOverlay.classList.remove('open');
+                profileOverlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                closeAllAliveDropdowns();
+            }
+
+            openProfilePanelBtn.addEventListener('click', () => openProfilePanel(false));
+            closeProfilePanelBtn.addEventListener('click', closeProfilePanel);
+
+            openServicesFromMainBtn.addEventListener('click', () => openProfilePanel(true));
+            if (btnPromptAddServices) {
+                btnPromptAddServices.addEventListener('click', () => openProfilePanel(true));
+            }
+
+            profileOverlay.addEventListener('click', (e) => {
+                if (e.target === profileOverlay) closeProfilePanel();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && profileOverlay.classList.contains('open')) {
+                    closeProfilePanel();
+                }
+            });
+
+            // Tabs inside Profile (Services vs Active Jobs vs Ended Jobs)
+            function switchProfileTab(tab) {
+                const isServices = tab === 'services';
+                const isActive = tab === 'active';
+                const isEnded = tab === 'ended';
+
+                if (tabServicesBtn) {
+                    tabServicesBtn.classList.toggle('active', isServices);
+                    tabServicesBtn.setAttribute('aria-selected', String(isServices));
+                }
+                if (tabActiveJobsBtn) {
+                    tabActiveJobsBtn.classList.toggle('active', isActive);
+                    tabActiveJobsBtn.setAttribute('aria-selected', String(isActive));
+                }
+                if (tabEndedJobsBtn) {
+                    tabEndedJobsBtn.classList.toggle('active', isEnded);
+                    tabEndedJobsBtn.setAttribute('aria-selected', String(isEnded));
+                }
+
+                if (panelServicesSection) panelServicesSection.style.display = isServices ? 'block' : 'none';
+                if (panelActiveJobsSection) panelActiveJobsSection.style.display = isActive ? 'block' : 'none';
+                if (panelEndedJobsSection) panelEndedJobsSection.style.display = isEnded ? 'block' : 'none';
+            }
+
+            if (tabServicesBtn) tabServicesBtn.addEventListener('click', () => switchProfileTab('services'));
+            if (tabActiveJobsBtn) tabActiveJobsBtn.addEventListener('click', () => switchProfileTab('active'));
+            if (tabEndedJobsBtn) tabEndedJobsBtn.addEventListener('click', () => switchProfileTab('ended'));
+
+            // Logo Navigation (Keep in portal when logged in)
+            const headerLogoLink = document.getElementById('headerLogoLink');
+            if (headerLogoLink) {
+                headerLogoLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+
+            // Logout
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    sessionStorage.removeItem(SESSION_KEY_WORKER);
+                    window.location.href = 'index.html';
+                });
+            }
+
+            /* ═══════════════════════════════════════════════════════════
+               WORKER NOTIFICATIONS SYSTEM
+               ═══════════════════════════════════════════════════════════ */
+
+            function renderWorkerNotifications() {
+                if (!window.InstantCrewShared) return;
+                session = getWorkerSession();
+                const workerServices = Array.isArray(session.services) ? session.services : [];
+                const targetPref = session.employmentPreference || 'full-time';
+                const activeContracts = getActiveContractsList();
+                const isMaxCapacity = activeContracts.some(c => c.employmentType === 'full-time') || activeContracts.filter(c => c.employmentType === 'part-time').length >= 2;
+                const notifs = InstantCrewShared.getNotifications('worker').filter(n => {
+                    if (n.type === 'match') {
+                        if (isMaxCapacity) return false;
+                        if (n.role && !workerServices.some(s => s.trim().toLowerCase() === n.role.trim().toLowerCase())) return false;
+                        if (n.employmentType && n.employmentType.toLowerCase() !== targetPref.toLowerCase()) return false;
+                    }
+                    return true;
+                });
+                const unread = notifs.filter(n => !n.read).length;
+
+                if (notifBadge) {
+                    if (unread > 0) {
+                        notifBadge.textContent = unread > 9 ? '9+' : unread;
+                        notifBadge.style.display = 'flex';
+                    } else {
+                        notifBadge.style.display = 'none';
+                    }
+                }
+
+                if (notifList) {
+                    if (notifs.length === 0) {
+                        notifList.innerHTML = '<div class="db-notif-empty">No notifications yet.</div>';
+                    } else {
+                        notifList.innerHTML = '';
+                        notifs.forEach(n => {
+                            const el = document.createElement('div');
+                            el.className = `db-notif-item ${n.read ? '' : 'unread'}`;
+                            const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getNotificationIcon(n.type, 20) : '';
+                            const cleanMsg = (n.message || '').replace(/\s*\((Full-Time|Part-Time)\)/gi, '');
+                            el.innerHTML = `
+                                <span class="db-notif-icon">${iconSvg}</span>
+                                <div>
+                                    <p class="db-notif-title">${n.title}</p>
+                                    <p class="db-notif-desc">${cleanMsg}</p>
+                                    <span class="db-notif-time">${n.time}</span>
+                                </div>
+                            `;
+                            notifList.appendChild(el);
+                        });
+                    }
+                }
+
+                // Show push toast for new / un-toasted notifications (only if Active / Online)
+                if (!isOnline) return;
+                const toastedIds = getToastedNotifIds();
+                const now = Date.now();
+
+                // Find any pending match or recent notification that hasn't toasted yet
+                const pending = notifs.find(n => {
+                    if (toastedIds.includes(String(n.id))) return false;
+                    // Recent within 5 minutes or unread match
+                    const isRecent = (now - Number(n.id)) < 300000;
+                    return (!n.read || isRecent);
+                });
+
+                if (pending) {
+                    markNotifToasted(pending.id);
+                    const cleanToastMsg = (pending.message || '').replace(/\s*\((Full-Time|Part-Time)\)/gi, '');
+
+                    // Show in-app push toast with chime & click action
+                    InstantCrewShared.showPushToast(pending.title, cleanToastMsg, pending.type, () => {
+                        const shiftCard = document.getElementById(`shiftCard-${pending.jobId}`);
+                        if (shiftCard) {
+                            shiftCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            shiftCard.style.outline = '3px solid #7C3AED';
+                            setTimeout(() => { shiftCard.style.outline = 'none'; }, 2200);
+                        } else {
+                            const feed = document.getElementById('shiftsSection') || document.getElementById('shiftsListContainer');
+                            if (feed) feed.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    });
+
+                    // Trigger browser Desktop Notification if allowed
+                    try {
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(pending.title, {
+                                body: cleanToastMsg,
+                                icon: 'images/logo.png'
+                            });
+                        }
+                    } catch { }
+                }
+            }
+
+            if (notifBtn) {
+                notifBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isHidden = notifDropdown.hidden;
+                    notifDropdown.hidden = !isHidden;
+                    if (isHidden && window.InstantCrewShared) {
+                        InstantCrewShared.markAllNotificationsRead('worker');
+                        if (notifBadge) notifBadge.style.display = 'none';
+                    }
+                });
+            }
+
+            if (clearNotifsBtn) {
+                clearNotifsBtn.addEventListener('click', () => {
+                    if (window.InstantCrewShared) {
+                        InstantCrewShared.clearNotifications('worker');
+                        renderWorkerNotifications();
+                    }
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (notifDropdown && !notifDropdown.hidden && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
+                    notifDropdown.hidden = true;
+                }
+            });
+
+            // Real-time synchronization helper
+            function syncWorkerState() {
+                session = getWorkerSession();
+                isOnline = session.active !== false;
+                updateStatusUI();
+                updateLocationDisplayElements();
+                renderWorkerNotifications();
+                updateCapacityUI();
+                renderShiftsFeed();
+                renderAcceptedShiftsList();
+            }
+
+            // Listen to state changes across tabs & windows
+            window.addEventListener('ic_state_change', syncWorkerState);
+            window.addEventListener('storage', syncWorkerState);
+            window.addEventListener('focus', syncWorkerState);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') syncWorkerState();
+            });
+
+            // Polling interval (600ms) guarantees cross-tab sync even on file:/// URLs where storage events are dropped
+            setInterval(syncWorkerState, 600);
+
+            // Init on page load
+            renderProfileInfo();
+            updateEmploymentPreferenceUI();
+            updateLocationDisplayElements();
+            renderWorkerLocationOptions();
+            updateRateAndTimingUI();
+            initCategoryDropdownListeners();
+            renderAllServicePickers();
+            renderMainServicesDisplay();
+            updateCapacityUI();
+            renderShiftsFeed();
+            renderAcceptedShiftsList();
+            renderWorkerNotifications();
+        })();
+    </script>
+</body>
+
+</html>
