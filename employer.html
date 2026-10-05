@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Instant Crew — Book a Crew</title>
     <meta name="description"
         content="Post a shift and get matched with vetted crew in minutes. Kitchen staff, riders, or helpers — on demand." />
@@ -19,12 +19,26 @@
     <!-- Header -->
     <header class="db-header">
         <div class="db-header-inner">
-            <a href="employer.html" class="logo" id="headerLogoLink" style="text-decoration:none;" aria-label="Instant Crew Employer Dashboard">
-                <img src="images/logo.png" alt="Instant Crew" style="height:32px; width:auto; display:block;">
-            </a>
+            <div class="db-header-left">
+                <a href="index.html" class="db-header-back-arrow" id="headerBackArrow" aria-label="Back to landing page"
+                    title="Back to Home">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </a>
+                <a href="index.html" class="logo" id="headerLogoLink" style="text-decoration:none;"
+                    aria-label="Instant Crew Home" title="Back to Home">
+                    <img src="images/logo.png" alt="Instant Crew" style="height:32px; width:auto; display:block;">
+                </a>
+            </div>
             <div style="display:flex; align-items:center; gap:12px;">
+                <!-- Header Log In button (visible when not logged in) -->
+                <button type="button" class="db-header-login-btn" id="headerLoginBtn" style="display:none;">Log In</button>
+
                 <!-- Notification Bell -->
-                <div class="db-notif-wrap">
+                <div class="db-notif-wrap" id="headerNotifWrap">
                     <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
                         title="Notifications">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -55,31 +69,30 @@
 
     <!-- ════ Employer Profile & Bookings Panel (slide-over) ════ -->
     <div class="db-profile-overlay" id="profileOverlay" aria-hidden="true">
-        <div class="db-profile-panel" role="dialog" aria-labelledby="profilePanelTitle">
+        <div class="db-profile-panel" role="dialog" aria-labelledby="panelUserName" aria-label="Employer Profile">
 
             <!-- Panel Header -->
             <div class="db-profile-panel-header">
-                <div class="db-profile-header-title-wrap">
-                    <h2 class="db-profile-panel-title" id="profilePanelTitle">Profile</h2>
-                    <span class="db-profile-card-badge">Employer</span>
+                <div class="db-profile-header-user">
+                    <div class="db-profile-header-avatar" id="panelAvatarInitials">SE</div>
+                    <div class="db-profile-header-info">
+                        <h2 class="db-profile-header-name" id="panelUserName">Sample Employer</h2>
+                        <p class="db-profile-header-email" id="panelUserEmail">sample@gmail.com</p>
+                    </div>
                 </div>
-                <button type="button" class="db-profile-close-btn" id="closeProfilePanel" aria-label="Close panel">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 4l8 8M12 4L4 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                </button>
+                <div class="db-profile-header-actions">
+                    <span class="db-profile-card-badge">Employer</span>
+                    <button type="button" class="db-profile-close-btn" id="closeProfilePanel" aria-label="Close panel">
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 4l8 8M12 4L4 12" stroke="currentColor" stroke-width="1.8"
+                                stroke-linecap="round" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <!-- Panel Scrollable Body -->
             <div class="db-profile-body">
-                <!-- User Card -->
-                <div class="db-profile-card">
-                    <div class="db-profile-card-avatar" id="panelAvatarInitials">SE</div>
-                    <div class="db-profile-card-info">
-                        <p class="db-profile-card-name" id="panelUserName">Sample Employer</p>
-                        <p class="db-profile-card-email" id="panelUserEmail">sample@gmail.com</p>
-                    </div>
-                </div>
 
                 <!-- Bookings Section -->
                 <div class="db-bookings-section">
@@ -499,9 +512,11 @@
                                         fill="#EA4335" />
                                     <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
                                 </svg>
-                                <span class="db-map-title">Google Map Location <span style="color:#DC2626; font-size:0.9rem;">*</span></span>
+                                <span class="db-map-title">Google Map Location <span
+                                        style="color:#DC2626; font-size:0.9rem;">*</span></span>
                             </div>
-                            <span class="db-map-badge" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA;">Required</span>
+                            <span class="db-map-badge"
+                                style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA;">Required</span>
                         </div>
                         <p class="db-map-desc">
                             Add your Google Maps link or exact venue address so matched crew can view details and get
@@ -537,7 +552,8 @@
                         </div>
                         <p class="db-map-error-msg" id="googleMapErrorMsg">
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4.5zm0 7a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z"/>
+                                <path
+                                    d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4.5zm0 7a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z" />
                             </svg>
                             <span>Google Map location or URL is required before proceeding.</span>
                         </p>
@@ -564,8 +580,8 @@
 
                     <div class="db-step-header">
                         <p class="db-step-label">Step 3 of 4</p>
-                        <h2 id="step3Heading">When do you need them?</h2>
-                        <p class="db-step-sub">Set the timing and crew size.</p>
+                        <h2 id="step3Heading">When do you need your crew?</h2>
+                        <p class="db-step-sub">Select your shift timing.</p>
                     </div>
 
                     <div class="db-toggle-group" role="group" aria-label="Timing">
@@ -611,25 +627,10 @@
                         </div>
                     </div>
 
-                    <div class="db-stepper-section">
-                        <p class="db-field-label">How many people?</p>
-                        <div class="db-stepper">
-                            <button type="button" class="db-stepper-btn" id="countMinus" aria-label="Decrease">
-                                <svg width="14" height="2" viewBox="0 0 14 2" fill="none">
-                                    <path d="M1 1h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                            <span class="db-stepper-val" id="countVal" aria-live="polite">2</span>
-                            <button type="button" class="db-stepper-btn" id="countPlus" aria-label="Increase">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2.2"
-                                        stroke-linecap="round" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Hidden compatibility headcount element (fixed to 1 crew) -->
+                    <span id="countVal" style="display:none;" aria-hidden="true">1</span>
 
-                    <button type="button" class="db-btn-primary" id="toStep4">
+                    <button type="button" class="db-btn-primary" id="toStep4" style="margin-top: 20px;">
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                             <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="currentColor" />
                         </svg>
@@ -672,57 +673,31 @@
                                 stroke-width="2.5">
                                 <polyline points="20 6 9 17 4 12" />
                             </svg>
-                            <span>Match Fee Paid: <strong id="matchEscrowText">₱200.00 via GCash</strong></span>
+                            <span>Match Fee Paid: <strong id="matchEscrowText">₱100.00 via GCash</strong></span>
                         </div>
-                        <!-- 3 Tries Tracker -->
-                        <div class="db-try-tracker" id="dbTryTracker">
-                            <div class="db-try-header">
-                                <span class="db-try-label" id="dbTryLabel">Attempt 1 of 3</span>
-                                <span class="db-try-timer" id="dbTryTimer">⏱ 1m remaining</span>
+                        <!-- Search Window Timer (Maximum 3 Minutes) -->
+                        <div class="db-search-timer-box" id="dbSearchTimerBox">
+                            <div class="db-search-timer-header">
+                                <span class="db-search-timer-label">Searching for available crew…</span>
+                                <span class="db-try-timer" id="dbTryTimer">3m 00s remaining</span>
                             </div>
-                            <div class="db-try-pills">
-                                <div class="db-try-pill active" id="tryPill1">
-                                    <span class="db-try-pill-num">1</span>
-                                    <span class="db-try-pill-text">Try 1</span>
-                                </div>
-                                <div class="db-try-pill" id="tryPill2">
-                                    <span class="db-try-pill-num">2</span>
-                                    <span class="db-try-pill-text">Try 2</span>
-                                </div>
-                                <div class="db-try-pill" id="tryPill3">
-                                    <span class="db-try-pill-num">3</span>
-                                    <span class="db-try-pill-text">Try 3</span>
-                                </div>
+                            <div class="db-search-progress-bar">
+                                <div class="db-search-progress-fill" id="dbSearchProgressFill"></div>
                             </div>
-                        </div>
-
-                        <!-- Try Expired / Next Try Prompt -->
-                        <div class="db-try-expired-banner" id="tryExpiredBanner" style="display:none;">
-                            <div class="db-try-expired-content">
-                                <p class="db-try-expired-title" id="tryExpiredTitle">Attempt 1 Unfulfilled</p>
-                                <p class="db-try-expired-desc" id="tryExpiredDesc">No nearby crew accepted within the
-                                    search time. You have 2 tries left.</p>
-                            </div>
-                            <button type="button" class="db-btn-try-next" id="btnTryNext">
-                                <span id="btnTryNextText">Start Attempt 2</span>
-                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                    <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                </svg>
-                            </button>
+                            <p class="db-search-timer-note">Maximum 3 minutes search window</p>
                         </div>
 
                         <div class="db-demo-actions-row">
                             <button type="button" class="db-simulate-accept-btn" id="simulateAcceptBtn">
-                                ⚡ Simulate Crew Acceptance (Demo)
+                                Simulate Crew Acceptance (Demo)
                             </button>
                             <button type="button" class="db-simulate-timeout-btn" id="simulateTimeoutBtn">
-                                ⏱ Simulate Try Timeout (Demo)
+                                Simulate 3-Min Timeout (Demo)
                             </button>
                         </div>
                     </div>
 
-                    <!-- ════ FAILED MATCH (3 Tries Exhausted) ════ -->
+                    <!-- ════ FAILED MATCH (3-Min Search Expired) ════ -->
                     <div id="matchFailed" style="display:none;" class="db-match-failed-view">
                         <div class="db-failed-icon-wrap">
                             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
@@ -732,30 +707,12 @@
                                 <line x1="9" y1="9" x2="15" y2="15" />
                             </svg>
                         </div>
-                        <div class="db-failed-badge">3 of 3 Tries Used</div>
+                        <div class="db-failed-badge">Search Expired (3 mins)</div>
                         <h2 class="db-failed-heading">No Crew Matched</h2>
                         <p class="db-failed-sub">
-                            All 3 search attempts have been completed, but no crew members were available to take this
+                            The 3-minute search time expired, but no crew members were available to take this
                             shift right now.
                         </p>
-
-                        <div class="db-failed-history-card">
-                            <div class="db-failed-history-row">
-                                <span class="db-failed-dot"></span>
-                                <span>Attempt 1: No crew accepted</span>
-                                <span class="db-failed-tag">Expired</span>
-                            </div>
-                            <div class="db-failed-history-row">
-                                <span class="db-failed-dot"></span>
-                                <span>Attempt 2: No crew accepted</span>
-                                <span class="db-failed-tag">Expired</span>
-                            </div>
-                            <div class="db-failed-history-row">
-                                <span class="db-failed-dot"></span>
-                                <span>Attempt 3: No crew accepted</span>
-                                <span class="db-failed-tag">Expired</span>
-                            </div>
-                        </div>
 
                         <div class="db-repay-notice-box">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309"
@@ -764,8 +721,8 @@
                                 <line x1="12" y1="16" x2="12" y2="12" />
                                 <line x1="12" y1="8" x2="12.01" y2="8" />
                             </svg>
-                            <span>To search again for available crew, an additional fixed ₱200 match fee is required
-                                (gives you 3 new tries).</span>
+                            <span>To search again for available crew, an additional fixed ₱100 match fee is
+                                required.</span>
                         </div>
 
                         <button type="button" class="db-btn-primary db-repay-btn" id="repayMatchFeeBtn">
@@ -788,7 +745,7 @@
                                 Crew Found!
                             </div>
                             <div class="db-results-paid-badge" id="resultsPaidBadge">
-                                ✓ Match Fee Paid (₱200)
+                                ✓ Match Fee Paid (₱100)
                             </div>
                         </div>
                         <h2 class="db-results-heading" id="resultsHeading">Great news!</h2>
@@ -858,6 +815,181 @@
         </div>
     </main>
 
+    <!-- ════ Employer Auth Modal (Triggered in Step 3 when clicking "Find a Crew" if not logged in) ════ -->
+    <div class="db-modal-overlay" id="employerAuthModal" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="employerAuthTitle">
+        <div class="db-modal-card db-auth-modal-card">
+            <button type="button" class="db-payment-close-btn" id="employerAuthCloseBtn" aria-label="Close dialog">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+
+            <div class="db-auth-modal-inner">
+                <!-- Modal Header -->
+                <div class="db-modal-header db-auth-header">
+                    <div class="db-auth-icon-badge">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                    </div>
+                    <h3 class="db-modal-title" id="employerAuthTitle">Log In / Sign Up to Continue</h3>
+                    <p class="db-modal-sub">Create an account or log in to your Employer journey.</p>
+                </div>
+
+                <!-- Tabs: Log In vs Sign Up -->
+                <div class="db-auth-tabs">
+                    <button type="button" class="db-auth-tab-btn active" id="tabEmployerLogin">Log In</button>
+                    <button type="button" class="db-auth-tab-btn" id="tabEmployerSignup">Create Account</button>
+                </div>
+
+                <!-- Notice / Error Banner -->
+                <div class="db-auth-error-banner" id="employerAuthError" style="display:none;"></div>
+
+                <!-- ── Employer Log In Form ── -->
+                <form id="employerModalLoginForm" class="db-auth-form" onsubmit="return false;">
+                    <div class="db-auth-field">
+                        <label for="empModalLoginEmail" class="db-field-label">Business Email</label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            <input type="email" id="empModalLoginEmail" class="db-auth-input"
+                                placeholder="sample@gmail.com" required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="db-auth-field">
+                        <label for="empModalLoginPass" class="db-field-label">Password</label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <input type="password" id="empModalLoginPass" class="db-auth-input db-auth-input-pass" placeholder="••••••••"
+                                required autocomplete="current-password">
+                            <button type="button" class="db-auth-toggle-pass" id="toggleEmpModalLoginPass"
+                                aria-label="Show password" title="Toggle password visibility">
+                                <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="display: none;">
+                                    <path
+                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                    </path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="db-btn-primary" id="btnSubmitModalLogin" style="margin-top:16px;">
+                        <span>Log In</span>
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </form>
+
+                <!-- ── Employer Sign Up Form ── -->
+                <form id="employerModalSignupForm" class="db-auth-form" style="display:none;" onsubmit="return false;">
+                    <div class="db-auth-field">
+                        <label for="empModalSignupCompany" class="db-field-label">Company / Business Name</label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                            <input type="text" id="empModalSignupCompany" class="db-auth-input"
+                                placeholder="e.g. Metro Bistro Co." required>
+                        </div>
+                    </div>
+
+                    <div class="db-auth-field">
+                        <label for="empModalSignupContact" class="db-field-label">Contact Person</label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <input type="text" id="empModalSignupContact" class="db-auth-input"
+                                placeholder="e.g. David Santos" required>
+                        </div>
+                    </div>
+
+                    <div class="db-auth-field">
+                        <label for="empModalSignupEmail" class="db-field-label">Business Email</label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            <input type="email" id="empModalSignupEmail" class="db-auth-input"
+                                placeholder="owner@company.com" required autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="db-auth-field">
+                        <label for="empModalSignupPass" class="db-field-label">Create Password</label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <input type="password" id="empModalSignupPass" class="db-auth-input db-auth-input-pass"
+                                placeholder="At least 4 characters" required autocomplete="new-password">
+                            <button type="button" class="db-auth-toggle-pass" id="toggleEmpModalSignupPass"
+                                aria-label="Show password" title="Toggle password visibility">
+                                <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="display: none;">
+                                    <path
+                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                    </path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="db-btn-primary" id="btnSubmitModalSignup" style="margin-top:16px;">
+                        <span>Create Account</span>
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </form>
+
+                <p style="text-align:center; font-size:0.78rem; color:#6B7280; margin-top:14px; margin-bottom:0;">
+                    Prefer the full login page? <a href="login.html?role=hirer"
+                        style="color:#D97706; font-weight:700; text-decoration:underline;">Open Login Page</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- ════ Employer Shift Payment & Escrow Modal ════ -->
     <div class="db-modal-overlay" id="paymentModal" aria-hidden="true" role="dialog" aria-modal="true"
         aria-labelledby="paymentModalTitle">
@@ -872,172 +1004,127 @@
             <div class="db-payment-modal-body" id="paymentModalBody">
                 <!-- Modal Header -->
                 <div class="db-modal-header db-payment-header">
-                <div class="db-payment-shield-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        <path d="M9 12l2 2 4-4" />
-                    </svg>
-                </div>
-                <h3 class="db-modal-title" id="paymentModalTitle">Find a Matched Crew</h3>
-                <p class="db-modal-sub">Pay a fixed ₱200 matching fee to search and dispatch available crew.</p>
-            </div>
-
-            <!-- Booking Summary Box -->
-            <div class="db-payment-summary-box">
-                <div class="db-payment-summary-header">
-                    <span class="db-payment-role-badge" id="paySummaryRole">Line Cook</span>
-                    <span class="db-payment-cat-tag" id="paySummaryCat">Kitchen</span>
-                </div>
-                <div class="db-payment-meta-grid">
-                    <div class="db-payment-meta-item">
-                        <span class="db-meta-icon">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                        </span>
-                        <span id="paySummaryTime">Today, ASAP</span>
+                    <div class="db-payment-shield-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            <path d="M9 12l2 2 4-4" />
+                        </svg>
                     </div>
-                    <div class="db-payment-meta-item">
-                        <span class="db-meta-icon">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                            </svg>
-                        </span>
-                        <span id="paySummaryCount">2 People (4h min)</span>
-                    </div>
-                    <div class="db-payment-meta-item db-payment-meta-full">
-                        <span class="db-meta-icon">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                <circle cx="12" cy="10" r="3" />
-                            </svg>
-                        </span>
-                        <span id="paySummaryLocation">Cebu IT Park, Lahug</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Price Breakdown -->
-            <div class="db-payment-breakdown">
-                <div class="db-breakdown-row">
-                    <span class="db-breakdown-label">Fixed Crew Matching Fee</span>
-                    <span class="db-breakdown-val" id="payBreakdownSubtotal">₱200.00</span>
-                </div>
-                <div class="db-breakdown-row db-breakdown-wage-row">
-                    <span class="db-breakdown-label">
-                        <span class="db-wage-title">Crew Shift Wage</span>
-                        <span class="db-wage-rate-tag">(<span id="payBreakdownMath">₱85/hr</span>)</span>
-                        <span class="db-info-tooltip"
-                            title="Hourly wage is paid directly to crew upon shift completion">ⓘ</span>
-                    </span>
-                    <span class="db-breakdown-val db-wage-status-val">Paid after shift</span>
-                </div>
-                <div class="db-breakdown-row db-breakdown-total">
-                    <span class="db-breakdown-total-label">Total to Pay Now</span>
-                    <span class="db-breakdown-total-val" id="payBreakdownTotal">₱200.00</span>
-                </div>
-            </div>
-
-            <!-- Payment Method Selector -->
-            <div class="db-payment-methods-section">
-                <label class="db-payment-section-label">Select Payment Method</label>
-                <div class="db-pay-method-tabs" role="radiogroup">
-                    <button type="button" class="db-pay-method-btn active" data-method="gcash" aria-checked="true">
-                        <span class="db-pay-dot"></span>
-                        <span class="db-pay-method-name">GCash</span>
-                    </button>
-                    <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
-                        <span class="db-pay-dot"></span>
-                        <span class="db-pay-method-name">Maya</span>
-                    </button>
-                    <button type="button" class="db-pay-method-btn" data-method="card" aria-checked="false">
-                        <span class="db-pay-dot"></span>
-                        <span class="db-pay-method-name">Card</span>
-                    </button>
+                    <h3 class="db-modal-title" id="paymentModalTitle">Find a Matched Crew</h3>
+                    <p class="db-modal-sub">Pay a fixed ₱100 matching fee to search and dispatch available crew.</p>
                 </div>
 
-                <!-- Method Input Fields -->
-                <div class="db-pay-method-details" id="payMethodGcashWrap">
-                    <div class="db-pay-field">
-                        <label for="payGcashNumber">GCash Mobile Number</label>
-                        <div class="db-pay-input-wrap">
-                            <span class="db-pay-prefix">+63</span>
-                            <input type="tel" id="payGcashNumber" class="db-pay-input" value="917 555 0199"
-                                placeholder="9XX XXX XXXX">
-                        </div>
+                <!-- Booking Summary Box -->
+                <div class="db-payment-summary-box">
+                    <div class="db-payment-summary-header">
+                        <span class="db-payment-role-badge" id="paySummaryRole">Line Cook</span>
+                        <span class="db-payment-cat-tag" id="paySummaryCat">Kitchen</span>
                     </div>
-                    <div class="db-pay-quick-chip" id="chipGcashDefault">
-                        <span> Use Registered Gcash Number</span>
-                    </div>
-                </div>
-
-                <div class="db-pay-method-details" id="payMethodMayaWrap" style="display:none;">
-                    <div class="db-pay-field">
-                        <label for="payMayaNumber">Maya Mobile Number</label>
-                        <div class="db-pay-input-wrap">
-                            <span class="db-pay-prefix">+63</span>
-                            <input type="tel" id="payMayaNumber" class="db-pay-input" value="918 777 2233"
-                                placeholder="9XX XXX XXXX">
-                        </div>
-                    </div>
-                    <div class="db-pay-quick-chip" id="chipMayaDefault">
-                        <span> Use Registered Maya Number</span>
-                    </div>
-                </div>
-
-                <div class="db-pay-method-details" id="payMethodCardWrap" style="display:none;">
-                    <div class="db-pay-field">
-                        <label for="payCardNumber">Card Number</label>
-                        <div class="db-pay-input-wrap db-pay-card-num-wrap">
-                            <input type="password" id="payCardNumber" class="db-pay-input" value="4242 5555 6666 4242"
-                                placeholder="4242 •••• •••• ••••" maxlength="19">
-                            <button type="button" class="db-cvv-toggle-btn" id="toggleCardNumBtn"
-                                aria-label="Show card number" title="Show card number">
-                                <svg class="db-cvv-eye-icon db-card-eye-open" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
+                    <div class="db-payment-meta-grid">
+                        <div class="db-payment-meta-item">
+                            <span class="db-meta-icon">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
                                 </svg>
-                                <svg class="db-cvv-eye-icon db-card-eye-closed" width="16" height="16"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                    <path
-                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
-                                    </path>
-                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </span>
+                            <span id="paySummaryTime" style="font-weight:700; color:#DC2626;">Today, ASAP NOW</span>
+                        </div>
+                        <div class="db-payment-meta-item db-payment-meta-full">
+                            <span class="db-meta-icon">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
                                 </svg>
-                            </button>
+                            </span>
+                            <span id="paySummaryLocation">Cebu IT Park, Lahug</span>
                         </div>
                     </div>
-                    <div class="db-pay-card-row">
+                </div>
+
+                <!-- Price Breakdown -->
+                <div class="db-payment-breakdown">
+                    <div class="db-breakdown-row">
+                        <span class="db-breakdown-label">Fixed Crew Matching Fee</span>
+                        <span class="db-breakdown-val" id="payBreakdownSubtotal">₱100.00</span>
+                    </div>
+                    <div class="db-breakdown-row db-breakdown-wage-row">
+                        <span class="db-breakdown-label">
+                            <span class="db-wage-title">Crew Shift Wage</span>
+                            <span class="db-wage-rate-tag">(<span id="payBreakdownMath">₱85/hr</span>)</span>
+                            <span class="db-info-tooltip"
+                                title="Hourly wage is paid directly to crew upon shift completion">ⓘ</span>
+                        </span>
+                    </div>
+                    <div class="db-breakdown-row db-breakdown-total">
+                        <span class="db-breakdown-total-label">Total to Pay Now</span>
+                        <span class="db-breakdown-total-val" id="payBreakdownTotal">₱100.00</span>
+                    </div>
+                </div>
+
+                <!-- Payment Method Selector -->
+                <div class="db-payment-methods-section">
+                    <label class="db-payment-section-label">Select Payment Method</label>
+                    <div class="db-pay-method-tabs" role="radiogroup">
+                        <button type="button" class="db-pay-method-btn active" data-method="gcash" aria-checked="true">
+                            <span class="db-pay-dot"></span>
+                            <span class="db-pay-method-name">GCash</span>
+                        </button>
+                        <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
+                            <span class="db-pay-dot"></span>
+                            <span class="db-pay-method-name">Maya</span>
+                        </button>
+                        <button type="button" class="db-pay-method-btn" data-method="card" aria-checked="false">
+                            <span class="db-pay-dot"></span>
+                            <span class="db-pay-method-name">Card</span>
+                        </button>
+                    </div>
+
+                    <!-- Method Input Fields -->
+                    <div class="db-pay-method-details" id="payMethodGcashWrap">
                         <div class="db-pay-field">
-                            <label for="payCardExp">Expiry</label>
-                            <input type="text" id="payCardExp" class="db-pay-input db-pay-input-full" value="12/28"
-                                placeholder="MM/YY">
+                            <label for="payGcashNumber">GCash Mobile Number</label>
+                            <div class="db-pay-input-wrap">
+                                <span class="db-pay-prefix">+63</span>
+                                <input type="tel" id="payGcashNumber" class="db-pay-input" placeholder="917 555 0199">
+                            </div>
                         </div>
+                        <div class="db-pay-quick-chip" id="chipGcashDefault">
+                            <span> Use Registered Gcash Number</span>
+                        </div>
+                    </div>
+
+                    <div class="db-pay-method-details" id="payMethodMayaWrap" style="display:none;">
                         <div class="db-pay-field">
-                            <label for="payCardCvc">CVV</label>
-                            <div class="db-pay-input-wrap db-pay-cvv-wrap">
-                                <input type="password" id="payCardCvc" class="db-pay-input" value="123"
-                                    placeholder="CVC" maxlength="4">
-                                <button type="button" class="db-cvv-toggle-btn" id="toggleCardCvcBtn"
-                                    aria-label="Show CVV" title="Show CVV">
-                                    <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
+                            <label for="payMayaNumber">Maya Mobile Number</label>
+                            <div class="db-pay-input-wrap">
+                                <span class="db-pay-prefix">+63</span>
+                                <input type="tel" id="payMayaNumber" class="db-pay-input" placeholder="918 777 2233">
+                            </div>
+                        </div>
+                        <div class="db-pay-quick-chip" id="chipMayaDefault">
+                            <span> Use Registered Maya Number</span>
+                        </div>
+                    </div>
+
+                    <div class="db-pay-method-details" id="payMethodCardWrap" style="display:none;">
+                        <div class="db-pay-field">
+                            <label for="payCardNumber">Card Number</label>
+                            <div class="db-pay-input-wrap db-pay-card-num-wrap">
+                                <input type="password" id="payCardNumber" class="db-pay-input"
+                                    placeholder="4242 5555 6666 4242" maxlength="19">
+                                <button type="button" class="db-cvv-toggle-btn" id="toggleCardNumBtn"
+                                    aria-label="Show card number" title="Show card number">
+                                    <svg class="db-cvv-eye-icon db-card-eye-open" width="16" height="16"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                         <circle cx="12" cy="12" r="3"></circle>
                                     </svg>
-                                    <svg class="db-cvv-eye-icon db-cvv-eye-closed" width="16" height="16"
+                                    <svg class="db-cvv-eye-icon db-card-eye-closed" width="16" height="16"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                                         <path
@@ -1048,30 +1135,60 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="db-pay-card-row">
+                            <div class="db-pay-field">
+                                <label for="payCardExp">Expiry</label>
+                                <input type="text" id="payCardExp" class="db-pay-input db-pay-input-full"
+                                    placeholder="12/28">
+                            </div>
+                            <div class="db-pay-field">
+                                <label for="payCardCvc">CVV</label>
+                                <div class="db-pay-input-wrap db-pay-cvv-wrap">
+                                    <input type="password" id="payCardCvc" class="db-pay-input" placeholder="123"
+                                        maxlength="4">
+                                    <button type="button" class="db-cvv-toggle-btn" id="toggleCardCvcBtn"
+                                        aria-label="Show CVV" title="Show CVV">
+                                        <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        <svg class="db-cvv-eye-icon db-cvv-eye-closed" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                            <path
+                                                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                            </path>
+                                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Escrow Guarantee Badge -->
-            <div class="db-escrow-guarantee-box">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <path d="M9 12l2 2 4-4" />
-                </svg>
-                <span>The fixed fee is only charged to find and dispatch a matched crew.</span>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="db-modal-actions db-payment-actions">
-                <button type="button" class="db-modal-confirm-btn db-btn-pay-now" id="payNowBtn">
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-                        <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="currentColor" />
+                <!-- Escrow Guarantee Badge -->
+                <div class="db-escrow-guarantee-box">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <path d="M9 12l2 2 4-4" />
                     </svg>
-                    <span id="payNowBtnText">Pay</span>
-                </button>
-                <button type="button" class="db-modal-cancel-btn" id="payCancelBtn">Back to Shift Details</button>
-            </div>
+                    <span>The fixed fee is only charged to find and dispatch a matched crew.</span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="db-modal-actions db-payment-actions">
+                    <button type="button" class="db-modal-confirm-btn db-btn-pay-now" id="payNowBtn">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                            <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="currentColor" />
+                        </svg>
+                        <span id="payNowBtnText">Pay</span>
+                    </button>
+                    <button type="button" class="db-modal-cancel-btn" id="payCancelBtn">Back to Shift Details</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1122,7 +1239,8 @@
             <div class="db-cal-time-section">
                 <div class="db-cal-time-header">
                     <div class="db-cal-time-header-left">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:#D97706;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:#D97706;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
@@ -1138,7 +1256,9 @@
                     <button type="button" class="db-time-chip" data-time="16:00">4:00 PM</button>
                     <button type="button" class="db-time-chip" data-time="18:00">6:00 PM</button>
                     <button type="button" class="db-time-chip" data-time="custom" id="customTimeChip">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:-1px; margin-right:3px;">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
@@ -1160,15 +1280,20 @@
                             <div class="db-time-unit-col">
                                 <span class="db-time-unit-label">Hour</span>
                                 <div class="db-time-stepper-box">
-                                    <button type="button" class="db-time-arrow-btn" id="hourUpBtn" aria-label="Increase Hour" title="Increase hour">
+                                    <button type="button" class="db-time-arrow-btn" id="hourUpBtn"
+                                        aria-label="Increase Hour" title="Increase hour">
                                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                            <path d="M3 10l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M3 10l5-5 5 5" stroke="currentColor" stroke-width="2.2"
+                                                stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                     </button>
-                                    <input type="text" id="empCustomHourDisplay" class="db-time-num-input" value="08" maxlength="2" inputmode="numeric" aria-label="Hour" autocomplete="off" />
-                                    <button type="button" class="db-time-arrow-btn" id="hourDownBtn" aria-label="Decrease Hour" title="Decrease hour">
+                                    <input type="text" id="empCustomHourDisplay" class="db-time-num-input" value="08"
+                                        maxlength="2" inputmode="numeric" aria-label="Hour" autocomplete="off" />
+                                    <button type="button" class="db-time-arrow-btn" id="hourDownBtn"
+                                        aria-label="Decrease Hour" title="Decrease hour">
                                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                            <path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+                                                stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                     </button>
                                 </div>
@@ -1180,15 +1305,20 @@
                             <div class="db-time-unit-col">
                                 <span class="db-time-unit-label">Minute</span>
                                 <div class="db-time-stepper-box">
-                                    <button type="button" class="db-time-arrow-btn" id="minuteUpBtn" aria-label="Increase Minute" title="Increase minute (15-min step)">
+                                    <button type="button" class="db-time-arrow-btn" id="minuteUpBtn"
+                                        aria-label="Increase Minute" title="Increase minute (15-min step)">
                                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                            <path d="M3 10l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M3 10l5-5 5 5" stroke="currentColor" stroke-width="2.2"
+                                                stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                     </button>
-                                    <input type="text" id="empCustomMinuteDisplay" class="db-time-num-input" value="00" maxlength="2" inputmode="numeric" aria-label="Minute" autocomplete="off" />
-                                    <button type="button" class="db-time-arrow-btn" id="minuteDownBtn" aria-label="Decrease Minute" title="Decrease minute (15-min step)">
+                                    <input type="text" id="empCustomMinuteDisplay" class="db-time-num-input" value="00"
+                                        maxlength="2" inputmode="numeric" aria-label="Minute" autocomplete="off" />
+                                    <button type="button" class="db-time-arrow-btn" id="minuteDownBtn"
+                                        aria-label="Decrease Minute" title="Decrease minute (15-min step)">
                                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                                            <path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+                                                stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                     </button>
                                 </div>
@@ -1198,8 +1328,10 @@
                             <div class="db-time-unit-col">
                                 <span class="db-time-unit-label">Period</span>
                                 <div class="db-ampm-pill" role="radiogroup" aria-label="AM or PM">
-                                    <button type="button" class="db-ampm-seg active" data-ampm="AM" id="empBtnAM" role="radio" aria-checked="true">AM</button>
-                                    <button type="button" class="db-ampm-seg" data-ampm="PM" id="empBtnPM" role="radio" aria-checked="false">PM</button>
+                                    <button type="button" class="db-ampm-seg active" data-ampm="AM" id="empBtnAM"
+                                        role="radio" aria-checked="true">AM</button>
+                                    <button type="button" class="db-ampm-seg" data-ampm="PM" id="empBtnPM" role="radio"
+                                        aria-checked="false">PM</button>
                                 </div>
                             </div>
                         </div>
@@ -1221,6 +1353,90 @@
             <div class="db-modal-actions">
                 <button type="button" class="db-modal-confirm-btn" id="calConfirmBtn">Confirm</button>
                 <button type="button" class="db-modal-cancel-btn" id="calCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ Location Detail Modal (View Detail from Shift Card) ════ -->
+    <div class="app-modal-overlay" id="appLocationDetailModal" aria-hidden="true" role="dialog" aria-modal="true"
+        style="display:none;">
+        <div class="app-modal-card app-location-modal-card">
+            <div class="app-loc-modal-header">
+                <div class="app-loc-modal-title-wrap">
+                    <div class="app-loc-modal-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                                fill="#EA4335" />
+                            <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="app-loc-modal-title" id="locModalVenueTitle">Work Location & Directions</h3>
+                        <div class="app-loc-modal-sub" id="locModalRoleSub">Verified Work Location</div>
+                    </div>
+                </div>
+                <button type="button" class="app-modal-close-btn" id="closeLocModalBtn"
+                    aria-label="Close location modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="app-loc-modal-body">
+                <div class="app-loc-venue-box">
+                    <div class="app-loc-box-row">
+                        <span class="app-loc-field-label">VENUE / EMPLOYER</span>
+                        <h4 class="app-loc-venue-name" id="locModalVenueName">Employer Location</h4>
+                    </div>
+                    <div class="app-loc-box-row">
+                        <span class="app-loc-field-label" id="locModalShiftTimingLabel">Shift Details</span>
+                        <div class="app-loc-badge-group" id="locModalCardBadges">
+                            <!-- Injected Badges -->
+                        </div>
+                    </div>
+                    <div class="app-loc-box-row">
+                        <span class="app-loc-field-label">EMPLOYER'S LOCATION</span>
+                        <p class="app-loc-address-text" id="locModalAddress">Cebu City</p>
+                    </div>
+                </div>
+
+                <!-- Google Maps Direction Banner -->
+                <div class="app-loc-map-preview">
+                    <div class="app-loc-map-art">
+                        <div class="app-map-roads"></div>
+                        <div class="app-map-pulse-pin">
+                            <div class="app-pin-glow"></div>
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                                    fill="#EA4335" />
+                                <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="app-map-preview-hint">Location verified by employer for Google Maps navigation</p>
+                </div>
+            </div>
+
+            <div class="app-loc-modal-footer">
+                <button type="button" class="app-btn-copy-address" id="copyLocAddressBtn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copy Location</span>
+                </button>
+                <a href="#" target="_blank" rel="noopener noreferrer" class="app-btn-open-google-maps"
+                    id="openGoogleMapsActionBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                    <span>Open in Google Maps</span>
+                </a>
             </div>
         </div>
     </div>

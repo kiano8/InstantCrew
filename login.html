@@ -137,19 +137,6 @@
                 </div>
 
                 <button type="submit" class="btn-auth-submit" id="btnSubmitHirerLogin">Log In to Employer</button>
-                <div class="auth-guest-divider">
-                    <span>or</span>
-                </div>
-                <a href="employer-guest.html" class="btn-guest-action" id="btnGuestEmployerLogin">
-                    <svg class="guest-bolt-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
-                        <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="#D97706" />
-                    </svg>
-                    <span>Browse as Guest Employer</span>
-                    <svg class="guest-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </a>
             </form>
 
             <!-- ── Hirer Sign Up Form ── -->
@@ -232,19 +219,6 @@
                 </div>
 
                 <button type="submit" class="btn-auth-submit" id="btnSubmitHirerSignup">Create Employer Account</button>
-                <div class="auth-guest-divider">
-                    <span>or</span>
-                </div>
-                <a href="employer-guest.html" class="btn-guest-action" id="btnGuestEmployerSignup">
-                    <svg class="guest-bolt-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
-                        <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="#D97706" />
-                    </svg>
-                    <span>Browse as Guest Employer</span>
-                    <svg class="guest-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </a>
             </form>
 
             <!-- ── Applicant (Employee) Log In Form ── -->
@@ -525,11 +499,13 @@
                 }
             } catch (e) { }
 
-            // Read URL Params for direct role targeting (e.g. ?role=applicant)
+            // Read URL Params for direct role targeting (e.g. ?role=applicant or ?role=hirer)
             const urlParams = new URLSearchParams(window.location.search);
             const initialRole = urlParams.get('role');
             if (initialRole === 'applicant' || initialRole === 'employee' || initialRole === 'crew') {
                 currentRole = 'applicant';
+            } else if (initialRole === 'hirer' || initialRole === 'employer' || initialRole === 'business') {
+                currentRole = 'hirer';
             }
 
             function updateUI() {
@@ -605,12 +581,18 @@
                 setTimeout(() => {
                     if ((email === 'sample@gmail.com' && pass === 'sample123') || (email && pass.length >= 4)) {
                         // Store session expected by employer.html & employer.js
+                        let existingBookings = [];
+                        try {
+                            const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY_EMPLOYER));
+                            if (prev && Array.isArray(prev.bookings)) existingBookings = prev.bookings;
+                        } catch (e) { }
+
                         sessionStorage.setItem(SESSION_KEY_EMPLOYER, JSON.stringify({
                             name: email === 'sample@gmail.com' ? 'Sample Employer' : email.split('@')[0],
                             email: email,
                             company: 'Sample Co.',
                             joinedYear: 2026,
-                            bookings: []
+                            bookings: existingBookings
                         }));
 
                         authSuccessMsg.innerHTML = `${SVG_CHECK}Login successful! Redirecting to Employer Dashboard…`;

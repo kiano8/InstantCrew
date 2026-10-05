@@ -78,6 +78,8 @@
         if (type === 'accept') return ICONS.party(size, '#10B981');
         if (type === 'end') return ICONS.clipboard(size);
         if (type === 'match') return ICONS.bolt(size, '#F59E0B');
+        if (type === 'transit' || type === 'on_the_way') return ICONS.delivery(size);
+        if (type === 'arrived') return ICONS.checkCircle(size, '#10B981');
         return ICONS.bell(size);
     }
 
@@ -107,7 +109,7 @@
             rate: '₱95',
             notes: 'Kitchen attire & apron provided on site',
             employmentType: 'part-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -126,7 +128,7 @@
             rate: '₱100',
             notes: 'Short-order grill & sautee station',
             employmentType: 'part-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -145,7 +147,7 @@
             rate: '₱110',
             notes: 'Full-time kitchen team member',
             employmentType: 'full-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -166,7 +168,7 @@
             rate: '₱120',
             notes: 'Full-time hot line cook',
             employmentType: 'full-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -204,7 +206,7 @@
             rate: '₱90',
             notes: 'Rapid parcel delivery route',
             employmentType: 'part-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -225,7 +227,7 @@
             rate: '₱88',
             notes: 'Gas allowance & thermal bag provided',
             employmentType: 'part-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -244,9 +246,9 @@
             rate: '₱75',
             notes: 'Staging, seating & guest support',
             employmentType: 'part-time',
-            neededCrew: 3,
-            acceptedCount: 1,
-            acceptedCrew: ['Beth T.'],
+            neededCrew: 1,
+            acceptedCount: 0,
+            acceptedCrew: [],
             status: 'open',
             employerName: 'Grand Ballroom'
         },
@@ -282,7 +284,7 @@
             rate: '₱90',
             notes: 'Safe lifting & package sorting',
             employmentType: 'full-time',
-            neededCrew: 2,
+            neededCrew: 1,
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
@@ -664,6 +666,76 @@
         return { success: true, targetContract };
     }
 
+    // Update contract transit status (on the way / arrived) & notify employer
+    function updateContractTransit(contractOrJobId, transitStatus, workerName) {
+        const contracts = getActiveContracts();
+        let targetContract = null;
+        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        contracts.forEach(c => {
+            if ((c.id === contractOrJobId || c.jobId === contractOrJobId || (c.bookingRefId && String(c.bookingRefId) === String(contractOrJobId))) && c.status === 'active') {
+                c.transitStatus = transitStatus;
+                if (transitStatus === 'on_the_way') {
+                    c.departedAt = nowTime;
+                } else if (transitStatus === 'arrived') {
+                    c.arrivedAt = nowTime;
+                }
+                targetContract = c;
+            }
+        });
+
+        if (targetContract) {
+            saveActiveContracts(contracts);
+
+            // Also sync matching job in the jobs pool
+            const jobs = getJobs();
+            jobs.forEach(j => {
+                if (j.id === contractOrJobId || j.id === targetContract.jobId || (j.bookingRefId && String(j.bookingRefId) === String(contractOrJobId))) {
+                    j.transitStatus = transitStatus;
+                    if (transitStatus === 'on_the_way') j.departedAt = nowTime;
+                    if (transitStatus === 'arrived') j.arrivedAt = nowTime;
+                }
+            });
+            saveJobs(jobs);
+
+            const crewName = workerName || targetContract.workerName || 'Angelo Lopez';
+            const roleName = targetContract.role || targetContract.title || 'crew';
+            const venueName = targetContract.venue || 'your location';
+
+            // Send instant notification to Employer
+            if (transitStatus === 'on_the_way') {
+                addNotification('employer', {
+                    id: Date.now(),
+                    title: 'Crew is On the Way',
+                    message: `${crewName} has departed and is on the way to ${venueName} for the ${roleName} shift.`,
+                    time: 'Just now',
+                    type: 'transit',
+                    jobId: targetContract.jobId,
+                    contractId: targetContract.id,
+                    departedAt: nowTime,
+                    workerName: crewName
+                });
+            } else if (transitStatus === 'arrived') {
+                addNotification('employer', {
+                    id: Date.now(),
+                    title: 'Crew Has Arrived',
+                    message: `${crewName} has arrived at ${venueName} for the ${roleName} shift.`,
+                    time: 'Just now',
+                    type: 'arrived',
+                    jobId: targetContract.jobId,
+                    contractId: targetContract.id,
+                    arrivedAt: nowTime,
+                    workerName: crewName
+                });
+            }
+
+            notifyStateChange('transit');
+            return { success: true, contract: targetContract };
+        }
+
+        return { success: false, reason: 'Active contract not found' };
+    }
+
     // Notifications Store
     function getNotifications(role) {
         const key = role === 'employer' ? STORAGE_KEY_NOTIFS_EMPLOYER : STORAGE_KEY_NOTIFS_WORKER;
@@ -725,13 +797,17 @@
             iconMarkup = iconOrType;
         } else if (iconOrType === 'accept' || iconOrType === 'party') {
             iconMarkup = ICONS.party(20, '#10B981');
-        } else if (iconOrType === 'end' || iconOrType === 'clipboard' || iconOrType === '📋') {
+        } else if (iconOrType === 'end' || iconOrType === 'clipboard') {
             iconMarkup = ICONS.clipboard(20);
-        } else if (iconOrType === 'match' || iconOrType === 'bolt' || iconOrType === '⚡') {
+        } else if (iconOrType === 'match' || iconOrType === 'bolt') {
             iconMarkup = ICONS.bolt(20, '#F59E0B');
+        } else if (iconOrType === 'transit' || iconOrType === 'on_the_way') {
+            iconMarkup = ICONS.delivery(20);
+        } else if (iconOrType === 'arrived') {
+            iconMarkup = ICONS.checkCircle(20, '#10B981');
         } else if (iconOrType === 'check' || iconOrType === '✓') {
             iconMarkup = ICONS.checkCircle(20, '#10B981');
-        } else if (iconOrType === 'alert' || iconOrType === '⚠️') {
+        } else if (iconOrType === 'alert') {
             iconMarkup = ICONS.alert(20, '#F59E0B');
         } else {
             iconMarkup = ICONS.bell(20);
@@ -811,6 +887,7 @@
         saveActiveContracts,
         acceptJob,
         endContract,
+        updateContractTransit,
         getNotifications,
         addNotification,
         markAllNotificationsRead,

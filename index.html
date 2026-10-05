@@ -50,7 +50,8 @@
                 <!-- Left Column: Courier Runner Illustration with Speed Lines -->
                 <div class="hero-visual">
                     <div class="hero-visual-wrapper">
-                        <img src="images/instadelivery.png" alt="Instant Crew Courier on the move" class="hero-courier-img">
+                        <img src="images/instadelivery.png" alt="Instant Crew Courier on the move"
+                            class="hero-courier-img">
                         <div class="hero-ground-shadow" aria-hidden="true"></div>
                     </div>
                 </div>
@@ -103,6 +104,189 @@
         </div>
     </footer>
 
+    <!-- ── Role Selection Modal (Triggered by "Instant Crew" or "Log In") ── -->
+    <div class="role-modal-overlay" id="roleModalOverlay" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="roleModalTitle">
+        <div class="role-modal-backdrop" id="roleModalBackdrop"></div>
+        <div class="role-modal-dialog">
+            <button type="button" class="role-modal-close" id="roleModalCloseBtn" aria-label="Close dialog">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+
+            <div class="role-modal-header">
+                <h2 class="role-modal-title" id="roleModalTitle">Welcome! What brings you to Instant Crew?</h2>
+                <p class="role-modal-subtitle">Choose how you'd like to get started.</p>
+            </div>
+
+            <div class="role-options-group" role="radiogroup" aria-label="Select your role">
+                <!-- Option 1: Employer -->
+                <div class="role-option-card" id="optionEmployer" data-role="employer" tabindex="0" role="radio"
+                    aria-checked="false">
+                    <div class="role-card-top">
+                        <div class="role-card-icon-box role-icon-employer">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </div>
+                        <div class="role-card-radio-circle">
+                            <span class="radio-inner-dot"></span>
+                        </div>
+                    </div>
+                    <div class="role-card-body">
+                        <h3 class="role-card-title">Employer</h3>
+                        <p class="role-card-desc">Post urgent shifts and dispatch crew in minutes.</p>
+                        <div class="role-card-badge badge-employer">
+                            <svg class="badge-icon-bolt" width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" />
+                            </svg>
+                            <span>Instant Dispatch</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Applicant -->
+                <div class="role-option-card" id="optionApplicant" data-role="applicant" tabindex="0" role="radio"
+                    aria-checked="false">
+                    <div class="role-card-top">
+                        <div class="role-card-icon-box role-icon-applicant">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="role-card-radio-circle">
+                            <span class="radio-inner-dot"></span>
+                        </div>
+                    </div>
+                    <div class="role-card-body">
+                        <h3 class="role-card-title">Applicant</h3>
+                        <p class="role-card-desc">Browse flexible hourly shifts, work on your schedule fast.</p>
+                        <div class="role-card-badge badge-applicant">
+                            <span class="pulse-status-dot"></span>
+                            <span>Available Shifts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-role-continue" id="btnRoleContinue" disabled>
+                <span>Continue</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Role Modal Controller Script ── -->
+    <script>
+        (function () {
+            'use strict';
+
+            const roleModalOverlay = document.getElementById('roleModalOverlay');
+            const roleModalCloseBtn = document.getElementById('roleModalCloseBtn');
+            const roleModalBackdrop = document.getElementById('roleModalBackdrop');
+            const heroInstantCrewBtn = document.getElementById('heroInstantCrewBtn');
+            const headerLoginBtn = document.getElementById('headerLoginBtn');
+            const optionEmployer = document.getElementById('optionEmployer');
+            const optionApplicant = document.getElementById('optionApplicant');
+            const btnRoleContinue = document.getElementById('btnRoleContinue');
+
+            let selectedRole = null;
+
+            function openRoleModal(e) {
+                if (e) e.preventDefault();
+                roleModalOverlay.classList.add('open');
+                roleModalOverlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeRoleModal() {
+                roleModalOverlay.classList.remove('open');
+                roleModalOverlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            function selectRole(role) {
+                selectedRole = role;
+                if (role === 'employer') {
+                    optionEmployer.classList.add('selected');
+                    optionEmployer.setAttribute('aria-checked', 'true');
+                    optionApplicant.classList.remove('selected');
+                    optionApplicant.setAttribute('aria-checked', 'false');
+                } else if (role === 'applicant') {
+                    optionApplicant.classList.add('selected');
+                    optionApplicant.setAttribute('aria-checked', 'true');
+                    optionEmployer.classList.remove('selected');
+                    optionEmployer.setAttribute('aria-checked', 'false');
+                }
+                btnRoleContinue.disabled = false;
+                btnRoleContinue.classList.add('active');
+            }
+
+            function proceedToLogin() {
+                if (!selectedRole) return;
+                const targetUrl = selectedRole === 'employer' ? 'employer.html' : 'applicant.html';
+                window.location.href = targetUrl;
+            }
+
+            if (heroInstantCrewBtn) {
+                heroInstantCrewBtn.addEventListener('click', openRoleModal);
+            }
+            if (headerLoginBtn) {
+                headerLoginBtn.addEventListener('click', openRoleModal);
+            }
+            if (roleModalCloseBtn) {
+                roleModalCloseBtn.addEventListener('click', closeRoleModal);
+            }
+            if (roleModalBackdrop) {
+                roleModalBackdrop.addEventListener('click', closeRoleModal);
+            }
+            if (roleModalOverlay) {
+                roleModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === roleModalOverlay) {
+                        closeRoleModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && roleModalOverlay.classList.contains('open')) {
+                    closeRoleModal();
+                }
+            });
+
+            [optionEmployer, optionApplicant].forEach(card => {
+                if (!card) return;
+                card.addEventListener('click', () => {
+                    selectRole(card.dataset.role);
+                });
+                card.addEventListener('dblclick', () => {
+                    selectRole(card.dataset.role);
+                    proceedToLogin();
+                });
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectRole(card.dataset.role);
+                    }
+                });
+            });
+
+            if (btnRoleContinue) {
+                btnRoleContinue.addEventListener('click', proceedToLogin);
+            }
+        })();
+    </script>
 </body>
 
 </html>

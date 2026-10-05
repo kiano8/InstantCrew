@@ -122,7 +122,7 @@ const state = {
     timing: 'now',
     scheduledDate: new Date(TODAY),
     scheduledTime: '08:00',
-    count: 2,
+    count: 1,
     currentJobId: null,
     currentBooking: null,
     matchCheckInterval: null,
@@ -130,10 +130,8 @@ const state = {
     paymentMethod: 'GCash',
     paymentAmount: 0,
     pendingPayment: null,
-    matchTries: 1,
-    maxTries: 3,
-    tryCountdown: 60,
-    tryTimerInterval: null,
+    searchCountdown: 180,
+    searchTimerInterval: null,
 };
 
 /* ─── DOM refs ────────────────────────────────────────────── */
@@ -250,18 +248,10 @@ const matchEscrowText = document.getElementById('matchEscrowText');
 const resultsPaidBadge = document.getElementById('resultsPaidBadge');
 const dPayment = document.getElementById('dPayment');
 
-// 3 Tries Matching refs
-const dbTryTracker = document.getElementById('dbTryTracker');
-const dbTryLabel = document.getElementById('dbTryLabel');
+// Step 4 Matching refs
+const dbSearchTimerBox = document.getElementById('dbSearchTimerBox');
 const dbTryTimer = document.getElementById('dbTryTimer');
-const tryPill1 = document.getElementById('tryPill1');
-const tryPill2 = document.getElementById('tryPill2');
-const tryPill3 = document.getElementById('tryPill3');
-const tryExpiredBanner = document.getElementById('tryExpiredBanner');
-const tryExpiredTitle = document.getElementById('tryExpiredTitle');
-const tryExpiredDesc = document.getElementById('tryExpiredDesc');
-const btnTryNext = document.getElementById('btnTryNext');
-const btnTryNextText = document.getElementById('btnTryNextText');
+const dbSearchProgressFill = document.getElementById('dbSearchProgressFill');
 const simulateTimeoutBtn = document.getElementById('simulateTimeoutBtn');
 const matchFailed = document.getElementById('matchFailed');
 const repayMatchFeeBtn = document.getElementById('repayMatchFeeBtn');
@@ -1183,7 +1173,7 @@ function finishLocating(locName) {
 
     if (googleMapLocationInput && !googleMapLocationInput.value.trim()) {
         const cleanName = (locName || 'Cebu City').replace(/\s*\((Current|Detected)\)/gi, '').trim();
-        const venueName = `${cleanName} (Current Venue)`;
+        const venueName = cleanName || 'Cebu City';
         googleMapLocationInput.value = venueName;
         state.mapLocation = venueName;
         state.googleMapsUrl = window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(state.mapLocation) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(state.mapLocation)}`;
@@ -1274,38 +1264,47 @@ document.querySelectorAll('.db-toggle').forEach(btn => {
 });
 
 function animateCount() {
-    countVal.style.transform = 'scale(1.3)';
-    setTimeout(() => { countVal.style.transform = 'scale(1)'; }, 160);
+    if (countVal) {
+        countVal.style.transform = 'scale(1.3)';
+        setTimeout(() => { countVal.style.transform = 'scale(1)'; }, 160);
+    }
 }
 
-document.getElementById('countMinus').addEventListener('click', () => {
-    if (state.count > 1) {
-        state.count--;
-        countVal.textContent = state.count;
-        animateCount();
-    }
-});
+const btnMinus = document.getElementById('countMinus');
+if (btnMinus) {
+    btnMinus.addEventListener('click', () => {
+        if (state.count > 1) {
+            state.count--;
+            if (countVal) countVal.textContent = state.count;
+            animateCount();
+        }
+    });
+}
 
-document.getElementById('countPlus').addEventListener('click', () => {
-    if (state.count < 20) {
-        state.count++;
-        countVal.textContent = state.count;
-        animateCount();
-    }
-});
+const btnPlus = document.getElementById('countPlus');
+if (btnPlus) {
+    btnPlus.addEventListener('click', () => {
+        if (state.count < 20) {
+            state.count++;
+            if (countVal) countVal.textContent = state.count;
+            animateCount();
+        }
+    });
+}
 
 /* ─── Shift Payment & Escrow Modal Handlers ───────────────── */
 
 function openPaymentModal() {
     const rate = RATES[state.category] || { amount: '₱75', note: 'Minimum 4 hours' };
     const rateVal = parseFloat(state.offeredRate) || (parseFloat((rate.amount || '').replace(/[^0-9.]/g, '')) || 85);
-    const count = Number(state.count) || 2;
+    const count = 1;
+    state.count = 1;
     const hours = 4; // Minimum 4 hours
-    const MATCH_FEE = 200; // Fixed ₱200 fee to find a matched crew
+    const MATCH_FEE = 100; // Fixed ₱100 fee to find a matched crew
 
     let timingText;
     if (state.timing === 'now') {
-        timingText = 'ASAP';
+        timingText = 'ASAP NOW';
     } else {
         timingText = `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
     }
@@ -1319,7 +1318,7 @@ function openPaymentModal() {
     if (paySummaryRole) paySummaryRole.textContent = state.roleLabel || 'Crew Member';
     if (paySummaryCat) paySummaryCat.textContent = CAT_LABELS[state.category] || 'Kitchen';
     if (paySummaryTime) paySummaryTime.textContent = timingText;
-    if (paySummaryCount) paySummaryCount.textContent = `${count} ${count === 1 ? 'Person' : 'People'} (${hours}h min)`;
+    if (paySummaryCount) paySummaryCount.textContent = `1 Crew Member (${hours}h min)`;
     if (paySummaryLocation) paySummaryLocation.textContent = finalMapLoc;
 
     if (payBreakdownMath) payBreakdownMath.textContent = `₱${rateVal}/hr`;
@@ -1466,16 +1465,22 @@ if (toggleCardCvcBtn && payCardCvc) {
     });
 }
 
-// ── Step 3 "Find a Crew" -> Triggers Payment First! ──
+// ── Step 3 "Find a Crew" -> Checks Auth First, then Triggers Payment! ──
 toStep4Btn.addEventListener('click', () => {
-    // Before employer can proceed after clicking "Find a crew", they still need to pay!
+    const currentSession = getSession();
+    if (!currentSession) {
+        authTriggerSource = 'step';
+        openEmployerAuthModal();
+        return;
+    }
+    // Logged in: proceed directly to payment and finding crew
     openPaymentModal();
 });
 
 // ── Pay Now -> Process Payment, Then Find Matching Crew ──
 if (payNowBtn) {
     payNowBtn.addEventListener('click', () => {
-        const payInfo = state.pendingPayment || { total: 200 };
+        const payInfo = state.pendingPayment || { total: 100 };
         const methodTab = document.querySelector('.db-pay-method-btn.active');
         const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
         const methodLabels = { gcash: 'GCash', maya: 'Maya', card: 'Card' };
@@ -1506,7 +1511,7 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
     state.paymentAmount = payInfo.total;
 
     const rate = RATES[state.category] || { amount: '₱75', note: 'Minimum 4 hours' };
-    const timingText = payInfo.timingText || (state.timing === 'now' ? 'ASAP' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
+    const timingText = payInfo.timingText || (state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
     const finalMapLoc = payInfo.finalMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
     const finalMapsUrl = payInfo.finalMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
 
@@ -1528,8 +1533,8 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
         bookedAt: new Date().toISOString(),
         paid: true,
         paymentMethod: methodLabel,
-        paymentAmount: payInfo.total || 200,
-        escrowStatus: 'Fixed Match Fee Paid (₱200.00)'
+        paymentAmount: payInfo.total || 100,
+        escrowStatus: 'Fixed Match Fee Paid (₱100.00)'
     };
 
     state.currentBooking = bookingData;
@@ -1538,7 +1543,7 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
     // Sync to shared jobs pool so applicants can see it and accept
     if (window.InstantCrewShared) {
         const s = getSession();
-        const sharedJob = InstantCrewShared.addEmployerJob({
+        const sharedJob = window.InstantCrewShared.addEmployerJob({
             ...bookingData,
             name: s ? s.name : 'Sample Employer',
             email: s ? s.email : 'sample@gmail.com',
@@ -1551,15 +1556,11 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
     if (matchEscrowPill) {
         matchEscrowPill.style.display = 'inline-flex';
         if (matchEscrowText) {
-            matchEscrowText.textContent = `₱${(payInfo.total || 200).toFixed(2)} via ${methodLabel}`;
+            matchEscrowText.textContent = `₱${(payInfo.total || 100).toFixed(2)} via ${methodLabel}`;
         }
     }
 
-    // Reset 3 tries state on new payment
-    state.matchTries = 1;
     if (matchFailed) matchFailed.style.display = 'none';
-    if (tryExpiredBanner) tryExpiredBanner.style.display = 'none';
-    updateTryTrackerUI();
 
     goStep(4);
 
@@ -1567,134 +1568,89 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
     matchLoading.style.display = 'flex';
     matchResults.style.display = 'none';
 
-    // Start 1min search timer for Attempt 1
-    startTryTimer();
+    // Start 3-minute search timer
+    startSearchTimer();
 
     // Start checking for crew acceptance (listening & polling)
     startCheckingForAcceptance();
 }
 
-/* ─── Step 4: Crew Results & 3-Tries Management ─────────── */
+/* ─── Step 4: Crew Results & 3-Minute Search Window ─────────── */
 
-function updateTryTrackerUI() {
-    if (dbTryLabel) {
-        dbTryLabel.textContent = `Attempt ${state.matchTries} of 3`;
-    }
-    const pills = [tryPill1, tryPill2, tryPill3];
-    pills.forEach((p, idx) => {
-        if (!p) return;
-        const tryNum = idx + 1;
-        p.classList.remove('active', 'expired');
-        if (tryNum < state.matchTries) {
-            p.classList.add('expired');
-        } else if (tryNum === state.matchTries) {
-            p.classList.add('active');
-        }
-    });
-}
+const SEARCH_MAX_SECONDS = 180; // Maximum of 3 mins
 
-function formatTryTimer(seconds) {
+function formatSearchTimer(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    if (mins > 0 && secs === 0) return `⏱ ${mins}m remaining`;
-    if (mins > 0) return `⏱ ${mins}m ${secs < 10 ? '0' : ''}${secs}s remaining`;
-    return `⏱ ${secs}s remaining`;
+    return `${mins}m ${secs < 10 ? '0' : ''}${secs}s remaining`;
 }
 
-function startTryTimer() {
-    stopTryTimer();
-    state.tryCountdown = 60;
+function updateSearchTimerUI() {
+    const count = Math.max(0, state.searchCountdown !== undefined ? state.searchCountdown : SEARCH_MAX_SECONDS);
     if (dbTryTimer) {
-        dbTryTimer.textContent = formatTryTimer(state.tryCountdown);
+        dbTryTimer.textContent = formatSearchTimer(count);
         dbTryTimer.style.display = 'inline-block';
     }
-    state.tryTimerInterval = setInterval(() => {
-        state.tryCountdown--;
-        if (dbTryTimer) {
-            dbTryTimer.textContent = formatTryTimer(state.tryCountdown);
-        }
-        if (state.tryCountdown <= 0) {
-            stopTryTimer();
-            handleTryFailed();
+    const fill = document.getElementById('dbSearchProgressFill');
+    if (fill) {
+        const pct = Math.max(0, Math.min(100, (count / SEARCH_MAX_SECONDS) * 100));
+        fill.style.width = `${pct}%`;
+    }
+}
+
+function startSearchTimer() {
+    stopSearchTimer();
+    state.searchCountdown = SEARCH_MAX_SECONDS;
+    updateSearchTimerUI();
+    state.searchTimerInterval = setInterval(() => {
+        state.searchCountdown--;
+        updateSearchTimerUI();
+        if (state.searchCountdown <= 0) {
+            stopSearchTimer();
+            handleSearchTimeout();
         }
     }, 1000);
 }
 
-function stopTryTimer() {
-    if (state.tryTimerInterval) {
-        clearInterval(state.tryTimerInterval);
-        state.tryTimerInterval = null;
+function stopSearchTimer() {
+    if (state.searchTimerInterval) {
+        clearInterval(state.searchTimerInterval);
+        state.searchTimerInterval = null;
     }
 }
 
-function handleTryFailed() {
-    stopTryTimer();
+function handleSearchTimeout() {
+    stopSearchTimer();
     if (state.matchCheckInterval) {
         clearInterval(state.matchCheckInterval);
         state.matchCheckInterval = null;
     }
 
-    if (state.matchTries < 3) {
-        // Mark current attempt as expired and show next try prompt
-        if (tryPill1 && state.matchTries === 1) tryPill1.classList.add('expired');
-        if (tryPill2 && state.matchTries === 2) tryPill2.classList.add('expired');
+    if (matchLoading) matchLoading.style.display = 'none';
+    if (matchFailed) matchFailed.style.display = 'block';
 
-        if (tryExpiredBanner) {
-            tryExpiredBanner.style.display = 'flex';
-        }
-        if (tryExpiredTitle) {
-            tryExpiredTitle.textContent = `Attempt ${state.matchTries} Unfulfilled`;
-        }
-        const remainingTries = 3 - state.matchTries;
-        if (tryExpiredDesc) {
-            tryExpiredDesc.textContent = `No nearby crew accepted within the search time. You have ${remainingTries} ${remainingTries === 1 ? 'try' : 'tries'} remaining.`;
-        }
-        if (btnTryNextText) {
-            btnTryNextText.textContent = `Start Attempt ${state.matchTries + 1}`;
-        }
-    } else {
-        // 3 Tries Exhausted! Employer must pay again to find a crew!
-        if (tryPill3) tryPill3.classList.add('expired');
-        if (matchLoading) matchLoading.style.display = 'none';
-        if (tryExpiredBanner) tryExpiredBanner.style.display = 'none';
-        if (matchFailed) matchFailed.style.display = 'block';
+    state.paid = false; // Payment consumed
 
-        state.paid = false; // Payment consumed!
-
-        // Update session
-        const s = getSession();
-        if (s && s.bookings) {
-            const b = s.bookings.find(x => String(x.id) === String(state.currentBooking ? state.currentBooking.id : ''));
-            if (b) {
-                b.status = 'unfulfilled';
-                b.paid = false;
-                sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
-            }
+    // Update session
+    const s = getSession();
+    if (s && s.bookings) {
+        const b = s.bookings.find(x => String(x.id) === String(state.currentBooking ? state.currentBooking.id : ''));
+        if (b) {
+            b.status = 'unfulfilled';
+            b.paid = false;
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
         }
     }
 }
 
-// Next Attempt button handler
-if (btnTryNext) {
-    btnTryNext.addEventListener('click', () => {
-        if (state.matchTries < 3) {
-            state.matchTries++;
-            if (tryExpiredBanner) tryExpiredBanner.style.display = 'none';
-            updateTryTrackerUI();
-            startTryTimer();
-            startCheckingForAcceptance();
-        }
-    });
-}
-
-// Demo simulate timeout button handler
+// Demo simulate timeout button handler (triggers 3-min timeout)
 if (simulateTimeoutBtn) {
     simulateTimeoutBtn.addEventListener('click', () => {
-        handleTryFailed();
+        handleSearchTimeout();
     });
 }
 
-// Repay match fee button handler (when 3 tries fail)
+// Repay match fee button handler (when 3-minute search expires)
 if (repayMatchFeeBtn) {
     repayMatchFeeBtn.addEventListener('click', () => {
         openPaymentModal();
@@ -1711,7 +1667,7 @@ if (editShiftFromFailedBtn) {
 
 function checkCrewAcceptance() {
     if (!state.currentJobId || !window.InstantCrewShared) return;
-    const jobs = InstantCrewShared.getJobs();
+    const jobs = window.InstantCrewShared.getJobs();
     const job = jobs.find(j => j.id === state.currentJobId);
     if (job && (job.acceptedCount > 0 || (job.acceptedCrew && job.acceptedCrew.length > 0))) {
         onCrewAccepted(job);
@@ -1728,8 +1684,7 @@ function startCheckingForAcceptance() {
 }
 
 function onCrewAccepted(job) {
-    stopTryTimer();
-    if (tryExpiredBanner) tryExpiredBanner.style.display = 'none';
+    stopSearchTimer();
     if (matchFailed) matchFailed.style.display = 'none';
 
     if (state.matchCheckInterval) {
@@ -1752,7 +1707,7 @@ function onCrewAccepted(job) {
 
     // Show push toast
     if (window.InstantCrewShared) {
-        InstantCrewShared.showPushToast('Offer Accepted!', `${firstWorker} accepted your ${job.role || state.roleLabel || 'crew'} shift offer!`, 'accept');
+        window.InstantCrewShared.showPushToast('Offer Accepted!', `${firstWorker} accepted your ${job.role || state.roleLabel || 'crew'} shift offer!`, 'accept');
     }
 
     // Update session booking
@@ -1772,7 +1727,7 @@ if (simulateAcceptBtn) {
     simulateAcceptBtn.addEventListener('click', () => {
         if (!state.currentJobId || !window.InstantCrewShared) return;
         const candidateCrew = (CREW_DATA[state.category] && CREW_DATA[state.category][0]) || { name: 'Angelo Lopez' };
-        InstantCrewShared.acceptJob(state.currentJobId, candidateCrew.name);
+        window.InstantCrewShared.acceptJob(state.currentJobId, candidateCrew.name);
         checkCrewAcceptance();
     });
 }
@@ -1850,10 +1805,10 @@ confirmBooking.addEventListener('click', () => {
         }
     }
     document.getElementById('dTime').textContent = timingText;
-    document.getElementById('dCount').textContent = `${state.count} ${state.count === 1 ? 'person' : 'people'}`;
+    document.getElementById('dCount').textContent = '1 Crew Member';
     document.getElementById('dRate').textContent = `${rate.amount}/hr (${rate.note.toLowerCase()})`;
     if (dPayment) {
-        const paidTotal = state.paymentAmount ? `₱${state.paymentAmount.toFixed(2)}` : '₱200.00';
+        const paidTotal = state.paymentAmount ? `₱${state.paymentAmount.toFixed(2)}` : '₱100.00';
         dPayment.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Match Fee Paid</span> (${paidTotal} via ${state.paymentMethod || 'GCash'})`;
     }
 
@@ -1905,17 +1860,14 @@ bookAnother.addEventListener('click', () => {
     state.timing = 'now';
     state.scheduledDate = new Date(TODAY);
     state.scheduledTime = '08:00';
-    state.count = 2;
+    state.count = 1;
     state.currentJobId = null;
     state.currentBooking = null;
     state.paid = false;
     state.pendingPayment = null;
     state.paymentMethod = 'GCash';
-    state.paymentAmount = 0;
-    state.matchTries = 1;
-    stopTryTimer();
+    stopSearchTimer();
     if (matchFailed) matchFailed.style.display = 'none';
-    if (tryExpiredBanner) tryExpiredBanner.style.display = 'none';
     if (state.matchCheckInterval) {
         clearInterval(state.matchCheckInterval);
         state.matchCheckInterval = null;
@@ -1947,7 +1899,7 @@ bookAnother.addEventListener('click', () => {
     document.querySelectorAll('.db-toggle').forEach(b => b.classList.remove('active'));
     document.querySelector('.db-toggle[data-timing="now"]').classList.add('active');
     laterField.classList.remove('open');
-    countVal.textContent = '2';
+    if (countVal) countVal.textContent = '1';
     scheduleDisplayDate.textContent = formatDateShort(state.scheduledDate);
     scheduleDisplayTime.textContent = `${format12Hour(state.scheduledTime)} · Scheduled Shift`;
 
@@ -2006,11 +1958,8 @@ function getSession() {
     }
 }
 
-// Guard: redirect to index.html if not logged in
-const session = getSession();
-if (!session) {
-    window.location.href = 'index.html';
-}
+// Initialize profile display (works for logged-in or guest users)
+populateProfile();
 
 /* ═══════════════════════════════════════════════════════════
    EMPLOYER PROFILE PANEL
@@ -2032,16 +1981,63 @@ const previousEmpty = document.getElementById('previousEmpty');
 /* Populate profile UI from session */
 function populateProfile() {
     const s = getSession();
-    if (!s) return;
-
-    const nameParts = (s.name || 'SE').split(' ');
-    const initials = nameParts.map(n => n[0]).join('').slice(0, 2).toUpperCase();
-
     const profileInitialsEl = document.getElementById('profileInitials');
     const panelAvatarEl = document.getElementById('panelAvatarInitials');
     const panelNameEl = document.getElementById('panelUserName');
     const panelEmailEl = document.getElementById('panelUserEmail');
     const statYearEl = document.getElementById('statYear');
+    const headerLogoEl = document.getElementById('headerLogoLink');
+    const headerBackArrowEl = document.getElementById('headerBackArrow');
+    const headerLoginBtn = document.getElementById('headerLoginBtn');
+    const headerNotifWrap = document.getElementById('headerNotifWrap');
+    const openProfilePanelBtn = document.getElementById('openProfilePanel');
+
+    if (!s) {
+        if (headerLogoEl) {
+            headerLogoEl.href = 'index.html';
+            headerLogoEl.setAttribute('aria-label', 'Back to Landing Page');
+            headerLogoEl.setAttribute('title', 'Back to Home');
+        }
+        if (headerBackArrowEl) {
+            headerBackArrowEl.style.display = 'inline-flex';
+        }
+        if (headerLoginBtn) {
+            headerLoginBtn.style.display = 'inline-flex';
+        }
+        if (headerNotifWrap) {
+            headerNotifWrap.style.display = 'none';
+        }
+        if (openProfilePanelBtn) {
+            openProfilePanelBtn.style.display = 'none';
+        }
+        if (profileInitialsEl) profileInitialsEl.textContent = 'EP';
+        if (panelAvatarEl) panelAvatarEl.textContent = 'EP';
+        if (panelNameEl) panelNameEl.textContent = 'Employer';
+        if (panelEmailEl) panelEmailEl.textContent = 'Sign in to access saved records';
+        if (statYearEl) statYearEl.textContent = 2026;
+        return;
+    }
+
+    if (headerLogoEl) {
+        headerLogoEl.href = 'employer.html';
+        headerLogoEl.setAttribute('aria-label', 'Instant Crew Employer Dashboard');
+        headerLogoEl.removeAttribute('title');
+    }
+    if (headerBackArrowEl) {
+        headerBackArrowEl.style.display = 'none';
+    }
+    if (headerLoginBtn) {
+        headerLoginBtn.style.display = 'none';
+    }
+    if (headerNotifWrap) {
+        headerNotifWrap.style.display = '';
+    }
+    if (openProfilePanelBtn) {
+        openProfilePanelBtn.style.display = 'inline-flex';
+    }
+
+    const nameParts = (s.name || 'SE').split(' ');
+    const initials = nameParts.map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
     if (profileInitialsEl) profileInitialsEl.textContent = initials;
     if (panelAvatarEl) panelAvatarEl.textContent = initials;
@@ -2052,6 +2048,10 @@ function populateProfile() {
 
 /* Open / Close Panel */
 function openProfilePanel() {
+    if (!getSession()) {
+        openEmployerAuthModal();
+        return;
+    }
     profileOverlay.classList.add('open');
     profileOverlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -2083,6 +2083,207 @@ document.addEventListener('keydown', e => {
     }
 });
 
+/* ═══════════════════════════════════════════════════════════
+   STEP 3 IN-PAGE EMPLOYER AUTH MODAL CONTROLLER
+   Prompted when employer clicks "Find a Crew" without logging in
+   ═══════════════════════════════════════════════════════════ */
+let authTriggerSource = 'step'; // 'step' or 'header'
+const employerAuthModal = document.getElementById('employerAuthModal');
+const employerAuthCloseBtn = document.getElementById('employerAuthCloseBtn');
+const tabEmployerLogin = document.getElementById('tabEmployerLogin');
+const tabEmployerSignup = document.getElementById('tabEmployerSignup');
+const employerModalLoginForm = document.getElementById('employerModalLoginForm');
+const employerModalSignupForm = document.getElementById('employerModalSignupForm');
+const employerAuthError = document.getElementById('employerAuthError');
+const headerLoginBtn = document.getElementById('headerLoginBtn');
+
+if (headerLoginBtn) {
+    headerLoginBtn.addEventListener('click', () => {
+        authTriggerSource = 'header';
+        openEmployerAuthModal();
+    });
+}
+
+function openEmployerAuthModal() {
+    if (!employerAuthModal) return;
+    employerAuthModal.classList.add('open');
+    employerAuthModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    if (employerAuthError) employerAuthError.style.display = 'none';
+}
+
+function closeEmployerAuthModal() {
+    if (!employerAuthModal) return;
+    employerAuthModal.classList.remove('open');
+    employerAuthModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+}
+
+if (employerAuthCloseBtn) {
+    employerAuthCloseBtn.addEventListener('click', closeEmployerAuthModal);
+}
+if (employerAuthModal) {
+    employerAuthModal.addEventListener('click', e => {
+        if (e.target === employerAuthModal) closeEmployerAuthModal();
+    });
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && employerAuthModal && employerAuthModal.classList.contains('open')) {
+        closeEmployerAuthModal();
+    }
+});
+
+// Auth Tab switching
+if (tabEmployerLogin && tabEmployerSignup) {
+    tabEmployerLogin.addEventListener('click', () => {
+        tabEmployerLogin.classList.add('active');
+        tabEmployerSignup.classList.remove('active');
+        if (employerModalLoginForm) employerModalLoginForm.style.display = 'block';
+        if (employerModalSignupForm) employerModalSignupForm.style.display = 'none';
+        if (employerAuthError) employerAuthError.style.display = 'none';
+    });
+
+    tabEmployerSignup.addEventListener('click', () => {
+        tabEmployerSignup.classList.add('active');
+        tabEmployerLogin.classList.remove('active');
+        if (employerModalLoginForm) employerModalLoginForm.style.display = 'none';
+        if (employerModalSignupForm) employerModalSignupForm.style.display = 'block';
+        if (employerAuthError) employerAuthError.style.display = 'none';
+    });
+}
+
+function showEmployerAuthError(msg) {
+    if (employerAuthError) {
+        employerAuthError.textContent = msg;
+        employerAuthError.style.display = 'block';
+    }
+}
+
+// Auth modal password visibility toggle
+document.querySelectorAll('.db-auth-toggle-pass').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const wrap = btn.closest('.db-auth-input-wrap');
+        const input = wrap ? wrap.querySelector('input') : null;
+        const eyeOpen = btn.querySelector('.eye-open');
+        const eyeClosed = btn.querySelector('.eye-closed');
+        if (!input) return;
+
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        if (isPassword) {
+            input.focus();
+            if (eyeOpen) eyeOpen.style.display = 'none';
+            if (eyeClosed) eyeClosed.style.display = 'block';
+            btn.setAttribute('aria-label', 'Hide password');
+            btn.setAttribute('title', 'Hide password');
+        } else {
+            input.focus();
+            if (eyeOpen) eyeOpen.style.display = 'block';
+            if (eyeClosed) eyeClosed.style.display = 'none';
+            btn.setAttribute('aria-label', 'Show password');
+            btn.setAttribute('title', 'Show password');
+        }
+    });
+});
+
+// Log In form handler
+if (employerModalLoginForm) {
+    employerModalLoginForm.addEventListener('submit', () => {
+        const email = document.getElementById('empModalLoginEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('empModalLoginPass').value;
+        const btn = document.getElementById('btnSubmitModalLogin');
+
+        if (!email || pass.length < 4) {
+            showEmployerAuthError('Please enter a valid email and password (minimum 4 characters).');
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="db-btn-spinner"></span> Logging in…';
+        }
+
+        setTimeout(() => {
+            let existingBookings = [];
+            try {
+                const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+                if (prev && Array.isArray(prev.bookings)) existingBookings = prev.bookings;
+            } catch (e) { }
+
+            const userSession = {
+                name: email === 'sample@gmail.com' ? 'Sample Employer' : email.split('@')[0],
+                email: email,
+                company: 'Sample Co.',
+                joinedYear: 2026,
+                bookings: existingBookings
+            };
+
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(userSession));
+            populateProfile();
+            closeEmployerAuthModal();
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Log In &amp; Continue Finding Crew</span>';
+            }
+
+            // Only advance to payment modal if triggered from Step 3 "Find a Crew"
+            if (authTriggerSource === 'step') {
+                openPaymentModal();
+            }
+            authTriggerSource = 'step';
+        }, 400);
+    });
+}
+
+// Sign Up form handler
+if (employerModalSignupForm) {
+    employerModalSignupForm.addEventListener('submit', () => {
+        const company = document.getElementById('empModalSignupCompany').value.trim();
+        const contact = document.getElementById('empModalSignupContact').value.trim();
+        const email = document.getElementById('empModalSignupEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('empModalSignupPass').value;
+        const btn = document.getElementById('btnSubmitModalSignup');
+
+        if (!email || !contact || pass.length < 4) {
+            showEmployerAuthError('Please fill in all required fields (password minimum 4 characters).');
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="db-btn-spinner"></span> Creating account…';
+        }
+
+        setTimeout(() => {
+            const userSession = {
+                name: contact,
+                email: email,
+                company: company || 'My Company',
+                joinedYear: 2026,
+                bookings: []
+            };
+
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(userSession));
+            populateProfile();
+            closeEmployerAuthModal();
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Create Account &amp; Continue Finding Crew</span>';
+            }
+
+            // Only advance to payment modal if triggered from Step 3 "Find a Crew"
+            if (authTriggerSource === 'step') {
+                openPaymentModal();
+            }
+            authTriggerSource = 'step';
+        }, 450);
+    });
+}
+
 /* ── Bookings Tabs ─────────────────────────────────────── */
 
 function switchBookingTab(tab) {
@@ -2109,54 +2310,206 @@ function switchBookingTab(tab) {
 if (tabActiveBtn) tabActiveBtn.addEventListener('click', () => switchBookingTab('active'));
 if (tabPreviousBtn) tabPreviousBtn.addEventListener('click', () => switchBookingTab('previous'));
 
+/* ── Default Seed Bookings for Employer ─────────────────── */
+const DEFAULT_EMPLOYER_ACTIVE_BOOKINGS = [
+    {
+        id: 'contract-active-chef',
+        contractId: 'contract-active-chef',
+        category: 'kitchen',
+        role: 'CHEF',
+        roleLabel: 'Head Line Chef',
+        employmentType: 'full-time',
+        location: "kianberong2005's Shift",
+        mapLocation: "kianberong2005's Shift",
+        timing: 'Contract In Progress',
+        count: 1,
+        crewRate: '₱85',
+        status: 'active',
+        transitStatus: 'on_the_way',
+        departedAt: '12:17 AM',
+        workerName: 'kianberong2005',
+        acceptedCrew: ['kianberong2005'],
+        bookedAt: 'Today'
+    }
+];
+
+const DEFAULT_EMPLOYER_PREVIOUS_BOOKINGS = [
+    {
+        id: 'contract-demo-2',
+        contractId: 'contract-demo-2',
+        category: 'kitchen',
+        role: 'Line Cook',
+        roleLabel: 'Line Cook / Prep Assistant',
+        employmentType: 'part-time',
+        location: 'Bistro Moderne — Downtown',
+        mapLocation: 'Bistro Moderne — Downtown',
+        timing: 'Today, 1:00 PM – 5:00 PM (4 hrs)',
+        count: 1,
+        crewRate: '₱95',
+        status: 'completed',
+        endedBy: 'employer',
+        workerName: 'Ronald Mendoza',
+        acceptedCrew: ['Ronald Mendoza'],
+        bookedAt: 'Yesterday'
+    },
+    {
+        id: 'contract-demo-1',
+        contractId: 'contract-demo-1',
+        category: 'helpers',
+        role: 'Event Helper',
+        roleLabel: 'Event Setup & Banquet Helper',
+        employmentType: 'part-time',
+        location: 'Grand Ballroom & Pavilion',
+        mapLocation: 'Grand Ballroom & Pavilion',
+        timing: 'Yesterday, 9:00 AM – 2:00 PM (5 hrs)',
+        count: 2,
+        crewRate: '₱75',
+        status: 'completed',
+        endedBy: 'employer',
+        workerName: 'Marco Reyes',
+        acceptedCrew: ['Marco Reyes', 'Jayson V.'],
+        bookedAt: '2 days ago'
+    },
+    {
+        id: 'contract-demo-3',
+        contractId: 'contract-demo-3',
+        category: 'delivery',
+        role: 'Motorcycle Rider',
+        roleLabel: 'Express Delivery Rider',
+        employmentType: 'full-time',
+        location: 'Metro Logistics Express Hub',
+        mapLocation: 'Metro Logistics Express Hub',
+        timing: 'Full-time Day Shift (8 hrs / day)',
+        count: 1,
+        crewRate: '₱85',
+        status: 'completed',
+        endedBy: 'worker',
+        workerName: 'David Cruz',
+        acceptedCrew: ['David Cruz'],
+        bookedAt: '3 days ago'
+    }
+];
+
 /* ── Sync Bookings With Shared Contracts / Jobs State ──── */
 function syncBookingsWithSharedState() {
     const s = getSession();
-    if (!s || !s.bookings || !window.InstantCrewShared) return;
-    const contracts = InstantCrewShared.getActiveContracts();
-    const jobs = InstantCrewShared.getJobs();
+    if (!s) return;
+    if (!s.bookings) s.bookings = [];
+
+    // 1. If s.bookings is empty, seed default active and previous bookings so neither tab is empty
+    if (s.bookings.length === 0) {
+        s.bookings = [
+            ...DEFAULT_EMPLOYER_ACTIVE_BOOKINGS.map(b => ({ ...b })),
+            ...DEFAULT_EMPLOYER_PREVIOUS_BOOKINGS.map(b => ({ ...b }))
+        ];
+    }
+
+    if (!window.InstantCrewShared) {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+        return;
+    }
+
+    const contracts = window.InstantCrewShared.getActiveContracts();
+    const jobs = window.InstantCrewShared.getJobs();
     let changed = false;
 
-    s.bookings.forEach(b => {
-        // Find matching contract or job in shared pool
-        const contract = contracts.find(c =>
-            String(c.bookingRefId) === String(b.id) ||
-            String(c.jobId) === String(b.id) ||
-            String(c.id) === String(b.id) ||
-            (c.jobId && c.jobId === 'emp-shift-' + b.id)
-        );
-        const job = jobs.find(j =>
-            String(j.id) === String(b.id) ||
-            String(j.bookingRefId) === String(b.id) ||
-            (j.id === 'emp-shift-' + b.id)
+    // 2. Import contracts from window.InstantCrewShared into s.bookings so active and ended crew appear in employer profile
+    contracts.forEach(c => {
+        // Find matching booking in s.bookings
+        const existing = s.bookings.find(b =>
+            String(b.id) === String(c.id) ||
+            String(b.id) === String(c.bookingRefId) ||
+            String(b.id) === String(c.jobId) ||
+            (c.jobId && String(b.id) === 'emp-shift-' + c.id) ||
+            (b.contractId && String(b.contractId) === String(c.id))
         );
 
-        // If the contract was ended by worker or employer, mark booking as completed
-        if ((contract && contract.status === 'ended') || (job && job.contractStatus === 'ended')) {
-            if (b.status === 'active' || b.status === 'accepted') {
-                b.status = 'completed';
-                b.endedBy = (contract && contract.endedBy) || 'worker';
+        if (!existing) {
+            // Add contract as a booking in employer session
+            s.bookings.unshift({
+                id: c.bookingRefId || c.id,
+                jobId: c.jobId || null,
+                contractId: c.id,
+                category: c.category || 'kitchen',
+                role: c.role || c.title || 'Crew Member',
+                roleLabel: (c.title || c.role || 'Crew Member').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim(),
+                employmentType: c.employmentType || 'full-time',
+                location: c.venue || 'On-site Location',
+                mapLocation: c.mapLocation || c.location || c.venue || 'Cebu City',
+                googleMapsUrl: c.googleMapsUrl || null,
+                timing: c.timing || 'Contract In Progress',
+                count: 1,
+                crewRate: c.rate || '₱85',
+                status: c.status === 'active' ? 'active' : 'completed',
+                transitStatus: c.transitStatus || null,
+                departedAt: c.departedAt || null,
+                arrivedAt: c.arrivedAt || null,
+                workerName: c.workerName || 'kianberong2005',
+                acceptedCrew: [c.workerName || 'kianberong2005'],
+                bookedAt: c.startedAt || 'Today'
+            });
+            changed = true;
+        } else {
+            // Update existing booking from contract state
+            if (c.status === 'ended' && existing.status !== 'completed') {
+                existing.status = 'completed';
+                existing.endedBy = c.endedBy || 'worker';
+                changed = true;
+            } else if (c.status === 'active' && existing.status !== 'active') {
+                existing.status = 'active';
                 changed = true;
             }
-        }
-
-        // If contract is active, keep b active and sync crew details
-        if (contract && contract.status === 'active') {
-            if (b.status !== 'active' && b.status !== 'matching') {
-                b.status = 'active';
+            if (c.workerName && (!existing.acceptedCrew || !existing.acceptedCrew.includes(c.workerName))) {
+                existing.acceptedCrew = [c.workerName];
+                existing.workerName = c.workerName;
                 changed = true;
             }
-            if (contract.workerName && (!b.acceptedCrew || !b.acceptedCrew.includes(contract.workerName))) {
-                b.acceptedCrew = [contract.workerName];
-                b.workerName = contract.workerName;
+            if (existing.transitStatus !== c.transitStatus || existing.departedAt !== c.departedAt || existing.arrivedAt !== c.arrivedAt) {
+                existing.transitStatus = c.transitStatus;
+                existing.departedAt = c.departedAt;
+                existing.arrivedAt = c.arrivedAt;
                 changed = true;
             }
         }
     });
 
-    if (changed) {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    // 3. Ensure state.currentBooking from active dashboard is in s.bookings
+    if (typeof state !== 'undefined' && state && state.currentBooking) {
+        const hasCurrent = s.bookings.some(b => String(b.id) === String(state.currentBooking.id));
+        if (!hasCurrent) {
+            s.bookings.unshift(state.currentBooking);
+            changed = true;
+        }
     }
+
+    // 4. Sync jobs pool updates
+    s.bookings.forEach(b => {
+        const job = jobs.find(j =>
+            String(j.id) === String(b.id) ||
+            String(j.bookingRefId) === String(b.id) ||
+            (j.id === 'emp-shift-' + b.id)
+        );
+        if (job) {
+            if (job.contractStatus === 'ended' && b.status !== 'completed') {
+                b.status = 'completed';
+                changed = true;
+            }
+            if (job.acceptedCrew && job.acceptedCrew.length > 0 && (!b.acceptedCrew || b.acceptedCrew.length === 0)) {
+                b.acceptedCrew = job.acceptedCrew;
+                b.workerName = job.acceptedCrew[0];
+                if (b.status === 'matching') b.status = 'active';
+                changed = true;
+            }
+            if (job.transitStatus && (b.transitStatus !== job.transitStatus || b.departedAt !== job.departedAt || b.arrivedAt !== job.arrivedAt)) {
+                b.transitStatus = job.transitStatus;
+                b.departedAt = job.departedAt;
+                b.arrivedAt = job.arrivedAt;
+                changed = true;
+            }
+        }
+    });
+
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
 }
 
 /* ── Render Bookings List ──────────────────────────────── */
@@ -2168,8 +2521,8 @@ function renderBookings(force = false) {
     const s = getSession();
     const bookings = (s && s.bookings) ? s.bookings : [];
 
-    const active = bookings.filter(b => b.status === 'active');
-    const previous = bookings.filter(b => b.status !== 'active');
+    const active = bookings.filter(b => b.status === 'active' || b.status === 'matching' || b.status === 'accepted');
+    const previous = bookings.filter(b => b.status === 'completed' || b.status === 'ended');
 
     // Stats
     const statActiveEl = document.getElementById('statActive');
@@ -2177,7 +2530,7 @@ function renderBookings(force = false) {
     if (statActiveEl) statActiveEl.textContent = active.length;
     if (statPreviousEl) statPreviousEl.textContent = previous.length;
 
-    const currentSig = JSON.stringify(bookings.map(b => `${b.id}_${b.status}_${(b.acceptedCrew || []).join(',')}_${b.neededCrew}`));
+    const currentSig = JSON.stringify(bookings.map(b => `${b.id}_${b.status}_${b.transitStatus || ''}_${b.departedAt || ''}_${b.arrivedAt || ''}_${(b.acceptedCrew || []).join(',')}_${b.neededCrew || b.count}`));
     if (!force && currentSig === lastEmployerBookingsSig) {
         return;
     }
@@ -2204,34 +2557,165 @@ function renderBookings(force = false) {
 
 function buildBookingItem(b) {
     const item = document.createElement('div');
-    item.className = 'db-booking-item';
+    const isEnded = b.status === 'completed' || b.status === 'ended';
+    const isBookingActive = b.status === 'active' || b.status === 'matching' || b.status === 'accepted';
+    item.className = `db-booking-item app-job-card ${isEnded ? 'ended' : ''}`;
 
-    const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(b, 20) : '';
-    const statusClass = b.status === 'active' ? 'active' : 'completed';
-    const statusLabel = b.status === 'active' ? 'Active' : 'Ended';
-    const empTypeBadge = b.employmentType ? `<span style="font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:10px; background:${b.employmentType === 'full-time' ? '#EDE9FE; color:#6D28D9;' : '#E0F2FE; color:#0369A1;'} text-transform:uppercase; letter-spacing:0.04em;">${b.employmentType}</span>` : '';
+    const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(b, 22) : '';
+    const empType = (b.employmentType || 'full-time').toLowerCase();
+    const isPart = empType.includes('part');
+    const empClass = isPart ? 'part-time' : 'full-time';
+    const empLabel = isPart ? 'PART-TIME' : 'FULL-TIME';
 
     const crewName = (b.acceptedCrew && b.acceptedCrew.length > 0) ? b.acceptedCrew[0] : (b.workerName || '');
-    const crewInfo = crewName ? `<span style="color:#059669; font-weight:600;"> &bull; Crew: ${crewName}</span>` : '';
+
+    let statusBadgeHtml = '';
+    if (isEnded) {
+        statusBadgeHtml = `<span class="app-job-status-badge ended">Ended</span>`;
+    } else if (b.status === 'matching') {
+        statusBadgeHtml = `<span class="app-job-status-badge matching"><span class="dot"></span>Matching</span>`;
+    } else {
+        statusBadgeHtml = `<span class="app-job-status-badge active"><span class="dot"></span>ACTIVE</span>`;
+    }
+
+    const roleTitle = (b.roleLabel || b.role || 'Crew Member')
+        .replace(/\s*\((Full-Time|Part-Time)\)/gi, '')
+        .trim()
+        .toUpperCase();
+
+    let displayLocation = '';
+    if (b.location && !b.location.toLowerCase().includes('current venue')) {
+        displayLocation = b.location.trim();
+    } else if (b.venue && !b.venue.toLowerCase().includes('current venue')) {
+        displayLocation = b.venue.trim();
+    } else if (b.location) {
+        displayLocation = b.location.replace(/\s*\(Current Venue\)/gi, '').trim();
+    } else if (b.venue) {
+        displayLocation = b.venue.replace(/\s*\(Current Venue\)/gi, '').trim();
+    } else if (b.mapLocation) {
+        displayLocation = b.mapLocation.replace(/\s*\(Current Venue\)/gi, '').trim();
+    }
+    if (!displayLocation) displayLocation = 'Cebu City (Current)';
+
+    // Timing display
+    const isAsap = !b.timing || /asap|instant|immediately|now/i.test(b.timing);
+    let displayTiming = b.timing;
+    if (isAsap) {
+        displayTiming = isEnded ? 'Shift Concluded' : 'Contract In Progress';
+    }
+
+    const rawRate = b.crewRate || (b.offeredRate ? `₱${b.offeredRate}` : '₱85');
+    const displayRate = String(rawRate).replace(/\/hr.*$/i, '').trim();
 
     item.innerHTML = `
-        <div class="db-booking-item-icon">${iconSvg}</div>
-        <div class="db-booking-item-info">
-            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                <p class="db-booking-item-role" style="margin:0;">${b.roleLabel || b.role || 'Crew'}</p>
-                ${empTypeBadge}
+        <div class="app-job-card-header">
+            <div class="app-job-card-left">
+                <div class="app-job-card-icon">${iconSvg}</div>
+                <div class="app-job-card-title-col">
+                    <div class="app-job-card-title-row" style="display:inline-flex; align-items:center; flex-wrap:nowrap; gap:8px; white-space:nowrap;">
+                        <h4 class="app-job-card-title" style="white-space:nowrap; margin:0;">${roleTitle}</h4>
+                        <span class="app-job-emp-badge ${empClass}" style="flex-shrink:0;">${empLabel}</span>
+                    </div>
+                </div>
             </div>
-            <p class="db-booking-item-meta">${b.location || 'Cebu City'} &middot; ${b.timing || 'ASAP'} &middot; Needed: ${b.count || 1} crew${crewInfo}</p>
-            ${b.status === 'active' ? `<button type="button" class="db-btn-end-contract" data-booking-id="${b.id}">End Contract</button>` : ''}
+            ${statusBadgeHtml}
         </div>
-        <span class="db-booking-item-status ${statusClass}">${statusLabel}</span>
+
+        <div class="app-job-card-meta">
+            <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayLocation}</span>
+            </div>
+            <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>${displayTiming}</span>
+            </div>
+            <div class="app-job-meta-line" style="color:#0F172A; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <span>Rate: ${displayRate}/hr</span>
+            </div>
+            ${crewName ? `
+            <div class="app-job-meta-line" style="color:#059669; font-weight:600; display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Crew: ${crewName}</span>
+            </div>` : ''}
+        </div>
+
+        ${!isEnded ? `
+        <div class="app-job-card-footer active-contract-footer">
+            ${b.transitStatus === 'on_the_way' ? `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status on-the-way">
+                    <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
+                    <span>En Route (${b.departedAt || 'Just now'})</span>
+                </span>
+            </div>` : (b.transitStatus === 'arrived' ? `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status arrived">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Arrived on Site (${b.arrivedAt || 'Active'})</span>
+                </span>
+            </div>` : (b.status === 'matching' ? `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status pending">
+                    <span>Looking for Nearby Crew</span>
+                </span>
+            </div>` : `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status pending">
+                    <span>Crew Preparing &bull; Awaiting Transit</span>
+                </span>
+            </div>`))}
+            <button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${b.id}">
+                End Job
+            </button>
+        </div>` : `
+        <div class="app-job-card-footer ended-footer">
+            <span class="app-ended-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>${b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract')}</span>
+            </span>
+            <span class="app-job-archived-tag">Archived</span>
+        </div>`}
     `;
+
+    const viewDetailBtn = item.querySelector('.app-job-view-detail-btn');
+    if (viewDetailBtn) {
+        viewDetailBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openLocationDetailModal({
+                ...b,
+                title: roleTitle,
+                venue: venueName,
+                mapLocation: locationAddress,
+                employmentType: empLabel,
+                isAccepted: !isEnded
+            });
+        });
+    }
 
     const endBtn = item.querySelector('.db-btn-end-contract');
     if (endBtn) {
         endBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm(`Conclude and end the contract for ${b.roleLabel || 'this shift'}?`)) {
+            if (confirm(`Conclude and end the contract for ${roleTitle}?`)) {
                 endEmployerBooking(b.id);
             }
         });
@@ -2240,20 +2724,119 @@ function buildBookingItem(b) {
     return item;
 }
 
+/* ════ Location Detail Modal Handlers for Employer ════ */
+function openLocationDetailModal(shift) {
+    const appLocationDetailModal = document.getElementById('appLocationDetailModal');
+    if (!appLocationDetailModal) {
+        const address = shift.mapLocation || shift.location || 'Cebu City';
+        const mapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(address) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
+        window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+        return;
+    }
+
+    const venue = shift.venue || shift.employerName || shift.location || 'Employer Shift';
+    const cleanRole = (shift.title || shift.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
+    const roleUpper = cleanRole.toUpperCase();
+
+    const isPart = (shift.employmentType && shift.employmentType.toLowerCase().includes('part')) ||
+        (shift.title && shift.title.toLowerCase().includes('part')) ||
+        (shift.role && shift.role.toLowerCase().includes('part'));
+    const empUpper = isPart ? 'PART-TIME' : 'FULL-TIME';
+
+    const cardBadgesHtml = `
+        <span class="app-loc-badge-role">${roleUpper}</span>
+        <span class="app-loc-badge-emp ${isPart ? 'part-time' : 'full-time'}">${empUpper}</span>
+    `;
+
+    const address = shift.mapLocation || shift.location || 'Cebu City';
+    const mapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(address) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
+
+    const locModalVenueTitle = document.getElementById('locModalVenueTitle');
+    const locModalVenueName = document.getElementById('locModalVenueName');
+    const locModalRoleSub = document.getElementById('locModalRoleSub');
+    const locModalCardBadges = document.getElementById('locModalCardBadges');
+    const locModalAddress = document.getElementById('locModalAddress');
+    const openGoogleMapsActionBtn = document.getElementById('openGoogleMapsActionBtn');
+    const copyLocAddressBtn = document.getElementById('copyLocAddressBtn');
+
+    if (locModalVenueTitle) locModalVenueTitle.textContent = `${venue} Location`;
+    if (locModalVenueName) locModalVenueName.textContent = venue;
+    if (locModalRoleSub) locModalRoleSub.textContent = 'Verified Work Location';
+    if (locModalCardBadges) locModalCardBadges.innerHTML = cardBadgesHtml;
+    if (locModalAddress) locModalAddress.textContent = address;
+    if (openGoogleMapsActionBtn) openGoogleMapsActionBtn.href = mapsUrl;
+
+    if (copyLocAddressBtn) {
+        copyLocAddressBtn.onclick = (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(address).then(() => {
+                if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Copied', 'Location copied to clipboard', 'info');
+                else alert('Location copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy address:', address);
+            });
+        };
+    }
+
+    appLocationDetailModal.style.display = 'flex';
+    appLocationDetailModal.classList.add('open');
+    appLocationDetailModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLocationDetailModal() {
+    const appLocationDetailModal = document.getElementById('appLocationDetailModal');
+    if (!appLocationDetailModal) return;
+    appLocationDetailModal.classList.remove('open');
+    appLocationDetailModal.style.display = 'none';
+    appLocationDetailModal.setAttribute('aria-hidden', 'true');
+    const profileModal = document.getElementById('profileModal');
+    if (profileModal && !profileModal.hidden) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+const closeLocModalBtn = document.getElementById('closeLocModalBtn');
+if (closeLocModalBtn) {
+    closeLocModalBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeLocationDetailModal();
+    });
+}
+const appLocationDetailModalEl = document.getElementById('appLocationDetailModal');
+if (appLocationDetailModalEl) {
+    appLocationDetailModalEl.addEventListener('click', (e) => {
+        if (e.target === appLocationDetailModalEl) {
+            closeLocationDetailModal();
+        }
+    });
+}
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('appLocationDetailModal');
+        if (modal && modal.classList.contains('open')) {
+            closeLocationDetailModal();
+        }
+    }
+});
+
 /* End booking / contract from employer side */
 function endEmployerBooking(bookingId) {
     const s = getSession();
     if (!s || !s.bookings) return;
-    const booking = s.bookings.find(b => String(b.id) === String(bookingId));
+    const booking = s.bookings.find(b => String(b.id) === String(bookingId) || (b.contractId && String(b.contractId) === String(bookingId)));
     if (booking) {
         booking.status = 'completed';
+        booking.endedBy = 'employer';
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
     }
     if (window.InstantCrewShared) {
-        InstantCrewShared.endContract(bookingId, 'employer', s ? s.name : 'Employer');
-        InstantCrewShared.showPushToast('Contract Ended', `Contract for ${booking ? (booking.roleLabel || booking.role) : 'crew'} concluded.`, 'end');
+        window.InstantCrewShared.endContract(bookingId, 'employer', s ? s.name : 'Employer');
+        window.InstantCrewShared.showPushToast('Contract Ended', `Contract for ${booking ? (booking.roleLabel || booking.role) : 'crew'} concluded.`, 'end');
     }
-    renderBookings();
+    renderBookings(true);
 }
 
 /* ── Save a booking to session when confirmed ─────────── */
@@ -2293,10 +2876,22 @@ if (searchFromPreviousEmptyBtn) searchFromPreviousEmptyBtn.addEventListener('cli
 const headerLogoLink = document.getElementById('headerLogoLink');
 if (headerLogoLink) {
     headerLogoLink.addEventListener('click', (e) => {
+        if (!getSession()) {
+            // Not logged in: go back to landing page!
+            window.location.href = 'index.html';
+            return;
+        }
         e.preventDefault();
         if (typeof closeProfilePanel === 'function') closeProfilePanel();
         if (typeof goStep === 'function') goStep(1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+const headerBackArrow = document.getElementById('headerBackArrow');
+if (headerBackArrow) {
+    headerBackArrow.addEventListener('click', (e) => {
+        window.location.href = 'index.html';
     });
 }
 
@@ -2321,7 +2916,7 @@ let lastEmployerNotifCount = 0;
 
 function renderEmployerNotifications() {
     if (!window.InstantCrewShared) return;
-    const notifs = InstantCrewShared.getNotifications('employer');
+    const notifs = window.InstantCrewShared.getNotifications('employer');
     const unread = notifs.filter(n => !n.read).length;
 
     if (notifBadge) {
@@ -2358,7 +2953,7 @@ function renderEmployerNotifications() {
     // Trigger push toast on new notification
     if (notifs.length > lastEmployerNotifCount && lastEmployerNotifCount > 0) {
         const latest = notifs[0];
-        InstantCrewShared.showPushToast(latest.title, latest.message, latest.type);
+        window.InstantCrewShared.showPushToast(latest.title, latest.message, latest.type);
     }
     lastEmployerNotifCount = notifs.length;
 }
@@ -2369,7 +2964,7 @@ if (notifBtn) {
         const isHidden = notifDropdown.hidden;
         notifDropdown.hidden = !isHidden;
         if (isHidden && window.InstantCrewShared) {
-            InstantCrewShared.markAllNotificationsRead('employer');
+            window.InstantCrewShared.markAllNotificationsRead('employer');
             if (notifBadge) notifBadge.style.display = 'none';
         }
     });
@@ -2378,7 +2973,7 @@ if (notifBtn) {
 if (clearNotifsBtn) {
     clearNotifsBtn.addEventListener('click', () => {
         if (window.InstantCrewShared) {
-            InstantCrewShared.clearNotifications('employer');
+            window.InstantCrewShared.clearNotifications('employer');
             renderEmployerNotifications();
         }
     });
@@ -2390,10 +2985,65 @@ document.addEventListener('click', (e) => {
     }
 });
 
+function updateStep5TransitLiveStatus() {
+    const box = document.getElementById('step5TransitBox');
+    if (!box) return;
+    const badgeEl = document.getElementById('step5TransitBadge');
+    const timeEl = document.getElementById('step5TransitTime');
+    const bodyEl = document.getElementById('step5TransitBody');
+    if (!badgeEl || !timeEl || !bodyEl) return;
+
+    const s = getSession();
+    let currentB = null;
+    if (s && s.bookings) {
+        currentB = (state.currentBooking && s.bookings.find(b => String(b.id) === String(state.currentBooking.id))) ||
+            s.bookings.find(b => b.status === 'active');
+    }
+    const contracts = (window.InstantCrewShared ? window.InstantCrewShared.getActiveContracts() : []);
+    const activeContract = contracts.find(c =>
+        (currentB && (String(c.bookingRefId) === String(currentB.id) || String(c.id) === String(currentB.id) || String(c.jobId) === String(currentB.id) || c.jobId === 'emp-shift-' + currentB.id)) ||
+        c.status === 'active'
+    );
+
+    const transitStatus = (currentB && currentB.transitStatus) || (activeContract && activeContract.transitStatus) || null;
+    const departedAt = (currentB && currentB.departedAt) || (activeContract && activeContract.departedAt) || null;
+    const arrivedAt = (currentB && currentB.arrivedAt) || (activeContract && activeContract.arrivedAt) || null;
+    const crewName = (currentB && currentB.workerName) || (currentB && currentB.acceptedCrew && currentB.acceptedCrew[0]) || (activeContract && activeContract.workerName) || 'Angelo Lopez';
+    const venueName = (currentB && currentB.location) || (activeContract && activeContract.venue) || state.location || 'your location';
+
+    box.style.display = 'block';
+
+    const dTimeEl = document.getElementById('dTime');
+    if (dTimeEl && (/asap|now/i.test(dTimeEl.textContent) || dTimeEl.textContent === 'As soon as possible')) {
+        dTimeEl.textContent = 'Immediate Shift (Accepted)';
+    }
+
+    if (transitStatus === 'on_the_way') {
+        box.className = 'db-live-transit-box on-the-way';
+        badgeEl.className = 'db-live-transit-badge on-the-way';
+        badgeEl.innerHTML = `<span class="db-transit-beacon"><span class="db-transit-ping"></span><span class="db-transit-dot"></span></span><span>Crew is On the Way!</span>`;
+        timeEl.textContent = departedAt ? ` ${departedAt}` : 'Departed: Just now';
+        bodyEl.innerHTML = `<strong>${crewName}</strong> has notified you that they have departed and are en route to <strong>${venueName}</strong>.`;
+    } else if (transitStatus === 'arrived') {
+        box.className = 'db-live-transit-box arrived';
+        badgeEl.className = 'db-live-transit-badge arrived';
+        badgeEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Crew Has Arrived</span>`;
+        timeEl.textContent = arrivedAt ? `Arrived: ${arrivedAt}` : 'Arrived: Just now';
+        bodyEl.innerHTML = `<strong>${crewName}</strong> has safely arrived at <strong>${venueName}</strong> and is ready to work!`;
+    } else {
+        box.className = 'db-live-transit-box pending';
+        badgeEl.className = 'db-live-transit-badge pending';
+        badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
+        timeEl.textContent = 'Awaiting Departure';
+        bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and will notify you when heading to <strong>${venueName}</strong>.`;
+    }
+}
+
 function syncEmployerState() {
     renderEmployerNotifications();
     renderBookings();
     checkCrewAcceptance();
+    updateStep5TransitLiveStatus();
 }
 
 window.addEventListener('ic_state_change', syncEmployerState);
@@ -2408,3 +3058,4 @@ setInterval(syncEmployerState, 800);
 populateProfile();
 renderEmployerNotifications();
 renderBookings();
+updateStep5TransitLiveStatus();
