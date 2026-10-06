@@ -3354,11 +3354,57 @@ body.app-sheet-open {
         margin-top: 12px !important;
     }
 
+    .app-feed-header-flex {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .app-feed-header-flex > div:first-child {
+        width: 100%;
+        text-align: left;
+    }
+
+    .app-feed-header-flex > div:first-child .db-step-label,
+    .app-feed-header-flex > div:first-child h2 {
+        text-align: left;
+        margin-left: 0;
+    }
+
+    .app-feed-location-wrap {
+        width: 100%;
+        position: relative;
+    }
+
+    .app-location-chip {
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: space-between;
+        padding: 8px 14px;
+    }
+
+    .app-location-chip-left {
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    .app-location-label,
+    .app-location-name {
+        white-space: nowrap;
+    }
+
     .app-feed-loc-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
         right: 0;
-        left: auto;
-        max-width: calc(100vw - 28px);
-        width: 310px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        z-index: 1200;
     }
 
     .app-stats-row {
@@ -5003,72 +5049,24 @@ body.app-sheet-open {
     gap: 12px;
 }
 
+/* ════ Location Chip (Where are you) ════ */
 .app-location-chip {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    justify-content: space-between;
+    gap: 12px;
     padding: 7px 14px;
     background: #FFFFFF;
     border: 1.5px solid #E5E7EB;
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-pill, 9999px);
+    font-family: inherit;
     font-size: 0.82rem;
     color: #374151;
     cursor: pointer;
     transition: all 0.18s ease;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     user-select: none;
-}
-
-.app-location-chip:hover {
-    border-color: #F59E0B;
-    background: #FFFBEB;
-    color: #111827;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.18);
-}
-
-.app-location-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
-}
-
-.app-location-label {
-    color: #6B7280;
-    font-weight: 500;
-}
-
-.app-location-name {
-    color: #111827;
-    font-weight: 700;
-}
-
-.app-location-edit-tag {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #D97706;
-    background: #FEF3C7;
-    padding: 2px 7px;
-    border-radius: 6px;
-    margin-left: 2px;
-    transition: background 0.15s ease;
-}
-
-.app-location-chip:hover .app-location-edit-tag {
-    background: #FDE68A;
-}
-
-/* ════ In-Feed Direct Location Dropdown ════ */
-.app-feed-location-wrap {
-    position: relative;
-    display: inline-block;
-}
-
-.app-location-chip {
-    font-family: inherit;
-    border: 1.5px solid #E5E7EB;
+    white-space: nowrap;
 }
 
 .app-location-chip:hover,
@@ -5077,25 +5075,84 @@ body.app-sheet-open {
     background: #FFFBEB;
     color: #111827;
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.16);
+    transform: translateY(-1px);
 }
 
 .app-location-chip.active {
     border-color: #D97706;
 }
 
+.app-location-chip-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.app-location-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+    flex-shrink: 0;
+}
+
+.app-location-pin-icon {
+    flex-shrink: 0;
+    color: #64748B;
+}
+
+.app-location-label {
+    color: #6B7280;
+    font-weight: 300;
+    white-space: nowrap;
+    font-size: 0.73rem;
+}
+
+.app-location-name {
+    color: #111827;
+    font-weight: 700;
+    white-space: nowrap;
+    font-size: 0.82rem;
+}
+
+.app-location-edit-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #D97706;
+    background: #FEF3C7;
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.app-location-chip:hover .app-location-edit-tag,
+.app-location-chip.active .app-location-edit-tag {
+    background: #FDE68A;
+    color: #92400E;
+}
+
 .app-loc-pill-chevron {
-    color: #9CA3AF;
+    color: #D97706;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
     flex-shrink: 0;
 }
 
-.app-location-chip:hover .app-loc-pill-chevron,
-.app-location-chip.active .app-loc-pill-chevron {
-    color: #D97706;
-}
-
 .app-location-chip.active .app-loc-pill-chevron {
     transform: rotate(180deg);
+}
+
+/* ════ In-Feed Direct Location Dropdown ════ */
+.app-feed-location-wrap {
+    position: relative;
+    display: inline-block;
 }
 
 .app-feed-loc-menu {
@@ -5109,7 +5166,7 @@ body.app-sheet-open {
     border-radius: 16px;
     padding: 12px 14px 14px;
     box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.04);
-    z-index: 150;
+    z-index: 1200;
     box-sizing: border-box;
     animation: workerFadeIn 0.16s ease;
 }
@@ -5321,6 +5378,54 @@ body.app-sheet-open {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 12px;
+}
+
+.app-feed-header-flex > div:first-child {
+    text-align: left;
+}
+
+@media (max-width: 640px) {
+    .app-feed-header-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    .app-feed-header-flex > div:first-child {
+        width: 100% !important;
+        text-align: left !important;
+    }
+
+    .app-feed-header-flex > div:first-child .db-step-label,
+    .app-feed-header-flex > div:first-child h2 {
+        text-align: left !important;
+        margin-left: 0 !important;
+    }
+
+    .app-feed-location-wrap {
+        width: 100% !important;
+        position: relative !important;
+    }
+
+    .app-location-chip {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        justify-content: space-between !important;
+        padding: 8px 14px !important;
+    }
+
+    .app-feed-loc-menu {
+        position: absolute !important;
+        top: calc(100% + 8px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        z-index: 1200 !important;
+    }
 }
 
 .app-feed-location-match-badge {

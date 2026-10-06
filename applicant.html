@@ -1270,20 +1270,24 @@
                             <button type="button" class="app-location-chip" id="feedLocationPill"
                                 aria-haspopup="listbox" aria-expanded="false"
                                 title="Click to change your work location">
-                                <span class="app-location-dot"></span>
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                                    <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
-                                        stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                                    <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.8" />
-                                </svg>
-                                <span class="app-location-label">Where you are:</span>
-                                <strong class="app-location-name" id="feedLocationText">Cebu City</strong>
-                                <span class="app-location-edit-tag">Change</span>
-                                <svg class="app-loc-pill-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
+                                <div class="app-location-chip-left">
+                                    <span class="app-location-dot"></span>
+                                    <svg class="app-location-pin-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                        <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
+                                            stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                                        <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.8" />
+                                    </svg>
+                                    <span class="app-location-label">Where are you:</span>
+                                    <strong class="app-location-name" id="feedLocationText">Cebu City</strong>
+                                </div>
+                                <span class="app-location-edit-tag">
+                                    <span>Change</span>
+                                    <svg class="app-loc-pill-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
                             </button>
 
                             <!-- In-Feed Location Popover Menu -->
@@ -3446,9 +3450,6 @@
                             feedLocationMenu.hidden = false;
                             feedLocationPill.classList.add('active');
                             feedLocationPill.setAttribute('aria-expanded', 'true');
-                            if (window.innerWidth <= 640 && feedBackdrop) {
-                                feedBackdrop.hidden = false;
-                            }
                             if (feedLocationSearch) feedLocationSearch.value = '';
                             renderFeedLocationItems('');
                             setTimeout(() => {
