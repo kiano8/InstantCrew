@@ -1560,6 +1560,7 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
     location: state.location,
     mapLocation: finalMapLoc,
     googleMapsUrl: finalMapsUrl,
+    geo: state.geo ? { lat: state.geo.lat, lng: state.geo.lng } : null,
     timing: timingText,
     count: state.count,
     crewRate: rate.amount,

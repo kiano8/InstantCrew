@@ -762,6 +762,48 @@
                         Use Current
                       </button>
                     </div>
+                    
+                    <!-- ── Google Map Location Card (optional for applicants) ── -->
+<div class="db-map-location-card" id="appMapLocationCard" style="margin-top:16px;">
+    <div class="db-map-header">
+        <div class="db-map-label-group">
+            <svg class="db-google-pin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335" />
+                <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
+            </svg>
+            <span class="db-map-title">Google Map Location</span>
+        </div>
+        <span class="db-map-badge">Optional</span>
+    </div>
+    <p class="db-map-desc">
+        Add your Google Maps link or address so employers can see roughly where you're based.
+    </p>
+
+    <div class="db-map-input-row">
+        <div class="db-map-input-wrap">
+            <svg class="db-map-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <input type="text" id="appMapLocationInput" class="db-map-input"
+                placeholder="Paste Google Maps URL or enter your address (e.g. IT Park, Lahug)"
+                aria-label="Google Map location link or address" />
+            <button type="button" class="db-map-clear-btn" id="appClearMapBtn"
+                style="display:none;" title="Clear location">&times;</button>
+        </div>
+        <button type="button" class="db-map-preview-btn" id="appPreviewMapBtn"
+            title="Preview on Google Maps">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>Preview Map</span>
+        </button>
+    </div>
+</div>
 
                     <button type="button" class="db-btn-primary" id="appToStep3" style="margin-top: 24px;">
                         <span>Next</span>
@@ -1443,6 +1485,12 @@
 
                 <!-- Google Maps Direction Banner -->
                 <div class="app-loc-map-preview">
+                  <!-- Live map (shown when we can build an embed URL) -->
+                  <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
+                    <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                  </div>              
+      
                     <div class="app-loc-map-art">
                         <div class="app-map-roads"></div>
                         <div class="app-map-pulse-pin">
@@ -1880,6 +1928,45 @@
             const copyLocAddressBtn = document.getElementById('copyLocAddressBtn');
 
             let currentLocModalAddress = '';
+            
+            // Build a keyless Google Maps embed URL from the best data we have
+function buildMapEmbedUrl(shift, address, mapsUrl) {
+    // 1. Exact GPS pin saved by the employer's "Use Current"
+    if (shift.geo && isFinite(shift.geo.lat) && isFinite(shift.geo.lng)) {
+        return `https://www.google.com/maps?q=${shift.geo.lat},${shift.geo.lng}&z=17&output=embed`;
+    }
+    // 2. A query already inside the maps URL (e.g. "10.31,123.89" or a place name)
+    try {
+        const u = new URL(mapsUrl);
+        const q = u.searchParams.get('query') || u.searchParams.get('q');
+        if (q) return `https://www.google.com/maps?q=${encodeURIComponent(q)}&z=16&output=embed`;
+    } catch (e) { /* not a parseable URL */ }
+    // 3. Plain-text address (but not a pasted link, which can't be embedded)
+    if (address && !/^https?:\/\//i.test(address)) {
+        return `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed`;
+    }
+    return '';
+}
+
+function renderLocationMapPreview(embedUrl) {
+    const frameWrap = document.getElementById('locMapFrameWrap');
+    const frame = document.getElementById('locMapFrame');
+    const art = document.getElementById('locMapArt');
+    const hint = document.getElementById('locMapHint');
+    if (!frameWrap || !frame || !art) return;
+
+    if (embedUrl) {
+        frame.src = embedUrl;
+        frameWrap.style.display = 'block';
+        art.style.display = 'none';
+        if (hint) hint.textContent = 'Live map preview. Tap "Open in Google Maps" for directions.';
+    } else {
+        frame.src = 'about:blank';
+        frameWrap.style.display = 'none';
+        art.style.display = '';
+        if (hint) hint.textContent = 'Location verified by employer for Google Maps navigation';
+    }
+}
 
             function openLocationDetailModal(shift) {
                 if (!appLocationDetailModal) return;
@@ -1940,7 +2027,7 @@
 
                 if (locModalAddress) locModalAddress.textContent = address;
                 if (openGoogleMapsActionBtn) openGoogleMapsActionBtn.href = mapsUrl;
-
+                renderLocationMapPreview(buildMapEmbedUrl(shift, address, mapsUrl));
 
 
                 appLocationDetailModal.style.display = 'flex';
@@ -1951,6 +2038,7 @@
 
             function closeLocationDetailModal() {
                 if (!appLocationDetailModal) return;
+                renderLocationMapPreview('');
                 appLocationDetailModal.classList.remove('open');
                 appLocationDetailModal.style.display = 'none';
                 appLocationDetailModal.setAttribute('aria-hidden', 'true');
@@ -4842,6 +4930,11 @@ if (feedUseCurrentBtn) {
                     sessionStorage.removeItem(SESSION_KEY_WORKER);
                     closeProfilePanel();
                     goToAppStep(1);
+                    appState.mapLocation = ''; appState.googleMapsUrl = ''; appState.geo = null;
+                    const mi = document.getElementById('appMapLocationInput');
+                    if (mi) mi.value = '';
+                    const cb = document.getElementById('appClearMapBtn');
+                    if (cb) cb.style.display = 'none';
                     updateViewMode();
                 });
             }
@@ -5053,6 +5146,20 @@ function resolveDetectedCity(raw) {
     return match || raw.trim(); // unknown city: use as-is
 }
 
+function buildMapsUrlFor(query) {
+    return (window.InstantCrewShared && window.InstantCrewShared.formatGoogleMapsUrl)
+        ? window.InstantCrewShared.formatGoogleMapsUrl(query)
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function getAppMapFields() {
+    return {
+        mapLocation: appState.mapLocation || '',
+        googleMapsUrl: appState.googleMapsUrl || '',
+        geo: appState.geo || null
+    };
+}
+
             const appState = {
                 step: 1,
                 category: 'kitchen',
@@ -5061,6 +5168,9 @@ function resolveDetectedCity(raw) {
                 rate: '95',
                 ratePeriod: 'per hour',
                 location: 'Cebu City',
+                mapLocation: '',
+                googleMapsurl: '',
+                geo: null,
                 timing: 'instant'
             };
 
@@ -5343,10 +5453,20 @@ if (appUseCurrentBtn) {
             } else {
                 if (!CITIES_LIST.includes(city)) CITIES_LIST.unshift(city);
                 appState.location = city;
-                if (appLocationTriggerText) appLocationTriggerText.textContent = city;
-                renderAppLocationDropdown('');
-                updateStepSummary();
-                showToast(`Location set to ${city}`);
+if (appLocationTriggerText) appLocationTriggerText.textContent = city;
+renderAppLocationDropdown('');
+
+// Fill the Google Map card with the detected address + exact pin
+appState.mapLocation = geo.label;
+appState.googleMapsUrl = geo.mapsUrl;
+appState.geo = { lat: geo.lat, lng: geo.lng, label: geo.label, mapsUrl: geo.mapsUrl };
+const mapInput = document.getElementById('appMapLocationInput');
+const clearBtn = document.getElementById('appClearMapBtn');
+if (mapInput) mapInput.value = geo.label;
+if (clearBtn) clearBtn.style.display = 'block';
+
+updateStepSummary();
+showToast(`Location set to ${city}`);
             }
         } catch (err) {
             showToast((err && err.message) || 'Could not get your location.', true);
@@ -5482,6 +5602,47 @@ if (appUseCurrentBtn) {
                         renderAppLocationDropdown(e.target.value);
                     });
                 }
+                
+                // ── Step 2: Google Map Location card ──
+const appMapInput = document.getElementById('appMapLocationInput');
+const appClearMapBtn = document.getElementById('appClearMapBtn');
+const appPreviewMapBtn = document.getElementById('appPreviewMapBtn');
+
+if (appMapInput) {
+    appMapInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        appState.mapLocation = val;
+        appState.geo = null; // typed manually, so drop the GPS pin
+        appState.googleMapsUrl = val ? buildMapsUrlFor(val) : '';
+        if (appClearMapBtn) appClearMapBtn.style.display = val ? 'block' : 'none';
+    });
+    appMapInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (appToStep3) appToStep3.click();
+        }
+    });
+}
+
+if (appClearMapBtn) {
+    appClearMapBtn.addEventListener('click', () => {
+        if (appMapInput) { appMapInput.value = ''; appMapInput.focus(); }
+        appState.mapLocation = '';
+        appState.googleMapsUrl = '';
+        appState.geo = null;
+        appClearMapBtn.style.display = 'none';
+    });
+}
+
+if (appPreviewMapBtn) {
+    appPreviewMapBtn.addEventListener('click', () => {
+        const query = (appMapInput && appMapInput.value.trim()) || appState.location || 'Cebu City';
+        const url = (appState.geo && query === appState.geo.label)
+            ? appState.geo.mapsUrl
+            : buildMapsUrlFor(query);
+        window.open(url, '_blank');
+    });
+}
 
                 // Step 2 -> Step 3
                 if (appToStep3) {
@@ -5524,6 +5685,7 @@ if (appUseCurrentBtn) {
                                 ratePeriod: appState.ratePeriod,
                                 employmentPreference: appState.workType,
                                 location: appState.location,
+                                ...getAppMapFields(),
                                 timingPreference: appState.timing
                             });
                             saveWorkerSession(session);
@@ -5657,6 +5819,7 @@ if (appUseCurrentBtn) {
                             active: true,
                             employmentPreference: appState.workType || 'full-time',
                             location: appState.location || 'Cebu City',
+                            ...getAppMapFields(),
                             offeredRate: appState.rate || '95',
                             ratePeriod: appState.ratePeriod || 'per hour',
                             timingPreference: appState.timing || 'instant',
@@ -5718,6 +5881,7 @@ if (appUseCurrentBtn) {
                             active: true,
                             employmentPreference: appState.workType || 'full-time',
                             location: appState.location || 'Cebu City',
+                            ...getAppMapFields(),
                             offeredRate: appState.rate || '95',
                             ratePeriod: appState.ratePeriod || 'per hour',
                             timingPreference: appState.timing || 'instant',
