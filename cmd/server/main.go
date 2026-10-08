@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"instantcrew/internal/auth"
+	"instantcrew/internal/jobs"
 	"instantcrew/internal/store"
 )
 
@@ -52,8 +53,16 @@ func main() {
 		}
 	}
 
+	jobsH := &jobs.Handler{
+		Store:            st,
+		MatchFeeCentavos: 10000,
+		SearchWindow:     3 * time.Minute,
+		Dev:              env == "dev",
+	}
+
 	mux := http.NewServeMux()
 
+	jobsH.Register(mux, authH)
 	// API
 	mux.HandleFunc("POST /api/auth/signup", authH.Signup)
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
@@ -96,6 +105,19 @@ func main() {
 			select {
 			case <-t.C:
 				_ = st.DeleteExpiredSessions(context.Background())
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	go func() {
+		t := time.NewTicker(5 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				_, _ = st.ExpireSearches(context.Background())
 			case <-ctx.Done():
 				return
 			}

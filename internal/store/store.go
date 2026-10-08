@@ -3,7 +3,10 @@ package store
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
+	"fmt"
+	"io/fs"
 	"strings"
 	"time"
 
@@ -12,39 +15,22 @@ import (
 
 var (
 	ErrNotFound   = errors.New("not found")
-	ErrEmailTaken = errors.New("email not registered")
+	ErrEmailTaken = errors.New("email already registered")
 )
 
 type User struct {
 	ID           int64
 	Email        string
 	PasswordHash string
-	Role         string
+	Role         string // "employer" | "applicant"
 	Name         string
 	Company      string
 }
 
 type Store struct{ db *sql.DB }
 
-const schema = `
-CREATE TABLE IF NOT EXISTS users (
-	id            INTEGER PRIMARY KEY AUTOINCREMENT,
-	email         TEXT NOT NULL,
-	password_hash TEXT NOT NULL,
-	role          TEXT NOT NULL CHECK (role IN ('employer','applicant')),
-	name          TEXT NOT NULL DEFAULT '',
-	company       TEXT NOT NULL DEFAULT '',
-	created_at    INTEGER NOT NULL,
-	UNIQUE (email, role)
-);
-CREATE TABLE IF NOT EXISTS sessions (
-	token_hash TEXT PRIMARY KEY,
-	user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	expires_at INTEGER NOT NULL,
-	created_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
-`
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 func Open(path string) (*Store, error) {
 	dsn := "file:" + path + "?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
@@ -53,7 +39,7 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1) // simplest way to avoid SQLITE_BUSY with one writer
-	if _, err := db.Exec(schema); err != nil {
+	if err := migrate(db); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -61,6 +47,48 @@ func Open(path string) (*Store, error) {
 }
 
 func (s *Store) Close() error { return s.db.Close() }
+
+// migrate applies each migrations/*.sql file once, in filename order.
+func migrate(db *sql.DB) error {
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+		version TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)`); err != nil {
+		return err
+	}
+	files, err := fs.ReadDir(migrationsFS, "migrations") // sorted by filename
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		var done int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = ?`, f.Name()).Scan(&done); err != nil {
+			return err
+		}
+		if done > 0 {
+			continue
+		}
+		body, err := migrationsFS.ReadFile("migrations/" + f.Name())
+		if err != nil {
+			return err
+		}
+		tx, err := db.Begin()
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(string(body)); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("migration %s: %w", f.Name(), err)
+		}
+		if _, err := tx.Exec(`INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`,
+			f.Name(), time.Now().Unix()); err != nil {
+			tx.Rollback()
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (s *Store) CreateUser(ctx context.Context, u *User) error {
 	res, err := s.db.ExecContext(ctx,
