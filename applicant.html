@@ -4925,6 +4925,7 @@ if (feedUseCurrentBtn) {
             // Logout
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', () => {
+                    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true });
                     sessionStorage.removeItem(SESSION_KEY_WORKER);
                     closeProfilePanel();
                     goToAppStep(1);
