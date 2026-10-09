@@ -2933,6 +2933,7 @@ if (headerBackArrow) {
 
 if (logoutBtn) {
   logoutBtn.addEventListener('click', () => {
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true });
     sessionStorage.removeItem(SESSION_KEY);
     window.location.href = 'index.html';
   });
