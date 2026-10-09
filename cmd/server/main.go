@@ -41,17 +41,17 @@ func main() {
 		log.Fatal(err)
 	}
 	defer st.Close()
+	if err := jobs.SyncCatalog(context.Background(), st); err != nil {
+		log.Fatal(err)
+	}
 
 	authH := &auth.Handler{
 		Store:        st,
 		SessionTTL:   7 * 24 * time.Hour,
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
 	}
-	if env == "dev" {
-		if err := authH.SeedDemo(context.Background()); err != nil {
-			log.Fatal(err)
-		}
-	}
+	// Development mode must not create implicit accounts. Authentication always
+	// uses credentials explicitly written through the signup endpoint.
 
 	jobsH := &jobs.Handler{
 		Store:            st,

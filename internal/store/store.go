@@ -29,6 +29,8 @@ type User struct {
 
 type Store struct{ db *sql.DB }
 
+type RoleRow struct{ ID, Category, Label string }
+
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
@@ -47,6 +49,37 @@ func Open(path string) (*Store, error) {
 }
 
 func (s *Store) Close() error { return s.db.Close() }
+
+func (s *Store) SyncRoles(ctx context.Context, roles []RoleRow) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, role := range roles {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO job_roles(id,category,label,is_active) VALUES(?,?,?,1) ON CONFLICT(id) DO UPDATE SET category=excluded.category,label=excluded.label,is_active=1`, role.ID, role.Category, role.Label); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *Store) ListRoles(ctx context.Context) ([]RoleRow, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id,category,label FROM job_roles WHERE is_active=1 ORDER BY category,label`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []RoleRow
+	for rows.Next() {
+		var r RoleRow
+		if err = rows.Scan(&r.ID, &r.Category, &r.Label); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
 
 // migrate applies each migrations/*.sql file once, in filename order.
 func migrate(db *sql.DB) error {

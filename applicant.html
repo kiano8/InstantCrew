@@ -80,8 +80,8 @@
                 <div class="app-profile-header-user">
                     <div class="db-profile-card-avatar app-profile-header-avatar" id="panelAvatarInitials">AL</div>
                     <div class="app-profile-header-info">
-                        <h2 class="db-profile-panel-title app-profile-header-name" id="panelUserName">Angelo Lopez</h2>
-                        <p class="app-profile-header-email" id="panelUserEmail">crew@instantcrew.com</p>
+                        <h2 class="db-profile-panel-title app-profile-header-name" id="panelUserName"></h2>
+                        <p class="app-profile-header-email" id="panelUserEmail"></p>
                     </div>
                 </div>
                 <div class="app-profile-header-actions">
@@ -151,7 +151,7 @@
                         <span class="app-stat-title">Matched Jobs</span>
                     </div>
                     <div class="app-stat-card">
-                        <span class="app-stat-num" id="statAcceptedJobs">142</span>
+                        <span class="app-stat-num" id="statAcceptedJobs">0</span>
                         <span class="app-stat-title">Accepted Jobs</span>
                     </div>
                     <div class="app-stat-card">
@@ -925,7 +925,7 @@
                 <!-- Step Header (identical to Employer Step 1 Header) -->
                 <div class="db-step-header" style="margin-bottom: 20px;">
                     <p class="db-step-label">Applicant Portal</p>
-                    <h2 id="crewGreeting">Welcome back, Angelo!</h2>
+                    <h2 id="crewGreeting">Welcome back!</h2>
                     <p class="app-greeting-sub">Opportunities matched with your profile in real-time. Review and accept
                         shifts below.</p>
                 </div>
@@ -1465,7 +1465,7 @@
                 <div class="app-loc-info-card">
                     <div class="app-loc-info-row">
                         <span class="app-loc-info-label">Venue / Employer</span>
-                        <strong class="app-loc-info-val" id="locModalVenueName">Sample Employer's Shift</strong>
+                        <strong class="app-loc-info-val" id="locModalVenueName">Shift location</strong>
                     </div>
                     <div class="app-loc-info-row">
                         <span class="app-loc-info-label" id="locModalShiftTimingLabel">Shift Details</span>
@@ -1628,7 +1628,7 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                             <input type="text" id="appModalSignupName" class="db-auth-input"
-                                placeholder="e.g. Angelo Lopez" required>
+                                placeholder="Your name" required>
                         </div>
                     </div>
 
@@ -1642,7 +1642,7 @@
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                             <input type="email" id="appModalSignupEmail" class="db-auth-input"
-                                placeholder="crew@instantcrew.com" required autocomplete="email">
+                                placeholder="you@example.com" required autocomplete="email">
                         </div>
                     </div>
 
@@ -1703,86 +1703,21 @@
             const SESSION_KEY_WORKER = 'ic_worker_session';
 
             // Available services catalog matching employer.js ROLES
-            const SERVICES_CATALOG = {
-                kitchen: [
-                    'Line Cook',
-                    'Chef',
-                    'Sous Chef',
-                    'Prep Assistant',
-                    'Kitchen Helper',
-                    'Dishwasher',
-                    'Pastry Chef',
-                    'Grill Cook',
-                    'Barista',
-                    'Bartender',
-                    'Food Runner',
-                    'Buffet Server',
-                    'Kitchen Steward',
-                    'Catering Assistant'
-                ],
-                delivery: [
-                    'Motorcycle Rider',
-                    'Food Delivery Rider',
-                    'Car Driver',
-                    'Bicycle Courier',
-                    'E-Scooter Courier',
-                    'Van Driver',
-                    'Express Messenger',
-                    'Pickup Truck Driver',
-                    'Heavy Truck Driver',
-                    'Document Courier',
-                    'Warehouse Dispatch Driver',
-                    'Last-Mile Delivery Specialist'
-                ],
-                helpers: [
-                    'Event Helper',
-                    'Banquet Server',
-                    'Warehouse Helper',
-                    'Inventory & Stock Assistant',
-                    'Loading & Unloading Crew',
-                    'Office Helper',
-                    'Moving Helper',
-                    'Cleaning Crew',
-                    'Sanitation Staff',
-                    'Staging & Booth Builder',
-                    'General Laborer',
-                    'Retail Store Assistant',
-                    'Maintenance Assistant',
-                    'Security / Usher Assistant'
-                ]
-            };
+            const SERVICES_CATALOG = { kitchen: [], delivery: [], helpers: [] };
+            fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
+                for (const category of categories || []) SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
+                if (typeof renderAppRolesDropdown === 'function') renderAppRolesDropdown(appRoleSearchInput?.value || '');
+                if (typeof renderAllServicePickers === 'function') renderAllServicePickers();
+            }).catch(err => console.error(err.message));
 
             // Check if worker session exists in sessionStorage
             function hasWorkerSession() {
-                try {
-                    return !!sessionStorage.getItem(SESSION_KEY_WORKER);
-                } catch (e) {
-                    return false;
-                }
+                return !!(session && session.id);
             }
 
             // Load or initialize worker session
             function getWorkerSession() {
-                try {
-                    const raw = sessionStorage.getItem(SESSION_KEY_WORKER);
-                    if (raw) return JSON.parse(raw);
-                } catch (e) { }
-
-                // Default demo session if none found
-                return {
-                    name: 'Angelo Lopez',
-                    email: 'crew@instantcrew.com',
-                    role: 'Crew Member',
-                    services: ['Line Cook', 'Motorcycle Rider'],
-                    rating: 4.9,
-                    acceptedJobs: 142,
-                    completedShifts: 142,
-                    earnings: 1240,
-                    active: true,
-                    employmentPreference: 'full-time',
-                    location: 'Cebu City',
-                    acceptedShifts: []
-                };
+                return { name: '', email: '', services: [], active: false, acceptedShifts: [] };
             }
 
             function saveWorkerSession(session) {
@@ -1808,7 +1743,7 @@
                     saveWorkerSession(session);
                 }
                 if (session.acceptedJobs === undefined) {
-                    session.acceptedJobs = session.completedShifts || 142;
+                    session.acceptedJobs = session.completedShifts || 0;
                     saveWorkerSession(session);
                 }
             }
@@ -2150,8 +2085,8 @@ function renderLocationMapPreview(embedUrl) {
 
             // Init User Profile View
             function renderProfileInfo() {
-                const name = session.name || 'Angelo Lopez';
-                const email = session.email || 'crew@instantcrew.com';
+                const name = session.name || '';
+                const email = session.email || '';
                 const parts = name.split(' ');
                 const initials = parts.map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'AL';
 
@@ -2161,12 +2096,12 @@ function renderLocationMapPreview(embedUrl) {
                 if (panelUserEmailEl) panelUserEmailEl.textContent = email;
                 if (crewGreetingEl) crewGreetingEl.textContent = `Welcome back, ${parts[0]}!`;
 
-                if (panelRatingEl) panelRatingEl.textContent = session.rating || '4.9';
+                if (panelRatingEl) panelRatingEl.textContent = session.rating ?? '—';
                 if (statRatingEl) {
                     const starSvg = window.InstantCrewShared ? window.InstantCrewShared.ICONS.star(18) : '';
-                    statRatingEl.innerHTML = `${starSvg}<span>${session.rating || '4.9'}</span>`;
+                    statRatingEl.innerHTML = `${starSvg}<span>${session.rating ?? '—'}</span>`;
                 }
-                if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs || session.completedShifts || '142';
+                if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs ?? session.completedShifts ?? '0';
 
                 updateStatusUI();
             }
@@ -2196,10 +2131,11 @@ function renderLocationMapPreview(embedUrl) {
             }
 
             if (workerStatusSwitch) {
-                workerStatusSwitch.addEventListener('change', () => {
+                workerStatusSwitch.addEventListener('change', async () => {
                     isOnline = workerStatusSwitch.checked;
                     session.active = isOnline;
-                    saveWorkerSession(session);
+                    try { await persistApplicantProfile(); saveWorkerSession(session); }
+                    catch (err) { workerStatusSwitch.checked = !isOnline; isOnline = !isOnline; session.active = isOnline; showToast(err.message,true); return; }
                     updateStatusUI();
                     if (typeof renderShiftsFeed === 'function') renderShiftsFeed();
                     showToast(isOnline ? 'Status: Active (Available for Shifts)' : 'Status: Offline / On Break');
@@ -3159,7 +3095,27 @@ function renderLocationMapPreview(embedUrl) {
             }
 
             // Save services & rates to profile (Availability is edited directly in the feed)
-            btnSaveServices.addEventListener('click', () => {
+            async function persistApplicantProfile() {
+                const period = String(session.ratePeriod || 'per hour').replace(/^per\s+/, '').replace(/s$/, '');
+                const response = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: session.employmentPreference || 'full-time', expected_rate: Number(session.offeredRate) || 95, rate_period: period, city: session.location || 'Cebu City', location_address: session.mapLocation || '', maps_url: session.googleMapsUrl || '', lat: session.geo?.lat ?? null, lng: session.geo?.lng ?? null, availability_mode: session.timingPreference === 'later' ? 'later' : 'now', is_active: session.active !== false, roles: session.services || [] }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Could not save applicant profile.');
+                return data.profile;
+            }
+
+            async function loadApplicantAvailability(targetSession) {
+                const response = await fetch('/api/applicant/availability', { credentials: 'same-origin' });
+                if (!response.ok) return;
+                const data = await response.json();
+                const slot = (data.availability || []).find(a => a.status === 'available');
+                if (!slot) return;
+                const starts = new Date(slot.starts_at * 1000);
+                targetSession.timingPreference = 'later';
+                targetSession.preferredDate = `${starts.getFullYear()}-${String(starts.getMonth()+1).padStart(2,'0')}-${String(starts.getDate()).padStart(2,'0')}`;
+                targetSession.preferredTime = `${String(starts.getHours()).padStart(2,'0')}:${String(starts.getMinutes()).padStart(2,'0')}`;
+            }
+
+            btnSaveServices.addEventListener('click', async () => {
                 session.services = [...selectedServices];
                 if (pendingEmploymentPreference) {
                     session.employmentPreference = pendingEmploymentPreference;
@@ -3173,7 +3129,8 @@ function renderLocationMapPreview(embedUrl) {
                     session.ratePeriod = workerRatePeriodSelect.value || 'per hour';
                 }
 
-                saveWorkerSession(session);
+                try { await persistApplicantProfile(); saveWorkerSession(session); }
+                catch (err) { showToast(err.message, true); return; }
 
                 saveIndicator.style.display = 'inline-block';
                 setTimeout(() => {
@@ -3340,7 +3297,7 @@ function renderLocationMapPreview(embedUrl) {
                         }
                     });
 
-                    function saveFeedRate() {
+                    async function saveFeedRate() {
                         if (!feedHourlyRateInput) return;
                         const inputVal = feedHourlyRateInput.value.trim();
                         const selectedPeriod = currentRatePeriod || session.ratePeriod || 'per hour';
@@ -3358,7 +3315,8 @@ function renderLocationMapPreview(embedUrl) {
                             selectWorkerRatePeriod(selectedPeriod);
                         }
 
-                        saveWorkerSession(session);
+                        try { await persistApplicantProfile(); saveWorkerSession(session); }
+                        catch (err) { showToast(err.message, true); return; }
                         renderMainServicesDisplay();
                         closeAllFeedDropdowns();
 
@@ -3367,7 +3325,7 @@ function renderLocationMapPreview(embedUrl) {
                     }
 
                     if (btnSaveFeedRate) {
-                        btnSaveFeedRate.addEventListener('click', (e) => {
+                        btnSaveFeedRate.addEventListener('click', async (e) => {
                             e.stopPropagation();
                             saveFeedRate();
                         });
@@ -3433,10 +3391,11 @@ function renderLocationMapPreview(embedUrl) {
 
                     const btnApplyInstantAvail = document.getElementById('btnApplyInstantAvail');
                     if (btnApplyInstantAvail) {
-                        btnApplyInstantAvail.addEventListener('click', (e) => {
+                        btnApplyInstantAvail.addEventListener('click', async (e) => {
                             e.stopPropagation();
                             session.timingPreference = 'instant';
-                            saveWorkerSession(session);
+                            session.active = true;
+                            try { await persistApplicantProfile(); saveWorkerSession(session); } catch(err) { showToast(err.message,true); return; }
                             renderMainServicesDisplay();
                             updateRateAndTimingUI();
                             renderShiftsFeed(true);
@@ -3447,12 +3406,22 @@ function renderLocationMapPreview(embedUrl) {
 
                     const btnApplyScheduledAvail = document.getElementById('btnApplyScheduledAvail');
                     if (btnApplyScheduledAvail) {
-                        btnApplyScheduledAvail.addEventListener('click', (e) => {
+                        btnApplyScheduledAvail.addEventListener('click', async (e) => {
                             e.stopPropagation();
                             session.timingPreference = 'later';
                             session.preferredDate = formatWorkerDateString(workerSelectedDate);
                             session.preferredTime = workerSelectedTime || '09:00';
-                            saveWorkerSession(session);
+                            session.active = true;
+                            try {
+                                await persistApplicantProfile();
+                                const start = new Date(workerSelectedDate);
+                                const [hour, minute] = session.preferredTime.split(':').map(Number);
+                                start.setHours(hour, minute, 0, 0);
+                                const startsAt = Math.floor(start.getTime()/1000);
+                                const r = await fetch('/api/applicant/availability', { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({availability:[{starts_at:startsAt,ends_at:startsAt+8*3600,status:'available'}]}) });
+                                const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error || 'Could not save scheduled availability.');
+                                saveWorkerSession(session);
+                            } catch(err) { showToast(err.message,true); return; }
                             renderMainServicesDisplay();
                             updateRateAndTimingUI();
                             renderShiftsFeed(true);
@@ -3521,8 +3490,16 @@ function renderLocationMapPreview(embedUrl) {
                     }
                 }
 
-                function applyFeedLocation(city) {
+                async function applyFeedLocation(city) {
+                    const previousLocation = session.location;
                     session.location = city;
+                    try {
+                        await persistApplicantProfile();
+                    } catch (err) {
+                        session.location = previousLocation;
+                        showToast(err.message || 'Could not save your work location.', true);
+                        return false;
+                    }
                     saveWorkerSession(session);
                     const feedLocText = document.getElementById('feedLocationText');
                     if (feedLocText) feedLocText.textContent = city;
@@ -3534,6 +3511,7 @@ function renderLocationMapPreview(embedUrl) {
                     closeAllFeedDropdowns();
                     renderShiftsFeed(true);
                     showToast(`Location updated to ${city}! Shifts matched.`);
+                    return true;
                 }
 
                 if (feedLocationPill && feedLocationMenu) {
@@ -3573,9 +3551,9 @@ function renderLocationMapPreview(embedUrl) {
 
                     // Quick chip clicks
                     feedLocationMenu.querySelectorAll('.app-feed-loc-chip').forEach(chip => {
-                        chip.addEventListener('click', (e) => {
+                chip.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            applyFeedLocation(chip.dataset.city);
+                    void applyFeedLocation(chip.dataset.city);
                         });
                     });
 
@@ -3601,8 +3579,7 @@ if (feedUseCurrentBtn) {
                 showToast("Couldn't work out your city. Please pick it from the list.", true);
             } else {
                 if (!PHILIPPINES_CITIES.includes(city)) PHILIPPINES_CITIES.unshift(city);
-                applyFeedLocation(city);
-                feedUseCurrentBtn.innerHTML = '<span>Detected</span>';
+                if (await applyFeedLocation(city)) feedUseCurrentBtn.innerHTML = '<span>Detected</span>';
             }
         } catch (err) {
             showToast((err && err.message) || 'Could not get your location.', true);
@@ -3854,10 +3831,11 @@ if (feedUseCurrentBtn) {
             }
 
             // Save preference explicitly (fallback)
-            function saveEmploymentPreference() {
+            async function saveEmploymentPreference() {
                 const chosenPref = pendingEmploymentPreference || session.employmentPreference || 'full-time';
                 session.employmentPreference = chosenPref;
-                saveWorkerSession(session);
+                try { await persistApplicantProfile(); saveWorkerSession(session); }
+                catch (err) { showToast(err.message, true); return; }
 
                 if (profileEmpNote) {
                     profileEmpNote.textContent = 'Only matching jobs show in feed';
@@ -3961,9 +3939,10 @@ if (feedUseCurrentBtn) {
                 saveLocationPreference();
             }
 
-            function saveLocationPreference() {
+            async function saveLocationPreference() {
                 session.location = pendingLocation;
-                saveWorkerSession(session);
+                try { await persistApplicantProfile(); saveWorkerSession(session); }
+                catch (err) { showToast(err.message, true); return; }
 
                 updateLocationDisplayElements();
 
@@ -4047,9 +4026,36 @@ if (feedUseCurrentBtn) {
                ACTIVE CONTRACTS & CAPACITY ENGINE
                ═══════════════════════════════════════════════════════════ */
 
+            let serverAssignments = null;
+            let assignmentFetchPending = false;
+            let assignmentFetchedAt = 0;
+            function mapAssignment(a) {
+                const j = a.job;
+                return { id: String(j.id), jobId: String(j.id), title: j.role_label, role: j.role_label,
+                    category: j.category, venue: j.map_location || j.city, location: j.city,
+                    rate: `₱${j.rate}`, timing: j.timing, employmentType: j.employment_type,
+                    status: a.ended_at ? 'ended' : 'active', endedAt: a.ended_at,
+                    transitStatus: a.transit_status === 'en_route' ? 'on_the_way' : a.transit_status,
+                    acceptedAt: a.accepted_at };
+            }
+            function refreshApplicantAssignments(force = false) {
+                if (assignmentFetchPending || (!force && serverAssignments !== null && Date.now() - assignmentFetchedAt < 2500)) return;
+                assignmentFetchPending = true;
+                fetch('/api/applicant/assignments', { credentials: 'same-origin' }).then(async r => {
+                    const data = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(data.error || 'Unable to load your contracts.');
+                    serverAssignments = (data.assignments || []).map(mapAssignment);
+                    assignmentFetchedAt = Date.now();
+                    session.acceptedJobs = serverAssignments.length;
+                    session.completedShifts = serverAssignments.filter(c => c.status === 'ended').length;
+                    if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = String(session.acceptedJobs);
+                    updateCapacityUI();
+                    renderAcceptedShiftsList(true);
+                }).catch(err => showToast(err.message, true)).finally(() => { assignmentFetchPending = false; });
+            }
             function getActiveContractsList() {
-                if (!window.InstantCrewShared) return [];
-                return InstantCrewShared.getActiveContracts().filter(c => c.status === 'active');
+                refreshApplicantAssignments();
+                return (serverAssignments || []).filter(c => c.status === 'active');
             }
 
             function updateCapacityUI() {
@@ -4193,47 +4199,18 @@ if (feedUseCurrentBtn) {
             }
 
             function updateWorkerContractTransit(contractId, transitStatus) {
-                if (!window.InstantCrewShared) return;
-                const workerName = (session && session.name) ? session.name : 'Angelo Lopez';
-                const res = InstantCrewShared.updateContractTransit(contractId, transitStatus, workerName);
-                if (res.success) {
-                    if (transitStatus === 'on_the_way') {
-                        InstantCrewShared.showPushToast('En Route', 'Employer has been notified that you are on the way to the location.', 'transit');
-                    } else if (transitStatus === 'arrived') {
-                        InstantCrewShared.showPushToast('Arrived on Site', 'Employer has been notified that you have safely arrived.', 'arrived');
-                    }
-                    updateCapacityUI();
-                    renderAcceptedShiftsList(true);
-                    if (appLocationDetailModal && appLocationDetailModal.classList.contains('open')) {
-                        const contracts = InstantCrewShared.getActiveContracts();
-                        const updated = contracts.find(c => String(c.id) === String(contractId));
-                        if (updated) {
-                            openLocationDetailModal({
-                                ...updated,
-                                isAccepted: true
-                            });
-                        }
-                    }
-                } else {
-                    showToast(res.reason || 'Could not update transit status');
-                }
+                const status = transitStatus === 'on_the_way' ? 'en_route' : transitStatus;
+                fetch(`/api/applicant/assignments/${contractId}/transit`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
+                    .then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error || 'Could not update transit status.'); serverAssignments=null; assignmentFetchedAt=0; refreshApplicantAssignments(true); })
+                    .catch(err => showToast(err.message, true));
             }
 
-            function endWorkerContract(contractId) {
-                if (!window.InstantCrewShared) return;
-                const res = InstantCrewShared.endContract(contractId, 'worker', session.name || 'Angelo Lopez');
-                if (res.success) {
-                    // Increment worker completed count & earnings
-                    session.completedShifts = (session.completedShifts || 142) + 1;
-                    session.earnings = (session.earnings || 1240) + 380;
-                    saveWorkerSession(session);
-
-                    renderProfileInfo();
-                    updateCapacityUI();
-                    renderShiftsFeed(true);
-                    renderAcceptedShiftsList(true);
-                    InstantCrewShared.showPushToast('Contract Ended', 'Your work contract has concluded. Capacity restored!', 'end');
-                }
+            async function endWorkerContract(contractId) {
+                try {
+                    const r=await fetch(`/api/applicant/assignments/${contractId}/end`,{method:'POST',credentials:'same-origin'});
+                    const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Could not end this contract.');
+                    serverAssignments=null;assignmentFetchedAt=0;await refreshApplicantAssignments(true);renderShiftsFeed(true);showToast('Contract ended.');
+                } catch(err){showToast(err.message,true);}
             }
 
             /* ═══════════════════════════════════════════════════════════
@@ -4241,6 +4218,8 @@ if (feedUseCurrentBtn) {
                ═══════════════════════════════════════════════════════════ */
 
             let lastShiftsFeedSig = null;
+            let serverApplicantJobs = null;
+            let loadingApplicantJobs = false;
 
             function renderShiftsFeed(force = false) {
                 if (!window.InstantCrewShared || !shiftsListContainer) return;
@@ -4267,7 +4246,27 @@ if (feedUseCurrentBtn) {
                     return;
                 }
 
-                const allJobs = InstantCrewShared.getJobs();
+                if (serverApplicantJobs === null) {
+                    if (!loadingApplicantJobs) {
+                        loadingApplicantJobs = true;
+                        fetch('/api/applicant/jobs', { credentials: 'same-origin' }).then(async r => {
+                            const data = await r.json().catch(() => ({}));
+                            if (!r.ok) throw new Error(data.error || 'Unable to load shifts');
+                            serverApplicantJobs = (data.jobs || []).map(j => ({
+                                ...j, roleKey: j.role, role: j.role_label, title: j.role_label, venue: j.map_location || j.city,
+                                location: j.city, mapLocation: j.map_location, googleMapsUrl: j.maps_url,
+                                employmentType: j.employment_type, neededCrew: j.crew_needed,
+                                rate: `₱${j.rate}`, status: j.status, acceptedCrew: [],
+                                timing: j.scheduled_at ? new Date(j.scheduled_at).toLocaleString() : j.timing
+                            }));
+                        }).catch(err => { showToast(err.message, true); serverApplicantJobs = []; }).finally(() => {
+                            loadingApplicantJobs = false;
+                            renderShiftsFeed(true);
+                        });
+                    }
+                    return;
+                }
+                const allJobs = serverApplicantJobs;
                 const rejectedIds = InstantCrewShared.getRejectedJobIds();
                 const activeContracts = getActiveContractsList();
                 const hasFullTime = activeContracts.some(c => c.employmentType === 'full-time');
@@ -4304,7 +4303,7 @@ if (feedUseCurrentBtn) {
                     // Only show jobs whose role matches one of the worker's selected services.
                     // If the worker has no services selected, show nothing.
                     if (workerServices.length === 0) return false;
-                    if (!workerServices.includes(job.role)) return false;
+                    if (!workerServices.includes(job.roleKey || job.role)) return false;
 
                     // If holding 1 part-time job, full-time jobs cannot be taken (only 1 more part-time)
                     if (partTimeCount > 0 && job.employmentType === 'full-time') {
@@ -4335,7 +4334,7 @@ if (feedUseCurrentBtn) {
                     statMatchedJobsEl.textContent = visibleJobs.length;
                 }
                 if (statAcceptedJobsEl) {
-                    statAcceptedJobsEl.textContent = session.acceptedJobs || session.completedShifts || '142';
+                    statAcceptedJobsEl.textContent = session.acceptedJobs ?? session.completedShifts ?? '0';
                 }
 
                 const currentFeedSig = JSON.stringify({
@@ -4570,29 +4569,41 @@ if (feedUseCurrentBtn) {
             }
 
             // Dismiss (Reject) Shift Action
-            function dismissShift(shift, cardEl) {
+            async function dismissShift(shift, cardEl) {
+                const rejectBtn = cardEl.querySelector('.app-btn-reject');
+                if (rejectBtn) rejectBtn.disabled = true;
+                try {
+                    const response = await fetch(`/api/applicant/jobs/${shift.id}/reject`, { method: 'POST', credentials: 'same-origin' });
+                    if (!response.ok) { const d=await response.json().catch(()=>({})); throw new Error(d.error || 'Could not decline this shift.'); }
+                } catch (err) { if(rejectBtn) rejectBtn.disabled=false; showToast(err.message,true); return; }
                 cardEl.style.transition = 'all 0.25s ease';
                 cardEl.style.opacity = '0';
                 cardEl.style.transform = 'translateX(-20px)';
                 setTimeout(() => {
-                    InstantCrewShared.rejectJob(shift.id);
+                    serverApplicantJobs = null;
                     renderShiftsFeed();
                     showToast('Shift declined and removed from feed.');
                 }, 250);
             }
 
             // Accept Shift Action
-            function acceptWorkerShift(shift, cardEl) {
-                const res = InstantCrewShared.acceptJob(shift.id, session.name || 'Angelo Lopez');
-                if (!res.success) {
-                    showToast(res.reason, true);
+            async function acceptWorkerShift(shift, cardEl) {
+                const button = cardEl.querySelector('.app-btn-accept');
+                if (button) button.disabled = true;
+                try {
+                    const response = await fetch(`/api/applicant/jobs/${shift.id}/accept`, { method: 'POST', credentials: 'same-origin' });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(data.error || 'Could not accept this shift.');
+                } catch (err) {
+                    if (button) button.disabled = false;
+                    showToast(err.message, true);
                     return;
                 }
 
                 // Increment accepted jobs counter
-                session.acceptedJobs = (session.acceptedJobs || session.completedShifts || 142) + 1;
-                saveWorkerSession(session);
-                if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs;
+                serverAssignments = null;
+                assignmentFetchedAt = 0;
+                refreshApplicantAssignments(true);
 
                 // Vanish card smoothly
                 cardEl.style.transition = 'all 0.25s ease';
@@ -4600,10 +4611,11 @@ if (feedUseCurrentBtn) {
                 cardEl.style.transform = 'scale(0.95)';
 
                 setTimeout(() => {
+                    serverApplicantJobs = null;
                     updateCapacityUI();
                     renderShiftsFeed();
                     renderAcceptedShiftsList();
-                    InstantCrewShared.showPushToast('Shift Accepted!', `You accepted ${shift.title}! Dispatch details added to your contracts.`, 'party');
+                    if (window.InstantCrewShared) InstantCrewShared.showPushToast('Shift Accepted!', `You accepted ${shift.title}.`, 'party');
                 }, 250);
             }
 
@@ -4777,7 +4789,8 @@ if (feedUseCurrentBtn) {
             let lastAcceptedShiftsSig = null;
 
             function renderAcceptedShiftsList(force = false) {
-                const contracts = InstantCrewShared ? InstantCrewShared.getActiveContracts() : [];
+                refreshApplicantAssignments();
+                const contracts = serverAssignments || [];
                 const activeContracts = contracts.filter(c => c.status === 'active');
                 const endedContracts = contracts.filter(c => c.status === 'ended' || c.status === 'completed');
 
@@ -4942,14 +4955,24 @@ if (feedUseCurrentBtn) {
                WORKER NOTIFICATIONS SYSTEM
                ═══════════════════════════════════════════════════════════ */
 
+            let applicantNotifications = null;
+            let applicantNotificationsFetchedAt = 0;
+            let applicantNotificationsPending = false;
             function renderWorkerNotifications() {
                 if (!window.InstantCrewShared) return;
-                session = getWorkerSession();
+                if (!hasWorkerSession()) return;
+                if (applicantNotifications === null || Date.now() - applicantNotificationsFetchedAt > 2500) {
+                    if (!applicantNotificationsPending) {
+                        applicantNotificationsPending = true;
+                        fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||'Could not load notifications.'); applicantNotifications=d.notifications||[]; applicantNotificationsFetchedAt=Date.now(); renderWorkerNotifications(); }).catch(e=>showToast(e.message,true)).finally(()=>{applicantNotificationsPending=false;});
+                    }
+                    if (applicantNotifications === null) applicantNotifications=[];
+                }
                 const workerServices = Array.isArray(session.services) ? session.services : [];
                 const targetPref = session.employmentPreference || 'full-time';
                 const activeContracts = getActiveContractsList();
                 const isMaxCapacity = activeContracts.some(c => c.employmentType === 'full-time') || activeContracts.filter(c => c.employmentType === 'part-time').length >= 2;
-                const notifs = InstantCrewShared.getNotifications('worker').filter(n => {
+                const notifs = applicantNotifications.filter(n => {
                     if (n.type === 'match') {
                         if (isMaxCapacity) return false;
                         if (n.role && !workerServices.some(s => s.trim().toLowerCase() === n.role.trim().toLowerCase())) return false;
@@ -4983,7 +5006,7 @@ if (feedUseCurrentBtn) {
                                 <div>
                                     <p class="db-notif-title">${n.title}</p>
                                     <p class="db-notif-desc">${cleanMsg}</p>
-                                    <span class="db-notif-time">${n.time}</span>
+                                <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
                                 </div>
                             `;
                             notifList.appendChild(el);
@@ -5038,8 +5061,9 @@ if (feedUseCurrentBtn) {
                     e.stopPropagation();
                     const isHidden = notifDropdown.hidden;
                     notifDropdown.hidden = !isHidden;
-                    if (isHidden && window.InstantCrewShared) {
-                        InstantCrewShared.markAllNotificationsRead('worker');
+                    if (isHidden) {
+                        fetch('/api/notifications/read', { method: 'POST', credentials: 'same-origin' });
+                        applicantNotifications = (applicantNotifications || []).map(n => ({ ...n, read: true }));
                         if (notifBadge) notifBadge.style.display = 'none';
                     }
                 });
@@ -5047,10 +5071,7 @@ if (feedUseCurrentBtn) {
 
             if (clearNotifsBtn) {
                 clearNotifsBtn.addEventListener('click', () => {
-                    if (window.InstantCrewShared) {
-                        InstantCrewShared.clearNotifications('worker');
-                        renderWorkerNotifications();
-                    }
+                    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { applicantNotifications=[]; applicantNotificationsFetchedAt=Date.now(); renderWorkerNotifications(); });
                 });
             }
 
@@ -5783,7 +5804,7 @@ if (appPreviewMapBtn) {
                 });
 
                 // Modal Login Form Submission
-                function handleApplicantModalLogin(e) {
+                async function handleApplicantModalLogin(e) {
                     if (e) e.preventDefault();
                     const emailInput = document.getElementById('appModalLoginEmail');
                     const passInput = document.getElementById('appModalLoginPass');
@@ -5791,8 +5812,8 @@ if (appPreviewMapBtn) {
                     const pass = passInput ? passInput.value : '';
                     const btn = document.getElementById('btnSubmitAppModalLogin');
 
-                    if (!email || pass.length < 4) {
-                        showApplicantAuthError('Please enter a valid email and password (minimum 4 characters).');
+                    if (!email || pass.length < 8) {
+                        showApplicantAuthError('Please enter a valid email and password (minimum 8 characters).');
                         return;
                     }
 
@@ -5801,53 +5822,32 @@ if (appPreviewMapBtn) {
                         btn.innerHTML = '<span class="db-btn-spinner"></span> Logging in…';
                     }
 
-                    setTimeout(() => {
-                        const name = (email === 'applicant@gmail.com' || email === 'crew@instantcrew.com')
-                            ? 'Angelo Lopez'
-                            : email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-                        const newSession = {
-                            name: name,
-                            email: email,
-                            role: appState.role || 'Crew Member',
-                            services: [appState.role || 'Line Cook'],
-                            rating: 4.9,
-                            acceptedJobs: 142,
-                            completedShifts: 142,
-                            earnings: 1240,
-                            active: true,
-                            employmentPreference: appState.workType || 'full-time',
-                            location: appState.location || 'Cebu City',
-                            ...getAppMapFields(),
-                            offeredRate: appState.rate || '95',
-                            ratePeriod: appState.ratePeriod || 'per hour',
-                            timingPreference: appState.timing || 'instant',
-                            preferredDate: '',
-                            preferredTime: '09:00',
-                            acceptedShifts: []
-                        };
-
-                        saveWorkerSession(newSession);
-                        closeApplicantAuthModal();
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = '<span>Log In &amp; View Shifts</span>';
+                    try {
+                        const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass }) });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.error || 'Invalid email or password.');
+                        const newSession = { ...data.user, services: [], active: false, acceptedShifts: [] };
+                        const profileResponse = await fetch('/api/applicant/profile', { credentials: 'same-origin' });
+                        if (profileResponse.ok) {
+                            const profileData = await profileResponse.json();
+                            if (profileData.profile) Object.assign(newSession, { services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                         }
+                        await loadApplicantAvailability(newSession);
+                        saveWorkerSession(newSession);
+                        session = newSession;
+                        closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                    }, 400);
+                    } catch (err) { showApplicantAuthError(err.message); }
+                    finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
 
                 if (applicantModalLoginForm) {
                     applicantModalLoginForm.addEventListener('submit', handleApplicantModalLogin);
                 }
-                const btnSubmitAppModalLogin = document.getElementById('btnSubmitAppModalLogin');
-                if (btnSubmitAppModalLogin) {
-                    btnSubmitAppModalLogin.addEventListener('click', handleApplicantModalLogin);
-                }
 
                 // Modal Sign Up Form Submission
-                function handleApplicantModalSignup(e) {
+                async function handleApplicantModalSignup(e) {
                     if (e) e.preventDefault();
                     const nameInput = document.getElementById('appModalSignupName');
                     const emailInput = document.getElementById('appModalSignupEmail');
@@ -5857,8 +5857,8 @@ if (appPreviewMapBtn) {
                     const pass = passInput ? passInput.value : '';
                     const btn = document.getElementById('btnSubmitAppModalSignup');
 
-                    if (!name || !email || pass.length < 4) {
-                        showApplicantAuthError('Please fill in your name, valid email, and password (minimum 4 characters).');
+                    if (!name || !email || pass.length < 8) {
+                        showApplicantAuthError('Please fill in your name, valid email, and password (minimum 8 characters).');
                         return;
                     }
 
@@ -5867,45 +5867,32 @@ if (appPreviewMapBtn) {
                         btn.innerHTML = '<span class="db-btn-spinner"></span> Creating account…';
                     }
 
-                    setTimeout(() => {
-                        const newSession = {
-                            name: name,
-                            email: email,
-                            role: appState.role || 'Crew Member',
-                            services: [appState.role || 'Line Cook'],
-                            rating: 5.0,
-                            acceptedJobs: 0,
-                            completedShifts: 0,
-                            earnings: 0,
-                            active: true,
-                            employmentPreference: appState.workType || 'full-time',
-                            location: appState.location || 'Cebu City',
-                            ...getAppMapFields(),
-                            offeredRate: appState.rate || '95',
-                            ratePeriod: appState.ratePeriod || 'per hour',
-                            timingPreference: appState.timing || 'instant',
-                            preferredDate: '',
-                            preferredTime: '09:00',
-                            acceptedShifts: []
-                        };
-
-                        saveWorkerSession(newSession);
-                        closeApplicantAuthModal();
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = '<span>Create Account &amp; View Shifts</span>';
+                    try {
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.error || 'Could not create your account.');
+                        const roleId = appState.role;
+                        const period = String(appState.ratePeriod || 'per hour').replace(/^per\s+/, '').replace(/s$/, '');
+                        const profileResponse = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: appState.workType || 'full-time', expected_rate: Number(appState.rate) || 95, rate_period: period, city: appState.location || 'Cebu City', location_address: (getAppMapFields().mapLocation || ''), maps_url: (getAppMapFields().googleMapsUrl || ''), lat: (getAppMapFields().geo || {}).lat || null, lng: (getAppMapFields().geo || {}).lng || null, availability_mode: appState.timing === 'later' ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
+                        if (!profileResponse.ok) { const profileErr = await profileResponse.json().catch(() => ({})); throw new Error(profileErr.error || 'Account created, but the applicant profile could not be saved. Please log in and try again.'); }
+                        const profileData = await profileResponse.json();
+                        const newSession = { ...data.user, services: profileData.profile?.roles || [], active: true, employmentPreference: appState.workType || 'full-time', location: appState.location || 'Cebu City', acceptedShifts: [] };
+                        if (appState.timing === 'later') {
+                            const startsAt = Math.floor(Date.now() / 1000) + 3600;
+                            const availabilityResponse = await fetch('/api/applicant/availability', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ availability: [{ starts_at: startsAt, ends_at: startsAt + 8 * 3600, status: 'available' }] }) });
+                            if (!availabilityResponse.ok) throw new Error('Account created, but scheduled availability could not be saved.');
                         }
+                        saveWorkerSession(newSession);
+                        session = newSession;
+                        closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                    }, 400);
+                    } catch (err) { showApplicantAuthError(err.message); }
+                    finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
 
                 if (applicantModalSignupForm) {
                     applicantModalSignupForm.addEventListener('submit', handleApplicantModalSignup);
-                }
-                const btnSubmitAppModalSignup = document.getElementById('btnSubmitAppModalSignup');
-                if (btnSubmitAppModalSignup) {
-                    btnSubmitAppModalSignup.addEventListener('click', handleApplicantModalSignup);
                 }
 
                 // Initialize role dropdown and popular pills
@@ -5913,6 +5900,18 @@ if (appPreviewMapBtn) {
                 renderAppLocationDropdown('');
                 updateStepSummary();
                 updateViewMode();
+                fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(data => {
+                    if (!data || !data.user || data.user.role !== 'applicant') return;
+                    session = { ...data.user, services: [], active: false, acceptedShifts: [] };
+                    return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
+                        if (profileData?.profile) Object.assign(session, { services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                    }).then(() => loadApplicantAvailability(session));
+                }).then(() => {
+                    if (!hasWorkerSession()) return;
+                    saveWorkerSession(session);
+                    applySessionToDashboard(session);
+                    updateViewMode();
+                }).catch(() => {});
             }
 
             // Real-time synchronization helper
@@ -5921,7 +5920,6 @@ if (appPreviewMapBtn) {
                     updateViewMode();
                     return;
                 }
-                session = getWorkerSession();
                 isOnline = session.active !== false;
                 updateStatusUI();
                 updateLocationDisplayElements();

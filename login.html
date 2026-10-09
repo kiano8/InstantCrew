@@ -96,7 +96,7 @@
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                         </span>
-                        <input type="email" id="hirerLoginEmail" class="form-input" placeholder="sample@gmail.com"
+                        <input type="email" id="hirerLoginEmail" class="form-input" placeholder="name@company.com"
                             required autocomplete="email">
                     </div>
                 </div>
@@ -604,7 +604,7 @@
           function saveEmployerSession(user) {
             let bookings = [];
             try {
-              const prev = JSON.parse(session.Storage.getItem(SESSION_KEY_EMPLOYER));
+              const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY_EMPLOYER));
               if (prev && Array.isArray(prev.bookings)) bookings = prev.bookings;
             } catch (e) { }
 
@@ -617,15 +617,9 @@
             sessionStorage.setItem('ic_guest_employer_session', session);
           }   
 
-          function saveWorkerSession(user, isNew) {
+          function saveWorkerSession(user) {
             sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
-              name: user.name, email: user.email, role: 'Crew Member',
-
-              // TODO: load services / rating / completed shifts 
-              services: isNew ? [] : ['LineCook', 'Motorcycle Rider'],
-              rating: isNew ? 5.0 : 4.9,
-              completedShifts: isNew ? 0 : 142, 
-              active: true 
+              ...user, services: [], rating: null, completedShifts: 0, active: false
             }));
           }
 
@@ -636,7 +630,8 @@
           }
 
           // Employer login 
-          formHirerLogin.addEventListener('submit', async () => {
+          formHirerLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
             const btn = document.getElementById('btnSubmitHirerLogin');
             const user = await authRequest('/api/auth/login', {
               role: 'employer',
@@ -650,7 +645,8 @@
           })
 
           // Employer signup 
-          formHirerSignup.addEventListener('submit', async () => {
+          formHirerSignup.addEventListener('submit', async (e) => {
+            e.preventDefault();
             const btn = document.getElementById('btnSubmitHirerSignup');
             const user = await authRequest('/api/auth/signup', {
               role: 'employer',
@@ -665,7 +661,8 @@
           });
 
           // Applicant log in 
-          formApplicantLogin.addEventListener('submit', async () => {
+          formApplicantLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
             const btn = document.getElementById('btnSubmitApplicantLogin');
             const user = await authRequest('/api/auth/login', {
               role: 'applicant',
@@ -673,13 +670,14 @@
               password: document.getElementById('appLoginPassword').value, 
             }, btn, 'Logging In...', 'Log In to Crew'); 
             if (!user) return;
-            saveWorkerSession(user, false); 
+            saveWorkerSession(user); 
             btn.textContent = 'Redirecting...';
             succeed('Login successful! Redirecting to Crew Portal...', 'applicant.html', 500);
           }); 
           
           // Applicant sign up 
-          formApplicantSignup.addEventListener('submit', async () => {
+          formApplicantSignup.addEventListener('submit', async (e) => {
+            e.preventDefault();
             const btn = document.getElementById('btnSubmitApplicantSignup');
             const user = await authRequest('/api/auth/signup', {
               role: 'applicant',
@@ -688,7 +686,7 @@
               password: document.getElementById('appSignupPassword').value,
             }, btn, 'Joining Instant Crew...', 'Join as Crew Member');
             if (!user) return;
-            saveWorkerSession(user, true);
+            saveWorkerSession(user);
             succeed('Welcome to Instant Crew! Launching your worker portal...', 'applicant.html', 600)
           });
 

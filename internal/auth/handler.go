@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -198,27 +197,4 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	u, _ := UserFrom(r.Context())
 	httpx.JSON(w, http.StatusOK, map[string]any{"user": toDTO(u)})
-}
-
-// SeedDemo creates the demo accounts your login page already advertises. Dev only.
-func (h *Handler) SeedDemo(ctx context.Context) error {
-	demo := []struct {
-		u  store.User
-		pw string
-	}{
-		{store.User{Email: "sample@gmail.com", Role: "employer", Name: "Sample Employer", Company: "Sample Co."}, "sample123"},
-		{store.User{Email: "crew@instantcrew.com", Role: "applicant", Name: "Angelo Lopez"}, "crew123"},
-	}
-	for _, d := range demo {
-		hash, err := bcrypt.GenerateFromPassword([]byte(d.pw), bcrypt.DefaultCost)
-		if err != nil {
-			return err
-		}
-		u := d.u
-		u.PasswordHash = string(hash)
-		if err := h.Store.CreateUser(ctx, &u); err != nil && !errors.Is(err, store.ErrEmailTaken) {
-			return err
-		}
-	}
-	return nil
 }
