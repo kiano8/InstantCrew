@@ -380,7 +380,7 @@ h2 {
     align-items: center;
     gap: 10px;
     padding: 18px 10px 16px;
-    background: var(--surface);
+    background: transparent;
     border: 1.8px solid var(--border);
     border-radius: var(--radius-m);
     cursor: pointer;
@@ -400,7 +400,7 @@ h2 {
 
 .db-cat-card[aria-pressed="true"] {
     border-color: var(--yellow);
-    background: var(--yellow-tint);
+    background: transparent;
     box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.22);
 }
 
@@ -410,20 +410,30 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-s);
-    background: var(--surface-2);
-    transition: background var(--dur-fast) var(--ease-out);
+    background: transparent;
+    transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .db-cat-card[aria-pressed="true"] .db-cat-icon {
-    background: var(--yellow);
+    background: transparent;
 }
 
 .db-cat-icon svg {
     width: 26px;
     height: 26px;
     color: var(--ink);
-    transition: stroke var(--dur-fast);
+    stroke: var(--ink);
+    transition: stroke var(--dur-fast), color var(--dur-fast);
+}
+
+.db-cat-card:hover .db-cat-icon {
+    transform: scale(1.05);
+}
+
+.db-cat-card[aria-pressed="true"] .db-cat-icon svg,
+.db-cat-card:active .db-cat-icon svg {
+    color: #D97706;
+    stroke: #D97706;
 }
 
 .db-cat-name {
@@ -575,15 +585,7 @@ h2 {
 }
 
 .db-custom-trigger-badge {
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: var(--radius-pill);
-    background: #ECFDF5;
-    color: #059669;
-    border: 1px solid #A7F3D0;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    display: none !important;
 }
 
 .db-custom-chevron {
