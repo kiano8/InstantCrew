@@ -184,9 +184,9 @@ func (s *Store) ListJobs(ctx context.Context, employerID int64, statuses []strin
 	return out, rows.Err()
 }
 
-// StartSearch records the (mock) match-fee payment and opens a search window.
+// StartSearch opens a search window; payment is recorded separately after acceptance.
 // The status guard makes double-clicks and concurrent requests safe: only one wins.
-func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method string, feeCentavos int64, ref string, window time.Duration) error {
+func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window time.Duration) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -205,11 +205,7 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method st
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
 	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO payments (job_id, user_id, amount_centavos, method, status, provider_ref, created_at)
-		VALUES (?, ?, ?, ?, 'paid', ?, ?)`, id, employerID, feeCentavos, method, ref, now.Unix()); err != nil {
-		return err
-	}
+	// Payment is intentionally deferred until a crew member accepts the offer.
 	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
 		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_object('job_id', j.id),?
 		FROM jobs j JOIN applicant_profiles p ON p.is_active=1 AND lower(trim(p.city))=lower(trim(j.city))
@@ -224,6 +220,24 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method st
 		return err
 	}
 	return tx.Commit()
+}
+
+// RecordMatchFee records the fee only after at least one applicant accepts.
+func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method string, feeCentavos int64, ref string) error {
+	res, err := s.db.ExecContext(ctx, `
+		INSERT INTO payments (job_id, user_id, amount_centavos, method, status, provider_ref, created_at)
+		SELECT id, employer_id, ?, ?, 'paid', ?, ? FROM jobs
+		WHERE id=? AND employer_id=? AND status IN ('matching','accepted','active') AND accepted_count>0
+		AND EXISTS (SELECT 1 FROM job_assignments a WHERE a.job_id=jobs.id)
+		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.status='paid')`,
+		feeCentavos, method, ref, time.Now().Unix(), id, employerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return missOrBadState(ctx, s.db, employerID, id)
+	}
+	return nil
 }
 
 // MatchingApplicants reads eligible active profiles for an employer-owned job.
@@ -267,6 +281,11 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 	return matches, rows.Err()
 }
 
+func (s *Store) StopSearchAfterMatch(ctx context.Context, jobID int64) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE jobs SET search_expires_at=NULL,updated_at=? WHERE id=? AND status='matching'`, time.Now().Unix(), jobID)
+	return err
+}
+
 // ExpireSearches flips timed-out searches to 'unfulfilled'. Called by a sweeper and on reads.
 func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 	now := time.Now().Unix()
@@ -305,7 +324,7 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		UPDATE jobs SET accepted_count = accepted_count + 1,
 			status = CASE WHEN accepted_count + 1 >= crew_needed THEN 'accepted' ELSE status END,
 			updated_at = ?
-		WHERE id = ? AND status = 'matching' AND search_expires_at > ? AND accepted_count < crew_needed`,
+		WHERE id = ? AND status = 'matching' AND (search_expires_at IS NULL OR search_expires_at > ?) AND accepted_count < crew_needed`,
 		now, jobID, now)
 	if err != nil {
 		return err

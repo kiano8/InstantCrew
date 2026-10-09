@@ -36,6 +36,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("GET /api/jobs/{id}/matches", emp(h.Matches))
 	mux.Handle("PUT /api/jobs/{id}", emp(h.Update))
 	mux.Handle("POST /api/jobs/{id}/pay", emp(h.Pay))
+	mux.Handle("POST /api/jobs/{id}/search", emp(h.Search))
 	mux.Handle("POST /api/jobs/{id}/confirm", emp(h.Confirm))
 	mux.Handle("POST /api/jobs/{id}/end", emp(h.End))
 	mux.Handle("POST /api/jobs/{id}/cancel", emp(h.Cancel))
@@ -43,6 +44,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
 	mux.Handle("PUT /api/applicant/profile", app(h.SaveApplicantProfile))
 	mux.Handle("GET /api/applicant/jobs", app(h.ApplicantJobs))
+	mux.Handle("GET /api/applicant/jobs/{id}", app(h.ApplicantJob))
 	mux.Handle("POST /api/applicant/jobs/{id}/accept", app(h.ApplicantAccept))
 	mux.Handle("POST /api/applicant/jobs/{id}/reject", app(h.ApplicantReject))
 	mux.Handle("GET /api/applicant/assignments", app(h.ApplicantAssignments))
@@ -259,6 +261,21 @@ func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 		out = append(out, d)
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"jobs": out})
+}
+
+func (h *Handler) ApplicantJob(w http.ResponseWriter, r *http.Request) {
+	u, _ := auth.UserFrom(r.Context())
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id < 1 {
+		httpx.Error(w, http.StatusNotFound, "job not found")
+		return
+	}
+	j, err := h.Store.ApplicantJob(r.Context(), u.ID, id)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"job": h.toDTO(j)})
 }
 
 func (h *Handler) ApplicantAccept(w http.ResponseWriter, r *http.Request) {
@@ -649,10 +666,29 @@ func (h *Handler) Matches(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
+	if len(matches) > 0 {
+		if err := h.Store.StopSearchAfterMatch(r.Context(), id); err != nil {
+			h.fail(w, err)
+			return
+		}
+	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"matches": matches})
 }
 
-// POST /api/jobs/{id}/pay  body: {"method":"gcash"}  → opens a search window
+// POST /api/jobs/{id}/search opens a crew search without charging the match fee.
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	u, id, ok := h.ids(w, r)
+	if !ok {
+		return
+	}
+	if err := h.Store.StartSearch(r.Context(), u.ID, id, h.SearchWindow); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.writeJob(w, r, http.StatusOK, u.ID, id)
+}
+
+// POST /api/jobs/{id}/pay body: {"method":"gcash"} records payment after acceptance.
 // MOCK PAYMENT. Never send card numbers/CVV to this server; real payments should use a
 // provider's hosted checkout or tokens (PayMongo, Xendit, Maya) and confirm via webhook.
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
@@ -674,7 +710,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	_, _ = rand.Read(b)
 	ref := "mock_" + hex.EncodeToString(b)
 
-	if err := h.Store.StartSearch(r.Context(), u.ID, id, req.Method, h.MatchFeeCentavos, ref, h.SearchWindow); err != nil {
+	if err := h.Store.RecordMatchFee(r.Context(), u.ID, id, req.Method, h.MatchFeeCentavos, ref); err != nil {
 		h.fail(w, err)
 		return
 	}

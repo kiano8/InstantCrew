@@ -4291,6 +4291,7 @@ if (feedUseCurrentBtn) {
                 const isMaxCapacity = hasFullTime || partTimeCount >= 2;
 
                 const visibleJobs = isMaxCapacity ? [] : allJobs.filter(job => {
+                    if (String(job.id) === highlightedOfferJobId) return true;
                     // If rejected by this worker, vanished
                     if (rejectedIds.includes(job.id)) return false;
                     // If already accepted by this worker, vanished from feed!
@@ -4437,7 +4438,7 @@ if (feedUseCurrentBtn) {
                     const hired = shift.acceptedCount || 0;
                     const remaining = needed - hired;
 
-                    const isEmployerShift = (shift.id && shift.id.startsWith('emp-shift-')) || Boolean(shift.bookingRefId);
+                    const isEmployerShift = (shift.id != null && String(shift.id).startsWith('emp-shift-')) || Boolean(shift.bookingRefId);
 
                     // Determine if worker can accept this shift based on capacity
                     let canAccept = true;
@@ -4939,9 +4940,15 @@ if (feedUseCurrentBtn) {
 
             // Logout
             if (logoutBtn) {
-                logoutBtn.addEventListener('click', () => {
-                    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true });
+                logoutBtn.addEventListener('click', async () => {
+                    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }); } catch (_) { }
                     sessionStorage.removeItem(SESSION_KEY_WORKER);
+                    session = getWorkerSession();
+                    isOnline = false;
+                    selectedServices = [];
+                    serverApplicantJobs = null;
+                    serverAssignments = null;
+                    applicantNotifications = [];
                     closeProfilePanel();
                     goToAppStep(1);
                     appState.mapLocation = ''; appState.googleMapsUrl = ''; appState.geo = null;
@@ -4950,6 +4957,7 @@ if (feedUseCurrentBtn) {
                     const cb = document.getElementById('appClearMapBtn');
                     if (cb) cb.style.display = 'none';
                     updateViewMode();
+                    window.location.replace('index.html');
                 });
             }
 
@@ -4960,6 +4968,44 @@ if (feedUseCurrentBtn) {
             let applicantNotifications = null;
             let applicantNotificationsFetchedAt = 0;
             let applicantNotificationsPending = false;
+            let highlightedOfferJobId = '';
+            function notificationJobId(notification) {
+                try {
+                    const payload = typeof notification.payload === 'string' ? JSON.parse(notification.payload || '{}') : (notification.payload || {});
+                    return payload.job_id ? String(payload.job_id) : '';
+                } catch (_) { return ''; }
+            }
+            async function openApplicantOffer(jobId) {
+                if (notifDropdown) notifDropdown.hidden = true;
+                try {
+                    const response = await fetch(`/api/applicant/jobs/${encodeURIComponent(jobId)}`, { credentials: 'same-origin' });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.job) throw new Error(data.error || 'This offer is no longer available to your profile.');
+                    const j = data.job;
+                    highlightedOfferJobId = String(j.id);
+                    serverApplicantJobs = [{
+                        ...j, roleKey: j.role, role: j.role_label, title: j.role_label,
+                        venue: j.map_location || j.city, location: j.city,
+                        mapLocation: j.map_location, googleMapsUrl: j.maps_url,
+                        employmentType: j.employment_type, neededCrew: j.crew_needed,
+                        acceptedCount: j.accepted_count, status: j.status, acceptedCrew: [],
+                        timing: j.scheduled_at ? new Date(j.scheduled_at).toLocaleString() : j.timing
+                    }];
+                    lastShiftsFeedSig = null;
+                    renderShiftsFeed(true);
+                    const feed = document.getElementById('shiftsListContainer');
+                    if (feed) feed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    requestAnimationFrame(() => {
+                        const card = document.getElementById(`shiftCard-${jobId}`);
+                        if (!card) return;
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.style.outline = '3px solid #7C3AED';
+                        setTimeout(() => { card.style.outline = ''; }, 2200);
+                    });
+                } catch (err) {
+                    showToast(err.message || 'Could not open this offer.', true);
+                }
+            }
             function renderWorkerNotifications() {
                 if (!window.InstantCrewShared) return;
                 if (!hasWorkerSession()) return;
@@ -5011,6 +5057,16 @@ if (feedUseCurrentBtn) {
                                 <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
                                 </div>
                             `;
+                            const offerJobId = n.type === 'match' ? notificationJobId(n) : '';
+                            if (offerJobId) {
+                                el.style.cursor = 'pointer';
+                                el.title = 'Open this job offer';
+                                el.addEventListener('click', () => openApplicantOffer(offerJobId));
+                                const action = document.createElement('span');
+                                action.textContent = 'Open offer →';
+                                action.style.cssText = 'display:block;margin:6px 0 0 28px;color:#6D28D9;font-size:0.76rem;font-weight:700;';
+                                el.appendChild(action);
+                            }
                             notifList.appendChild(el);
                         });
                     }
@@ -5035,12 +5091,9 @@ if (feedUseCurrentBtn) {
 
                     // Show in-app push toast with chime & click action
                     InstantCrewShared.showPushToast(pending.title, cleanToastMsg, pending.type, () => {
-                        const shiftCard = document.getElementById(`shiftCard-${pending.jobId}`);
-                        if (shiftCard) {
-                            shiftCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            shiftCard.style.outline = '3px solid #7C3AED';
-                            setTimeout(() => { shiftCard.style.outline = 'none'; }, 2200);
-                        } else {
+                        const offerJobId = notificationJobId(pending);
+                        if (offerJobId) openApplicantOffer(offerJobId);
+                        else {
                             const feed = document.getElementById('shiftsSection') || document.getElementById('shiftsListContainer');
                             if (feed) feed.scrollIntoView({ behavior: 'smooth' });
                         }

@@ -235,6 +235,20 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 	return out, rows.Err()
 }
 
+// ApplicantJob returns a single open offer only when the applicant profile matches it.
+func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Job, error) {
+	return scanJob(s.db.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs j
+		WHERE j.id=? AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>?)
+		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
+			WHERE p.user_id=? AND p.is_active=1 AND p.employment_type=j.employment_type
+			AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
+			AND ((j.timing='now' AND p.availability_mode='now') OR
+				(j.timing='later' AND EXISTS (SELECT 1 FROM applicant_availability av
+					WHERE av.applicant_id=p.user_id AND av.status='available'
+					AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600))))`,
+		jobID, time.Now().Unix(), applicantID))
+}
+
 func (s *Store) ApplyForJob(ctx context.Context, jobID, applicantID int64) error {
 	res, err := s.db.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status) SELECT id,?,'pending' FROM jobs WHERE id=? AND status='matching' AND (search_expires_at IS NULL OR search_expires_at>?)`, applicantID, jobID, time.Now().Unix())
 	if err != nil {

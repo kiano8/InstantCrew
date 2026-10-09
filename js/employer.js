@@ -51,6 +51,7 @@ const state = {
   count: 1,
   currentJobId: null,
   currentBooking: null,
+  acceptanceHandled: false,
   matchCheckInterval: null,
   paid: false,
   paymentMethod: 'GCash',
@@ -1431,7 +1432,7 @@ if (toggleCardCvcBtn && payCardCvc) {
   });
 }
 
-// ── Step 3 "Find a Crew" -> Checks Auth First, then Triggers Payment! ──
+// ── Step 3 finds a crew match before payment ──
 toStep4Btn.addEventListener('click', () => {
   const currentSession = getSession();
   if (!currentSession) {
@@ -1441,24 +1442,23 @@ toStep4Btn.addEventListener('click', () => {
   }
 
 
-  // Logged in: proceed directly to payment and finding crew
-  requireLogin(openPaymentModal);
+  // Find and surface a crew match before opening payment.
+  requireLogin(() => startCrewSearch().catch(err => showEmployerAuthError(err.message || 'Could not start the crew search.')));
 });
 
-// ── Pay Now -> Process Payment, Then Find Matching Crew ──
+// ── Pay after a crew member accepts ──
 if (payNowBtn) {
   payNowBtn.addEventListener('click', async () => {
-    const payInfo = state.pendingPayment || { total: 100 };
     const methodTab = document.querySelector('.db-pay-method-btn.active');
     const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
     const methodLabels = { gcash: 'GCash', maya: 'Maya', card: 'Card' };
     const methodLabel = methodLabels[method] || 'GCash';
 
     payNowBtn.disabled = true;
-    if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Starting crew search…';
+    if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Recording payment…';
     if (paymentError) paymentError.style.display = 'none';
     try {
-      await executeFindCrewAfterPayment(payInfo, methodLabel);
+      await recordPaymentAfterAcceptance(methodLabel);
     } catch (err) {
       if (paymentError) {
         paymentError.textContent = err.message || 'Could not start the crew search. Please try again.';
@@ -1470,13 +1470,11 @@ if (payNowBtn) {
   });
 }
 
-async function executeFindCrewAfterPayment(payInfo, methodLabel) {
-  state.paymentMethod = methodLabel;
-  state.paymentAmount = payInfo.total;
+async function startCrewSearch() {
 
-  const timingText = payInfo.timingText || (state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
-  const finalMapLoc = payInfo.finalMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
-  const finalMapsUrl = payInfo.finalMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
+  const timingText = state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
+  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapsUrl = (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
 
   const timingMode = state.timing === 'later' ? 'later' : 'now';
   let scheduledAt = '';
@@ -1497,11 +1495,9 @@ async function executeFindCrewAfterPayment(payInfo, methodLabel) {
   const jobId = createData.job.id;
   state.currentJobId = jobId;
   state.currentBooking = { id: jobId, status: createData.job.status || 'draft' };
-  const paymentResponse = await fetch(`/api/jobs/${jobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: String(methodLabel).toLowerCase() === 'gcash' ? 'gcash' : String(methodLabel).toLowerCase() === 'maya' ? 'maya' : 'card' }) });
-  const paymentData = await paymentResponse.json().catch(() => ({}));
-  if (!paymentResponse.ok) throw new Error(paymentData.error || 'Payment could not be recorded.');
-  state.paid = true;
-  closePaymentModal();
+  const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
+  const searchData = await searchResponse.json().catch(() => ({}));
+  if (!searchResponse.ok) throw new Error(searchData.error || 'Could not start the crew search.');
   const bookingId = jobId;
   const bookingData = {
     id: bookingId,
@@ -1519,23 +1515,20 @@ async function executeFindCrewAfterPayment(payInfo, methodLabel) {
     crewRate: `₱${state.offeredRate}`,
     status: 'matching', // Waiting for crew acceptance
     bookedAt: new Date().toISOString(),
-    paid: true,
-    paymentMethod: methodLabel,
-    paymentAmount: payInfo.total || 100,
-    escrowStatus: 'Fixed Match Fee Paid (₱100.00)'
+    paid: false,
+    escrowStatus: 'Payment due after crew acceptance'
   };
 
   state.currentBooking = bookingData;
+  state.acceptanceHandled = false;
   saveBookingToSession(bookingData);
 
   state.currentJobId = jobId;
 
-  // Show escrow status in Step 4 matching pane
+  // Payment remains deferred until a crew member accepts.
   if (matchEscrowPill) {
     matchEscrowPill.style.display = 'inline-flex';
-    if (matchEscrowText) {
-      matchEscrowText.textContent = `₱${(payInfo.total || 100).toFixed(2)} via ${methodLabel}`;
-    }
+    if (matchEscrowText) matchEscrowText.textContent = 'No charge until a crew member accepts';
   }
 
   if (matchFailed) matchFailed.style.display = 'none';
@@ -1551,10 +1544,28 @@ async function executeFindCrewAfterPayment(payInfo, methodLabel) {
 
   // Start checking for crew acceptance (listening & polling)
   matchedCrewFetchedAt = 0;
+  matchFound = false;
   if (matchedCrewCount) matchedCrewCount.textContent = '0';
   if (matchedCrewMessage) matchedCrewMessage.textContent = 'Checking the database for available crew…';
   if (matchedCrewList) matchedCrewList.replaceChildren();
   startCheckingForAcceptance();
+}
+
+async function recordPaymentAfterAcceptance(methodLabel) {
+  const method = String(methodLabel).toLowerCase();
+  const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: method === 'gcash' ? 'gcash' : method === 'maya' ? 'maya' : 'card' }) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Payment could not be recorded.');
+  state.paymentMethod = methodLabel;
+  state.paymentAmount = (state.pendingPayment && state.pendingPayment.total) || 100;
+  state.paid = true;
+  if (resultsPaidBadge) resultsPaidBadge.textContent = `✓ Match Fee Paid (₱${state.paymentAmount.toFixed(2)})`;
+  closePaymentModal();
+  if (state.currentBooking) {
+    state.currentBooking.paid = true;
+    state.currentBooking.paymentMethod = methodLabel;
+    state.currentBooking.paymentAmount = state.paymentAmount;
+  }
 }
 
 /* ─── Step 4: Crew Results & 3-Minute Search Window ─────────── */
@@ -1640,7 +1651,7 @@ if (simulateTimeoutBtn) {
 // Repay match fee button handler (when 3-minute search expires)
 if (repayMatchFeeBtn) {
   repayMatchFeeBtn.addEventListener('click', () => {
-    openPaymentModal();
+    startCrewSearch().catch(err => showEmployerAuthError(err.message || 'Could not restart the crew search.'));
   });
 }
 
@@ -1666,9 +1677,10 @@ async function checkCrewAcceptance() {
 
 let matchedCrewFetchedAt = 0;
 let matchedCrewFetchPending = false;
+let matchFound = false;
 
 function refreshMatchedCrew(force = false) {
-  if (!state.currentJobId || !matchedCrewList || matchedCrewFetchPending) return;
+  if (!state.currentJobId || !matchedCrewList || matchedCrewFetchPending || matchFound) return;
   if (!force && Date.now() - matchedCrewFetchedAt < 5000) return;
   matchedCrewFetchPending = true;
   fetch(`/api/jobs/${state.currentJobId}/matches`, { credentials: 'same-origin' })
@@ -1681,7 +1693,7 @@ function refreshMatchedCrew(force = false) {
       if (matchedCrewCount) matchedCrewCount.textContent = String(matches.length);
       if (matchedCrewMessage) {
         matchedCrewMessage.textContent = matches.length
-          ? 'These active crew members match your shift and have been notified. Waiting for someone to accept.'
+          ? 'Crew match found. Search stopped; review the crew profile while they consider your offer.'
           : 'No active crew match yet. The database search will keep checking until the search window expires.';
       }
       matches.forEach(candidate => {
@@ -1706,6 +1718,12 @@ function refreshMatchedCrew(force = false) {
         card.append(avatar, info, status);
         matchedCrewList.appendChild(card);
       });
+      if (matches.length) {
+        matchFound = true;
+        stopSearchTimer();
+        const searchTimerBox = document.getElementById('dbSearchTimerBox');
+        if (searchTimerBox) searchTimerBox.style.display = 'none';
+      }
     })
     .catch(err => {
       if (matchedCrewMessage) matchedCrewMessage.textContent = err.message;
@@ -1731,18 +1749,22 @@ function onCrewAccepted(job) {
     state.matchCheckInterval = null;
   }
 
-  if (matchResults.style.display === 'block') return; // already rendered
-
-  matchLoading.style.display = 'none';
-  matchResults.style.display = 'block';
-
   const acceptedCrew = job.acceptedCrew || [];
-  renderCrewResults(acceptedCrew, job);
+  if (!state.acceptanceHandled) {
+    state.acceptanceHandled = true;
+    matchLoading.style.display = 'none';
+    matchResults.style.display = 'block';
+    renderCrewResults(acceptedCrew, job);
+    if (resultsPaidBadge) resultsPaidBadge.textContent = 'Payment due to confirm booking';
+  }
 
   const firstWorker = acceptedCrew[0] || 'A crew member';
   if (resultsAcceptedNote) {
     resultsAcceptedNote.textContent = `${firstWorker} accepted your ${job.role || state.roleLabel || 'crew'} shift offer and is ready to work!`;
   }
+
+  // Stop the waiting state and collect payment as soon as acceptance is detected.
+  if (!state.paid && !paymentModal.classList.contains('open')) openPaymentModal();
 
   // Show push toast
   if (window.InstantCrewShared) {
@@ -2766,10 +2788,14 @@ if (headerBackArrow) {
 }
 
 if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true });
+  logoutBtn.addEventListener('click', async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }); } catch (_) { }
     sessionStorage.removeItem(SESSION_KEY);
-    window.location.href = 'index.html';
+    authUser = null;
+    employerNotifications = [];
+    if (typeof closeProfilePanel === 'function') closeProfilePanel();
+    updateAuthUI();
+    window.location.replace('index.html');
   });
 }
 
@@ -2798,7 +2824,10 @@ function renderEmployerNotifications() {
     }
     if (employerNotifications === null) employerNotifications=[];
   }
-  const notifs = employerNotifications || [];
+  // Employer notifications are crew activity on their bookings. Shift offers
+  // belong in the applicant inbox and should never appear in this panel.
+  const crewActivityTypes = new Set(['accept', 'transit', 'arrived', 'end']);
+  const notifs = (employerNotifications || []).filter(n => crewActivityTypes.has(n.type));
   const unread = notifs.filter(n => !n.read).length;
 
   if (notifBadge) {
@@ -2812,7 +2841,7 @@ function renderEmployerNotifications() {
 
   if (notifList) {
     if (notifs.length === 0) {
-      notifList.innerHTML = '<div class="db-notif-empty">No notifications yet.</div>';
+      notifList.innerHTML = '<div class="db-notif-empty">No crew activity yet.</div>';
     } else {
       notifList.innerHTML = '';
       notifs.forEach(n => {
