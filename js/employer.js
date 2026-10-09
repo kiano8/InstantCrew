@@ -1507,8 +1507,10 @@ toStep4Btn.addEventListener('click', () => {
     openEmployerAuthModal();
     return;
   }
+
+
   // Logged in: proceed directly to payment and finding crew
-  openPaymentModal();
+  requireLogin(openPaymentModal);
 });
 
 // ── Pay Now -> Process Payment, Then Find Matching Crew ──
@@ -2131,7 +2133,6 @@ const tabEmployerSignup = document.getElementById('tabEmployerSignup');
 const employerModalLoginForm = document.getElementById('employerModalLoginForm');
 const employerModalSignupForm = document.getElementById('employerModalSignupForm');
 const employerAuthError = document.getElementById('employerAuthError');
-const headerLoginBtn = document.getElementById('headerLoginBtn');
 
 if (headerLoginBtn) {
   headerLoginBtn.addEventListener('click', () => {
@@ -3096,3 +3097,194 @@ populateProfile();
 renderEmployerNotifications();
 renderBookings();
 updateStep5TransitLiveStatus();
+
+
+// employer auth 
+
+const authModal = document.getElementById('employerAuthModal');
+const authCloseBtn = document.getElementById('employerAuthCloseBtn');
+const authErrorBanner = document.getElementById('employerAuthError');
+const tabLogin = document.getElementById('tabEmployerLogin');
+const tabSignup = document.getElementById('tabEmployerSignup');
+const loginForm = document.getElementById('employerModalLoginForm');
+const signupForm = document.getElementById('employerModalSignupForm');
+
+let authUser = null;        // set when /api/auth/me says we're a logged-in employer
+let pendingAuthAction = null; // what to do right after a successful login
+
+
+async function authPost(path, payload) {
+  let res;
+  try {
+    res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    throw new Error('Could not reach the server. Please try again.');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+  return data;
+}
+
+function authVal(id) {
+  const el = document.getElementById(id);
+  if (!el) throw new Error('employer.html is missing an element with id="' + id + '"');
+  return el.value;
+}
+
+/* ── Session mirror: keeps profile panel + bookings working ── */
+function saveEmployerSessionFromUser(user) {
+  const prev = getSession();
+  const bookings = (prev && Array.isArray(prev.bookings) && !prev.isGuest) ? prev.bookings : [];
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    name: user.name,
+    email: user.email,
+    company: user.company,
+    joinedYear: new Date().getFullYear(),
+    isGuest: false,
+    bookings,
+  }));
+}
+
+function updateAuthUI() {
+  if (headerLoginBtn) headerLoginBtn.style.display = authUser ? 'none' : 'inline-block';
+  if (openProfilePanelBtn) openProfilePanelBtn.style.display = authUser ? 'flex' : 'none';
+  populateProfile();
+  renderBookings(true);
+}
+
+/* ── Modal open / close ── */
+function showAuthError(msg) {
+  authErrorBanner.textContent = msg;
+  authErrorBanner.style.display = 'block';
+}
+
+function setAuthTab(which) {
+  const isLogin = which === 'login';
+  tabLogin.classList.toggle('active', isLogin);
+  tabSignup.classList.toggle('active', !isLogin);
+  loginForm.style.display = isLogin ? '' : 'none';
+  signupForm.style.display = isLogin ? 'none' : '';
+  authErrorBanner.style.display = 'none';
+}
+
+function openAuthModal(tab = 'login') {
+  setAuthTab(tab);
+  authModal.classList.add('open');
+  authModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => {
+    const first = document.getElementById(tab === 'login' ? 'empModalLoginEmail' : 'empModalSignupCompany');
+    if (first) first.focus();
+  }, 60);
+}
+
+function closeAuthModal() {
+  authModal.classList.remove('open');
+  authModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  pendingAuthAction = null;
+}
+
+/* Run `action` now if logged in, otherwise ask the user to log in first. */
+function requireLogin(action) {
+  if (authUser) { action(); return; }
+  pendingAuthAction = action;
+  openAuthModal('login');
+}
+
+function onAuthSuccess(user) {
+  authUser = user;
+  saveEmployerSessionFromUser(user);
+  const action = pendingAuthAction;
+  closeAuthModal();            // clears pendingAuthAction, so we saved it above
+  updateAuthUI();
+  if (action) action();
+}
+
+/* ── Wire up the modal ── */
+tabLogin.addEventListener('click', () => setAuthTab('login'));
+tabSignup.addEventListener('click', () => setAuthTab('signup'));
+authCloseBtn.addEventListener('click', closeAuthModal);
+authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && authModal.classList.contains('open')) closeAuthModal();
+});
+if (headerLoginBtn) headerLoginBtn.addEventListener('click', () => openAuthModal('login'));
+
+[['toggleEmpModalLoginPass', 'empModalLoginPass'], ['toggleEmpModalSignupPass', 'empModalSignupPass']]
+  .forEach(([btnId, inputId]) => {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.querySelector('.eye-open').style.display = show ? 'none' : 'block';
+      btn.querySelector('.eye-closed').style.display = show ? 'block' : 'none';
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
+
+/* Shared submit logic: disable button, call API, show errors, restore on failure. */
+async function submitAuth(btn, path, payload, busyText) {
+  authErrorBanner.style.display = 'none';
+  const label = btn.querySelector('span');
+  const idleText = label.textContent;
+  btn.disabled = true;
+  label.textContent = busyText;
+  try {
+    const { user } = await authPost(path, payload);
+    onAuthSuccess(user);
+  } catch (err) {
+    showAuthError(err.message);
+  } finally {
+    btn.disabled = false;
+    label.textContent = idleText;
+  }
+}
+
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  submitAuth(document.getElementById('btnSubmitModalLogin'), '/api/auth/login', {
+    role: 'employer',
+    email: authVal('empModalLoginEmail'),
+    password: authVal('empModalLoginPass'),
+  }, 'Logging in…');
+});
+
+signupForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  submitAuth(document.getElementById('btnSubmitModalSignup'), '/api/auth/signup', {
+    role: 'employer',
+    company: authVal('empModalSignupCompany'),
+    name: authVal('empModalSignupContact'),
+    email: authVal('empModalSignupEmail'),
+    password: authVal('empModalSignupPass'),
+  }, 'Creating account…');
+});
+
+/* ── Who am I? Ask the server on every page load (the cookie is the truth) ── */
+(async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (res.ok) {
+      const { user } = await res.json();
+      if (user.role === 'employer') {
+        authUser = user;
+        saveEmployerSessionFromUser(user);
+      }
+    }
+  } catch (e) { /* offline: stay in guest mode */ }
+
+  if (!authUser) {
+    // Stale browser session from an expired cookie: fall back to guest.
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+  updateAuthUI();
+})();
