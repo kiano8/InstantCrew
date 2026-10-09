@@ -1,18 +1,12 @@
 /* ─────────────────────────────────────────────────────────────
-   shared-data.js — Instant Crew Shared State & Notifications
-   Synchronizes Jobs, Bookings, Contracts & Push Notifications
-   across Employer and Applicant portals using localStorage.
+   shared-data.js — UI helpers for job icons, maps and toast notices.
+   Account, job, assignment and notification data is owned by the API.
    All icons use Tabler / Heroicons vector SVG specifications.
    ───────────────────────────────────────────────────────────── */
 
 (function (window) {
     'use strict';
 
-    const STORAGE_KEY_JOBS = 'ic_shared_jobs';
-    const STORAGE_KEY_NOTIFS_WORKER = 'ic_worker_notifications';
-    const STORAGE_KEY_NOTIFS_EMPLOYER = 'ic_employer_notifications';
-    const STORAGE_KEY_REJECTED = 'ic_worker_rejected_jobs';
-    const STORAGE_KEY_ACTIVE_CONTRACTS = 'ic_active_contracts';
 
     /* ── Tabler / Heroicons Vector SVG Definitions ───────────── */
     const ICONS = {
@@ -94,274 +88,11 @@
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     }
 
-    // Initial seed shifts
-    const DEFAULT_SHIFTS = [
-        {
-            id: 'shift-1',
-            category: 'kitchen',
-            role: 'Line Cook',
-            title: 'Line Cook / Prep Assistant',
-            emoji: ICONS.kitchen(20),
-            venue: 'Bistro Moderne — Downtown',
-            distance: '1.2 km away',
-            commute: '8 min commute',
-            timing: 'Today, 1:00 PM – 5:00 PM (4 hrs)',
-            rate: '₱95',
-            notes: 'Kitchen attire & apron provided on site',
-            employmentType: 'part-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Bistro Moderne'
-        },
-        {
-            id: 'shift-1b',
-            category: 'kitchen',
-            role: 'Line Cook',
-            title: 'Line Cook / Station Specialist',
-            emoji: ICONS.kitchen(20),
-            venue: 'Grand Plaza Trattoria — Midtown',
-            distance: '1.8 km away',
-            commute: '12 min commute',
-            timing: 'Tonight, 6:00 PM – 10:00 PM (4 hrs)',
-            rate: '₱100',
-            notes: 'Short-order grill & sautee station',
-            employmentType: 'part-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Grand Plaza Trattoria'
-        },
-        {
-            id: 'shift-1c',
-            category: 'kitchen',
-            role: 'Line Cook',
-            title: 'Full-Time Lead Line Cook',
-            emoji: ICONS.kitchen(20),
-            venue: 'Heritage Grill & Smokehouse',
-            distance: '2.4 km away',
-            commute: '15 min commute',
-            timing: 'Full-time Day Shift (8 hrs / day)',
-            rate: '₱110',
-            notes: 'Full-time kitchen team member',
-            employmentType: 'full-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Heritage Grill'
-        },
-        {
-            id: 'shift-1m',
-            category: 'kitchen',
-            role: 'Line Cook',
-            title: 'BGC Bistro Line Cook',
-            emoji: ICONS.kitchen(20),
-            venue: 'Makati & BGC Gourmet Bistro',
-            location: 'Manila',
-            mapLocation: 'BGC High Street, Manila',
-            distance: '2.1 km away',
-            commute: '15 min commute',
-            timing: 'Full-time Day Shift (8 hrs / day)',
-            rate: '₱120',
-            notes: 'Full-time hot line cook',
-            employmentType: 'full-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'BGC Gourmet Bistro'
-        },
-        {
-            id: 'shift-2',
-            category: 'delivery',
-            role: 'Motorcycle Rider',
-            title: 'Express Delivery Rider',
-            emoji: ICONS.delivery(20),
-            venue: 'Metro Logistics Express Hub',
-            distance: '0.8 km away',
-            commute: '4 min commute',
-            timing: 'Full-time Day Shift (8 hrs / day)',
-            rate: '₱85',
-            notes: 'Motorcycle & valid license required',
-            employmentType: 'full-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Metro Logistics'
-        },
-        {
-            id: 'shift-2b',
-            category: 'delivery',
-            role: 'Motorcycle Rider',
-            title: 'Afternoon Parcel Courier',
-            emoji: ICONS.delivery(20),
-            venue: 'SwiftCourier Express Hub',
-            distance: '1.5 km away',
-            commute: '10 min commute',
-            timing: 'Today, 2:00 PM – 6:00 PM (4 hrs)',
-            rate: '₱90',
-            notes: 'Rapid parcel delivery route',
-            employmentType: 'part-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'SwiftCourier'
-        },
-        {
-            id: 'shift-2c',
-            category: 'delivery',
-            role: 'Motorcycle Rider',
-            title: 'Evening Express Delivery Rider',
-            emoji: ICONS.delivery(20),
-            venue: 'CityDash Parcel Service',
-            location: 'Manila',
-            mapLocation: 'Bonifacio Global City, Manila',
-            distance: '1.9 km away',
-            commute: '12 min commute',
-            timing: 'Tonight, 5:00 PM – 9:00 PM (4 hrs)',
-            rate: '₱88',
-            notes: 'Gas allowance & thermal bag provided',
-            employmentType: 'part-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'CityDash'
-        },
-        {
-            id: 'shift-3',
-            category: 'helpers',
-            role: 'Event Helper',
-            title: 'Event Setup & Banquet Helper',
-            emoji: ICONS.tent(20),
-            venue: 'Grand Ballroom & Pavilion',
-            distance: '2.3 km away',
-            commute: '14 min commute',
-            timing: 'Tomorrow, 9:00 AM – 2:00 PM (5 hrs)',
-            rate: '₱75',
-            notes: 'Staging, seating & guest support',
-            employmentType: 'part-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Grand Ballroom'
-        },
-        {
-            id: 'shift-4',
-            category: 'kitchen',
-            role: 'Dishwasher',
-            title: 'Kitchen Steward / Dishwasher',
-            emoji: ICONS.kitchen(20),
-            venue: 'Harbor Seafood Grill',
-            distance: '1.7 km away',
-            commute: '10 min commute',
-            timing: 'Tonight, 6:00 PM – 11:00 PM (5 hrs)',
-            rate: '₱80',
-            notes: 'Sanitation equipment provided',
-            employmentType: 'part-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Harbor Seafood Grill'
-        },
-        {
-            id: 'shift-5',
-            category: 'helpers',
-            role: 'Warehouse Helper',
-            title: 'Warehouse Logistics Staging',
-            emoji: ICONS.package(20),
-            venue: 'Central Distribution Center',
-            distance: '3.1 km away',
-            commute: '18 min commute',
-            timing: 'Full-time Morning Shift (8 hrs / day)',
-            rate: '₱90',
-            notes: 'Safe lifting & package sorting',
-            employmentType: 'full-time',
-            neededCrew: 1,
-            acceptedCount: 0,
-            acceptedCrew: [],
-            status: 'open',
-            employerName: 'Central Distribution'
-        }
-    ];
+    function initJobs() {}
 
-    // Seed jobs if not yet in localStorage
-    function initJobs() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY_JOBS);
-            if (!raw) {
-                localStorage.setItem(STORAGE_KEY_JOBS, JSON.stringify(DEFAULT_SHIFTS));
-            } else {
-                // Ensure default shifts exist in jobs pool
-                const existing = JSON.parse(raw) || [];
-                let modified = false;
-                DEFAULT_SHIFTS.forEach(ds => {
-                    if (!existing.some(j => j.id === ds.id)) {
-                        existing.push(ds);
-                        modified = true;
-                    }
-                });
-                if (modified) {
-                    localStorage.setItem(STORAGE_KEY_JOBS, JSON.stringify(existing));
-                }
-            }
-        } catch (e) {
-            console.warn('Storage not accessible:', e);
-        }
-    }
+    function getJobs() { return []; } // server APIs own jobs
 
-    function getJobs() {
-        initJobs();
-        try {
-            const jobs = JSON.parse(localStorage.getItem(STORAGE_KEY_JOBS)) || DEFAULT_SHIFTS;
-            let updated = false;
-            // Upgrade any raw emoji strings to Tabler SVGs & clean titles
-            jobs.forEach(j => {
-                if (!j.emoji || !j.emoji.trim().startsWith('<svg')) {
-                    j.emoji = getRoleIcon(j);
-                    updated = true;
-                }
-                if (j.title && /\s*\((Full-Time|Part-Time)\)/i.test(j.title)) {
-                    j.title = j.title.replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
-                    updated = true;
-                }
-                if (!j.location) {
-                    j.location = 'Cebu City';
-                    updated = true;
-                }
-                if (!j.mapLocation) {
-                    j.mapLocation = j.location || (j.notes ? j.notes.split('·')[0].trim() : 'Cebu City');
-                    updated = true;
-                }
-                if (!j.googleMapsUrl) {
-                    j.googleMapsUrl = formatGoogleMapsUrl(j.mapLocation);
-                    updated = true;
-                }
-            });
-            if (updated) {
-                localStorage.setItem(STORAGE_KEY_JOBS, JSON.stringify(jobs));
-            }
-            return jobs;
-        } catch {
-            return DEFAULT_SHIFTS;
-        }
-    }
-
-    function saveJobs(jobs) {
-        try {
-            localStorage.setItem(STORAGE_KEY_JOBS, JSON.stringify(jobs));
-            notifyStateChange('jobs');
-        } catch (e) {
-            console.error('Failed to save jobs:', e);
-        }
-    }
+    function saveJobs() { /* no browser-side job writes */ }
 
     // Add employer booking as an available job in the pool
     function addEmployerJob(booking) {
@@ -393,7 +124,7 @@
             acceptedCount: 0,
             acceptedCrew: [],
             status: 'open',
-            employerName: booking.name || 'Sample Employer',
+            employerName: booking.name || 'Employer',
             employerEmail: booking.email || '',
             bookingRefId: booking.id,
             paid: booking.paid !== undefined ? booking.paid : true,
@@ -423,119 +154,18 @@
 
     // Rejected jobs by worker (vanish from that worker's feed)
     function getRejectedJobIds() {
-        try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY_REJECTED)) || [];
-        } catch {
-            return [];
-        }
+        return [];
     }
 
     function rejectJob(jobId) {
-        const rejected = getRejectedJobIds();
-        if (!rejected.includes(jobId)) {
-            rejected.push(jobId);
-            localStorage.setItem(STORAGE_KEY_REJECTED, JSON.stringify(rejected));
-            notifyStateChange('rejected');
-        }
+        // Use POST /api/applicant/jobs/{id}/reject.
     }
 
     // Default seed contracts
-    const DEFAULT_CONTRACTS = [
-        {
-            id: 'contract-demo-1',
-            jobId: 'shift-3',
-            title: 'Event Setup & Banquet Helper',
-            role: 'Event Helper',
-            category: 'helpers',
-            emoji: ICONS.tent(20),
-            venue: 'Grand Ballroom & Pavilion',
-            rate: '₱75',
-            timing: 'Tomorrow, 9:00 AM – 2:00 PM (5 hrs)',
-            employmentType: 'part-time',
-            status: 'ended',
-            endedAt: 'Yesterday, 2:00 PM',
-            employerName: 'Grand Ballroom'
-        },
-        {
-            id: 'contract-demo-2',
-            jobId: 'shift-1',
-            title: 'Line Cook / Prep Assistant',
-            role: 'Line Cook',
-            category: 'kitchen',
-            emoji: ICONS.kitchen(20),
-            venue: 'Bistro Moderne — Downtown',
-            rate: '₱95',
-            timing: 'Today, 1:00 PM – 5:00 PM (4 hrs)',
-            employmentType: 'part-time',
-            status: 'ended',
-            endedAt: '5:00 PM',
-            employerName: 'Bistro Moderne'
-        },
-        {
-            id: 'contract-demo-3',
-            jobId: 'shift-2',
-            title: 'Express Delivery Rider',
-            role: 'Motorcycle Rider',
-            category: 'delivery',
-            emoji: ICONS.delivery(20),
-            venue: 'Metro Logistics Express Hub',
-            rate: '₱85',
-            timing: 'Full-time Day Shift (8 hrs / day)',
-            employmentType: 'full-time',
-            status: 'ended',
-            endedAt: 'Yesterday',
-            employerName: 'Metro Logistics'
-        }
-    ];
-
     // Active contracts for worker
-    function getActiveContracts() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_CONTRACTS);
-            if (!raw) {
-                localStorage.setItem(STORAGE_KEY_ACTIVE_CONTRACTS, JSON.stringify(DEFAULT_CONTRACTS));
-                return DEFAULT_CONTRACTS;
-            }
-            const list = JSON.parse(raw) || [];
-            let changed = false;
-            list.forEach(c => {
-                // Ensure contract-demo-1 is ended so applicant starts clean
-                if (c.id === 'contract-demo-1' && c.status === 'active') {
-                    c.status = 'ended';
-                    c.endedAt = 'Yesterday, 2:00 PM';
-                    changed = true;
-                }
-                if (c.status === 'completed') {
-                    c.status = 'ended';
-                    changed = true;
-                }
-                // Upgrade any raw emoji strings to Tabler SVGs & clean titles
-                if (!c.emoji || !c.emoji.trim().startsWith('<svg')) {
-                    c.emoji = getRoleIcon(c);
-                    changed = true;
-                }
-                if (c.title && /\s*\((Full-Time|Part-Time)\)/i.test(c.title)) {
-                    c.title = c.title.replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
-                    changed = true;
-                }
-            });
-            if (changed) {
-                localStorage.setItem(STORAGE_KEY_ACTIVE_CONTRACTS, JSON.stringify(list));
-            }
-            return list;
-        } catch {
-            return DEFAULT_CONTRACTS;
-        }
-    }
+    function getActiveContracts() { return []; } // read assignments from server APIs
 
-    function saveActiveContracts(contracts) {
-        try {
-            localStorage.setItem(STORAGE_KEY_ACTIVE_CONTRACTS, JSON.stringify(contracts));
-            notifyStateChange('contracts');
-        } catch (e) {
-            console.error('Failed to save contracts:', e);
-        }
-    }
+    function saveActiveContracts() { /* no browser-side contract writes */ }
 
     // Accept a job
     function acceptJob(jobId, workerName) {
@@ -698,7 +328,7 @@
             });
             saveJobs(jobs);
 
-            const crewName = workerName || targetContract.workerName || 'Angelo Lopez';
+            const crewName = workerName || targetContract.workerName || 'Crew member';
             const roleName = targetContract.role || targetContract.title || 'crew';
             const venueName = targetContract.venue || 'your location';
 
@@ -737,54 +367,10 @@
     }
 
     // Notifications Store
-    function getNotifications(role) {
-        const key = role === 'employer' ? STORAGE_KEY_NOTIFS_EMPLOYER : STORAGE_KEY_NOTIFS_WORKER;
-        try {
-            return JSON.parse(localStorage.getItem(key)) || [];
-        } catch {
-            return [];
-        }
-    }
-
-    function addNotification(role, notif) {
-        const key = role === 'employer' ? STORAGE_KEY_NOTIFS_EMPLOYER : STORAGE_KEY_NOTIFS_WORKER;
-        const list = getNotifications(role);
-        list.unshift({
-            id: notif.id || Date.now(),
-            title: notif.title || 'Notification',
-            message: notif.message || '',
-            time: notif.time || 'Just now',
-            type: notif.type || 'info',
-            read: false,
-            ...notif
-        });
-        // Keep max 30 notifications
-        if (list.length > 30) list.length = 30;
-        try {
-            localStorage.setItem(key, JSON.stringify(list));
-            notifyStateChange('notif_' + role);
-        } catch (e) {
-            console.error('Error saving notification:', e);
-        }
-    }
-
-    function markAllNotificationsRead(role) {
-        const key = role === 'employer' ? STORAGE_KEY_NOTIFS_EMPLOYER : STORAGE_KEY_NOTIFS_WORKER;
-        const list = getNotifications(role);
-        list.forEach(n => n.read = true);
-        try {
-            localStorage.setItem(key, JSON.stringify(list));
-            notifyStateChange('notif_' + role);
-        } catch { }
-    }
-
-    function clearNotifications(role) {
-        const key = role === 'employer' ? STORAGE_KEY_NOTIFS_EMPLOYER : STORAGE_KEY_NOTIFS_WORKER;
-        try {
-            localStorage.setItem(key, JSON.stringify([]));
-            notifyStateChange('notif_' + role);
-        } catch { }
-    }
+    function getNotifications() { return []; }
+    function addNotification() { /* notifications persist through /api/notifications */ }
+    function markAllNotificationsRead() { /* use POST /api/notifications/read */ }
+    function clearNotifications() { /* use DELETE /api/notifications */ }
 
     // Push Toast Helper using pure SVG vector icons
     function showPushToast(title, message, iconOrType, onClick) {

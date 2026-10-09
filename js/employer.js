@@ -7,96 +7,21 @@
 
 /* ─── Sample Data ─────────────────────────────────────────── */
 
-const ROLES = {
-  kitchen: [
-    { id: 'chef', label: 'Chef' },
-    { id: 'sous-chef', label: 'Sous Chef' },
-    { id: 'line-cook', label: 'Line Cook' },
-    { id: 'prep-assistant', label: 'Prep Assistant' },
-    { id: 'kitchen-helper', label: 'Kitchen Helper' },
-    { id: 'dishwasher', label: 'Dishwasher' },
-    { id: 'pastry-chef', label: 'Pastry Chef' },
-    { id: 'grill-cook', label: 'Grill Cook' },
-    { id: 'barista', label: 'Barista' },
-    { id: 'bartender', label: 'Bartender' },
-    { id: 'food-runner', label: 'Food Runner' },
-    { id: 'buffet-server', label: 'Buffet Server' },
-    { id: 'kitchen-steward', label: 'Kitchen Steward' },
-    { id: 'catering-assistant', label: 'Catering Assistant' },
-  ],
-  delivery: [
-    { id: 'motorcycle', label: 'Motorcycle Rider' },
-    { id: 'food-delivery', label: 'Food Delivery Rider' },
-    { id: 'car-driver', label: 'Car Driver' },
-    { id: 'bicycle', label: 'Bicycle Courier' },
-    { id: 'escooter', label: 'E-Scooter Courier' },
-    { id: 'van-driver', label: 'Van Driver' },
-    { id: 'express-messenger', label: 'Express Messenger' },
-    { id: 'pickup-driver', label: 'Pickup Truck Driver' },
-    { id: 'truck-driver', label: 'Heavy Truck Driver' },
-    { id: 'document-courier', label: 'Document Courier' },
-    { id: 'dispatch-driver', label: 'Warehouse Dispatch Driver' },
-    { id: 'last-mile', label: 'Last-Mile Delivery Specialist' },
-  ],
-  helpers: [
-    { id: 'event', label: 'Event Helper' },
-    { id: 'banquet', label: 'Banquet Server' },
-    { id: 'warehouse', label: 'Warehouse Helper' },
-    { id: 'inventory', label: 'Inventory & Stock Assistant' },
-    { id: 'loading-crew', label: 'Loading & Unloading Crew' },
-    { id: 'office', label: 'Office Helper' },
-    { id: 'moving', label: 'Moving Helper' },
-    { id: 'cleaning', label: 'Cleaning Crew' },
-    { id: 'sanitation', label: 'Sanitation Staff' },
-    { id: 'staging', label: 'Staging & Booth Builder' },
-    { id: 'general-laborer', label: 'General Laborer' },
-    { id: 'retail-assistant', label: 'Retail Store Assistant' },
-    { id: 'maintenance', label: 'Maintenance Assistant' },
-    { id: 'usher-assistant', label: 'Security / Usher Assistant' },
-  ],
-};
-
-const CREW_DATA = {
-  kitchen: [
-    { initials: 'JD', name: 'John D.', role: 'Line Cook', rating: 4.8, distance: '1.2 km', eta: 22, jobs: 147 },
-    { initials: 'MS', name: 'Maria S.', role: 'Chef', rating: 4.9, distance: '1.4 km', eta: 25, jobs: 312 },
-    { initials: 'RC', name: 'Ryan C.', role: 'Kitchen Helper', rating: 4.7, distance: '2.1 km', eta: 30, jobs: 89 },
-    { initials: 'AL', name: 'Angela L.', role: 'Sous Chef', rating: 4.9, distance: '1.6 km', eta: 20, jobs: 240 },
-    { initials: 'EB', name: 'Eric B.', role: 'Barista', rating: 4.8, distance: '0.9 km', eta: 15, jobs: 175 },
-    { initials: 'PV', name: 'Paula V.', role: 'Pastry Chef', rating: 4.9, distance: '2.4 km', eta: 28, jobs: 198 },
-    { initials: 'KT', name: 'Karl T.', role: 'Prep Assistant', rating: 4.7, distance: '1.8 km', eta: 24, jobs: 112 },
-  ],
-  delivery: [
-    { initials: 'AL', name: 'Angelo L.', role: 'Motorcycle Rider', rating: 4.9, distance: '0.8 km', eta: 12, jobs: 523 },
-    { initials: 'BT', name: 'Beth T.', role: 'Car Driver', rating: 4.6, distance: '1.5 km', eta: 18, jobs: 204 },
-    { initials: 'MR', name: 'Mark R.', role: 'Van Driver', rating: 4.8, distance: '2.0 km', eta: 24, jobs: 178 },
-    { initials: 'JN', name: 'Jared N.', role: 'Food Delivery Rider', rating: 4.9, distance: '0.6 km', eta: 10, jobs: 410 },
-    { initials: 'SM', name: 'Sam M.', role: 'Express Messenger', rating: 4.8, distance: '1.3 km', eta: 16, jobs: 285 },
-    { initials: 'CL', name: 'Chris L.', role: 'E-Scooter Courier', rating: 4.7, distance: '1.1 km', eta: 14, jobs: 160 },
-    { initials: 'RH', name: 'Ronald H.', role: 'Heavy Truck Driver', rating: 4.9, distance: '3.2 km', eta: 32, jobs: 215 },
-  ],
-  helpers: [
-    { initials: 'KM', name: 'Kevin M.', role: 'Event Helper', rating: 4.8, distance: '1.0 km', eta: 15, jobs: 96 },
-    { initials: 'SC', name: 'Sara C.', role: 'Warehouse Helper', rating: 4.7, distance: '2.3 km', eta: 28, jobs: 141 },
-    { initials: 'DP', name: 'Diego P.', role: 'Moving Helper', rating: 4.9, distance: '1.8 km', eta: 20, jobs: 63 },
-    { initials: 'TR', name: 'Tina R.', role: 'Banquet Server', rating: 4.9, distance: '1.2 km', eta: 16, jobs: 184 },
-    { initials: 'GL', name: 'Gary L.', role: 'Loading & Unloading Crew', rating: 4.8, distance: '2.0 km', eta: 22, jobs: 130 },
-    { initials: 'NP', name: 'Nina P.', role: 'Inventory & Stock Assistant', rating: 4.9, distance: '1.7 km', eta: 19, jobs: 155 },
-    { initials: 'RM', name: 'Rico M.', role: 'Sanitation Staff', rating: 4.8, distance: '1.4 km', eta: 17, jobs: 110 },
-  ],
-};
-
-const RATES = {
-  kitchen: { amount: '₱95', note: 'Minimum 4 hours' },
-  delivery: { amount: '₱75', note: 'Minimum 3 hours' },
-  helpers: { amount: '₱65', note: 'Minimum 4 hours' },
-};
+const ROLES = { kitchen: [], delivery: [], helpers: [] };
 
 const CAT_LABELS = {
   kitchen: 'Kitchen',
   delivery: 'Delivery',
   helpers: 'Helpers',
 };
+
+fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
+  for (const category of categories || []) {
+    ROLES[category.id] = (category.roles || []).map(role => ({ id: role.id, label: role.label }));
+    CAT_LABELS[category.id] = category.label;
+  }
+  if (state.category) renderRoles(state.category);
+}).catch(err => console.error(err.message));
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -195,6 +120,9 @@ const scheduleDisplayTime = document.getElementById('scheduleDisplayTime');
 const crewList = document.getElementById('crewList');
 const matchLoading = document.getElementById('matchLoading');
 const matchResults = document.getElementById('matchResults');
+const matchedCrewCount = document.getElementById('matchedCrewCount');
+const matchedCrewMessage = document.getElementById('matchedCrewMessage');
+const matchedCrewList = document.getElementById('matchedCrewList');
 const rateAmount = document.getElementById('rateAmount');
 const confirmBooking = document.getElementById('confirmBooking');
 const simulateAcceptBtn = document.getElementById('simulateAcceptBtn');
@@ -235,6 +163,7 @@ const paymentCloseXBtn = document.getElementById('paymentCloseXBtn');
 const payCancelBtn = document.getElementById('payCancelBtn');
 const payNowBtn = document.getElementById('payNowBtn');
 const payNowBtnText = document.getElementById('payNowBtnText');
+const paymentError = document.getElementById('paymentError');
 const paySummaryRole = document.getElementById('paySummaryRole');
 const paySummaryCat = document.getElementById('paySummaryCat');
 const paySummaryTime = document.getElementById('paySummaryTime');
@@ -1327,8 +1256,7 @@ if (btnPlus) {
 /* ─── Shift Payment & Escrow Modal Handlers ───────────────── */
 
 function openPaymentModal() {
-  const rate = RATES[state.category] || { amount: '₱75', note: 'Minimum 4 hours' };
-  const rateVal = parseFloat(state.offeredRate) || (parseFloat((rate.amount || '').replace(/[^0-9.]/g, '')) || 85);
+  const rateVal = Number(state.offeredRate) || 85;
   const count = 1;
   state.count = 1;
   const hours = 4; // Minimum 4 hours
@@ -1373,6 +1301,10 @@ function openPaymentModal() {
 
   if (payNowBtnText) {
     payNowBtnText.textContent = `Pay`;
+  }
+  if (paymentError) {
+    paymentError.textContent = '';
+    paymentError.style.display = 'none';
   }
   if (payNowBtn) {
     payNowBtn.disabled = false;
@@ -1515,7 +1447,7 @@ toStep4Btn.addEventListener('click', () => {
 
 // ── Pay Now -> Process Payment, Then Find Matching Crew ──
 if (payNowBtn) {
-  payNowBtn.addEventListener('click', () => {
+  payNowBtn.addEventListener('click', async () => {
     const payInfo = state.pendingPayment || { total: 100 };
     const methodTab = document.querySelector('.db-pay-method-btn.active');
     const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
@@ -1523,35 +1455,54 @@ if (payNowBtn) {
     const methodLabel = methodLabels[method] || 'GCash';
 
     payNowBtn.disabled = true;
-    if (payNowBtnText) {
-      payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Authorizing Escrow Payment…';
-    }
-
-    setTimeout(() => {
-      if (payNowBtnText) {
-        payNowBtnText.innerHTML = '✓ Payment Successful!';
+    if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Starting crew search…';
+    if (paymentError) paymentError.style.display = 'none';
+    try {
+      await executeFindCrewAfterPayment(payInfo, methodLabel);
+    } catch (err) {
+      if (paymentError) {
+        paymentError.textContent = err.message || 'Could not start the crew search. Please try again.';
+        paymentError.style.display = 'block';
       }
-      payNowBtn.style.background = '#10B981';
-
-      setTimeout(() => {
-        closePaymentModal();
-        executeFindCrewAfterPayment(payInfo, methodLabel);
-      }, 400);
-    }, 500);
+      if (payNowBtnText) payNowBtnText.textContent = 'Try Again';
+      payNowBtn.disabled = false;
+    }
   });
 }
 
-function executeFindCrewAfterPayment(payInfo, methodLabel) {
-  state.paid = true;
+async function executeFindCrewAfterPayment(payInfo, methodLabel) {
   state.paymentMethod = methodLabel;
   state.paymentAmount = payInfo.total;
 
-  const rate = RATES[state.category] || { amount: '₱75', note: 'Minimum 4 hours' };
   const timingText = payInfo.timingText || (state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
   const finalMapLoc = payInfo.finalMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
   const finalMapsUrl = payInfo.finalMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
 
-  const bookingId = Date.now();
+  const timingMode = state.timing === 'later' ? 'later' : 'now';
+  let scheduledAt = '';
+  if (timingMode === 'later') {
+    const scheduled = new Date(state.scheduledDate);
+    const [hh, mm] = String(state.scheduledTime || '08:00').split(':').map(Number);
+    scheduled.setHours(hh, mm, 0, 0);
+    scheduledAt = scheduled.toISOString();
+  }
+  const reusableStatus = state.currentBooking?.status;
+  const reusingUnfulfilledJob = state.currentJobId && (reusableStatus === 'draft' || reusableStatus === 'unfulfilled');
+  // The Go API derives maps_url from map_location/coordinates; sending maps_url
+  // here is rejected by its strict request decoder as an unknown JSON field.
+  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: Number(state.count) || 1 };
+  const createResponse = await fetch(reusingUnfulfilledJob ? `/api/jobs/${state.currentJobId}` : '/api/jobs', { method: reusingUnfulfilledJob ? 'PUT' : 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(jobPayload) });
+  const createData = await createResponse.json().catch(() => ({}));
+  if (!createResponse.ok) throw new Error(createData.error || 'Could not create the shift. Please try again.');
+  const jobId = createData.job.id;
+  state.currentJobId = jobId;
+  state.currentBooking = { id: jobId, status: createData.job.status || 'draft' };
+  const paymentResponse = await fetch(`/api/jobs/${jobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: String(methodLabel).toLowerCase() === 'gcash' ? 'gcash' : String(methodLabel).toLowerCase() === 'maya' ? 'maya' : 'card' }) });
+  const paymentData = await paymentResponse.json().catch(() => ({}));
+  if (!paymentResponse.ok) throw new Error(paymentData.error || 'Payment could not be recorded.');
+  state.paid = true;
+  closePaymentModal();
+  const bookingId = jobId;
   const bookingData = {
     id: bookingId,
     category: state.category,
@@ -1565,7 +1516,7 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
     geo: state.geo ? { lat: state.geo.lat, lng: state.geo.lng } : null,
     timing: timingText,
     count: state.count,
-    crewRate: rate.amount,
+    crewRate: `₱${state.offeredRate}`,
     status: 'matching', // Waiting for crew acceptance
     bookedAt: new Date().toISOString(),
     paid: true,
@@ -1577,17 +1528,7 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
   state.currentBooking = bookingData;
   saveBookingToSession(bookingData);
 
-  // Sync to shared jobs pool so applicants can see it and accept
-  if (window.InstantCrewShared) {
-    const s = getSession();
-    const sharedJob = window.InstantCrewShared.addEmployerJob({
-      ...bookingData,
-      name: s ? s.name : 'Sample Employer',
-      email: s ? s.email : 'sample@gmail.com',
-      venue: s ? `${s.name}'s Shift` : 'Sample Employer Venue'
-    });
-    state.currentJobId = sharedJob.id;
-  }
+  state.currentJobId = jobId;
 
   // Show escrow status in Step 4 matching pane
   if (matchEscrowPill) {
@@ -1609,6 +1550,10 @@ function executeFindCrewAfterPayment(payInfo, methodLabel) {
   startSearchTimer();
 
   // Start checking for crew acceptance (listening & polling)
+  matchedCrewFetchedAt = 0;
+  if (matchedCrewCount) matchedCrewCount.textContent = '0';
+  if (matchedCrewMessage) matchedCrewMessage.textContent = 'Checking the database for available crew…';
+  if (matchedCrewList) matchedCrewList.replaceChildren();
   startCheckingForAcceptance();
 }
 
@@ -1678,12 +1623,17 @@ function handleSearchTimeout() {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
     }
   }
+  if (state.currentBooking) state.currentBooking.status = 'unfulfilled';
 }
 
 // Demo simulate timeout button handler (triggers 3-min timeout)
 if (simulateTimeoutBtn) {
   simulateTimeoutBtn.addEventListener('click', () => {
-    handleSearchTimeout();
+    if (!state.currentJobId) return;
+    fetch(`/api/dev/jobs/${state.currentJobId}/simulate-timeout`, { method: 'POST', credentials: 'same-origin' }).then(async r => {
+      if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d.error || 'Could not simulate timeout.'); }
+      handleSearchTimeout();
+    }).catch(e => showEmployerAuthError(e.message));
   });
 }
 
@@ -1702,13 +1652,65 @@ if (editShiftFromFailedBtn) {
   });
 }
 
-function checkCrewAcceptance() {
-  if (!state.currentJobId || !window.InstantCrewShared) return;
-  const jobs = window.InstantCrewShared.getJobs();
-  const job = jobs.find(j => j.id === state.currentJobId);
-  if (job && (job.acceptedCount > 0 || (job.acceptedCrew && job.acceptedCrew.length > 0))) {
-    onCrewAccepted(job);
-  }
+async function checkCrewAcceptance() {
+  if (!state.currentJobId || !authUser) return;
+  try {
+    const response = await fetch(`/api/jobs/${state.currentJobId}`, { credentials: 'same-origin' });
+    if (!response.ok) return;
+    refreshMatchedCrew();
+    const { job } = await response.json();
+    const crew = (job.crew || []).map(c => c.name);
+    if (job.accepted_count > 0 || crew.length > 0) onCrewAccepted({ ...job, acceptedCrew: crew, role: job.role_label });
+  } catch (_) { /* the next poll retries */ }
+}
+
+let matchedCrewFetchedAt = 0;
+let matchedCrewFetchPending = false;
+
+function refreshMatchedCrew(force = false) {
+  if (!state.currentJobId || !matchedCrewList || matchedCrewFetchPending) return;
+  if (!force && Date.now() - matchedCrewFetchedAt < 5000) return;
+  matchedCrewFetchPending = true;
+  fetch(`/api/jobs/${state.currentJobId}/matches`, { credentials: 'same-origin' })
+    .then(async response => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load matching crew.');
+      const matches = Array.isArray(data.matches) ? data.matches : [];
+      matchedCrewFetchedAt = Date.now();
+      matchedCrewList.replaceChildren();
+      if (matchedCrewCount) matchedCrewCount.textContent = String(matches.length);
+      if (matchedCrewMessage) {
+        matchedCrewMessage.textContent = matches.length
+          ? 'These active crew members match your shift and have been notified. Waiting for someone to accept.'
+          : 'No active crew match yet. The database search will keep checking until the search window expires.';
+      }
+      matches.forEach(candidate => {
+        const card = document.createElement('div');
+        card.className = 'db-crew-card';
+        const avatar = document.createElement('span');
+        avatar.className = 'db-avatar';
+        avatar.textContent = String(candidate.name || 'Crew').trim().split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+        const info = document.createElement('div');
+        info.className = 'db-crew-info';
+        const name = document.createElement('p');
+        name.className = 'db-crew-name';
+        name.textContent = candidate.name || 'Crew member';
+        const rate = document.createElement('p');
+        rate.className = 'db-crew-meta';
+        const period = ({ hour: 'hour', day: 'day', week: 'week', month: 'month' })[candidate.rate_period] || candidate.rate_period || 'hour';
+        rate.textContent = `Expected rate ₱${Number(candidate.expected_rate || 0).toLocaleString()} / ${period} · ${candidate.city || ''}`;
+        info.append(name, rate);
+        const status = document.createElement('span');
+        status.className = 'db-crew-role-tag';
+        status.textContent = 'Notified';
+        card.append(avatar, info, status);
+        matchedCrewList.appendChild(card);
+      });
+    })
+    .catch(err => {
+      if (matchedCrewMessage) matchedCrewMessage.textContent = err.message;
+    })
+    .finally(() => { matchedCrewFetchPending = false; });
 }
 
 function startCheckingForAcceptance() {
@@ -1763,35 +1765,20 @@ function onCrewAccepted(job) {
 if (simulateAcceptBtn) {
   simulateAcceptBtn.addEventListener('click', () => {
     if (!state.currentJobId || !window.InstantCrewShared) return;
-    const candidateCrew = (CREW_DATA[state.category] && CREW_DATA[state.category][0]) || { name: 'Angelo Lopez' };
-    window.InstantCrewShared.acceptJob(state.currentJobId, candidateCrew.name);
-    checkCrewAcceptance();
+    fetch(`/api/dev/jobs/${state.currentJobId}/simulate-accept`, { method: 'POST', credentials: 'same-origin' }).then(checkCrewAcceptance);
   });
 }
 
 function renderCrewResults(acceptedCrew = [], job = null) {
-  const defaultCrew = CREW_DATA[state.category] || [];
-  const rate = RATES[state.category] || { amount: '₱75', note: 'Minimum 4 hours' };
-
-  // Update rate
-  rateAmount.innerHTML = `${rate.amount}<span>/hr</span>`;
-  document.getElementById('rateAmount').nextElementSibling.textContent = rate.note;
+  rateAmount.innerHTML = `₱${state.offeredRate}<span>/${String(state.ratePeriod).replace(/^per\s+/, '')}</span>`;
+  document.getElementById('rateAmount').nextElementSibling.textContent = 'Employer offered rate';
 
   // Render crew cards
   crewList.innerHTML = '';
-  const listToRender = (acceptedCrew && acceptedCrew.length > 0)
-    ? acceptedCrew
-    : (defaultCrew.slice(0, 1).map(c => c.name));
+  const listToRender = acceptedCrew || [];
 
   listToRender.forEach((workerName, i) => {
-    const matched = defaultCrew.find(c => c.name === workerName) || {
-      initials: workerName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'CW',
-      name: workerName,
-      role: state.roleLabel || 'Crew Member',
-      rating: 4.9,
-      distance: '0.8 km',
-      jobs: 142
-    };
+    const initials = workerName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'CW';
 
     const card = document.createElement('div');
     card.className = 'db-crew-card';
@@ -1799,16 +1786,10 @@ function renderCrewResults(acceptedCrew = [], job = null) {
     card.style.animationDelay = `${i * 120}ms`;
 
     card.innerHTML = `
-            <span class="db-avatar">${matched.initials}</span>
+            <span class="db-avatar">${initials}</span>
             <div class="db-crew-info">
-                <p class="db-crew-name">${matched.name}</p>
-                <p class="db-crew-meta">
-                    <span class="db-crew-star" style="display:inline-flex; align-items:center; vertical-align:-2px; margin-right:2px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-star"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" /></svg>
-                    </span> ${matched.rating}
-                    &middot; ${matched.distance} away
-                    &middot; ${matched.jobs} jobs
-                </p>
+                <p class="db-crew-name">${workerName}</p>
+                <p class="db-crew-meta">Accepted this shift</p>
             </div>
             <span class="db-crew-role-tag" style="background:#DCFCE7; color:#15803D; font-weight:700;">✓ Accepted</span>
         `;
@@ -1817,9 +1798,14 @@ function renderCrewResults(acceptedCrew = [], job = null) {
   });
 }
 
-confirmBooking.addEventListener('click', () => {
-  const rate = RATES[state.category] || { amount: '₱75', note: 'Minimum 4 hours' };
-
+confirmBooking.addEventListener('click', async () => {
+  if (!state.currentJobId) return;
+  confirmBooking.disabled = true;
+  try {
+    const response = await fetch(`/api/jobs/${state.currentJobId}/confirm`, { method: 'POST', credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not confirm this booking.');
+  } catch (err) { showEmployerAuthError(err.message); confirmBooking.disabled = false; return; }
   let timingText;
   if (state.timing === 'now') {
     timingText = 'As soon as possible';
@@ -1843,7 +1829,7 @@ confirmBooking.addEventListener('click', () => {
   }
   document.getElementById('dTime').textContent = timingText;
   document.getElementById('dCount').textContent = '1 Crew Member';
-  document.getElementById('dRate').textContent = `${rate.amount}/hr (${rate.note.toLowerCase()})`;
+  document.getElementById('dRate').textContent = `₱${state.offeredRate} ${state.ratePeriod}`;
   if (dPayment) {
     const paidTotal = state.paymentAmount ? `₱${state.paymentAmount.toFixed(2)}` : '₱100.00';
     dPayment.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Match Fee Paid</span> (${paidTotal} via ${state.paymentMethod || 'GCash'})`;
@@ -2225,102 +2211,6 @@ document.querySelectorAll('.db-auth-toggle-pass').forEach(btn => {
   });
 });
 
-// Log In form handler
-if (employerModalLoginForm) {
-  employerModalLoginForm.addEventListener('submit', () => {
-    const email = document.getElementById('empModalLoginEmail').value.trim().toLowerCase();
-    const pass = document.getElementById('empModalLoginPass').value;
-    const btn = document.getElementById('btnSubmitModalLogin');
-
-    if (!email || pass.length < 4) {
-      showEmployerAuthError('Please enter a valid email and password (minimum 4 characters).');
-      return;
-    }
-
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<span class="db-btn-spinner"></span> Logging in…';
-    }
-
-    setTimeout(() => {
-      let existingBookings = [];
-      try {
-        const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY));
-        if (prev && Array.isArray(prev.bookings)) existingBookings = prev.bookings;
-      } catch (e) { }
-
-      const userSession = {
-        name: email === 'sample@gmail.com' ? 'Sample Employer' : email.split('@')[0],
-        email: email,
-        company: 'Sample Co.',
-        joinedYear: 2026,
-        bookings: existingBookings
-      };
-
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userSession));
-      populateProfile();
-      closeEmployerAuthModal();
-
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<span>Log In &amp; Continue Finding Crew</span>';
-      }
-
-      // Only advance to payment modal if triggered from Step 3 "Find a Crew"
-      if (authTriggerSource === 'step') {
-        openPaymentModal();
-      }
-      authTriggerSource = 'step';
-    }, 400);
-  });
-}
-
-// Sign Up form handler
-if (employerModalSignupForm) {
-  employerModalSignupForm.addEventListener('submit', () => {
-    const company = document.getElementById('empModalSignupCompany').value.trim();
-    const contact = document.getElementById('empModalSignupContact').value.trim();
-    const email = document.getElementById('empModalSignupEmail').value.trim().toLowerCase();
-    const pass = document.getElementById('empModalSignupPass').value;
-    const btn = document.getElementById('btnSubmitModalSignup');
-
-    if (!email || !contact || pass.length < 4) {
-      showEmployerAuthError('Please fill in all required fields (password minimum 4 characters).');
-      return;
-    }
-
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<span class="db-btn-spinner"></span> Creating account…';
-    }
-
-    setTimeout(() => {
-      const userSession = {
-        name: contact,
-        email: email,
-        company: company || 'My Company',
-        joinedYear: 2026,
-        bookings: []
-      };
-
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userSession));
-      populateProfile();
-      closeEmployerAuthModal();
-
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<span>Create Account &amp; Continue Finding Crew</span>';
-      }
-
-      // Only advance to payment modal if triggered from Step 3 "Find a Crew"
-      if (authTriggerSource === 'step') {
-        openPaymentModal();
-      }
-      authTriggerSource = 'step';
-    }, 450);
-  });
-}
-
 /* ── Bookings Tabs ─────────────────────────────────────── */
 
 function switchBookingTab(tab) {
@@ -2347,99 +2237,11 @@ function switchBookingTab(tab) {
 if (tabActiveBtn) tabActiveBtn.addEventListener('click', () => switchBookingTab('active'));
 if (tabPreviousBtn) tabPreviousBtn.addEventListener('click', () => switchBookingTab('previous'));
 
-/* ── Default Seed Bookings for Employer ─────────────────── */
-const DEFAULT_EMPLOYER_ACTIVE_BOOKINGS = [
-  {
-    id: 'contract-active-chef',
-    contractId: 'contract-active-chef',
-    category: 'kitchen',
-    role: 'CHEF',
-    roleLabel: 'Head Line Chef',
-    employmentType: 'full-time',
-    location: "kianberong2005's Shift",
-    mapLocation: "kianberong2005's Shift",
-    timing: 'Contract In Progress',
-    count: 1,
-    crewRate: '₱85',
-    status: 'active',
-    transitStatus: 'on_the_way',
-    departedAt: '12:17 AM',
-    workerName: 'kianberong2005',
-    acceptedCrew: ['kianberong2005'],
-    bookedAt: 'Today'
-  }
-];
-
-const DEFAULT_EMPLOYER_PREVIOUS_BOOKINGS = [
-  {
-    id: 'contract-demo-2',
-    contractId: 'contract-demo-2',
-    category: 'kitchen',
-    role: 'Line Cook',
-    roleLabel: 'Line Cook / Prep Assistant',
-    employmentType: 'part-time',
-    location: 'Bistro Moderne — Downtown',
-    mapLocation: 'Bistro Moderne — Downtown',
-    timing: 'Today, 1:00 PM – 5:00 PM (4 hrs)',
-    count: 1,
-    crewRate: '₱95',
-    status: 'completed',
-    endedBy: 'employer',
-    workerName: 'Ronald Mendoza',
-    acceptedCrew: ['Ronald Mendoza'],
-    bookedAt: 'Yesterday'
-  },
-  {
-    id: 'contract-demo-1',
-    contractId: 'contract-demo-1',
-    category: 'helpers',
-    role: 'Event Helper',
-    roleLabel: 'Event Setup & Banquet Helper',
-    employmentType: 'part-time',
-    location: 'Grand Ballroom & Pavilion',
-    mapLocation: 'Grand Ballroom & Pavilion',
-    timing: 'Yesterday, 9:00 AM – 2:00 PM (5 hrs)',
-    count: 2,
-    crewRate: '₱75',
-    status: 'completed',
-    endedBy: 'employer',
-    workerName: 'Marco Reyes',
-    acceptedCrew: ['Marco Reyes', 'Jayson V.'],
-    bookedAt: '2 days ago'
-  },
-  {
-    id: 'contract-demo-3',
-    contractId: 'contract-demo-3',
-    category: 'delivery',
-    role: 'Motorcycle Rider',
-    roleLabel: 'Express Delivery Rider',
-    employmentType: 'full-time',
-    location: 'Metro Logistics Express Hub',
-    mapLocation: 'Metro Logistics Express Hub',
-    timing: 'Full-time Day Shift (8 hrs / day)',
-    count: 1,
-    crewRate: '₱85',
-    status: 'completed',
-    endedBy: 'worker',
-    workerName: 'David Cruz',
-    acceptedCrew: ['David Cruz'],
-    bookedAt: '3 days ago'
-  }
-];
-
 /* ── Sync Bookings With Shared Contracts / Jobs State ──── */
 function syncBookingsWithSharedState() {
   const s = getSession();
   if (!s) return;
   if (!s.bookings) s.bookings = [];
-
-  // 1. If s.bookings is empty, seed default active and previous bookings so neither tab is empty
-  if (s.bookings.length === 0) {
-    s.bookings = [
-      ...DEFAULT_EMPLOYER_ACTIVE_BOOKINGS.map(b => ({ ...b })),
-      ...DEFAULT_EMPLOYER_PREVIOUS_BOOKINGS.map(b => ({ ...b }))
-    ];
-  }
 
   if (!window.InstantCrewShared) {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
@@ -2552,8 +2354,36 @@ function syncBookingsWithSharedState() {
 /* ── Render Bookings List ──────────────────────────────── */
 
 let lastEmployerBookingsSig = null;
+let employerBookingsFetchedAt = 0;
+let employerBookingsFetchPending = false;
+
+function refreshEmployerBookings(force = false) {
+  const current = getSession();
+  if (!current || current.isGuest) return;
+  const now = Date.now();
+  if (employerBookingsFetchPending || (!force && now - employerBookingsFetchedAt < 2500)) return;
+  employerBookingsFetchPending = true;
+  fetch('/api/jobs?limit=100', { credentials: 'same-origin' }).then(async response => {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not load your shifts.');
+    const s = getSession();
+    if (!s) return;
+    s.bookings = (data.jobs || []).map(j => ({
+      id: j.id, jobId: j.id, category: j.category, role: j.role,
+      roleLabel: j.role_label, employmentType: j.employment_type, location: j.city,
+      mapLocation: j.map_location, googleMapsUrl: j.maps_url, timing: j.scheduled_at || j.timing,
+      count: j.crew_needed, acceptedCrew: (j.crew || []).map(c => c.name),
+      transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || '',
+      crewRate: `₱${j.rate}`, status: j.status, bookedAt: j.created_at
+    }));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    employerBookingsFetchedAt = Date.now();
+    renderBookings(true);
+  }).catch(err => console.warn(err.message)).finally(() => { employerBookingsFetchPending = false; });
+}
 
 function renderBookings(force = false) {
+  refreshEmployerBookings();
   syncBookingsWithSharedState();
   const s = getSession();
   const bookings = (s && s.bookings) ? s.bookings : [];
@@ -2860,19 +2690,22 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* End booking / contract from employer side */
-function endEmployerBooking(bookingId) {
+async function endEmployerBooking(bookingId) {
   const s = getSession();
   if (!s || !s.bookings) return;
   const booking = s.bookings.find(b => String(b.id) === String(bookingId) || (b.contractId && String(b.contractId) === String(bookingId)));
+  try {
+    const response = await fetch(`/api/jobs/${bookingId}/end`, { method: 'POST', credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not end this booking.');
+  } catch (err) { showEmployerAuthError(err.message); return; }
   if (booking) {
     booking.status = 'completed';
     booking.endedBy = 'employer';
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
   }
-  if (window.InstantCrewShared) {
-    window.InstantCrewShared.endContract(bookingId, 'employer', s ? s.name : 'Employer');
-    window.InstantCrewShared.showPushToast('Contract Ended', `Contract for ${booking ? (booking.roleLabel || booking.role) : 'crew'} concluded.`, 'end');
-  }
+  if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Contract Ended', `Contract for ${booking ? (booking.roleLabel || booking.role) : 'crew'} concluded.`, 'end');
+  employerBookingsFetchedAt = 0;
   renderBookings(true);
 }
 
@@ -2951,10 +2784,21 @@ const notifList = document.getElementById('notifList');
 const clearNotifsBtn = document.getElementById('clearNotifsBtn');
 
 let lastEmployerNotifCount = 0;
+let employerNotifications = null;
+let employerNotificationsFetchedAt = 0;
+let employerNotificationsPending = false;
 
 function renderEmployerNotifications() {
-  if (!window.InstantCrewShared) return;
-  const notifs = window.InstantCrewShared.getNotifications('employer');
+  const currentSession = getSession();
+  if (!currentSession || currentSession.isGuest) return;
+  if (employerNotifications === null || Date.now() - employerNotificationsFetchedAt > 2500) {
+    if (!employerNotificationsPending) {
+      employerNotificationsPending = true;
+      fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||'Could not load notifications.'); employerNotifications=d.notifications||[]; employerNotificationsFetchedAt=Date.now(); renderEmployerNotifications(); }).catch(e=>console.warn(e.message)).finally(()=>{employerNotificationsPending=false;});
+    }
+    if (employerNotifications === null) employerNotifications=[];
+  }
+  const notifs = employerNotifications || [];
   const unread = notifs.filter(n => !n.read).length;
 
   if (notifBadge) {
@@ -2980,7 +2824,7 @@ function renderEmployerNotifications() {
                     <div>
                         <p class="db-notif-title">${n.title}</p>
                         <p class="db-notif-desc">${n.message}</p>
-                        <span class="db-notif-time">${n.time}</span>
+                        <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
                     </div>
                 `;
         notifList.appendChild(el);
@@ -3001,8 +2845,9 @@ if (notifBtn) {
     e.stopPropagation();
     const isHidden = notifDropdown.hidden;
     notifDropdown.hidden = !isHidden;
-    if (isHidden && window.InstantCrewShared) {
-      window.InstantCrewShared.markAllNotificationsRead('employer');
+    if (isHidden) {
+      fetch('/api/notifications/read', { method: 'POST', credentials: 'same-origin' });
+      employerNotifications = (employerNotifications || []).map(n => ({ ...n, read: true }));
       if (notifBadge) notifBadge.style.display = 'none';
     }
   });
@@ -3010,10 +2855,7 @@ if (notifBtn) {
 
 if (clearNotifsBtn) {
   clearNotifsBtn.addEventListener('click', () => {
-    if (window.InstantCrewShared) {
-      window.InstantCrewShared.clearNotifications('employer');
-      renderEmployerNotifications();
-    }
+    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { employerNotifications=[]; employerNotificationsFetchedAt=Date.now(); renderEmployerNotifications(); });
   });
 }
 
@@ -3046,7 +2888,7 @@ function updateStep5TransitLiveStatus() {
   const transitStatus = (currentB && currentB.transitStatus) || (activeContract && activeContract.transitStatus) || null;
   const departedAt = (currentB && currentB.departedAt) || (activeContract && activeContract.departedAt) || null;
   const arrivedAt = (currentB && currentB.arrivedAt) || (activeContract && activeContract.arrivedAt) || null;
-  const crewName = (currentB && currentB.workerName) || (currentB && currentB.acceptedCrew && currentB.acceptedCrew[0]) || (activeContract && activeContract.workerName) || 'Angelo Lopez';
+  const crewName = (currentB && currentB.workerName) || (currentB && currentB.acceptedCrew && currentB.acceptedCrew[0]) || (activeContract && activeContract.workerName) || 'Crew member';
   const venueName = (currentB && currentB.location) || (activeContract && activeContract.venue) || state.location || 'your location';
 
   box.style.display = 'block';

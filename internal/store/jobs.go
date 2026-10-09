@@ -38,6 +38,16 @@ type Assignment struct {
 	Transit     string
 }
 
+// MatchedApplicant contains only the profile details employers need to identify
+// a crew member while a matching search is open. Contact information is omitted.
+type MatchedApplicant struct {
+	Name             string `json:"name"`
+	ExpectedRate     int64  `json:"expected_rate"`
+	RatePeriod       string `json:"rate_period"`
+	City             string `json:"city"`
+	AvailabilityMode string `json:"availability_mode"`
+}
+
 const jobCols = `id, employer_id, category, role_id, role_label, employment_type, rate_centavos,
 	rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
 	accepted_count, status, search_attempts, search_expires_at, created_at, updated_at`
@@ -200,7 +210,61 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method st
 		VALUES (?, ?, ?, ?, 'paid', ?, ?)`, id, employerID, feeCentavos, method, ref, now.Unix()); err != nil {
 		return err
 	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_object('job_id', j.id),?
+		FROM jobs j JOIN applicant_profiles p ON p.is_active=1 AND lower(trim(p.city))=lower(trim(j.city))
+		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
+		WHERE j.id=? AND p.employment_type=j.employment_type
+		AND ((j.timing='now' AND p.availability_mode='now') OR
+			(j.timing='later' AND EXISTS (
+				SELECT 1 FROM applicant_availability av
+				WHERE av.applicant_id=p.user_id AND av.status='available'
+				AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600
+			)))`, now.Unix(), id); err != nil {
+		return err
+	}
 	return tx.Commit()
+}
+
+// MatchingApplicants reads eligible active profiles for an employer-owned job.
+// The caller verifies job ownership before asking for the results.
+func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedApplicant, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT u.name,p.expected_rate,p.rate_period,p.city,p.availability_mode
+		FROM jobs j
+		JOIN applicant_profiles p ON p.is_active=1
+		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
+		JOIN users u ON u.id=p.user_id
+		WHERE j.id=? AND j.status='matching'
+		AND (j.search_expires_at IS NULL OR j.search_expires_at>?)
+		AND p.employment_type=j.employment_type
+		AND lower(trim(p.city))=lower(trim(j.city))
+		AND ((j.timing='now' AND p.availability_mode='now') OR
+			(j.timing='later' AND EXISTS (
+				SELECT 1 FROM applicant_availability av
+				WHERE av.applicant_id=p.user_id AND av.status='available'
+				AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600
+			)))
+		AND NOT EXISTS (
+			SELECT 1 FROM job_applications a
+			WHERE a.job_id=j.id AND a.applicant_id=p.user_id
+			AND a.status IN ('pending','accepted','rejected')
+		)
+		ORDER BY p.expected_rate ASC,u.name COLLATE NOCASE`, jobID, time.Now().Unix())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	matches := make([]MatchedApplicant, 0)
+	for rows.Next() {
+		var applicant MatchedApplicant
+		if err := rows.Scan(&applicant.Name, &applicant.ExpectedRate, &applicant.RatePeriod, &applicant.City, &applicant.AvailabilityMode); err != nil {
+			return nil, err
+		}
+		matches = append(matches, applicant)
+	}
+	return matches, rows.Err()
 }
 
 // ExpireSearches flips timed-out searches to 'unfulfilled'. Called by a sweeper and on reads.
@@ -213,6 +277,18 @@ func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	return res.RowsAffected()
+}
+
+func (s *Store) SimulateSearchTimeout(ctx context.Context, employerID, id int64) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE jobs SET status='unfulfilled',updated_at=?,search_expires_at=? WHERE id=? AND employer_id=? AND status='matching'`, time.Now().Unix(), time.Now().Unix(), id, employerID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return missOrBadState(ctx, s.db, employerID, id)
+	}
+	return nil
 }
 
 // AcceptJob is what a crew member's "Accept" will call (applicant side comes next).
@@ -245,6 +321,7 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		}
 		return err
 	}
+	_, _ = tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES(?,?,'accepted',?,?) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now)
 	return tx.Commit()
 }
 

@@ -76,8 +76,8 @@
                 <div class="db-profile-header-user">
                     <div class="db-profile-header-avatar" id="panelAvatarInitials">SE</div>
                     <div class="db-profile-header-info">
-                        <h2 class="db-profile-header-name" id="panelUserName">Sample Employer</h2>
-                        <p class="db-profile-header-email" id="panelUserEmail">sample@gmail.com</p>
+                        <h2 class="db-profile-header-name" id="panelUserName"></h2>
+                        <p class="db-profile-header-email" id="panelUserEmail"></p>
                     </div>
                 </div>
                 <div class="db-profile-header-actions">
@@ -687,6 +687,15 @@
                             <p class="db-search-timer-note">Maximum 3 minutes search window</p>
                         </div>
 
+                        <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading">
+                            <div class="db-matched-crew-heading-row">
+                                <h3 id="matchedCrewHeading">Active crew matching this shift</h3>
+                                <span id="matchedCrewCount" class="db-matched-crew-count">0</span>
+                            </div>
+                            <p id="matchedCrewMessage" class="db-matched-crew-message">Checking the database for available crew…</p>
+                            <div id="matchedCrewList" class="db-matched-crew-list"></div>
+                        </section>
+
                         <div class="db-demo-actions-row">
                             <button type="button" class="db-simulate-accept-btn" id="simulateAcceptBtn">
                                 Simulate Crew Acceptance (Demo)
@@ -860,7 +869,7 @@
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                             <input type="email" id="empModalLoginEmail" class="db-auth-input"
-                                placeholder="sample@gmail.com" required autocomplete="email">
+                                placeholder="name@company.com" required autocomplete="email">
                         </div>
                     </div>
 
@@ -1168,6 +1177,8 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="paymentError" class="db-auth-error-banner" role="alert" style="display:none;"></div>
 
                 <!-- Escrow Guarantee Badge -->
                 <div class="db-escrow-guarantee-box">

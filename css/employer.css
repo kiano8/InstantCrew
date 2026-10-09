@@ -1220,6 +1220,62 @@ h2 {
     box-shadow: 0 2px 10px rgba(255, 204, 0, 0.14);
 }
 
+.db-matched-crew-panel {
+    width: min(100%, 560px);
+    margin: 22px auto 0;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+    text-align: left;
+}
+
+.db-matched-crew-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.db-matched-crew-heading-row h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.96rem;
+}
+
+.db-matched-crew-count {
+    min-width: 26px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #FEF3C7;
+    color: #92400E;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.db-matched-crew-message {
+    margin: 7px 0 12px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.db-matched-crew-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.db-matched-crew-list .db-crew-card {
+    padding: 10px 12px;
+}
+
+.db-matched-crew-list .db-crew-card:hover {
+    border-color: var(--border);
+    box-shadow: none;
+}
+
 @keyframes fadeSlideUp {
     from {
         opacity: 0;

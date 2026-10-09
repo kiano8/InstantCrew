@@ -1,5 +1,11 @@
 package jobs
 
+import (
+	"context"
+
+	"instantcrew/internal/store"
+)
+
 type Role struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
@@ -38,6 +44,28 @@ var Catalog = []Category{
 		r("general-laborer", "General Laborer"), r("retail-assistant", "Retail Store Assistant"),
 		r("maintenance", "Maintenance Assistant"), r("usher-assistant", "Security / Usher Assistant"),
 	}},
+}
+
+func RoleByID(id string) (Role, bool) {
+	for _, c := range Catalog {
+		for _, role := range c.Roles {
+			if role.ID == id {
+				return role, true
+			}
+		}
+	}
+	return Role{}, false
+}
+
+// SyncCatalog copies the Go catalog into job_roles at startup. The Go list is the source of truth.
+func SyncCatalog(ctx context.Context, st *store.Store) error {
+	var rows []store.RoleRow
+	for _, c := range Catalog {
+		for _, role := range c.Roles {
+			rows = append(rows, store.RoleRow{ID: role.ID, Category: c.ID, Label: role.Label})
+		}
+	}
+	return st.SyncRoles(ctx, rows)
 }
 
 func LookupRole(category, roleID string) (Role, bool) {
