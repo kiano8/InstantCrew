@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css">
+    <link rel="stylesheet" href="css/employer.css?v=20261011-payment-details-step2-removed">
 </head>
 
 <body>
@@ -695,15 +695,8 @@
                             <p id="matchedCrewMessage" class="db-matched-crew-message">Checking the database for available crew…</p>
                             <div id="matchedCrewList" class="db-matched-crew-list"></div>
                         </section>
+                        <button type="button" class="db-btn-secondary" id="cancelCrewSearchBtn">Cancel Search</button>
 
-                        <div class="db-demo-actions-row">
-                            <button type="button" class="db-simulate-accept-btn" id="simulateAcceptBtn">
-                                Simulate Crew Acceptance (Demo)
-                            </button>
-                            <button type="button" class="db-simulate-timeout-btn" id="simulateTimeoutBtn">
-                                Simulate 3-Min Timeout (Demo)
-                            </button>
-                        </div>
                     </div>
 
                     <!-- ════ FAILED MATCH (3-Min Search Expired) ════ -->
@@ -1020,8 +1013,8 @@
                             <path d="M9 12l2 2 4-4" />
                         </svg>
                     </div>
-                    <h3 class="db-modal-title" id="paymentModalTitle">Confirm Your Crew Match</h3>
-                    <p class="db-modal-sub">Your matched crew accepted the offer. Pay the fixed ₱100 fee to confirm the booking.</p>
+                    <h3 class="db-modal-title" id="paymentModalTitle">Payment Details</h3>
+                    <p class="db-modal-sub" id="paymentModalSubtitle">Pay the fixed ₱100 search fee to start crew search.</p>
                 </div>
 
                 <!-- Booking Summary Box -->
@@ -1078,6 +1071,10 @@
                 <div class="db-payment-methods-section">
                     <label class="db-payment-section-label">Select Payment Method</label>
                     <div class="db-pay-method-tabs" role="radiogroup">
+                        <button type="button" class="db-pay-method-btn" data-method="cash" aria-checked="false">
+                            <span class="db-pay-dot"></span>
+                            <span class="db-pay-method-name">Cash</span>
+                        </button>
                         <button type="button" class="db-pay-method-btn active" data-method="gcash" aria-checked="true">
                             <span class="db-pay-dot"></span>
                             <span class="db-pay-method-name">GCash</span>
@@ -1093,6 +1090,13 @@
                     </div>
 
                     <!-- Method Input Fields -->
+                    <div class="db-pay-method-details" id="payMethodCashWrap" style="display:none;">
+                        <p class="db-pay-cash-note">Pay the ₱100 search fee in cash to start crew search.</p>
+                        <div class="db-pay-field">
+                            <label for="payCashNote">Payment note (optional)</label>
+                            <input type="text" id="payCashNote" class="db-pay-input db-pay-input-full" maxlength="120" placeholder="Add a short note">
+                        </div>
+                    </div>
                     <div class="db-pay-method-details" id="payMethodGcashWrap">
                         <div class="db-pay-field">
                             <label for="payGcashNumber">GCash Mobile Number</label>
@@ -1100,9 +1104,6 @@
                                 <span class="db-pay-prefix">+63</span>
                                 <input type="tel" id="payGcashNumber" class="db-pay-input" placeholder="917 555 0199">
                             </div>
-                        </div>
-                        <div class="db-pay-quick-chip" id="chipGcashDefault">
-                            <span> Use Registered Gcash Number</span>
                         </div>
                     </div>
 
@@ -1113,9 +1114,6 @@
                                 <span class="db-pay-prefix">+63</span>
                                 <input type="tel" id="payMayaNumber" class="db-pay-input" placeholder="918 777 2233">
                             </div>
-                        </div>
-                        <div class="db-pay-quick-chip" id="chipMayaDefault">
-                            <span> Use Registered Maya Number</span>
                         </div>
                     </div>
 
@@ -1463,7 +1461,7 @@
     
     <script src="js/location.js"></script>
     <script src="js/shared-data.js"></script>
-    <script src="js/employer.js"></script>
+    <script src="js/employer.js?v=20261011-employer-notification-resume"></script>
 </body>
 
 </html>

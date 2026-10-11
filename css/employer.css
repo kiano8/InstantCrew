@@ -3024,7 +3024,7 @@ h2 {
 
 .db-pay-method-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 10px;
 }
@@ -4123,6 +4123,27 @@ h2 {
     color: #B91C1C;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+/* Employer booking cards open their shift when activated; keep actions visually distinct. */
+.db-booking-item[role="button"] { cursor: pointer; }
+.db-booking-item[role="button"]:focus-visible {
+    outline: 3px solid #F4C430;
+    outline-offset: 2px;
+}
+.db-booking-item .db-btn-cancel-search,
+.db-booking-item .db-btn-review-offer,
+.db-booking-item .db-btn-view-shift {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+    color: #1D4ED8;
+}
+.db-booking-item .db-btn-cancel-search:hover,
+.db-booking-item .db-btn-review-offer:hover,
+.db-booking-item .db-btn-view-shift:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+    color: #1E40AF;
 }
 
 .app-job-card-footer.ended-footer {

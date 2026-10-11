@@ -57,7 +57,6 @@ func main() {
 		Store:            st,
 		MatchFeeCentavos: 10000,
 		SearchWindow:     3 * time.Minute,
-		Dev:              env == "dev",
 	}
 
 	mux := http.NewServeMux()

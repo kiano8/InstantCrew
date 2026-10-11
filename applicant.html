@@ -1719,10 +1719,17 @@
 
             // Load or initialize worker session
             function getWorkerSession() {
+                try {
+                    const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY_WORKER) || 'null');
+                    if (saved && (!saved.expiresAt || saved.expiresAt <= Date.now())) {
+                        sessionStorage.removeItem(SESSION_KEY_WORKER);
+                    } else if (saved) return saved;
+                } catch (e) { sessionStorage.removeItem(SESSION_KEY_WORKER); }
                 return { name: '', email: '', services: [], active: false, acceptedShifts: [] };
             }
 
             function saveWorkerSession(session) {
+                if (session.id && !session.expiresAt) session.expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
                 sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify(session));
             }
 
