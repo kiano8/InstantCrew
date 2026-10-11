@@ -17,12 +17,15 @@
         (function () {
             try {
                 // If user is already logged in, route to their active portal
-                const workerSession = sessionStorage.getItem('ic_worker_session');
-                const employerSession = sessionStorage.getItem('ic_employer_session');
-                if (workerSession) {
+                const workerSession = JSON.parse(sessionStorage.getItem('ic_worker_session') || 'null');
+                const employerSession = JSON.parse(sessionStorage.getItem('ic_employer_session') || 'null');
+                if (workerSession && workerSession.expiresAt > Date.now()) {
                     window.location.replace('applicant.html');
-                } else if (employerSession) {
+                } else if (employerSession && employerSession.expiresAt > Date.now()) {
                     window.location.replace('employer.html');
+                } else {
+                    sessionStorage.removeItem('ic_worker_session');
+                    sessionStorage.removeItem('ic_employer_session');
                 }
             } catch (e) { }
         })();
@@ -236,7 +239,7 @@
 
             function proceedToLogin() {
                 if (!selectedRole) return;
-                const targetUrl = selectedRole === 'employer' ? 'employer.html' : 'applicant.html';
+                const targetUrl = selectedRole === 'employer' ? 'login.html?role=employer' : 'login.html?role=applicant';
                 window.location.href = targetUrl;
             }
 

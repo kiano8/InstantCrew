@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"instantcrew/internal/auth"
@@ -21,7 +22,6 @@ type Handler struct {
 	Store            *store.Store
 	MatchFeeCentavos int64         // e.g. 10000 = ₱100.00
 	SearchWindow     time.Duration // e.g. 3 * time.Minute
-	Dev              bool          // enables the simulate-accept endpoint
 }
 
 func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
@@ -36,6 +36,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("GET /api/jobs/{id}/matches", emp(h.Matches))
 	mux.Handle("PUT /api/jobs/{id}", emp(h.Update))
 	mux.Handle("POST /api/jobs/{id}/pay", emp(h.Pay))
+	mux.Handle("POST /api/jobs/{id}/search", emp(h.Search))
 	mux.Handle("POST /api/jobs/{id}/confirm", emp(h.Confirm))
 	mux.Handle("POST /api/jobs/{id}/end", emp(h.End))
 	mux.Handle("POST /api/jobs/{id}/cancel", emp(h.Cancel))
@@ -43,6 +44,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
 	mux.Handle("PUT /api/applicant/profile", app(h.SaveApplicantProfile))
 	mux.Handle("GET /api/applicant/jobs", app(h.ApplicantJobs))
+	mux.Handle("GET /api/applicant/jobs/{id}", app(h.ApplicantJob))
 	mux.Handle("POST /api/applicant/jobs/{id}/accept", app(h.ApplicantAccept))
 	mux.Handle("POST /api/applicant/jobs/{id}/reject", app(h.ApplicantReject))
 	mux.Handle("GET /api/applicant/assignments", app(h.ApplicantAssignments))
@@ -54,10 +56,6 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/notifications/read", a.RequireAuth(http.HandlerFunc(h.ReadNotifications)))
 	mux.Handle("DELETE /api/notifications", a.RequireAuth(http.HandlerFunc(h.ClearNotifications)))
 
-	if h.Dev {
-		mux.Handle("POST /api/dev/jobs/{id}/simulate-accept", emp(h.SimulateAccept))
-		mux.Handle("POST /api/dev/jobs/{id}/simulate-timeout", emp(h.SimulateTimeout))
-	}
 }
 
 func (h *Handler) assignmentID(w http.ResponseWriter, r *http.Request) (*store.User, int64, bool) {
@@ -85,16 +83,13 @@ func (h *Handler) ApplicantTransit(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "status must be en_route or arrived")
 		return
 	}
-	if err := h.Store.UpdateApplicantTransit(r.Context(), id, u.ID, req.Status); err != nil {
+	verb, title, kind := "is on the way", "Crew is on the way", "transit"
+	if req.Status == "arrived" {
+		verb, title, kind = "has arrived", "Crew has arrived", "arrived"
+	}
+	if err := h.Store.UpdateApplicantTransit(r.Context(), id, u.ID, req.Status, title, u.Name+" "+verb+".", kind); err != nil {
 		h.fail(w, err)
 		return
-	}
-	verb, kind := "is on the way", "transit"
-	if req.Status == "arrived" {
-		verb, kind = "has arrived", "arrived"
-	}
-	if err := h.Store.NotifyJobEmployer(r.Context(), id, "Crew update", u.Name+" "+verb+".", kind); err != nil {
-		log.Printf("notification: %v", err)
 	}
 	httpx.JSON(w, http.StatusOK, map[string]bool{"updated": true})
 }
@@ -259,6 +254,21 @@ func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 		out = append(out, d)
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"jobs": out})
+}
+
+func (h *Handler) ApplicantJob(w http.ResponseWriter, r *http.Request) {
+	u, _ := auth.UserFrom(r.Context())
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id < 1 {
+		httpx.Error(w, http.StatusNotFound, "job not found")
+		return
+	}
+	j, err := h.Store.ApplicantJob(r.Context(), u.ID, id)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"job": h.toDTO(j)})
 }
 
 func (h *Handler) ApplicantAccept(w http.ResponseWriter, r *http.Request) {
@@ -652,7 +662,20 @@ func (h *Handler) Matches(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"matches": matches})
 }
 
-// POST /api/jobs/{id}/pay  body: {"method":"gcash"}  → opens a search window
+// POST /api/jobs/{id}/search opens a crew search after its fee has been recorded.
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	u, id, ok := h.ids(w, r)
+	if !ok {
+		return
+	}
+	if err := h.Store.StartSearch(r.Context(), u.ID, id, h.SearchWindow); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.writeJob(w, r, http.StatusOK, u.ID, id)
+}
+
+// POST /api/jobs/{id}/pay body: {"method":"gcash"} records the search fee before crew are notified.
 // MOCK PAYMENT. Never send card numbers/CVV to this server; real payments should use a
 // provider's hosted checkout or tokens (PayMongo, Xendit, Maya) and confirm via webhook.
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
@@ -661,20 +684,45 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Method string `json:"method"`
+		Method  string `json:"method"`
+		Details string `json:"details"`
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
 	}
-	if req.Method != "gcash" && req.Method != "maya" && req.Method != "card" {
-		httpx.Error(w, http.StatusBadRequest, "method must be gcash, maya or card")
+	if req.Method != "cash" && req.Method != "gcash" && req.Method != "maya" && req.Method != "card" {
+		httpx.Error(w, http.StatusBadRequest, "method must be cash, gcash, maya or card")
 		return
+	}
+	req.Details = strings.TrimSpace(req.Details)
+	if len(req.Details) > 120 {
+		httpx.Error(w, http.StatusBadRequest, "payment details must be 120 characters or fewer")
+		return
+	}
+	if (req.Method == "gcash" || req.Method == "maya") && req.Details == "" {
+		httpx.Error(w, http.StatusBadRequest, "enter the mobile number for the selected wallet")
+		return
+	}
+	if req.Method == "gcash" || req.Method == "maya" {
+		digits := 0
+		for _, ch := range req.Details {
+			if unicode.IsDigit(ch) {
+				digits++
+			} else if !strings.ContainsRune("+ -()", ch) {
+				httpx.Error(w, http.StatusBadRequest, "enter a valid wallet mobile number")
+				return
+			}
+		}
+		if digits < 10 || digits > 13 {
+			httpx.Error(w, http.StatusBadRequest, "enter a valid wallet mobile number")
+			return
+		}
 	}
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	ref := "mock_" + hex.EncodeToString(b)
 
-	if err := h.Store.StartSearch(r.Context(), u.ID, id, req.Method, h.MatchFeeCentavos, ref, h.SearchWindow); err != nil {
+	if err := h.Store.RecordMatchFee(r.Context(), u.ID, id, req.Method, req.Details, h.MatchFeeCentavos, ref); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -734,40 +782,6 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Store.CancelJob(r.Context(), u.ID, id); err != nil {
-		h.fail(w, err)
-		return
-	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
-}
-
-// POST /api/dev/jobs/{id}/simulate-accept  (ENV=dev only; replaces the "Simulate Crew Acceptance" button)
-func (h *Handler) SimulateAccept(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
-	if !ok {
-		return
-	}
-	if _, err := h.Store.GetJob(r.Context(), u.ID, id); err != nil { // ownership check
-		h.fail(w, err)
-		return
-	}
-	crew, err := h.Store.UserByEmailRole(r.Context(), "crew@instantcrew.com", "applicant")
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	if err := h.Store.AcceptJob(r.Context(), id, crew.ID); err != nil {
-		h.fail(w, err)
-		return
-	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
-}
-
-func (h *Handler) SimulateTimeout(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
-	if !ok {
-		return
-	}
-	if err := h.Store.SimulateSearchTimeout(r.Context(), u.ID, id); err != nil {
 		h.fail(w, err)
 		return
 	}

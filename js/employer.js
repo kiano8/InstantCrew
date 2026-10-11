@@ -51,9 +51,13 @@ const state = {
   count: 1,
   currentJobId: null,
   currentBooking: null,
+  acceptanceHandled: false,
   matchCheckInterval: null,
   paid: false,
   paymentMethod: 'GCash',
+  selectedPaymentMethod: 'gcash',
+  selectedPaymentDetails: '',
+  paymentStep: 'payment',
   paymentAmount: 0,
   pendingPayment: null,
   searchCountdown: 180,
@@ -123,9 +127,9 @@ const matchResults = document.getElementById('matchResults');
 const matchedCrewCount = document.getElementById('matchedCrewCount');
 const matchedCrewMessage = document.getElementById('matchedCrewMessage');
 const matchedCrewList = document.getElementById('matchedCrewList');
+const cancelCrewSearchBtn = document.getElementById('cancelCrewSearchBtn');
 const rateAmount = document.getElementById('rateAmount');
 const confirmBooking = document.getElementById('confirmBooking');
-const simulateAcceptBtn = document.getElementById('simulateAcceptBtn');
 const resultsHeading = document.getElementById('resultsHeading');
 const resultsAcceptedNote = document.getElementById('resultsAcceptedNote');
 
@@ -178,11 +182,27 @@ const matchEscrowText = document.getElementById('matchEscrowText');
 const resultsPaidBadge = document.getElementById('resultsPaidBadge');
 const dPayment = document.getElementById('dPayment');
 
+// Register the primary search button alongside DOM setup so later optional UI
+// initialization cannot leave Find a Crew without its required payment modal.
+if (toStep4Btn) {
+  toStep4Btn.addEventListener('click', (event) => {
+    event.preventDefault();
+    try {
+      openPaymentModal('search');
+    } catch (error) {
+      console.error('Could not prepare the search-fee modal:', error);
+      if (paymentModal) {
+        paymentModal.classList.add('open');
+        paymentModal.setAttribute('aria-hidden', 'false');
+      }
+    }
+  });
+}
+
 // Step 4 Matching refs
 const dbSearchTimerBox = document.getElementById('dbSearchTimerBox');
 const dbTryTimer = document.getElementById('dbTryTimer');
 const dbSearchProgressFill = document.getElementById('dbSearchProgressFill');
-const simulateTimeoutBtn = document.getElementById('simulateTimeoutBtn');
 const matchFailed = document.getElementById('matchFailed');
 const repayMatchFeeBtn = document.getElementById('repayMatchFeeBtn');
 const editShiftFromFailedBtn = document.getElementById('editShiftFromFailedBtn');
@@ -1255,7 +1275,23 @@ if (btnPlus) {
 
 /* ─── Shift Payment & Escrow Modal Handlers ───────────────── */
 
-function openPaymentModal() {
+function openPaymentModal(step = 'payment') {
+  if (!paymentModal) {
+    console.error('Payment modal element #paymentModal is missing from employer.html.');
+    return false;
+  }
+
+  // Reveal first so an unrelated summary formatting issue cannot swallow the
+  // Find a Crew click without showing the required payment step.
+  paymentModal.classList.add('open');
+  paymentModal.setAttribute('aria-hidden', 'false');
+  state.paymentStep = step;
+  const title = document.getElementById('paymentModalTitle');
+  const subtitle = document.getElementById('paymentModalSubtitle');
+  if (title) title.textContent = step === 'search' ? 'Pay Search Fee' : 'Confirm Your Crew Match';
+  if (subtitle) subtitle.textContent = step === 'search'
+    ? 'Pay the fixed ₱100 search fee to start crew search. If no one accepts in 3 minutes, a new search requires another fee.'
+    : 'Your matched crew accepted the offer. Confirm the fixed ₱100 fee to complete the booking.';
   const rateVal = Number(state.offeredRate) || 85;
   const count = 1;
   state.count = 1;
@@ -1300,8 +1336,21 @@ function openPaymentModal() {
   };
 
   if (payNowBtnText) {
-    payNowBtnText.textContent = `Pay`;
+    payNowBtnText.textContent = step === 'search' ? 'Pay ₱100 & Find Crew' : 'Pay';
   }
+  let selectedMethodButton = null;
+  document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
+    const selected = btn.dataset.method === state.selectedPaymentMethod;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-checked', String(selected));
+    if (selected) selectedMethodButton = btn;
+  });
+  if (selectedMethodButton) selectedMethodButton.click();
+  const savedDetailInput = state.selectedPaymentMethod === 'gcash' ? document.getElementById('payGcashNumber')
+    : state.selectedPaymentMethod === 'maya' ? document.getElementById('payMayaNumber')
+      : state.selectedPaymentMethod === 'cash' ? document.getElementById('payCashNote') : null;
+  if (savedDetailInput && state.selectedPaymentDetails) savedDetailInput.value = state.selectedPaymentDetails;
+  if (payCancelBtn) payCancelBtn.textContent = 'Back to Shift Details';
   if (paymentError) {
     paymentError.textContent = '';
     paymentError.style.display = 'none';
@@ -1312,11 +1361,24 @@ function openPaymentModal() {
   }
 
   if (paymentModal) {
-    paymentModal.classList.add('open');
-    paymentModal.setAttribute('aria-hidden', 'false');
     const payBody = document.getElementById('paymentModalBody');
     if (payBody) payBody.scrollTop = 0;
   }
+  return true;
+}
+
+function loadEmployerPaymentPreference() {
+  const preference = getSession()?.paymentPreference;
+  if (!preference || !['cash', 'gcash', 'maya', 'card'].includes(preference.method)) return;
+  state.selectedPaymentMethod = preference.method;
+  state.selectedPaymentDetails = preference.details || '';
+}
+
+function persistEmployerPaymentPreference(method, details) {
+  const employerSession = getSession();
+  if (!employerSession || employerSession.isGuest) return;
+  employerSession.paymentPreference = { method, details };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(employerSession));
 }
 
 function closePaymentModal() {
@@ -1337,13 +1399,20 @@ document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
     btn.setAttribute('aria-checked', 'true');
 
     const method = btn.getAttribute('data-method');
+    const cashWrap = document.getElementById('payMethodCashWrap');
     const gcashWrap = document.getElementById('payMethodGcashWrap');
     const mayaWrap = document.getElementById('payMethodMayaWrap');
     const cardWrap = document.getElementById('payMethodCardWrap');
 
+    if (cashWrap) cashWrap.style.display = method === 'cash' ? 'block' : 'none';
     if (gcashWrap) gcashWrap.style.display = method === 'gcash' ? 'block' : 'none';
     if (mayaWrap) mayaWrap.style.display = method === 'maya' ? 'block' : 'none';
     if (cardWrap) cardWrap.style.display = method === 'card' ? 'block' : 'none';
+
+    const gcashNumber = document.getElementById('payGcashNumber');
+    const mayaNumber = document.getElementById('payMayaNumber');
+    if (gcashNumber) gcashNumber.required = method === 'gcash';
+    if (mayaNumber) mayaNumber.required = method === 'maya';
   });
 });
 
@@ -1355,21 +1424,6 @@ if (paymentModal) {
   });
 }
 
-// Quick chip clicks
-const chipGcashDefault = document.getElementById('chipGcashDefault');
-if (chipGcashDefault) {
-  chipGcashDefault.addEventListener('click', () => {
-    const inp = document.getElementById('payGcashNumber');
-    if (inp) inp.value = '917 555 0199';
-  });
-}
-const chipMayaDefault = document.getElementById('chipMayaDefault');
-if (chipMayaDefault) {
-  chipMayaDefault.addEventListener('click', () => {
-    const inp = document.getElementById('payMayaNumber');
-    if (inp) inp.value = '918 777 2233';
-  });
-}
 // Toggle Card Number eye visibility
 const toggleCardNumBtn = document.getElementById('toggleCardNumBtn');
 const payCardNumber = document.getElementById('payCardNumber');
@@ -1431,34 +1485,65 @@ if (toggleCardCvcBtn && payCardCvc) {
   });
 }
 
-// ── Step 3 "Find a Crew" -> Checks Auth First, then Triggers Payment! ──
-toStep4Btn.addEventListener('click', () => {
-  const currentSession = getSession();
-  if (!currentSession) {
-    authTriggerSource = 'step';
-    openEmployerAuthModal();
-    return;
-  }
-
-
-  // Logged in: proceed directly to payment and finding crew
-  requireLogin(openPaymentModal);
-});
-
-// ── Pay Now -> Process Payment, Then Find Matching Crew ──
+// ── Record the search fee before sending crew offers ──
 if (payNowBtn) {
   payNowBtn.addEventListener('click', async () => {
-    const payInfo = state.pendingPayment || { total: 100 };
     const methodTab = document.querySelector('.db-pay-method-btn.active');
     const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
-    const methodLabels = { gcash: 'GCash', maya: 'Maya', card: 'Card' };
+    const methodLabels = { cash: 'Cash', gcash: 'GCash', maya: 'Maya', card: 'Card' };
     const methodLabel = methodLabels[method] || 'GCash';
+    const detailInput = method === 'gcash' ? document.getElementById('payGcashNumber')
+      : method === 'maya' ? document.getElementById('payMayaNumber')
+        : method === 'cash' ? document.getElementById('payCashNote') : null;
+    const details = detailInput ? detailInput.value.trim() : '';
+    if ((method === 'gcash' || method === 'maya') && (details.replace(/\D/g, '').length < 10 || details.replace(/\D/g, '').length > 13)) {
+      if (paymentError) {
+        paymentError.textContent = 'Enter a valid mobile number for the selected wallet.';
+        paymentError.style.display = 'block';
+      }
+      if (detailInput) detailInput.focus();
+      return;
+    }
+
+    state.selectedPaymentMethod = method;
+    state.selectedPaymentDetails = details;
+    if (state.paymentStep === 'search') {
+      const beginSearch = async () => {
+        state.selectedPaymentMethod = method;
+        state.selectedPaymentDetails = details;
+        persistEmployerPaymentPreference(method, details);
+        if (payNowBtn) payNowBtn.disabled = true;
+        if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Processing fee…';
+        try {
+          await startCrewSearch();
+        } catch (err) {
+          openPaymentModal('search');
+          if (paymentError) {
+            paymentError.textContent = err.message || 'Could not start the crew search. Please try again.';
+            paymentError.style.display = 'block';
+          }
+        } finally {
+          if (payNowBtn) payNowBtn.disabled = false;
+          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Pay ₱100 & Find Crew';
+        }
+      };
+      if (authUser) {
+        beginSearch();
+      } else {
+        closePaymentModal();
+        requireLogin(() => {
+          openPaymentModal('search');
+          beginSearch();
+        });
+      }
+      return;
+    }
 
     payNowBtn.disabled = true;
-    if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Starting crew search…';
+    if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Recording payment…';
     if (paymentError) paymentError.style.display = 'none';
     try {
-      await executeFindCrewAfterPayment(payInfo, methodLabel);
+      await recordSearchFee(methodLabel, details);
     } catch (err) {
       if (paymentError) {
         paymentError.textContent = err.message || 'Could not start the crew search. Please try again.';
@@ -1470,13 +1555,11 @@ if (payNowBtn) {
   });
 }
 
-async function executeFindCrewAfterPayment(payInfo, methodLabel) {
-  state.paymentMethod = methodLabel;
-  state.paymentAmount = payInfo.total;
+async function startCrewSearch() {
 
-  const timingText = payInfo.timingText || (state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
-  const finalMapLoc = payInfo.finalMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
-  const finalMapsUrl = payInfo.finalMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
+  const timingText = state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
+  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapsUrl = (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
 
   const timingMode = state.timing === 'later' ? 'later' : 'now';
   let scheduledAt = '';
@@ -1490,18 +1573,17 @@ async function executeFindCrewAfterPayment(payInfo, methodLabel) {
   const reusingUnfulfilledJob = state.currentJobId && (reusableStatus === 'draft' || reusableStatus === 'unfulfilled');
   // The Go API derives maps_url from map_location/coordinates; sending maps_url
   // here is rejected by its strict request decoder as an unknown JSON field.
-  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: Number(state.count) || 1 };
+  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: 1 };
   const createResponse = await fetch(reusingUnfulfilledJob ? `/api/jobs/${state.currentJobId}` : '/api/jobs', { method: reusingUnfulfilledJob ? 'PUT' : 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(jobPayload) });
   const createData = await createResponse.json().catch(() => ({}));
   if (!createResponse.ok) throw new Error(createData.error || 'Could not create the shift. Please try again.');
   const jobId = createData.job.id;
   state.currentJobId = jobId;
   state.currentBooking = { id: jobId, status: createData.job.status || 'draft' };
-  const paymentResponse = await fetch(`/api/jobs/${jobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: String(methodLabel).toLowerCase() === 'gcash' ? 'gcash' : String(methodLabel).toLowerCase() === 'maya' ? 'maya' : 'card' }) });
-  const paymentData = await paymentResponse.json().catch(() => ({}));
-  if (!paymentResponse.ok) throw new Error(paymentData.error || 'Payment could not be recorded.');
-  state.paid = true;
-  closePaymentModal();
+  await recordSearchFee(state.selectedPaymentMethod, state.selectedPaymentDetails);
+  const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
+  const searchData = await searchResponse.json().catch(() => ({}));
+  if (!searchResponse.ok) throw new Error(searchData.error || 'Could not start the crew search.');
   const bookingId = jobId;
   const bookingData = {
     id: bookingId,
@@ -1515,27 +1597,27 @@ async function executeFindCrewAfterPayment(payInfo, methodLabel) {
     googleMapsUrl: finalMapsUrl,
     geo: state.geo ? { lat: state.geo.lat, lng: state.geo.lng } : null,
     timing: timingText,
-    count: state.count,
+    count: 1,
     crewRate: `₱${state.offeredRate}`,
     status: 'matching', // Waiting for crew acceptance
+    seconds_remaining: Number(searchData.job?.seconds_remaining ?? SEARCH_MAX_SECONDS),
     bookedAt: new Date().toISOString(),
     paid: true,
-    paymentMethod: methodLabel,
-    paymentAmount: payInfo.total || 100,
-    escrowStatus: 'Fixed Match Fee Paid (₱100.00)'
+    paymentMethod: state.paymentMethod,
+    paymentAmount: state.paymentAmount,
+    escrowStatus: 'Search fee paid before crew search'
   };
 
   state.currentBooking = bookingData;
+  state.acceptanceHandled = false;
   saveBookingToSession(bookingData);
 
   state.currentJobId = jobId;
 
-  // Show escrow status in Step 4 matching pane
+  // The fee is recorded before this search begins.
   if (matchEscrowPill) {
     matchEscrowPill.style.display = 'inline-flex';
-    if (matchEscrowText) {
-      matchEscrowText.textContent = `₱${(payInfo.total || 100).toFixed(2)} via ${methodLabel}`;
-    }
+    if (matchEscrowText) matchEscrowText.textContent = 'Search fee paid before crew search';
   }
 
   if (matchFailed) matchFailed.style.display = 'none';
@@ -1555,6 +1637,23 @@ async function executeFindCrewAfterPayment(payInfo, methodLabel) {
   if (matchedCrewMessage) matchedCrewMessage.textContent = 'Checking the database for available crew…';
   if (matchedCrewList) matchedCrewList.replaceChildren();
   startCheckingForAcceptance();
+}
+
+async function recordSearchFee(methodLabel, details = '') {
+  const method = String(methodLabel).toLowerCase();
+  const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: ['cash', 'gcash', 'maya'].includes(method) ? method : 'card', details }) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Payment could not be recorded.');
+  state.paymentMethod = methodLabel;
+  state.paymentAmount = (state.pendingPayment && state.pendingPayment.total) || 100;
+  state.paid = true;
+  if (resultsPaidBadge) resultsPaidBadge.textContent = `✓ Search Fee Paid (₱${state.paymentAmount.toFixed(2)})`;
+  closePaymentModal();
+  if (state.currentBooking) {
+    state.currentBooking.paid = true;
+    state.currentBooking.paymentMethod = methodLabel;
+    state.currentBooking.paymentAmount = state.paymentAmount;
+  }
 }
 
 /* ─── Step 4: Crew Results & 3-Minute Search Window ─────────── */
@@ -1582,14 +1681,15 @@ function updateSearchTimerUI() {
 
 function startSearchTimer() {
   stopSearchTimer();
-  state.searchCountdown = SEARCH_MAX_SECONDS;
+  state.searchCountdown = Number(state.currentBooking?.seconds_remaining ?? SEARCH_MAX_SECONDS);
   updateSearchTimerUI();
   state.searchTimerInterval = setInterval(() => {
-    state.searchCountdown--;
+    state.searchCountdown = Math.max(0, state.searchCountdown - 1);
     updateSearchTimerUI();
     if (state.searchCountdown <= 0) {
-      stopSearchTimer();
-      handleSearchTimeout();
+      // The API owns expiry. Refresh the job so acceptance and timeout are
+      // resolved from persisted state, even after a paused/backgrounded tab.
+      checkCrewAcceptance();
     }
   }, 1000);
 }
@@ -1611,36 +1711,22 @@ function handleSearchTimeout() {
   if (matchLoading) matchLoading.style.display = 'none';
   if (matchFailed) matchFailed.style.display = 'block';
 
-  state.paid = false; // Payment consumed
-
   // Update session
   const s = getSession();
   if (s && s.bookings) {
     const b = s.bookings.find(x => String(x.id) === String(state.currentBooking ? state.currentBooking.id : ''));
     if (b) {
       b.status = 'unfulfilled';
-      b.paid = false;
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
     }
   }
   if (state.currentBooking) state.currentBooking.status = 'unfulfilled';
 }
 
-// Demo simulate timeout button handler (triggers 3-min timeout)
-if (simulateTimeoutBtn) {
-  simulateTimeoutBtn.addEventListener('click', () => {
-    if (!state.currentJobId) return;
-    fetch(`/api/dev/jobs/${state.currentJobId}/simulate-timeout`, { method: 'POST', credentials: 'same-origin' }).then(async r => {
-      if (!r.ok) { const d=await r.json().catch(()=>({})); throw new Error(d.error || 'Could not simulate timeout.'); }
-      handleSearchTimeout();
-    }).catch(e => showEmployerAuthError(e.message));
-  });
-}
-
 // Repay match fee button handler (when 3-minute search expires)
 if (repayMatchFeeBtn) {
   repayMatchFeeBtn.addEventListener('click', () => {
-    openPaymentModal();
+    openPaymentModal('search');
   });
 }
 
@@ -1659,14 +1745,21 @@ async function checkCrewAcceptance() {
     if (!response.ok) return;
     refreshMatchedCrew();
     const { job } = await response.json();
-    const crew = (job.crew || []).map(c => c.name);
-    if (job.accepted_count > 0 || crew.length > 0) onCrewAccepted({ ...job, acceptedCrew: crew, role: job.role_label });
+    const activeCrew = (job.crew || []).filter(member => !member.ended_at);
+    const crew = activeCrew.map(member => member.name);
+    if (activeCrew.length > 0 && !state.acceptanceHandled) {
+      onCrewAccepted({ ...job, acceptedCrew: crew, role: job.role_label });
+    } else if (job.status === 'unfulfilled' && state.currentBooking?.status !== 'unfulfilled') {
+      handleSearchTimeout();
+    } else if (job.status === 'matching' && Number.isFinite(job.seconds_remaining)) {
+      state.searchCountdown = Math.max(0, job.seconds_remaining);
+      updateSearchTimerUI();
+    }
   } catch (_) { /* the next poll retries */ }
 }
 
 let matchedCrewFetchedAt = 0;
 let matchedCrewFetchPending = false;
-
 function refreshMatchedCrew(force = false) {
   if (!state.currentJobId || !matchedCrewList || matchedCrewFetchPending) return;
   if (!force && Date.now() - matchedCrewFetchedAt < 5000) return;
@@ -1681,7 +1774,7 @@ function refreshMatchedCrew(force = false) {
       if (matchedCrewCount) matchedCrewCount.textContent = String(matches.length);
       if (matchedCrewMessage) {
         matchedCrewMessage.textContent = matches.length
-          ? 'These active crew members match your shift and have been notified. Waiting for someone to accept.'
+          ? 'Crew match found. Your offer is waiting for an acceptance.'
           : 'No active crew match yet. The database search will keep checking until the search window expires.';
       }
       matches.forEach(candidate => {
@@ -1719,7 +1812,7 @@ function startCheckingForAcceptance() {
     state.matchCheckInterval = null;
   }
   checkCrewAcceptance();
-  state.matchCheckInterval = setInterval(checkCrewAcceptance, 600);
+  state.matchCheckInterval = setInterval(checkCrewAcceptance, 1000);
 }
 
 function onCrewAccepted(job) {
@@ -1731,13 +1824,14 @@ function onCrewAccepted(job) {
     state.matchCheckInterval = null;
   }
 
-  if (matchResults.style.display === 'block') return; // already rendered
-
-  matchLoading.style.display = 'none';
-  matchResults.style.display = 'block';
-
   const acceptedCrew = job.acceptedCrew || [];
-  renderCrewResults(acceptedCrew, job);
+  if (!state.acceptanceHandled) {
+    state.acceptanceHandled = true;
+    matchLoading.style.display = 'none';
+    matchResults.style.display = 'block';
+    renderCrewResults(acceptedCrew, job);
+    if (resultsPaidBadge) resultsPaidBadge.textContent = '✓ Search Fee Paid (₱100.00)';
+  }
 
   const firstWorker = acceptedCrew[0] || 'A crew member';
   if (resultsAcceptedNote) {
@@ -1759,14 +1853,6 @@ function onCrewAccepted(job) {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
     }
   }
-}
-
-// Demo simulation button
-if (simulateAcceptBtn) {
-  simulateAcceptBtn.addEventListener('click', () => {
-    if (!state.currentJobId || !window.InstantCrewShared) return;
-    fetch(`/api/dev/jobs/${state.currentJobId}/simulate-accept`, { method: 'POST', credentials: 'same-origin' }).then(checkCrewAcceptance);
-  });
 }
 
 function renderCrewResults(acceptedCrew = [], job = null) {
@@ -1832,7 +1918,7 @@ confirmBooking.addEventListener('click', async () => {
   document.getElementById('dRate').textContent = `₱${state.offeredRate} ${state.ratePeriod}`;
   if (dPayment) {
     const paidTotal = state.paymentAmount ? `₱${state.paymentAmount.toFixed(2)}` : '₱100.00';
-    dPayment.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Match Fee Paid</span> (${paidTotal} via ${state.paymentMethod || 'GCash'})`;
+    dPayment.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Search Fee Paid</span> (${paidTotal} via ${state.paymentMethod || 'GCash'})`;
   }
 
   // Finalize booking in session to active
@@ -1889,7 +1975,7 @@ bookAnother.addEventListener('click', () => {
   state.currentBooking = null;
   state.paid = false;
   state.pendingPayment = null;
-  state.paymentMethod = 'GCash';
+  state.paymentMethod = 'Cash';
   stopSearchTimer();
   if (matchFailed) matchFailed.style.display = 'none';
   if (state.matchCheckInterval) {
@@ -1976,7 +2062,12 @@ const SESSION_KEY = 'ic_employer_session';
 
 function getSession() {
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    if (session && !session.isGuest && (!session.expiresAt || session.expiresAt <= Date.now())) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return session;
   } catch {
     return null;
   }
@@ -2237,119 +2328,9 @@ function switchBookingTab(tab) {
 if (tabActiveBtn) tabActiveBtn.addEventListener('click', () => switchBookingTab('active'));
 if (tabPreviousBtn) tabPreviousBtn.addEventListener('click', () => switchBookingTab('previous'));
 
-/* ── Sync Bookings With Shared Contracts / Jobs State ──── */
-function syncBookingsWithSharedState() {
-  const s = getSession();
-  if (!s) return;
-  if (!s.bookings) s.bookings = [];
-
-  if (!window.InstantCrewShared) {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
-    return;
-  }
-
-  const contracts = window.InstantCrewShared.getActiveContracts();
-  const jobs = window.InstantCrewShared.getJobs();
-  let changed = false;
-
-  // 2. Import contracts from window.InstantCrewShared into s.bookings so active and ended crew appear in employer profile
-  contracts.forEach(c => {
-    // Find matching booking in s.bookings
-    const existing = s.bookings.find(b =>
-      String(b.id) === String(c.id) ||
-      String(b.id) === String(c.bookingRefId) ||
-      String(b.id) === String(c.jobId) ||
-      (c.jobId && String(b.id) === 'emp-shift-' + c.id) ||
-      (b.contractId && String(b.contractId) === String(c.id))
-    );
-
-    if (!existing) {
-      // Add contract as a booking in employer session
-      s.bookings.unshift({
-        id: c.bookingRefId || c.id,
-        jobId: c.jobId || null,
-        contractId: c.id,
-        category: c.category || 'kitchen',
-        role: c.role || c.title || 'Crew Member',
-        roleLabel: (c.title || c.role || 'Crew Member').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim(),
-        employmentType: c.employmentType || 'full-time',
-        location: c.venue || 'On-site Location',
-        mapLocation: c.mapLocation || c.location || c.venue || 'Cebu City',
-        googleMapsUrl: c.googleMapsUrl || null,
-        timing: c.timing || 'Contract In Progress',
-        count: 1,
-        crewRate: c.rate || '₱85',
-        status: c.status === 'active' ? 'active' : 'completed',
-        transitStatus: c.transitStatus || null,
-        departedAt: c.departedAt || null,
-        arrivedAt: c.arrivedAt || null,
-        workerName: c.workerName || 'kianberong2005',
-        acceptedCrew: [c.workerName || 'kianberong2005'],
-        bookedAt: c.startedAt || 'Today'
-      });
-      changed = true;
-    } else {
-      // Update existing booking from contract state
-      if (c.status === 'ended' && existing.status !== 'completed') {
-        existing.status = 'completed';
-        existing.endedBy = c.endedBy || 'worker';
-        changed = true;
-      } else if (c.status === 'active' && existing.status !== 'active') {
-        existing.status = 'active';
-        changed = true;
-      }
-      if (c.workerName && (!existing.acceptedCrew || !existing.acceptedCrew.includes(c.workerName))) {
-        existing.acceptedCrew = [c.workerName];
-        existing.workerName = c.workerName;
-        changed = true;
-      }
-      if (existing.transitStatus !== c.transitStatus || existing.departedAt !== c.departedAt || existing.arrivedAt !== c.arrivedAt) {
-        existing.transitStatus = c.transitStatus;
-        existing.departedAt = c.departedAt;
-        existing.arrivedAt = c.arrivedAt;
-        changed = true;
-      }
-    }
-  });
-
-  // 3. Ensure state.currentBooking from active dashboard is in s.bookings
-  if (typeof state !== 'undefined' && state && state.currentBooking) {
-    const hasCurrent = s.bookings.some(b => String(b.id) === String(state.currentBooking.id));
-    if (!hasCurrent) {
-      s.bookings.unshift(state.currentBooking);
-      changed = true;
-    }
-  }
-
-  // 4. Sync jobs pool updates
-  s.bookings.forEach(b => {
-    const job = jobs.find(j =>
-      String(j.id) === String(b.id) ||
-      String(j.bookingRefId) === String(b.id) ||
-      (j.id === 'emp-shift-' + b.id)
-    );
-    if (job) {
-      if (job.contractStatus === 'ended' && b.status !== 'completed') {
-        b.status = 'completed';
-        changed = true;
-      }
-      if (job.acceptedCrew && job.acceptedCrew.length > 0 && (!b.acceptedCrew || b.acceptedCrew.length === 0)) {
-        b.acceptedCrew = job.acceptedCrew;
-        b.workerName = job.acceptedCrew[0];
-        if (b.status === 'matching') b.status = 'active';
-        changed = true;
-      }
-      if (job.transitStatus && (b.transitStatus !== job.transitStatus || b.departedAt !== job.departedAt || b.arrivedAt !== job.arrivedAt)) {
-        b.transitStatus = job.transitStatus;
-        b.departedAt = job.departedAt;
-        b.arrivedAt = job.arrivedAt;
-        changed = true;
-      }
-    }
-  });
-
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
-}
+/* Employer panel cards are populated only from the authenticated jobs API. */
+let employerBookingsFromServer = [];
+let employerBookingsOwnerId = null;
 
 /* ── Render Bookings List ──────────────────────────────── */
 
@@ -2360,6 +2341,12 @@ let employerBookingsFetchPending = false;
 function refreshEmployerBookings(force = false) {
   const current = getSession();
   if (!current || current.isGuest) return;
+  if (employerBookingsOwnerId !== current.id) {
+    employerBookingsOwnerId = current.id;
+    employerBookingsFromServer = [];
+    employerBookingsFetchedAt = 0;
+    lastEmployerBookingsSig = null;
+  }
   const now = Date.now();
   if (employerBookingsFetchPending || (!force && now - employerBookingsFetchedAt < 2500)) return;
   employerBookingsFetchPending = true;
@@ -2367,15 +2354,21 @@ function refreshEmployerBookings(force = false) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not load your shifts.');
     const s = getSession();
-    if (!s) return;
-    s.bookings = (data.jobs || []).map(j => ({
+    if (!s || s.isGuest || String(s.id) !== String(current.id)) return;
+    employerBookingsOwnerId = current.id;
+    employerBookingsFromServer = (data.jobs || []).map(j => ({
       id: j.id, jobId: j.id, category: j.category, role: j.role,
       roleLabel: j.role_label, employmentType: j.employment_type, location: j.city,
-      mapLocation: j.map_location, googleMapsUrl: j.maps_url, timing: j.scheduled_at || j.timing,
-      count: j.crew_needed, acceptedCrew: (j.crew || []).map(c => c.name),
+      venue: j.venue, mapLocation: j.map_location, googleMapsUrl: j.maps_url,
+      timing: j.scheduled_at || j.timing, count: j.crew_needed,
+      acceptedCrew: (j.crew || []).map(c => c.name),
+      workerName: (j.crew || []).find(c => !c.ended_at)?.name || '',
       transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || '',
       crewRate: `₱${j.rate}`, status: j.status, bookedAt: j.created_at
     }));
+    // Keep session mirrors fresh for the booking summary, but never use them to
+    // populate the employer cards; those must reflect API/database records only.
+    s.bookings = employerBookingsFromServer;
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
     employerBookingsFetchedAt = Date.now();
     renderBookings(true);
@@ -2383,10 +2376,13 @@ function refreshEmployerBookings(force = false) {
 }
 
 function renderBookings(force = false) {
+  const current = getSession();
+  if (!current || current.isGuest) {
+    employerBookingsFromServer = [];
+    employerBookingsOwnerId = null;
+  }
   refreshEmployerBookings();
-  syncBookingsWithSharedState();
-  const s = getSession();
-  const bookings = (s && s.bookings) ? s.bookings : [];
+  const bookings = employerBookingsFromServer;
 
   const active = bookings.filter(b => b.status === 'active' || b.status === 'matching' || b.status === 'accepted');
   const previous = bookings.filter(b => b.status === 'completed' || b.status === 'ended');
@@ -2424,6 +2420,7 @@ function renderBookings(force = false) {
 
 function buildBookingItem(b) {
   const item = document.createElement('div');
+  item.id = `employerBooking-${b.id}`;
   const isEnded = b.status === 'completed' || b.status === 'ended';
   const isBookingActive = b.status === 'active' || b.status === 'matching' || b.status === 'accepted';
   item.className = `db-booking-item app-job-card ${isEnded ? 'ended' : ''}`;
@@ -2439,6 +2436,8 @@ function buildBookingItem(b) {
   let statusBadgeHtml = '';
   if (isEnded) {
     statusBadgeHtml = `<span class="app-job-status-badge ended">Ended</span>`;
+  } else if (b.status === 'accepted') {
+    statusBadgeHtml = `<span class="app-job-status-badge active"><span class="dot"></span>CREW ACCEPTED</span>`;
   } else if (b.status === 'matching') {
     statusBadgeHtml = `<span class="app-job-status-badge matching"><span class="dot"></span>Matching</span>`;
   } else {
@@ -2449,6 +2448,10 @@ function buildBookingItem(b) {
     .replace(/\s*\((Full-Time|Part-Time)\)/gi, '')
     .trim()
     .toUpperCase();
+  const jobId = b.jobId || b.id;
+  const canEndJob = b.status === 'active';
+  const isSearching = b.status === 'matching';
+  const hasOffer = b.status === 'accepted';
 
   let displayLocation = '';
   if (b.location && !b.location.toLowerCase().includes('current venue')) {
@@ -2547,9 +2550,10 @@ function buildBookingItem(b) {
                     <span>Crew Preparing &bull; Awaiting Transit</span>
                 </span>
             </div>`))}
-            <button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${b.id}">
-                End Job
-            </button>
+            ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
+            ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
+            ${hasOffer ? `<button type="button" class="app-btn-end-contract-clean db-btn-review-offer" data-booking-id="${jobId}">Review Offer</button>` : ''}
+            ${!canEndJob && !isSearching && !hasOffer ? `<button type="button" class="app-btn-end-contract-clean db-btn-view-shift" data-booking-id="${jobId}">View Details</button>` : ''}
         </div>` : `
         <div class="app-job-card-footer ended-footer">
             <span class="app-ended-note">
@@ -2570,8 +2574,8 @@ function buildBookingItem(b) {
       openLocationDetailModal({
         ...b,
         title: roleTitle,
-        venue: venueName,
-        mapLocation: locationAddress,
+        venue: b.venue || b.location,
+        mapLocation: b.mapLocation || b.location,
         employmentType: empLabel,
         isAccepted: !isEnded
       });
@@ -2583,11 +2587,32 @@ function buildBookingItem(b) {
     endBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (confirm(`Conclude and end the contract for ${roleTitle}?`)) {
-        endEmployerBooking(b.id);
+        endEmployerBooking(jobId, endBtn);
       }
     });
   }
 
+  const cancelBtn = item.querySelector('.db-btn-cancel-search');
+  if (cancelBtn) cancelBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm('Cancel this crew search?')) cancelEmployerSearch(jobId, cancelBtn);
+  });
+  const reviewBtn = item.querySelector('.db-btn-review-offer');
+  if (reviewBtn) reviewBtn.addEventListener('click', e => { e.stopPropagation(); openEmployerJobNotification(jobId); });
+  const viewBtn = item.querySelector('.db-btn-view-shift');
+  if (viewBtn) viewBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openLocationDetailModal({ ...b, title: roleTitle, venue: b.venue || b.location, mapLocation: b.mapLocation || b.location });
+  });
+
+  item.tabIndex = 0;
+  item.setAttribute('role', 'button');
+  item.setAttribute('aria-label', `${roleTitle}, ${isEnded ? 'completed' : b.status || 'active'}. Open shift details.`);
+  const openCard = () => openEmployerJobNotification(jobId);
+  item.addEventListener('click', e => { if (!e.target.closest('button, a')) openCard(); });
+  item.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target === item) { e.preventDefault(); openCard(); }
+  });
   return item;
 }
 
@@ -2690,23 +2715,65 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* End booking / contract from employer side */
-async function endEmployerBooking(bookingId) {
+async function endEmployerBooking(bookingId, button) {
   const s = getSession();
-  if (!s || !s.bookings) return;
-  const booking = s.bookings.find(b => String(b.id) === String(bookingId) || (b.contractId && String(b.contractId) === String(bookingId)));
+  if (!s || !s.bookings || button?.disabled) return;
+  const booking = s.bookings.find(b => String(b.jobId || b.id) === String(bookingId) || (b.contractId && String(b.contractId) === String(bookingId)));
+  if (button) { button.disabled = true; button.textContent = 'Ending…'; }
   try {
-    const response = await fetch(`/api/jobs/${bookingId}/end`, { method: 'POST', credentials: 'same-origin' });
+    const response = await fetch(`/api/jobs/${encodeURIComponent(bookingId)}/end`, { method: 'POST', credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not end this booking.');
-  } catch (err) { showEmployerAuthError(err.message); return; }
-  if (booking) {
-    booking.status = 'completed';
-    booking.endedBy = 'employer';
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    if (booking) {
+      booking.status = data.job?.status || 'completed';
+      booking.endedAt = data.job?.updated_at || new Date().toISOString();
+      booking.endedBy = 'employer';
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    }
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Job Ended', `The ${booking ? (booking.roleLabel || booking.role || 'crew') : 'job'} was marked complete.`, 'end');
+    employerBookingsFetchedAt = 0;
+    renderBookings(true);
+    refreshEmployerBookings(true);
+  } catch (err) {
+    if (button) { button.disabled = false; button.textContent = 'End Job'; }
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not end job', err.message, 'alert');
+    else alert(err.message);
   }
-  if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Contract Ended', `Contract for ${booking ? (booking.roleLabel || booking.role) : 'crew'} concluded.`, 'end');
-  employerBookingsFetchedAt = 0;
-  renderBookings(true);
+}
+
+if (cancelCrewSearchBtn) cancelCrewSearchBtn.addEventListener('click', () => {
+  if (!state.currentJobId) return;
+  if (confirm('Cancel this crew search?')) cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+});
+
+async function cancelEmployerSearch(jobId, button, returnToStart = false) {
+  if (button?.disabled) return;
+  if (button) { button.disabled = true; button.textContent = 'Cancelling…'; }
+  try {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST', credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not cancel this crew search.');
+    if (returnToStart) {
+      stopSearchTimer();
+      if (state.matchCheckInterval) {
+        clearInterval(state.matchCheckInterval);
+        state.matchCheckInterval = null;
+      }
+      state.currentJobId = null;
+      state.currentBooking = null;
+      state.acceptanceHandled = false;
+      if (matchLoading) matchLoading.style.display = 'none';
+      if (matchResults) matchResults.style.display = 'none';
+      goStep(1);
+      if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Crew search cancelled', 'You can start a new search whenever you are ready.', 'info');
+    }
+    employerBookingsFetchedAt = 0;
+    refreshEmployerBookings(true);
+  } catch (err) {
+    if (button) { button.disabled = false; button.textContent = 'Cancel Search'; }
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not cancel search', err.message, 'alert');
+    else alert(err.message);
+  }
 }
 
 /* ── Save a booking to session when confirmed ─────────── */
@@ -2766,10 +2833,18 @@ if (headerBackArrow) {
 }
 
 if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true });
+  logoutBtn.addEventListener('click', async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }); } catch (_) { }
     sessionStorage.removeItem(SESSION_KEY);
-    window.location.href = 'index.html';
+    authUser = null;
+    employerBookingsFromServer = [];
+    employerBookingsOwnerId = null;
+    employerBookingsFetchedAt = 0;
+    lastEmployerBookingsSig = null;
+    employerNotifications = [];
+    if (typeof closeProfilePanel === 'function') closeProfilePanel();
+    updateAuthUI();
+    window.location.replace('index.html');
   });
 }
 
@@ -2783,22 +2858,210 @@ const notifDropdown = document.getElementById('notifDropdown');
 const notifList = document.getElementById('notifList');
 const clearNotifsBtn = document.getElementById('clearNotifsBtn');
 
-let lastEmployerNotifCount = 0;
 let employerNotifications = null;
 let employerNotificationsFetchedAt = 0;
 let employerNotificationsPending = false;
+let employerNotificationsLoaded = false;
+let employerNotificationOwnerId = null;
+let employerNotificationsBaselineSet = false;
+let lastEmployerNotificationId = 0;
+let employerSearchRestorePending = false;
+
+function notificationJobId(notification) {
+  try {
+    const payload = typeof notification.payload === 'string'
+      ? JSON.parse(notification.payload || '{}')
+      : (notification.payload || {});
+    return payload.job_id ? String(payload.job_id) : '';
+  } catch (_) { return ''; }
+}
+
+function employerJobToBooking(job) {
+  const crew = (job.crew || []).map(member => member.name);
+  const assignedCrew = (job.crew || []).find(member => !member.ended_at);
+  const scheduled = job.scheduled_at ? new Date(job.scheduled_at) : null;
+  const isLater = job.timing === 'later' && scheduled && !Number.isNaN(scheduled.getTime());
+  return {
+    id: job.id,
+    jobId: job.id,
+    category: job.category,
+    role: job.role,
+    roleLabel: job.role_label,
+    employmentType: job.employment_type,
+    offeredRate: String(job.rate),
+    ratePeriod: `per ${job.rate_period || 'hour'}`,
+    location: job.city,
+    mapLocation: job.map_location,
+    googleMapsUrl: job.maps_url,
+    geo: job.lat != null && job.lng != null ? { lat: job.lat, lng: job.lng, label: job.map_location, mapsUrl: job.maps_url } : null,
+    timing: isLater ? `${formatDateShort(scheduled)} at ${format12Hour(`${String(scheduled.getHours()).padStart(2, '0')}:${String(scheduled.getMinutes()).padStart(2, '0')}`)}` : 'ASAP NOW',
+    scheduledAt: job.scheduled_at || null,
+    count: job.crew_needed || 1,
+    crewRate: `₱${job.rate}`,
+    acceptedCrew: crew,
+    workerName: assignedCrew?.name || '',
+    transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[assignedCrew?.transit_status] || '',
+    status: job.status,
+    seconds_remaining: Number(job.seconds_remaining || 0),
+    paid: Number(job.search_attempts || 0) > 0,
+    paymentAmount: Number(job.match_fee || 100),
+    bookedAt: job.created_at || new Date().toISOString()
+  };
+}
+
+function loadEmployerJobIntoSearch(job) {
+  const booking = employerJobToBooking(job);
+  state.category = job.category;
+  state.role = job.role;
+  state.roleLabel = job.role_label;
+  state.employmentType = job.employment_type || 'full-time';
+  state.offeredRate = String(job.rate || 85);
+  state.ratePeriod = `per ${job.rate_period || 'hour'}`;
+  state.location = job.city || 'Cebu City';
+  state.mapLocation = job.map_location || '';
+  state.googleMapsUrl = job.maps_url || '';
+  state.geo = booking.geo;
+  state.timing = job.timing === 'later' ? 'later' : 'now';
+  if (booking.scheduledAt) {
+    const scheduled = new Date(booking.scheduledAt);
+    if (!Number.isNaN(scheduled.getTime())) {
+      state.scheduledDate = scheduled;
+      state.scheduledTime = `${String(scheduled.getHours()).padStart(2, '0')}:${String(scheduled.getMinutes()).padStart(2, '0')}`;
+    }
+  }
+  state.currentJobId = job.id;
+  state.currentBooking = booking;
+  state.paymentAmount = booking.paymentAmount;
+  state.paid = booking.paid;
+  state.acceptanceHandled = false;
+  saveBookingToSession(booking);
+  employerBookingsFetchedAt = 0;
+  renderBookings(true);
+}
+
+function showEmployerJob(job, { notifySearchResume = false } = {}) {
+  loadEmployerJobIntoSearch(job);
+  if (notifDropdown) notifDropdown.hidden = true;
+
+  if (job.status === 'matching') {
+    if (matchFailed) matchFailed.style.display = 'none';
+    if (matchResults) matchResults.style.display = 'none';
+    if (matchLoading) matchLoading.style.display = 'flex';
+    if (matchEscrowPill) matchEscrowPill.style.display = 'inline-flex';
+    if (matchEscrowText) matchEscrowText.textContent = 'Search fee paid before crew search';
+    if (matchedCrewCount) matchedCrewCount.textContent = '0';
+    if (matchedCrewList) matchedCrewList.replaceChildren();
+    goStep(4);
+    startSearchTimer();
+    startCheckingForAcceptance();
+    if (notifySearchResume && window.InstantCrewShared) {
+      window.InstantCrewShared.showPushToast(
+        'Crew search resumed',
+        `Your ${job.role_label || 'crew'} search is still active.`,
+        'match',
+        () => openEmployerJobNotification(job.id)
+      );
+    }
+    return;
+  }
+
+  if (job.status === 'accepted') {
+    const activeCrew = (job.crew || []).filter(member => !member.ended_at);
+    if (activeCrew.length > 0) {
+      goStep(4);
+      onCrewAccepted({ ...job, acceptedCrew: activeCrew.map(member => member.name), role: job.role_label });
+      return;
+    }
+    // An old accepted status with no live assignment is historical, not a new offer.
+  }
+
+  if (job.status === 'unfulfilled') {
+    goStep(4);
+    if (matchLoading) matchLoading.style.display = 'none';
+    if (matchResults) matchResults.style.display = 'none';
+    if (matchFailed) matchFailed.style.display = 'block';
+    if (window.InstantCrewShared) {
+      window.InstantCrewShared.showPushToast('Crew search ended', 'Your 3-minute search ended while you were away. Start another search when ready.', 'alert');
+    }
+    return;
+  }
+
+  state.currentJobId = null;
+  stopSearchTimer();
+  if (state.matchCheckInterval) {
+    clearInterval(state.matchCheckInterval);
+    state.matchCheckInterval = null;
+  }
+  openProfilePanel();
+  switchBookingTab(job.status === 'completed' ? 'previous' : 'active');
+  renderBookings(true);
+  requestAnimationFrame(() => {
+    const card = document.getElementById(`employerBooking-${job.id}`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.outline = '3px solid #F4C430';
+    setTimeout(() => { card.style.outline = ''; }, 2200);
+  });
+}
+
+async function openEmployerJobNotification(jobId) {
+  if (notifDropdown) notifDropdown.hidden = true;
+  try {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, { credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.job) throw new Error(data.error || 'This shift is no longer available.');
+    showEmployerJob(data.job);
+  } catch (error) {
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not open shift', error.message || 'Try refreshing your bookings.', 'alert');
+  }
+}
+
+async function restoreEmployerSearchOnLogin() {
+  if (!authUser || employerSearchRestorePending) return;
+  employerSearchRestorePending = true;
+  try {
+    const response = await fetch('/api/jobs?status=matching,accepted&limit=100', { credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not restore your crew search.');
+    const jobs = data.jobs || [];
+    // Only a currently assigned crew member represents a live offer. Older jobs
+    // may retain `accepted` status after every assignment has ended.
+    const acceptedJob = jobs.find(job => job.status === 'accepted' && (job.crew || []).some(member => !member.ended_at));
+    if (acceptedJob) {
+      showEmployerJob(acceptedJob);
+      return;
+    }
+    const activeSearch = jobs.find(job => job.status === 'matching');
+    if (activeSearch) showEmployerJob(activeSearch, { notifySearchResume: true });
+  } catch (error) {
+    console.warn(error.message);
+  } finally {
+    employerSearchRestorePending = false;
+  }
+}
 
 function renderEmployerNotifications() {
   const currentSession = getSession();
   if (!currentSession || currentSession.isGuest) return;
+  if (String(employerNotificationOwnerId) !== String(currentSession.id)) {
+    employerNotificationOwnerId = currentSession.id;
+    employerNotifications = null;
+    employerNotificationsLoaded = false;
+    employerNotificationsFetchedAt = 0;
+    employerNotificationsBaselineSet = false;
+    lastEmployerNotificationId = 0;
+  }
   if (employerNotifications === null || Date.now() - employerNotificationsFetchedAt > 2500) {
     if (!employerNotificationsPending) {
       employerNotificationsPending = true;
-      fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||'Could not load notifications.'); employerNotifications=d.notifications||[]; employerNotificationsFetchedAt=Date.now(); renderEmployerNotifications(); }).catch(e=>console.warn(e.message)).finally(()=>{employerNotificationsPending=false;});
+      fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||'Could not load notifications.'); employerNotifications=d.notifications||[]; employerNotificationsLoaded=true; employerNotificationsFetchedAt=Date.now(); renderEmployerNotifications(); }).catch(e=>console.warn(e.message)).finally(()=>{employerNotificationsPending=false;});
     }
     if (employerNotifications === null) employerNotifications=[];
   }
-  const notifs = employerNotifications || [];
+  // Employer notifications are crew activity on their bookings. Shift offers
+  // belong in the applicant inbox and should never appear in this panel.
+  const crewActivityTypes = new Set(['accept', 'transit', 'arrived', 'end']);
+  const notifs = (employerNotifications || []).filter(n => crewActivityTypes.has(n.type));
   const unread = notifs.filter(n => !n.read).length;
 
   if (notifBadge) {
@@ -2812,13 +3075,14 @@ function renderEmployerNotifications() {
 
   if (notifList) {
     if (notifs.length === 0) {
-      notifList.innerHTML = '<div class="db-notif-empty">No notifications yet.</div>';
+      notifList.innerHTML = '<div class="db-notif-empty">No crew activity yet.</div>';
     } else {
       notifList.innerHTML = '';
       notifs.forEach(n => {
         const el = document.createElement('div');
         el.className = `db-notif-item ${n.read ? '' : 'unread'}`;
         const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getNotificationIcon(n.type, 20) : '';
+        const jobId = notificationJobId(n);
         el.innerHTML = `
                     <span class="db-notif-icon">${iconSvg}</span>
                     <div>
@@ -2827,17 +3091,43 @@ function renderEmployerNotifications() {
                         <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
                     </div>
                 `;
+        if (jobId) {
+          el.style.cursor = 'pointer';
+          el.setAttribute('role', 'button');
+          el.setAttribute('tabindex', '0');
+          el.title = 'Open this shift';
+          const action = document.createElement('span');
+          action.textContent = 'View shift →';
+          action.style.cssText = 'display:block;margin:6px 0 0 30px;color:#92400E;font-size:0.76rem;font-weight:700;';
+          el.querySelector('div').appendChild(action);
+          el.addEventListener('click', () => openEmployerJobNotification(jobId));
+          el.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              openEmployerJobNotification(jobId);
+            }
+          });
+        }
         notifList.appendChild(el);
       });
     }
   }
 
-  // Trigger push toast on new notification
-  if (notifs.length > lastEmployerNotifCount && lastEmployerNotifCount > 0) {
-    const latest = notifs[0];
-    window.InstantCrewShared.showPushToast(latest.title, latest.message, latest.type);
+  // Use persisted notification IDs so the first new transit event also raises
+  // a toast, without replaying old notifications on initial page load.
+  if (employerNotificationsLoaded) {
+    const newestId = notifs.reduce((max, notification) => Math.max(max, Number(notification.id) || 0), 0);
+    if (!employerNotificationsBaselineSet) {
+      employerNotificationsBaselineSet = true;
+    } else if (newestId > lastEmployerNotificationId) {
+      const latest = notifs.find(notification => Number(notification.id) === newestId);
+      if (latest && window.InstantCrewShared) {
+        const jobId = notificationJobId(latest);
+        window.InstantCrewShared.showPushToast(latest.title, latest.message, latest.type, jobId ? () => openEmployerJobNotification(jobId) : undefined);
+      }
+    }
+    lastEmployerNotificationId = Math.max(lastEmployerNotificationId, newestId);
   }
-  lastEmployerNotifCount = notifs.length;
 }
 
 if (notifBtn) {
@@ -2982,12 +3272,16 @@ function authVal(id) {
 function saveEmployerSessionFromUser(user) {
   const prev = getSession();
   const bookings = (prev && Array.isArray(prev.bookings) && !prev.isGuest) ? prev.bookings : [];
+  const paymentPreference = prev && !prev.isGuest ? prev.paymentPreference : null;
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    id: user.id,
     name: user.name,
     email: user.email,
     company: user.company,
     joinedYear: new Date().getFullYear(),
+    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
     isGuest: false,
+    paymentPreference,
     bookings,
   }));
 }
@@ -2995,6 +3289,7 @@ function saveEmployerSessionFromUser(user) {
 function updateAuthUI() {
   if (headerLoginBtn) headerLoginBtn.style.display = authUser ? 'none' : 'inline-block';
   if (openProfilePanelBtn) openProfilePanelBtn.style.display = authUser ? 'flex' : 'none';
+  loadEmployerPaymentPreference();
   populateProfile();
   renderBookings(true);
 }
@@ -3046,6 +3341,7 @@ function onAuthSuccess(user) {
   closeAuthModal();            // clears pendingAuthAction, so we saved it above
   updateAuthUI();
   if (action) action();
+  else restoreEmployerSearchOnLogin();
 }
 
 /* ── Wire up the modal ── */
@@ -3129,4 +3425,5 @@ signupForm.addEventListener('submit', (e) => {
     sessionStorage.removeItem(SESSION_KEY);
   }
   updateAuthUI();
+  await restoreEmployerSearchOnLogin();
 })();

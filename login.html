@@ -433,6 +433,7 @@
 
             const SESSION_KEY_EMPLOYER = 'ic_employer_session';
             const SESSION_KEY_WORKER = 'ic_worker_session';
+            const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
             let currentRole = 'hirer'; // 'hirer' or 'applicant'
             let currentMode = 'login'; // 'login' or 'signup'
@@ -480,24 +481,26 @@
 
             // If already logged in, link logo and back button to active dashboard
             try {
-                const loggedWorker = sessionStorage.getItem(SESSION_KEY_WORKER);
-                const loggedEmployer = sessionStorage.getItem(SESSION_KEY_EMPLOYER);
+                const loggedWorker = JSON.parse(sessionStorage.getItem(SESSION_KEY_WORKER) || 'null');
+                const loggedEmployer = JSON.parse(sessionStorage.getItem(SESSION_KEY_EMPLOYER) || 'null');
                 const loginLogoLink = document.querySelector('.login-logo');
                 const backHomeLink = document.querySelector('.back-home-link');
 
-                if (loggedWorker) {
+                if (loggedWorker && loggedWorker.expiresAt > Date.now()) {
                     if (loginLogoLink) loginLogoLink.href = 'applicant.html';
                     if (backHomeLink) {
                         backHomeLink.href = 'applicant.html';
                         backHomeLink.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Dashboard`;
                     }
-                } else if (loggedEmployer) {
+                } else if (loggedEmployer && loggedEmployer.expiresAt > Date.now()) {
                     if (loginLogoLink) loginLogoLink.href = 'employer.html';
                     if (backHomeLink) {
                         backHomeLink.href = 'employer.html';
                         backHomeLink.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Dashboard`;
                     }
                 }
+                if (loggedWorker && loggedWorker.expiresAt <= Date.now()) sessionStorage.removeItem(SESSION_KEY_WORKER);
+                if (loggedEmployer && loggedEmployer.expiresAt <= Date.now()) sessionStorage.removeItem(SESSION_KEY_EMPLOYER);
             } catch (e) { }
 
             // Read URL Params for direct role targeting (e.g. ?role=applicant or ?role=hirer)
@@ -603,14 +606,18 @@
 
           function saveEmployerSession(user) {
             let bookings = [];
+            let paymentPreference = null;
             try {
               const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY_EMPLOYER));
               if (prev && Array.isArray(prev.bookings)) bookings = prev.bookings;
+              if (prev && prev.paymentPreference) paymentPreference = prev.paymentPreference;
             } catch (e) { }
 
             const session = JSON.stringify({
+              id: user.id,
               name: user.name, email: user.email, company: user.company,
-              joinedYear: new Date().getFullYear(), bookings 
+              joinedYear: new Date().getFullYear(), bookings, paymentPreference,
+              expiresAt: Date.now() + SESSION_TTL_MS
             });
 
             sessionStorage.setItem(SESSION_KEY_EMPLOYER, session);
@@ -619,7 +626,8 @@
 
           function saveWorkerSession(user) {
             sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
-              ...user, services: [], rating: null, completedShifts: 0, active: false
+              ...user, services: [], rating: null, completedShifts: 0, active: false,
+              expiresAt: Date.now() + SESSION_TTL_MS
             }));
           }
 

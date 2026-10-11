@@ -184,9 +184,9 @@ func (s *Store) ListJobs(ctx context.Context, employerID int64, statuses []strin
 	return out, rows.Err()
 }
 
-// StartSearch records the (mock) match-fee payment and opens a search window.
+// StartSearch opens a search window only after its fee has been recorded.
 // The status guard makes double-clicks and concurrent requests safe: only one wins.
-func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method string, feeCentavos int64, ref string, window time.Duration) error {
+func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window time.Duration) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -197,7 +197,9 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method st
 	res, err := tx.ExecContext(ctx, `
 		UPDATE jobs SET status='matching', search_attempts = search_attempts + 1,
 			search_expires_at = ?, updated_at = ?
-		WHERE id = ? AND employer_id = ? AND status IN ('draft','unfulfilled')`,
+		WHERE id = ? AND employer_id = ? AND status IN ('draft','unfulfilled')
+		AND EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id
+			AND p.search_attempt=jobs.search_attempts+1 AND p.status='paid')`,
 		now.Add(window).Unix(), now.Unix(), id, employerID)
 	if err != nil {
 		return err
@@ -205,16 +207,18 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method st
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
 	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO payments (job_id, user_id, amount_centavos, method, status, provider_ref, created_at)
-		VALUES (?, ?, ?, ?, 'paid', ?, ?)`, id, employerID, feeCentavos, method, ref, now.Unix()); err != nil {
-		return err
-	}
+	// The current search attempt must have its fee recorded before crew are notified.
 	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
 		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_object('job_id', j.id),?
 		FROM jobs j JOIN applicant_profiles p ON p.is_active=1 AND lower(trim(p.city))=lower(trim(j.city))
 		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
 		WHERE j.id=? AND p.employment_type=j.employment_type
+		AND NOT EXISTS (
+			SELECT 1 FROM job_assignments active_assignment
+			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
+			WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
+			AND assigned_job.role_id=j.role_id
+		)
 		AND ((j.timing='now' AND p.availability_mode='now') OR
 			(j.timing='later' AND EXISTS (
 				SELECT 1 FROM applicant_availability av
@@ -224,6 +228,36 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, method st
 		return err
 	}
 	return tx.Commit()
+}
+
+// RecordMatchFee records the fee for the next search attempt before crew are notified.
+func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method, details string, feeCentavos int64, ref string) error {
+	res, err := s.db.ExecContext(ctx, `
+		INSERT INTO payments (job_id, user_id, amount_centavos, method, details, search_attempt, status, provider_ref, created_at)
+		SELECT id, employer_id, ?, ?, ?, search_attempts+1, 'paid', ?, ? FROM jobs
+		WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')
+		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.search_attempt=jobs.search_attempts+1)`,
+		feeCentavos, method, details, ref, time.Now().Unix(), id, employerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		var sameAttempt int
+		err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM jobs j JOIN payments p ON p.job_id=j.id
+			WHERE j.id=? AND j.employer_id=?
+			AND ((j.status IN ('draft','unfulfilled') AND p.search_attempt=j.search_attempts+1)
+				OR (j.status='matching' AND p.search_attempt=j.search_attempts))
+			AND p.status='paid' AND p.method=? AND p.details=?`,
+			id, employerID, method, details).Scan(&sameAttempt)
+		if err != nil {
+			return err
+		}
+		if sameAttempt > 0 {
+			return nil
+		}
+		return missOrBadState(ctx, s.db, employerID, id)
+	}
+	return nil
 }
 
 // MatchingApplicants reads eligible active profiles for an employer-owned job.
@@ -249,6 +283,12 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 			SELECT 1 FROM job_applications a
 			WHERE a.job_id=j.id AND a.applicant_id=p.user_id
 			AND a.status IN ('pending','accepted','rejected')
+		)
+		AND NOT EXISTS (
+			SELECT 1 FROM job_assignments active_assignment
+			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
+			WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
+			AND assigned_job.role_id=j.role_id
 		)
 		ORDER BY p.expected_rate ASC,u.name COLLATE NOCASE`, jobID, time.Now().Unix())
 	if err != nil {
@@ -279,20 +319,8 @@ func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 	return res.RowsAffected()
 }
 
-func (s *Store) SimulateSearchTimeout(ctx context.Context, employerID, id int64) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE jobs SET status='unfulfilled',updated_at=?,search_expires_at=? WHERE id=? AND employer_id=? AND status='matching'`, time.Now().Unix(), time.Now().Unix(), id, employerID)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return missOrBadState(ctx, s.db, employerID, id)
-	}
-	return nil
-}
-
-// AcceptJob is what a crew member's "Accept" will call (applicant side comes next).
-// It is atomic: two workers can't both take the last slot, and nobody can accept after expiry.
+// AcceptJob atomically gives the offer to the first applicant who accepts.
+// No later applicant can accept after the job leaves the matching state.
 func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -302,11 +330,16 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 
 	now := time.Now().Unix()
 	res, err := tx.ExecContext(ctx, `
-		UPDATE jobs SET accepted_count = accepted_count + 1,
-			status = CASE WHEN accepted_count + 1 >= crew_needed THEN 'accepted' ELSE status END,
+		UPDATE jobs SET accepted_count = 1,
+			status = 'accepted',
 			updated_at = ?
-		WHERE id = ? AND status = 'matching' AND search_expires_at > ? AND accepted_count < crew_needed`,
-		now, jobID, now)
+		WHERE id = ? AND status = 'matching' AND (search_expires_at IS NULL OR search_expires_at > ?) AND accepted_count = 0
+		AND NOT EXISTS (
+			SELECT 1 FROM job_assignments active_assignment
+			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
+			WHERE active_assignment.applicant_id=? AND active_assignment.ended_at IS NULL
+			AND assigned_job.role_id=jobs.role_id
+		)`, now, jobID, now, applicantID)
 	if err != nil {
 		return err
 	}

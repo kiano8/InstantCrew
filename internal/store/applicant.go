@@ -62,7 +62,9 @@ func (s *Store) AddNotification(ctx context.Context, userID int64, title, messag
 }
 
 func (s *Store) NotifyJobEmployer(ctx context.Context, jobID int64, title, message, kind string) error {
-	_, err := s.db.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) SELECT employer_id,?,?,?,?,? FROM jobs WHERE id=?`, title, message, kind, "{}", time.Now().Unix(), jobID)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT employer_id,?,?,?,json_object('job_id',?),? FROM jobs WHERE id=?`,
+		title, message, kind, jobID, time.Now().Unix(), jobID)
 	return err
 }
 
@@ -75,8 +77,13 @@ func (s *Store) ClearNotifications(ctx context.Context, userID int64) error {
 	return err
 }
 
-func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID int64, status string) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE job_assignments SET transit_status=? WHERE job_id=? AND applicant_id=? AND ended_at IS NULL`, status, jobID, applicantID)
+func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID int64, status, title, message, kind string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status=? WHERE job_id=? AND applicant_id=? AND ended_at IS NULL`, status, jobID, applicantID)
 	if err != nil {
 		return err
 	}
@@ -84,7 +91,17 @@ func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID i
 	if n == 0 {
 		return ErrNotFound
 	}
-	return nil
+	res, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT employer_id,?,?,?,json_object('job_id',?),? FROM jobs WHERE id=?`,
+		title, message, kind, jobID, time.Now().Unix(), jobID)
+	if err != nil {
+		return err
+	}
+	n, _ = res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return tx.Commit()
 }
 
 func (s *Store) EndApplicantAssignment(ctx context.Context, jobID, applicantID int64) error {
@@ -212,6 +229,10 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 		WHERE j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>?)
 		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
 			WHERE p.user_id=? AND p.is_active=1 AND p.employment_type=j.employment_type AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
+			AND NOT EXISTS (SELECT 1 FROM job_assignments active_assignment
+				JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
+				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
+				AND assigned_job.role_id=j.role_id)
 			AND ((j.timing='now' AND p.availability_mode='now') OR
 				(j.timing='later' AND EXISTS (
 					SELECT 1 FROM applicant_availability av
@@ -233,6 +254,24 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 		out = append(out, j)
 	}
 	return out, rows.Err()
+}
+
+// ApplicantJob returns a single open offer only when the applicant profile matches it.
+func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Job, error) {
+	return scanJob(s.db.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs j
+		WHERE j.id=? AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>?)
+		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
+			WHERE p.user_id=? AND p.is_active=1 AND p.employment_type=j.employment_type
+			AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
+			AND NOT EXISTS (SELECT 1 FROM job_assignments active_assignment
+				JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
+				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
+				AND assigned_job.role_id=j.role_id)
+			AND ((j.timing='now' AND p.availability_mode='now') OR
+				(j.timing='later' AND EXISTS (SELECT 1 FROM applicant_availability av
+					WHERE av.applicant_id=p.user_id AND av.status='available'
+					AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600))))`,
+		jobID, time.Now().Unix(), applicantID))
 }
 
 func (s *Store) ApplyForJob(ctx context.Context, jobID, applicantID int64) error {
