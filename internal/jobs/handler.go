@@ -226,6 +226,19 @@ func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// Some existing client sessions contain duplicate selected roles. Collapse
+	// them after label-to-ID normalization so a profile update cannot violate
+	// applicant_roles' (applicant_id, role_id) primary key.
+	seenRoles := make(map[string]struct{}, len(p.Roles))
+	uniqueRoles := p.Roles[:0]
+	for _, role := range p.Roles {
+		if _, exists := seenRoles[role]; exists {
+			continue
+		}
+		seenRoles[role] = struct{}{}
+		uniqueRoles = append(uniqueRoles, role)
+	}
+	p.Roles = uniqueRoles
 	if err := h.Store.SaveApplicantProfile(r.Context(), u.ID, p); err != nil {
 		h.fail(w, err)
 		return

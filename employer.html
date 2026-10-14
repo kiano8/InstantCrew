@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261014-employer-view-details">
+    <link rel="stylesheet" href="css/employer.css?v=20261014-employer-job-card-parity-v1">
 </head>
 
 <body>
@@ -1362,7 +1362,6 @@
         </div>
     </div>
 
-    <!-- ════ Location Detail Modal (View Detail from Shift Card) ════ -->
     <div class="app-modal-overlay" id="appLocationDetailModal" aria-hidden="true" role="dialog" aria-modal="true"
         style="display:none;">
         <div class="app-modal-card app-location-modal-card">
@@ -1391,37 +1390,42 @@
             </div>
 
             <div class="app-loc-modal-body">
-                <div class="app-loc-venue-box">
-                    <div class="app-loc-box-row">
-                        <span class="app-loc-field-label">VENUE / EMPLOYER</span>
-                        <h4 class="app-loc-venue-name" id="locModalVenueName">Employer Location</h4>
+                <!-- Main Employer Location Card -->
+                <div class="app-loc-info-card">
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Venue / Employer</span>
+                        <strong class="app-loc-info-val" id="locModalVenueName">Shift location</strong>
                     </div>
-                    <div class="app-loc-box-row">
-                        <span class="app-loc-field-label" id="locModalShiftTimingLabel">Shift Details</span>
-                        <div class="app-loc-badge-group" id="locModalCardBadges">
-                            <!-- Injected Badges -->
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label" id="locModalShiftTimingLabel">Shift Details</span>
+                        <div class="app-loc-highlight-badges" id="locModalCardBadges" style="margin-top:2px;">
+                            <span class="app-loc-badge-role">LINE COOK</span>
+                            <span class="app-loc-badge-emp full-time">FULL-TIME</span>
                         </div>
                     </div>
-                    <div class="app-loc-box-row">
-                        <span class="app-loc-field-label">EMPLOYER'S LOCATION</span>
-                        <p class="app-loc-address-text" id="locModalAddress">Cebu City</p>
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Employer's Location</span>
+                        <span class="app-loc-info-val highlight" id="locModalAddress">Ayala Malls Central Bloc, Cebu
+                            I.T. Park</span>
                     </div>
-                    <div class="app-loc-box-row">
-                        <span class="app-loc-field-label">SHIFT TIME</span>
-                        <p class="app-loc-address-text" id="locModalTiming">—</p>
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Shift Time</span>
+                        <span class="app-loc-info-val" id="locModalTiming">—</span>
                     </div>
-                    <div class="app-loc-box-row">
-                        <span class="app-loc-field-label">OFFERED RATE</span>
-                        <p class="app-loc-address-text" id="locModalRate">—</p>
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Rate</span>
+                        <span class="app-loc-info-val" id="locModalRate">—</span>
                     </div>
                 </div>
 
                 <!-- Google Maps Direction Banner -->
                 <div class="app-loc-map-preview">
-                    <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
-                        <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
-                            referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
-                    </div>
+                  <!-- Live map (shown when we can build an embed URL) -->
+                  <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
+                    <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                  </div>              
+      
                     <div class="app-loc-map-art" id="locMapArt">
                         <div class="app-map-roads"></div>
                         <div class="app-map-pulse-pin">
@@ -1435,6 +1439,7 @@
                     </div>
                     <p class="app-map-preview-hint" id="locMapHint">Location verified by employer for Google Maps navigation</p>
                 </div>
+
             </div>
 
             <div class="app-loc-modal-footer">
@@ -1458,6 +1463,22 @@
         </div>
     </div>
 
+    <div class="db-modal-overlay db-job-action-confirm-overlay" id="jobActionConfirmModal" aria-hidden="true"
+        role="alertdialog" aria-modal="true" aria-labelledby="jobActionConfirmTitle"
+        aria-describedby="jobActionConfirmMessage">
+        <div class="db-modal-card db-job-action-confirm-card">
+            <div class="db-job-action-confirm-icon" aria-hidden="true">!</div>
+            <div class="db-modal-header">
+                <h3 class="db-modal-title" id="jobActionConfirmTitle">Confirm action</h3>
+                <p class="db-modal-sub" id="jobActionConfirmMessage">Are you sure you want to continue?</p>
+            </div>
+            <div class="db-modal-actions">
+                <button type="button" class="db-modal-cancel-btn" id="cancelJobActionConfirm">Go Back</button>
+                <button type="button" class="db-modal-confirm-btn" id="confirmJobActionConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="db-footer">
         <span>© 2026 Instant Crew</span>
         <div class="db-footer-links">
@@ -1469,7 +1490,7 @@
     
     <script src="js/location.js"></script>
     <script src="js/shared-data.js"></script>
-    <script src="js/employer.js?v=20261014-employer-view-details"></script>
+    <script src="js/employer.js?v=20261014-employer-cancel-immediate-v1"></script>
 </body>
 
 </html>

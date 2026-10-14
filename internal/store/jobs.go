@@ -220,11 +220,11 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 			AND assigned_job.role_id=j.role_id
 		)
 		AND ((j.timing='now' AND p.availability_mode='now') OR
-			(j.timing='later' AND EXISTS (
+			(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
 				SELECT 1 FROM applicant_availability av
 				WHERE av.applicant_id=p.user_id AND av.status='available'
-				AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600
-			)))`, now.Unix(), id); err != nil {
+				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
+			))))`, now.Unix(), id); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -274,11 +274,11 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 		AND p.employment_type=j.employment_type
 		AND lower(trim(p.city))=lower(trim(j.city))
 		AND ((j.timing='now' AND p.availability_mode='now') OR
-			(j.timing='later' AND EXISTS (
+			(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
 				SELECT 1 FROM applicant_availability av
 				WHERE av.applicant_id=p.user_id AND av.status='available'
-				AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600
-			)))
+				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
+			))))
 		AND NOT EXISTS (
 			SELECT 1 FROM job_applications a
 			WHERE a.job_id=j.id AND a.applicant_id=p.user_id

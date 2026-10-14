@@ -2418,6 +2418,50 @@ function renderBookings(force = false) {
   }
 }
 
+const jobActionConfirmModal = document.getElementById('jobActionConfirmModal');
+const jobActionConfirmTitle = document.getElementById('jobActionConfirmTitle');
+const jobActionConfirmMessage = document.getElementById('jobActionConfirmMessage');
+const jobActionConfirmButton = document.getElementById('confirmJobActionConfirm');
+const cancelJobActionConfirmButton = document.getElementById('cancelJobActionConfirm');
+let resolveJobActionConfirm = null;
+
+function closeJobActionConfirm(confirmed = false) {
+  if (!jobActionConfirmModal) return;
+  jobActionConfirmModal.classList.remove('open');
+  jobActionConfirmModal.setAttribute('aria-hidden', 'true');
+  const profileOverlay = document.getElementById('profileOverlay');
+  document.body.style.overflow = profileOverlay?.classList.contains('open') ? 'hidden' : '';
+  const resolve = resolveJobActionConfirm;
+  resolveJobActionConfirm = null;
+  if (resolve) resolve(confirmed);
+}
+
+function confirmJobAction({ title, message, confirmLabel }) {
+  if (!jobActionConfirmModal) return Promise.resolve(false);
+  if (resolveJobActionConfirm) closeJobActionConfirm(false);
+  jobActionConfirmTitle.textContent = title;
+  jobActionConfirmMessage.textContent = message;
+  jobActionConfirmButton.textContent = confirmLabel;
+  jobActionConfirmModal.classList.add('open');
+  jobActionConfirmModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  return new Promise(resolve => {
+    resolveJobActionConfirm = resolve;
+    cancelJobActionConfirmButton.focus();
+  });
+}
+
+if (cancelJobActionConfirmButton) cancelJobActionConfirmButton.addEventListener('click', () => closeJobActionConfirm(false));
+if (jobActionConfirmButton) jobActionConfirmButton.addEventListener('click', () => closeJobActionConfirm(true));
+if (jobActionConfirmModal) {
+  jobActionConfirmModal.addEventListener('click', e => {
+    if (e.target === jobActionConfirmModal) closeJobActionConfirm(false);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && jobActionConfirmModal.classList.contains('open')) closeJobActionConfirm(false);
+  });
+}
+
 function buildBookingItem(b) {
   const item = document.createElement('div');
   item.id = `employerBooking-${b.id}`;
@@ -2492,12 +2536,13 @@ function buildBookingItem(b) {
         </div>
 
         <div class="app-job-card-meta">
-            <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
+            <div class="app-job-meta-line app-job-location-line">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
                 </svg>
                 <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayLocation}</span>
+                <button type="button" class="app-job-view-detail-btn db-btn-view-shift" data-booking-id="${jobId}">View Details ↗</button>
             </div>
             <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
@@ -2570,26 +2615,27 @@ function buildBookingItem(b) {
   if (endBtn) {
     endBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (confirm(`Conclude and end the contract for ${roleTitle}?`)) {
-        endEmployerBooking(jobId, endBtn);
-      }
+      confirmJobAction({
+        title: 'End this job?',
+        message: `This will conclude the contract for ${roleTitle}.`,
+        confirmLabel: 'End Job'
+      }).then(confirmed => { if (confirmed) endEmployerBooking(jobId, endBtn); });
     });
   }
 
   const cancelBtn = item.querySelector('.db-btn-cancel-search');
   if (cancelBtn) cancelBtn.addEventListener('click', e => {
     e.stopPropagation();
-    if (confirm('Cancel this crew search?')) cancelEmployerSearch(jobId, cancelBtn);
+    confirmJobAction({
+      title: 'Cancel this search?',
+      message: 'Your crew search will stop and this job will move out of active searches.',
+      confirmLabel: 'Cancel Search'
+    }).then(confirmed => { if (confirmed) cancelEmployerSearch(jobId, cancelBtn); });
   });
   const reviewBtn = item.querySelector('.db-btn-review-offer');
   if (reviewBtn) reviewBtn.addEventListener('click', e => { e.stopPropagation(); openEmployerJobNotification(jobId); });
-  const viewDetailsBtn = document.createElement('button');
-  viewDetailsBtn.type = 'button';
-  viewDetailsBtn.className = 'app-btn-end-contract-clean db-btn-view-shift db-job-view-details';
-  viewDetailsBtn.textContent = 'View Details';
-  viewDetailsBtn.setAttribute('aria-label', `View details for ${roleTitle}`);
-  item.querySelector('.app-job-card-meta')?.appendChild(viewDetailsBtn);
-  viewDetailsBtn.addEventListener('click', e => {
+  const viewDetailsBtn = item.querySelector('.db-btn-view-shift');
+  if (viewDetailsBtn) viewDetailsBtn.addEventListener('click', e => {
     e.stopPropagation();
     openLocationDetailModal({ ...b, title: roleTitle, venue: b.venue || b.location, mapLocation: b.mapLocation || b.location });
   });
@@ -2739,13 +2785,19 @@ async function endEmployerBooking(bookingId, button) {
   } catch (err) {
     if (button) { button.disabled = false; button.textContent = 'End Job'; }
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not end job', err.message, 'alert');
-    else alert(err.message);
+    else console.error('Could not end job:', err);
   }
 }
 
 if (cancelCrewSearchBtn) cancelCrewSearchBtn.addEventListener('click', () => {
   if (!state.currentJobId) return;
-  if (confirm('Cancel this crew search?')) cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+  confirmJobAction({
+    title: 'Cancel this search?',
+    message: 'Your crew search will stop and this job will move out of active searches.',
+    confirmLabel: 'Cancel Search'
+  }).then(confirmed => {
+    if (confirmed) cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+  });
 });
 
 async function cancelEmployerSearch(jobId, button, returnToStart = false) {
@@ -2755,7 +2807,8 @@ async function cancelEmployerSearch(jobId, button, returnToStart = false) {
     const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST', credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not cancel this crew search.');
-    if (returnToStart) {
+    const cancelledCurrentSearch = String(state.currentJobId) === String(jobId);
+    if (returnToStart || cancelledCurrentSearch) {
       stopSearchTimer();
       if (state.matchCheckInterval) {
         clearInterval(state.matchCheckInterval);
@@ -2766,15 +2819,16 @@ async function cancelEmployerSearch(jobId, button, returnToStart = false) {
       state.acceptanceHandled = false;
       if (matchLoading) matchLoading.style.display = 'none';
       if (matchResults) matchResults.style.display = 'none';
+      if (matchFailed) matchFailed.style.display = 'none';
       goStep(1);
-      if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Crew search cancelled', 'You can start a new search whenever you are ready.', 'info');
     }
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Crew search cancelled', 'You can start a new search whenever you are ready.', 'info');
     employerBookingsFetchedAt = 0;
     refreshEmployerBookings(true);
   } catch (err) {
     if (button) { button.disabled = false; button.textContent = 'Cancel Search'; }
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not cancel search', err.message, 'alert');
-    else alert(err.message);
+    else console.error('Could not cancel search:', err);
   }
 }
 

@@ -1,4 +1,27 @@
 /* ── Applicant Portal Custom Extensions (Aligned with employer.css) ── */
+.app-job-action-confirm-overlay {
+    z-index: 3000;
+}
+
+.app-job-action-confirm-card {
+    max-width: 400px;
+    text-align: center;
+}
+
+.app-job-action-confirm-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: #FFFBE6;
+    border: 1px solid #FFCC00;
+    color: #9A6700;
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
 html,
 body {
     overflow-x: clip !important;

@@ -216,7 +216,12 @@ func (s *Store) SaveApplicantProfile(ctx context.Context, id int64, p ApplicantP
 	if _, err = tx.ExecContext(ctx, `DELETE FROM applicant_roles WHERE applicant_id=?`, id); err != nil {
 		return err
 	}
+	seenRoles := make(map[string]struct{}, len(p.Roles))
 	for i, role := range p.Roles {
+		if _, exists := seenRoles[role]; exists {
+			continue
+		}
+		seenRoles[role] = struct{}{}
 		if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_roles(applicant_id,role_id,is_primary) VALUES(?,?,?)`, id, role, i == 0); err != nil {
 			return err
 		}
@@ -234,11 +239,11 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
 				AND assigned_job.role_id=j.role_id)
 			AND ((j.timing='now' AND p.availability_mode='now') OR
-				(j.timing='later' AND EXISTS (
+				(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
 					SELECT 1 FROM applicant_availability av
 					WHERE av.applicant_id=p.user_id AND av.status='available'
-					AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600
-				))))
+					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
+				)))))
 		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=? AND a.status IN ('pending','accepted','rejected'))
 		ORDER BY j.created_at DESC`, time.Now().Unix(), applicantID, applicantID)
 	if err != nil {
@@ -268,9 +273,9 @@ func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Jo
 				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
 				AND assigned_job.role_id=j.role_id)
 			AND ((j.timing='now' AND p.availability_mode='now') OR
-				(j.timing='later' AND EXISTS (SELECT 1 FROM applicant_availability av
+				(j.timing='later' AND (p.availability_mode='now' OR EXISTS (SELECT 1 FROM applicant_availability av
 					WHERE av.applicant_id=p.user_id AND av.status='available'
-					AND av.starts_at<=j.scheduled_at AND av.ends_at>=j.scheduled_at+8*3600))))`,
+					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at)))))`,
 		jobID, time.Now().Unix(), applicantID))
 }
 
