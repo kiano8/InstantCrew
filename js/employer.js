@@ -1222,7 +1222,7 @@ if (previewGoogleMapBtn) {
 if (toStep3Btn) {
   toStep3Btn.addEventListener('click', () => {
     if (!validateGoogleMapLocation()) return;
-    goStep(3);
+    requireLogin(() => goStep(3));
   });
 }
 
@@ -2553,7 +2553,6 @@ function buildBookingItem(b) {
             ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
             ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
             ${hasOffer ? `<button type="button" class="app-btn-end-contract-clean db-btn-review-offer" data-booking-id="${jobId}">Review Offer</button>` : ''}
-            ${!canEndJob && !isSearching && !hasOffer ? `<button type="button" class="app-btn-end-contract-clean db-btn-view-shift" data-booking-id="${jobId}">View Details</button>` : ''}
         </div>` : `
         <div class="app-job-card-footer ended-footer">
             <span class="app-ended-note">
@@ -2566,21 +2565,6 @@ function buildBookingItem(b) {
             <span class="app-job-archived-tag">Archived</span>
         </div>`}
     `;
-
-  const viewDetailBtn = item.querySelector('.app-job-view-detail-btn');
-  if (viewDetailBtn) {
-    viewDetailBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openLocationDetailModal({
-        ...b,
-        title: roleTitle,
-        venue: b.venue || b.location,
-        mapLocation: b.mapLocation || b.location,
-        employmentType: empLabel,
-        isAccepted: !isEnded
-      });
-    });
-  }
 
   const endBtn = item.querySelector('.db-btn-end-contract');
   if (endBtn) {
@@ -2599,12 +2583,16 @@ function buildBookingItem(b) {
   });
   const reviewBtn = item.querySelector('.db-btn-review-offer');
   if (reviewBtn) reviewBtn.addEventListener('click', e => { e.stopPropagation(); openEmployerJobNotification(jobId); });
-  const viewBtn = item.querySelector('.db-btn-view-shift');
-  if (viewBtn) viewBtn.addEventListener('click', e => {
+  const viewDetailsBtn = document.createElement('button');
+  viewDetailsBtn.type = 'button';
+  viewDetailsBtn.className = 'app-btn-end-contract-clean db-btn-view-shift db-job-view-details';
+  viewDetailsBtn.textContent = 'View Details';
+  viewDetailsBtn.setAttribute('aria-label', `View details for ${roleTitle}`);
+  item.querySelector('.app-job-card-meta')?.appendChild(viewDetailsBtn);
+  viewDetailsBtn.addEventListener('click', e => {
     e.stopPropagation();
     openLocationDetailModal({ ...b, title: roleTitle, venue: b.venue || b.location, mapLocation: b.mapLocation || b.location });
   });
-
   item.tabIndex = 0;
   item.setAttribute('role', 'button');
   item.setAttribute('aria-label', `${roleTitle}, ${isEnded ? 'completed' : b.status || 'active'}. Open shift details.`);
@@ -2642,21 +2630,35 @@ function openLocationDetailModal(shift) {
 
   const address = shift.mapLocation || shift.location || 'Cebu City';
   const mapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(address) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
-
+  const embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed`;
   const locModalVenueTitle = document.getElementById('locModalVenueTitle');
   const locModalVenueName = document.getElementById('locModalVenueName');
   const locModalRoleSub = document.getElementById('locModalRoleSub');
   const locModalCardBadges = document.getElementById('locModalCardBadges');
   const locModalAddress = document.getElementById('locModalAddress');
+  const locModalTiming = document.getElementById('locModalTiming');
+  const locModalRate = document.getElementById('locModalRate');
   const openGoogleMapsActionBtn = document.getElementById('openGoogleMapsActionBtn');
   const copyLocAddressBtn = document.getElementById('copyLocAddressBtn');
+  const locMapFrameWrap = document.getElementById('locMapFrameWrap');
+  const locMapFrame = document.getElementById('locMapFrame');
+  const locMapArt = document.getElementById('locMapArt');
+  const locMapHint = document.getElementById('locMapHint');
 
-  if (locModalVenueTitle) locModalVenueTitle.textContent = `${venue} Location`;
+  if (locModalVenueTitle) locModalVenueTitle.textContent = `${cleanRole} Job Details`;
   if (locModalVenueName) locModalVenueName.textContent = venue;
   if (locModalRoleSub) locModalRoleSub.textContent = 'Verified Work Location';
   if (locModalCardBadges) locModalCardBadges.innerHTML = cardBadgesHtml;
   if (locModalAddress) locModalAddress.textContent = address;
+  if (locModalTiming) locModalTiming.textContent = shift.timing || 'As soon as possible';
+  if (locModalRate) locModalRate.textContent = shift.crewRate || (shift.offeredRate ? `₱${shift.offeredRate}/hr` : 'Not specified');
   if (openGoogleMapsActionBtn) openGoogleMapsActionBtn.href = mapsUrl;
+  if (locMapFrame && locMapFrameWrap) {
+    locMapFrame.src = embedUrl;
+    locMapFrameWrap.style.display = 'block';
+    if (locMapArt) locMapArt.style.display = 'none';
+    if (locMapHint) locMapHint.textContent = 'Map preview of the job location.';
+  }
 
   if (copyLocAddressBtn) {
     copyLocAddressBtn.onclick = (e) => {

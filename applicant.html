@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css">
-    <link rel="stylesheet" href="css/applicant.css">
+    <link rel="stylesheet" href="css/applicant.css?v=20261014-job-details-map">
 
 </head>
 
@@ -1481,6 +1481,14 @@
                         <span class="app-loc-info-val highlight" id="locModalAddress">Ayala Malls Central Bloc, Cebu
                             I.T. Park</span>
                     </div>
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Shift Time</span>
+                        <span class="app-loc-info-val" id="locModalTiming">—</span>
+                    </div>
+                    <div class="app-loc-info-row">
+                        <span class="app-loc-info-label">Rate</span>
+                        <span class="app-loc-info-val" id="locModalRate">—</span>
+                    </div>
                 </div>
 
                 <!-- Google Maps Direction Banner -->
@@ -1687,10 +1695,6 @@
                     </button>
                 </form>
 
-                <p style="text-align:center; font-size:0.78rem; color:#6B7280; margin-top:14px; margin-bottom:0;">
-                    Prefer the full login page? <a href="login.html?role=applicant"
-                        style="color:#D97706; font-weight:700; text-decoration:underline;">Open Login Page</a>
-                </p>
             </div>
         </div>
     </div>
@@ -1943,7 +1947,7 @@ function renderLocationMapPreview(embedUrl) {
 
                 currentLocModalAddress = address;
 
-                if (locModalVenueTitle) locModalVenueTitle.textContent = `${venue} Location`;
+                if (locModalVenueTitle) locModalVenueTitle.textContent = `${cleanRole} Job Details`;
                 if (locModalVenueName) locModalVenueName.textContent = venue;
 
                 // Header subtitle: Role & Full-time removed as circled in red; displays ASAP NOW when urgent
@@ -1968,6 +1972,10 @@ function renderLocationMapPreview(embedUrl) {
                 }
 
                 if (locModalAddress) locModalAddress.textContent = address;
+                const locModalTiming = document.getElementById('locModalTiming');
+                const locModalRate = document.getElementById('locModalRate');
+                if (locModalTiming) locModalTiming.textContent = shift.timing || 'As soon as possible';
+                if (locModalRate) locModalRate.textContent = shift.rate || 'Not specified';
                 if (openGoogleMapsActionBtn) openGoogleMapsActionBtn.href = mapsUrl;
                 renderLocationMapPreview(buildMapEmbedUrl(shift, address, mapsUrl));
 
@@ -4042,6 +4050,7 @@ if (feedUseCurrentBtn) {
                 const j = a.job;
                 return { id: String(j.id), jobId: String(j.id), title: j.role_label, role: j.role_label,
                     category: j.category, venue: j.map_location || j.city, location: j.city,
+                    mapLocation: j.map_location, googleMapsUrl: j.maps_url,
                     rate: `₱${j.rate}`, timing: j.timing, employmentType: j.employment_type,
                     status: a.ended_at ? 'ended' : 'active', endedAt: a.ended_at,
                     transitStatus: a.transit_status === 'en_route' ? 'on_the_way' : a.transit_status,
@@ -4683,7 +4692,7 @@ if (feedUseCurrentBtn) {
                                 <span class="app-meta-loc-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locationAddress}</span>
                             </div>
                             <button type="button" class="app-job-view-detail-btn">
-                                View detail ↗
+                                View Details ↗
                             </button>
                         </div>
                         <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
@@ -5728,7 +5737,13 @@ if (appPreviewMapBtn) {
 
                 // Step 2 -> Step 3
                 if (appToStep3) {
-                    appToStep3.addEventListener('click', () => goToAppStep(3));
+                    appToStep3.addEventListener('click', () => {
+                        if (!hasWorkerSession()) {
+                            openApplicantAuthModal();
+                            return;
+                        }
+                        goToAppStep(3);
+                    });
                 }
                 // Step 3 -> Step 2
                 if (appBackToStep2) {

@@ -4501,13 +4501,16 @@ body.app-sheet-open {
 
 /* View detail button in drawer job card */
 .app-job-view-detail-btn {
-    background: none;
-    border: none;
+    display: inline-flex;
+    align-items: center;
+    background: #FFF7ED;
+    border: 1px solid #FED7AA;
     color: #D97706;
-    font-size: 0.75rem;
+    font-size: 0.76rem;
     font-weight: 700;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
     white-space: nowrap;
     flex-shrink: 0;
     transition: color 0.15s ease, transform 0.15s ease;
