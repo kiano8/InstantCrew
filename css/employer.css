@@ -2228,6 +2228,29 @@ h2 {
     visibility: visible;
 }
 
+.db-job-action-confirm-overlay {
+    z-index: 3000;
+}
+
+.db-job-action-confirm-card {
+    max-width: 400px;
+    text-align: center;
+}
+
+.db-job-action-confirm-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--yellow-tint);
+    border: 1px solid var(--yellow-border);
+    color: #9A6700;
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
 .db-modal-card {
     width: 100%;
     max-width: 420px;
@@ -3836,8 +3859,13 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
 }
+
+.db-booking-item .app-job-card-header > .app-job-status-badge { flex-shrink: 0; }
+.db-booking-item .app-job-card-title-row { gap: 8px; }
+.db-booking-item .app-job-card-title { min-width: 0; }
 
 .app-job-card-left {
     display: flex;
@@ -3996,19 +4024,24 @@ h2 {
 
 .app-job-location-line {
     justify-content: space-between;
+    min-width: 0;
 }
 
+.app-job-location-line .app-meta-venue-text { min-width: 0; flex: 1; }
+
 .app-job-view-detail-btn {
-    background: none;
-    border: none;
+    display: inline-flex;
+    align-items: center;
+    background: #FFF7ED;
+    border: 1px solid #FED7AA;
     color: #D97706;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 700;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
     white-space: nowrap;
     flex-shrink: 0;
-    text-decoration: none;
     transition: color 0.15s ease, transform 0.15s ease;
 }
 
@@ -4016,6 +4049,29 @@ h2 {
     color: #B45309 !important;
     text-decoration: underline;
 }
+
+/* Keep employer job details visually identical to the employee details card. */
+.app-location-modal-card .app-loc-info-card {
+    background: var(--surface-2, #F8FAFC);
+    border: 1.2px solid var(--border, #E2E8F0);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.app-location-modal-card .app-loc-info-row { display: flex; flex-direction: column; gap: 2px; }
+.app-location-modal-card .app-loc-info-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted, #64748B);
+}
+.app-location-modal-card .app-loc-info-val { font-size: 0.92rem; color: var(--ink, #0F172A); }
+.app-location-modal-card .app-loc-info-val.highlight { font-size: 0.95rem; font-weight: 700; color: #B91C1C; }
+.app-location-modal-card .app-loc-highlight-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 /* Footer / Action row */
 .app-job-card-footer.active-contract-footer {
@@ -4133,13 +4189,38 @@ h2 {
     outline: 3px solid #F4C430;
     outline-offset: 2px;
 }
-.db-booking-item .db-btn-cancel-search,
+.db-booking-item .db-btn-end-contract,
+.db-booking-item .db-btn-cancel-search {
+    color: var(--ink);
+    background: var(--yellow);
+    border: 1px solid var(--yellow-dark);
+    box-shadow: 0 2px 6px rgba(230, 184, 0, 0.18);
+    font-weight: 700;
+    transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+.db-booking-item .db-btn-end-contract:hover,
+.db-booking-item .db-btn-cancel-search:hover {
+    color: var(--ink);
+    background: var(--yellow-dark);
+    border-color: #C99F00;
+    box-shadow: 0 4px 10px rgba(230, 184, 0, 0.28);
+    transform: translateY(-1px);
+}
+.db-booking-item .db-btn-end-contract:active,
+.db-booking-item .db-btn-cancel-search:active {
+    transform: scale(0.97);
+    box-shadow: none;
+}
+.db-booking-item .db-btn-end-contract:focus-visible,
+.db-booking-item .db-btn-cancel-search:focus-visible {
+    outline: 3px solid rgba(245, 166, 35, 0.42);
+    outline-offset: 2px;
+}
 .db-booking-item .db-btn-review-offer {
     background: #EFF6FF;
     border-color: #BFDBFE;
     color: #1D4ED8;
 }
-.db-booking-item .db-btn-cancel-search:hover,
 .db-booking-item .db-btn-review-offer:hover {
     background: #DBEAFE;
     border-color: #93C5FD;

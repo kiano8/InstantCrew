@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css">
-    <link rel="stylesheet" href="css/applicant.css?v=20261014-job-details-map">
+    <link rel="stylesheet" href="css/applicant.css?v=20261014-job-details-action-modal">
 
 </head>
 
@@ -1534,6 +1534,22 @@
         </div>
     </div>
 
+    <div class="db-modal-overlay app-job-action-confirm-overlay" id="appJobActionConfirmModal" aria-hidden="true"
+        role="alertdialog" aria-modal="true" aria-labelledby="appJobActionConfirmTitle"
+        aria-describedby="appJobActionConfirmMessage">
+        <div class="db-modal-card app-job-action-confirm-card">
+            <div class="app-job-action-confirm-icon" aria-hidden="true">!</div>
+            <div class="db-modal-header">
+                <h3 class="db-modal-title" id="appJobActionConfirmTitle">End this job?</h3>
+                <p class="db-modal-sub" id="appJobActionConfirmMessage">This will conclude your work contract.</p>
+            </div>
+            <div class="db-modal-actions">
+                <button type="button" class="db-modal-cancel-btn" id="cancelAppJobActionConfirm">Go Back</button>
+                <button type="button" class="db-modal-confirm-btn" id="confirmAppJobActionConfirm">End Job</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════════════════════════════════════════════════
          APPLICANT AUTH MODAL (Log In / Sign Up)
          ═══════════════════════════════════════════════════════ -->
@@ -1870,6 +1886,53 @@
             const locModalAddress = document.getElementById('locModalAddress');
             const openGoogleMapsActionBtn = document.getElementById('openGoogleMapsActionBtn');
             const copyLocAddressBtn = document.getElementById('copyLocAddressBtn');
+
+            const appJobActionConfirmModal = document.getElementById('appJobActionConfirmModal');
+            const appJobActionConfirmTitle = document.getElementById('appJobActionConfirmTitle');
+            const appJobActionConfirmMessage = document.getElementById('appJobActionConfirmMessage');
+            const appJobActionConfirmButton = document.getElementById('confirmAppJobActionConfirm');
+            const cancelAppJobActionConfirmButton = document.getElementById('cancelAppJobActionConfirm');
+            let resolveAppJobActionConfirm = null;
+
+            function closeAppJobActionConfirm(confirmed = false) {
+                if (!appJobActionConfirmModal) return;
+                appJobActionConfirmModal.classList.remove('open');
+                appJobActionConfirmModal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = profileOverlay?.classList.contains('open') ? 'hidden' : '';
+                const resolve = resolveAppJobActionConfirm;
+                resolveAppJobActionConfirm = null;
+                if (resolve) resolve(confirmed);
+            }
+
+            function confirmAppJobAction(title, message) {
+                if (!appJobActionConfirmModal) return Promise.resolve(false);
+                appJobActionConfirmTitle.textContent = title;
+                appJobActionConfirmMessage.textContent = message;
+                appJobActionConfirmModal.classList.add('open');
+                appJobActionConfirmModal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                return new Promise(resolve => {
+                    resolveAppJobActionConfirm = resolve;
+                    cancelAppJobActionConfirmButton.focus();
+                });
+            }
+
+            if (cancelAppJobActionConfirmButton) {
+                cancelAppJobActionConfirmButton.addEventListener('click', () => closeAppJobActionConfirm(false));
+            }
+            if (appJobActionConfirmButton) {
+                appJobActionConfirmButton.addEventListener('click', () => closeAppJobActionConfirm(true));
+            }
+            if (appJobActionConfirmModal) {
+                appJobActionConfirmModal.addEventListener('click', e => {
+                    if (e.target === appJobActionConfirmModal) closeAppJobActionConfirm(false);
+                });
+                document.addEventListener('keydown', e => {
+                    if (e.key === 'Escape' && appJobActionConfirmModal.classList.contains('open')) {
+                        closeAppJobActionConfirm(false);
+                    }
+                });
+            }
 
             let currentLocModalAddress = '';
             
@@ -3119,6 +3182,13 @@ function renderLocationMapPreview(embedUrl) {
             }
 
             async function loadApplicantAvailability(targetSession) {
+                // The profile setting is authoritative. A leftover scheduled slot
+                // must not switch an Instant Ready worker back to scheduled mode.
+                if (targetSession.timingPreference && targetSession.timingPreference !== 'later') {
+                    delete targetSession.preferredDate;
+                    delete targetSession.preferredTime;
+                    return;
+                }
                 const response = await fetch('/api/applicant/availability', { credentials: 'same-origin' });
                 if (!response.ok) return;
                 const data = await response.json();
@@ -3233,13 +3303,23 @@ function renderLocationMapPreview(embedUrl) {
                         item.addEventListener('click', (e) => {
                             e.stopPropagation();
                             const val = item.dataset.value;
+                            const previousPref = session.employmentPreference;
                             session.employmentPreference = val;
-                            saveWorkerSession(session);
                             renderMainServicesDisplay();
                             updateEmploymentPreferenceUI();
                             renderShiftsFeed(true);
                             closeAllFeedDropdowns();
-                            showToast(`Work Type set to ${val === 'full-time' ? 'Full-Time' : 'Part-Time'}`);
+                            persistApplicantProfile().then(() => {
+                                saveWorkerSession(session);
+                                showToast(`Work Type set to ${val === 'full-time' ? 'Full-Time' : 'Part-Time'}`);
+                            }).catch(err => {
+                                session.employmentPreference = previousPref || 'full-time';
+                                saveWorkerSession(session);
+                                renderMainServicesDisplay();
+                                updateEmploymentPreferenceUI();
+                                renderShiftsFeed(true);
+                                showToast(err.message || 'Could not save work type.', true);
+                            });
                         });
                     });
                 }
@@ -3410,7 +3490,20 @@ function renderLocationMapPreview(embedUrl) {
                             e.stopPropagation();
                             session.timingPreference = 'instant';
                             session.active = true;
-                            try { await persistApplicantProfile(); saveWorkerSession(session); } catch(err) { showToast(err.message,true); return; }
+                            delete session.preferredDate;
+                            delete session.preferredTime;
+                            try {
+                                await persistApplicantProfile();
+                                const response = await fetch('/api/applicant/availability', {
+                                    method: 'PUT',
+                                    credentials: 'same-origin',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ availability: [] })
+                                });
+                                const data = await response.json().catch(() => ({}));
+                                if (!response.ok) throw new Error(data.error || 'Could not clear the previous scheduled availability.');
+                                saveWorkerSession(session);
+                            } catch(err) { showToast(err.message,true); return; }
                             renderMainServicesDisplay();
                             updateRateAndTimingUI();
                             renderShiftsFeed(true);
@@ -3678,7 +3771,7 @@ if (feedUseCurrentBtn) {
                 // 3. Update Availability / Timing
                 const timingPref = session.timingPreference || 'instant';
                 if (mainPrefTimingVal) {
-                    if (timingPref === 'instant') {
+                    if (timingPref !== 'later') {
                         mainPrefTimingVal.innerHTML = '<span class="app-pref-dot"></span> Instant Ready';
                     } else {
                         const rawDate = session.preferredDate || '';
@@ -3826,13 +3919,26 @@ if (feedUseCurrentBtn) {
             }
 
             // Click toggle buttons updates and saves immediately
-            function selectPendingEmploymentPreference(pref) {
+            async function selectPendingEmploymentPreference(pref) {
+                const previousPref = session.employmentPreference || 'full-time';
                 pendingEmploymentPreference = pref;
                 session.employmentPreference = pref;
-                saveWorkerSession(session);
                 updateEmploymentPreferenceUI();
                 renderMainServicesDisplay();
                 renderShiftsFeed();
+
+                try {
+                    await persistApplicantProfile();
+                    saveWorkerSession(session);
+                } catch (err) {
+                    pendingEmploymentPreference = previousPref;
+                    session.employmentPreference = previousPref;
+                    updateEmploymentPreferenceUI();
+                    renderMainServicesDisplay();
+                    renderShiftsFeed(true);
+                    showToast(err.message || 'Could not save work type.', true);
+                    return;
+                }
 
                 if (profileEmpNote) {
                     profileEmpNote.textContent = 'Only matching jobs show in feed';
@@ -4205,9 +4311,8 @@ if (feedUseCurrentBtn) {
                     }
 
                     item.querySelector('.db-btn-end-contract').addEventListener('click', () => {
-                        if (confirm(`Conclude and end your work contract for ${contract.title}?`)) {
-                            endWorkerContract(contract.id);
-                        }
+                        confirmAppJobAction('End this job?', `This will conclude your work contract for ${contract.title}.`)
+                            .then(confirmed => { if (confirmed) endWorkerContract(contract.id); });
                     });
 
                     activeContractsContainer.appendChild(item);
@@ -4235,6 +4340,7 @@ if (feedUseCurrentBtn) {
 
             let lastShiftsFeedSig = null;
             let serverApplicantJobs = null;
+            let serverApplicantJobsFetchedAt = 0;
             let loadingApplicantJobs = false;
 
             function renderShiftsFeed(force = false) {
@@ -4262,12 +4368,14 @@ if (feedUseCurrentBtn) {
                     return;
                 }
 
-                if (serverApplicantJobs === null) {
+                const applicantJobsAreStale = Date.now() - serverApplicantJobsFetchedAt >= 5000;
+                if (serverApplicantJobs === null || applicantJobsAreStale) {
                     if (!loadingApplicantJobs) {
                         loadingApplicantJobs = true;
-                        fetch('/api/applicant/jobs', { credentials: 'same-origin' }).then(async r => {
+                        fetch('/api/applicant/jobs', { credentials: 'same-origin', cache: 'no-store' }).then(async r => {
                             const data = await r.json().catch(() => ({}));
                             if (!r.ok) throw new Error(data.error || 'Unable to load shifts');
+                            serverApplicantJobsFetchedAt = Date.now();
                             serverApplicantJobs = (data.jobs || []).map(j => ({
                                 ...j, roleKey: j.role, role: j.role_label, title: j.role_label, venue: j.map_location || j.city,
                                 location: j.city, mapLocation: j.map_location, googleMapsUrl: j.maps_url,
@@ -4275,7 +4383,7 @@ if (feedUseCurrentBtn) {
                                 rate: `₱${j.rate}`, status: j.status, acceptedCrew: [],
                                 timing: j.scheduled_at ? new Date(j.scheduled_at).toLocaleString() : j.timing
                             }));
-                        }).catch(err => { showToast(err.message, true); serverApplicantJobs = []; }).finally(() => {
+                        }).catch(err => { showToast(err.message, true); serverApplicantJobs = []; serverApplicantJobsFetchedAt = Date.now(); }).finally(() => {
                             loadingApplicantJobs = false;
                             renderShiftsFeed(true);
                         });
@@ -4585,6 +4693,14 @@ if (feedUseCurrentBtn) {
                 });
             }
 
+            // Employer searches can start after the applicant feed first loads.
+            // Recheck the server periodically so newly active jobs appear without a reload.
+            setInterval(() => {
+                if (hasWorkerSession() && document.visibilityState === 'visible') {
+                    renderShiftsFeed();
+                }
+            }, 5000);
+
             // Dismiss (Reject) Shift Action
             async function dismissShift(shift, cardEl) {
                 const rejectBtn = cardEl.querySelector('.app-btn-reject');
@@ -4793,9 +4909,8 @@ if (feedUseCurrentBtn) {
                     if (endBtn) {
                         endBtn.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            if (confirm(`Conclude and end your work contract for ${item.title || item.role}?`)) {
-                                endWorkerContract(item.id);
-                            }
+                            confirmAppJobAction('End this job?', `This will conclude your work contract for ${item.title || item.role}.`)
+                                .then(confirmed => { if (confirmed) endWorkerContract(item.id); });
                         });
                     }
                 }
@@ -5489,6 +5604,8 @@ function getAppMapFields() {
                 pendingLocation = userSession.location || 'Cebu City';
                 pendingEmploymentPreference = userSession.employmentPreference || 'full-time';
                 isOnline = userSession.active !== false;
+                updateEmploymentPreferenceUI();
+                updateRateAndTimingUI();
 
                 const nameParts = userSession.name.split(' ');
                 const initials = (nameParts[0][0] + (nameParts[1] ? nameParts[1][0] : '')).toUpperCase() || 'AL';
@@ -5505,7 +5622,7 @@ function getAppMapFields() {
                 }
                 const mainPrefTimingVal = document.getElementById('mainPrefTimingVal');
                 if (mainPrefTimingVal) {
-                    mainPrefTimingVal.textContent = userSession.timingPreference === 'instant' ? 'Immediate' : 'Scheduled';
+                    mainPrefTimingVal.textContent = userSession.timingPreference === 'later' ? 'Scheduled' : 'Immediate';
                 }
                 const mainPrefRateVal = document.getElementById('mainPrefRateVal');
                 if (mainPrefRateVal) {
@@ -5951,7 +6068,7 @@ if (appPreviewMapBtn) {
                         const profileResponse = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: appState.workType || 'full-time', expected_rate: Number(appState.rate) || 95, rate_period: period, city: appState.location || 'Cebu City', location_address: (getAppMapFields().mapLocation || ''), maps_url: (getAppMapFields().googleMapsUrl || ''), lat: (getAppMapFields().geo || {}).lat || null, lng: (getAppMapFields().geo || {}).lng || null, availability_mode: appState.timing === 'later' ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
                         if (!profileResponse.ok) { const profileErr = await profileResponse.json().catch(() => ({})); throw new Error(profileErr.error || 'Account created, but the applicant profile could not be saved. Please log in and try again.'); }
                         const profileData = await profileResponse.json();
-                        const newSession = { ...data.user, services: profileData.profile?.roles || [], active: true, employmentPreference: appState.workType || 'full-time', location: appState.location || 'Cebu City', acceptedShifts: [] };
+                        const newSession = { ...data.user, services: profileData.profile?.roles || [], active: true, employmentPreference: profileData.profile?.employment_type || appState.workType || 'full-time', location: profileData.profile?.city || appState.location || 'Cebu City', offeredRate: profileData.profile?.expected_rate ?? Number(appState.rate) ?? 95, ratePeriod: `per ${profileData.profile?.rate_period || period}`, timingPreference: profileData.profile?.availability_mode || (appState.timing === 'later' ? 'later' : 'now'), acceptedShifts: [] };
                         if (appState.timing === 'later') {
                             const startsAt = Math.floor(Date.now() / 1000) + 3600;
                             const availabilityResponse = await fetch('/api/applicant/availability', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ availability: [{ starts_at: startsAt, ends_at: startsAt + 8 * 3600, status: 'available' }] }) });
