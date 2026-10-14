@@ -4134,15 +4134,29 @@ h2 {
     outline-offset: 2px;
 }
 .db-booking-item .db-btn-cancel-search,
-.db-booking-item .db-btn-review-offer,
-.db-booking-item .db-btn-view-shift {
+.db-booking-item .db-btn-review-offer {
     background: #EFF6FF;
     border-color: #BFDBFE;
     color: #1D4ED8;
 }
 .db-booking-item .db-btn-cancel-search:hover,
-.db-booking-item .db-btn-review-offer:hover,
-.db-booking-item .db-btn-view-shift:hover {
+.db-booking-item .db-btn-review-offer:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+    color: #1E40AF;
+}
+.db-booking-item .db-job-view-details {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 6px 12px;
+    font-size: 0.76rem;
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+    color: #1D4ED8;
+}
+.db-booking-item .db-job-view-details:hover {
     background: #DBEAFE;
     border-color: #93C5FD;
     color: #1E40AF;
@@ -4367,6 +4381,21 @@ h2 {
     border: 1.2px solid #E2E8F0;
     text-align: center;
     position: relative;
+}
+
+.app-loc-map-frame {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #F3F4F6;
+}
+
+.app-loc-map-frame iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
 .app-loc-map-art {

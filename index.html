@@ -42,7 +42,7 @@
             </a>
 
             <div class="nav-actions">
-                <a href="login.html" class="nav-login-btn" id="headerLoginBtn">Log In</a>
+                <a href="#" class="nav-login-btn" id="headerLoginBtn">Log In</a>
             </div>
         </div>
     </header>
@@ -237,9 +237,9 @@
                 btnRoleContinue.classList.add('active');
             }
 
-            function proceedToLogin() {
+            function proceedToPortal() {
                 if (!selectedRole) return;
-                const targetUrl = selectedRole === 'employer' ? 'login.html?role=employer' : 'login.html?role=applicant';
+                const targetUrl = selectedRole === 'employer' ? 'employer.html' : 'applicant.html';
                 window.location.href = targetUrl;
             }
 
@@ -276,7 +276,7 @@
                 });
                 card.addEventListener('dblclick', () => {
                     selectRole(card.dataset.role);
-                    proceedToLogin();
+                    proceedToPortal();
                 });
                 card.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -287,7 +287,7 @@
             });
 
             if (btnRoleContinue) {
-                btnRoleContinue.addEventListener('click', proceedToLogin);
+                btnRoleContinue.addEventListener('click', proceedToPortal);
             }
         })();
     </script>

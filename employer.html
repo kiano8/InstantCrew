@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261011-payment-details-step2-removed">
+    <link rel="stylesheet" href="css/employer.css?v=20261014-employer-view-details">
 </head>
 
 <body>
@@ -815,7 +815,7 @@
         </div>
     </main>
 
-    <!-- ════ Employer Auth Modal (Triggered in Step 3 when clicking "Find a Crew" if not logged in) ════ -->
+    <!-- ════ Employer Auth Modal (Shown after Step 2 when a guest continues) ════ -->
     <div class="db-modal-overlay" id="employerAuthModal" aria-hidden="true" role="dialog" aria-modal="true"
         aria-labelledby="employerAuthTitle">
         <div class="db-modal-card db-auth-modal-card">
@@ -982,10 +982,6 @@
                     </button>
                 </form>
 
-                <p style="text-align:center; font-size:0.78rem; color:#6B7280; margin-top:14px; margin-bottom:0;">
-                    Prefer the full login page? <a href="login.html?role=hirer"
-                        style="color:#D97706; font-weight:700; text-decoration:underline;">Open Login Page</a>
-                </p>
             </div>
         </div>
     </div>
@@ -1408,11 +1404,23 @@
                         <span class="app-loc-field-label">EMPLOYER'S LOCATION</span>
                         <p class="app-loc-address-text" id="locModalAddress">Cebu City</p>
                     </div>
+                    <div class="app-loc-box-row">
+                        <span class="app-loc-field-label">SHIFT TIME</span>
+                        <p class="app-loc-address-text" id="locModalTiming">—</p>
+                    </div>
+                    <div class="app-loc-box-row">
+                        <span class="app-loc-field-label">OFFERED RATE</span>
+                        <p class="app-loc-address-text" id="locModalRate">—</p>
+                    </div>
                 </div>
 
                 <!-- Google Maps Direction Banner -->
                 <div class="app-loc-map-preview">
-                    <div class="app-loc-map-art">
+                    <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
+                        <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                    </div>
+                    <div class="app-loc-map-art" id="locMapArt">
                         <div class="app-map-roads"></div>
                         <div class="app-map-pulse-pin">
                             <div class="app-pin-glow"></div>
@@ -1423,7 +1431,7 @@
                             </svg>
                         </div>
                     </div>
-                    <p class="app-map-preview-hint">Location verified by employer for Google Maps navigation</p>
+                    <p class="app-map-preview-hint" id="locMapHint">Location verified by employer for Google Maps navigation</p>
                 </div>
             </div>
 
@@ -1459,7 +1467,7 @@
     
     <script src="js/location.js"></script>
     <script src="js/shared-data.js"></script>
-    <script src="js/employer.js?v=20261011-employer-notification-resume"></script>
+    <script src="js/employer.js?v=20261014-employer-view-details"></script>
 </body>
 
 </html>
