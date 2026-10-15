@@ -751,57 +751,59 @@
                                 </div>
                             </div>
                         </div>
-                      <button type="button" class="db-use-current-btn" id="appUseCurrentBtn">
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
-                        stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                        <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.4" />
-                        </svg>
-                        Use Current
-                      </button>
+                        <button type="button" class="db-use-current-btn" id="appUseCurrentBtn">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
+                                    stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                                <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.4" />
+                            </svg>
+                            Use Current
+                        </button>
                     </div>
-                    
-                    <!-- ── Google Map Location Card (optional for applicants) ── -->
-<div class="db-map-location-card" id="appMapLocationCard" style="margin-top:16px;">
-    <div class="db-map-header">
-        <div class="db-map-label-group">
-            <svg class="db-google-pin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335" />
-                <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
-            </svg>
-            <span class="db-map-title">Google Map Location</span>
-        </div>
-        <span class="db-map-badge">Optional</span>
-    </div>
-    <p class="db-map-desc">
-        Add your Google Maps link or address so employers can see roughly where you're based.
-    </p>
 
-    <div class="db-map-input-row">
-        <div class="db-map-input-wrap">
-            <svg class="db-map-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            <input type="text" id="appMapLocationInput" class="db-map-input"
-                placeholder="Paste Google Maps URL or enter your address (e.g. IT Park, Lahug)"
-                aria-label="Google Map location link or address" />
-            <button type="button" class="db-map-clear-btn" id="appClearMapBtn"
-                style="display:none;" title="Clear location">&times;</button>
-        </div>
-        <button type="button" class="db-map-preview-btn" id="appPreviewMapBtn"
-            title="Preview on Google Maps">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-            </svg>
-            <span>Preview Map</span>
-        </button>
-    </div>
-</div>
+                    <!-- ── Google Map Location Card (optional for applicants) ── -->
+                    <div class="db-map-location-card" id="appMapLocationCard" style="margin-top:16px;">
+                        <div class="db-map-header">
+                            <div class="db-map-label-group">
+                                <svg class="db-google-pin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                                        fill="#EA4335" />
+                                    <circle cx="12" cy="9" r="2.8" fill="#FFFFFF" />
+                                </svg>
+                                <span class="db-map-title">Google Map Location</span>
+                            </div>
+                            <span class="db-map-badge">Optional</span>
+                        </div>
+                        <p class="db-map-desc">
+                            Add your Google Maps link or address so employers can see roughly where you're based.
+                        </p>
+
+                        <div class="db-map-input-row">
+                            <div class="db-map-input-wrap">
+                                <svg class="db-map-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                <input type="text" id="appMapLocationInput" class="db-map-input"
+                                    placeholder="Paste Google Maps URL or enter your address (e.g. IT Park, Lahug)"
+                                    aria-label="Google Map location link or address" />
+                                <button type="button" class="db-map-clear-btn" id="appClearMapBtn" style="display:none;"
+                                    title="Clear location">&times;</button>
+                            </div>
+                            <button type="button" class="db-map-preview-btn" id="appPreviewMapBtn"
+                                title="Preview on Google Maps">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                                <span>Preview Map</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <button type="button" class="db-btn-primary" id="appToStep3" style="margin-top: 24px;">
                         <span>Next</span>
@@ -1320,7 +1322,8 @@
                                 title="Click to change your work location">
                                 <div class="app-location-chip-left">
                                     <span class="app-location-dot"></span>
-                                    <svg class="app-location-pin-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                    <svg class="app-location-pin-icon" width="14" height="14" viewBox="0 0 16 16"
+                                        fill="none">
                                         <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
                                             stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                                         <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.8" />
@@ -1330,8 +1333,8 @@
                                 </div>
                                 <span class="app-location-edit-tag">
                                     <span>Change</span>
-                                    <svg class="app-loc-pill-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                                    <svg class="app-loc-pill-chevron" width="13" height="13" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
                                         stroke-linejoin="round">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
@@ -1491,12 +1494,12 @@
 
                 <!-- Google Maps Direction Banner -->
                 <div class="app-loc-map-preview">
-                  <!-- Live map (shown when we can build an embed URL) -->
-                  <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
-                    <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
-                  </div>              
-      
+                    <!-- Live map (shown when we can build an embed URL) -->
+                    <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
+                        <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                    </div>
+
                     <div class="app-loc-map-art">
                         <div class="app-map-roads"></div>
                         <div class="app-map-pulse-pin">
@@ -1566,7 +1569,7 @@
             <div class="db-auth-modal-inner">
                 <!-- Modal Header -->
                 <div class="db-modal-header db-auth-header">
-                    <div class="db-auth-icon-badge" style="background:#FFF5E5; border-color:#FCD34D; color:#D97706;">
+                    <div class="db-auth-icon-badge" style="background: transparent; color:#D97706;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -1651,8 +1654,8 @@
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
-                            <input type="text" id="appModalSignupName" class="db-auth-input"
-                                placeholder="Your name" required>
+                            <input type="text" id="appModalSignupName" class="db-auth-input" placeholder="Your name"
+                                required>
                         </div>
                     </div>
 
@@ -1935,45 +1938,45 @@
             }
 
             let currentLocModalAddress = '';
-            
+
             // Build a keyless Google Maps embed URL from the best data we have
-function buildMapEmbedUrl(shift, address, mapsUrl) {
-    // 1. Exact GPS pin saved by the employer's "Use Current"
-    if (shift.geo && isFinite(shift.geo.lat) && isFinite(shift.geo.lng)) {
-        return `https://www.google.com/maps?q=${shift.geo.lat},${shift.geo.lng}&z=17&output=embed`;
-    }
-    // 2. A query already inside the maps URL (e.g. "10.31,123.89" or a place name)
-    try {
-        const u = new URL(mapsUrl);
-        const q = u.searchParams.get('query') || u.searchParams.get('q');
-        if (q) return `https://www.google.com/maps?q=${encodeURIComponent(q)}&z=16&output=embed`;
-    } catch (e) { /* not a parseable URL */ }
-    // 3. Plain-text address (but not a pasted link, which can't be embedded)
-    if (address && !/^https?:\/\//i.test(address)) {
-        return `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed`;
-    }
-    return '';
-}
+            function buildMapEmbedUrl(shift, address, mapsUrl) {
+                // 1. Exact GPS pin saved by the employer's "Use Current"
+                if (shift.geo && isFinite(shift.geo.lat) && isFinite(shift.geo.lng)) {
+                    return `https://www.google.com/maps?q=${shift.geo.lat},${shift.geo.lng}&z=17&output=embed`;
+                }
+                // 2. A query already inside the maps URL (e.g. "10.31,123.89" or a place name)
+                try {
+                    const u = new URL(mapsUrl);
+                    const q = u.searchParams.get('query') || u.searchParams.get('q');
+                    if (q) return `https://www.google.com/maps?q=${encodeURIComponent(q)}&z=16&output=embed`;
+                } catch (e) { /* not a parseable URL */ }
+                // 3. Plain-text address (but not a pasted link, which can't be embedded)
+                if (address && !/^https?:\/\//i.test(address)) {
+                    return `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed`;
+                }
+                return '';
+            }
 
-function renderLocationMapPreview(embedUrl) {
-    const frameWrap = document.getElementById('locMapFrameWrap');
-    const frame = document.getElementById('locMapFrame');
-    const art = document.getElementById('locMapArt');
-    const hint = document.getElementById('locMapHint');
-    if (!frameWrap || !frame || !art) return;
+            function renderLocationMapPreview(embedUrl) {
+                const frameWrap = document.getElementById('locMapFrameWrap');
+                const frame = document.getElementById('locMapFrame');
+                const art = document.getElementById('locMapArt');
+                const hint = document.getElementById('locMapHint');
+                if (!frameWrap || !frame || !art) return;
 
-    if (embedUrl) {
-        frame.src = embedUrl;
-        frameWrap.style.display = 'block';
-        art.style.display = 'none';
-        if (hint) hint.textContent = 'Live map preview. Tap "Open in Google Maps" for directions.';
-    } else {
-        frame.src = 'about:blank';
-        frameWrap.style.display = 'none';
-        art.style.display = '';
-        if (hint) hint.textContent = 'Location verified by employer for Google Maps navigation';
-    }
-}
+                if (embedUrl) {
+                    frame.src = embedUrl;
+                    frameWrap.style.display = 'block';
+                    art.style.display = 'none';
+                    if (hint) hint.textContent = 'Live map preview. Tap "Open in Google Maps" for directions.';
+                } else {
+                    frame.src = 'about:blank';
+                    frameWrap.style.display = 'none';
+                    art.style.display = '';
+                    if (hint) hint.textContent = 'Location verified by employer for Google Maps navigation';
+                }
+            }
 
             function openLocationDetailModal(shift) {
                 if (!appLocationDetailModal) return;
@@ -2213,7 +2216,7 @@ function renderLocationMapPreview(embedUrl) {
                     isOnline = workerStatusSwitch.checked;
                     session.active = isOnline;
                     try { await persistApplicantProfile(); saveWorkerSession(session); }
-                    catch (err) { workerStatusSwitch.checked = !isOnline; isOnline = !isOnline; session.active = isOnline; showToast(err.message,true); return; }
+                    catch (err) { workerStatusSwitch.checked = !isOnline; isOnline = !isOnline; session.active = isOnline; showToast(err.message, true); return; }
                     updateStatusUI();
                     if (typeof renderShiftsFeed === 'function') renderShiftsFeed();
                     showToast(isOnline ? 'Status: Active (Available for Shifts)' : 'Status: Offline / On Break');
@@ -3196,8 +3199,8 @@ function renderLocationMapPreview(embedUrl) {
                 if (!slot) return;
                 const starts = new Date(slot.starts_at * 1000);
                 targetSession.timingPreference = 'later';
-                targetSession.preferredDate = `${starts.getFullYear()}-${String(starts.getMonth()+1).padStart(2,'0')}-${String(starts.getDate()).padStart(2,'0')}`;
-                targetSession.preferredTime = `${String(starts.getHours()).padStart(2,'0')}:${String(starts.getMinutes()).padStart(2,'0')}`;
+                targetSession.preferredDate = `${starts.getFullYear()}-${String(starts.getMonth() + 1).padStart(2, '0')}-${String(starts.getDate()).padStart(2, '0')}`;
+                targetSession.preferredTime = `${String(starts.getHours()).padStart(2, '0')}:${String(starts.getMinutes()).padStart(2, '0')}`;
             }
 
             btnSaveServices.addEventListener('click', async () => {
@@ -3503,7 +3506,7 @@ function renderLocationMapPreview(embedUrl) {
                                 const data = await response.json().catch(() => ({}));
                                 if (!response.ok) throw new Error(data.error || 'Could not clear the previous scheduled availability.');
                                 saveWorkerSession(session);
-                            } catch(err) { showToast(err.message,true); return; }
+                            } catch (err) { showToast(err.message, true); return; }
                             renderMainServicesDisplay();
                             updateRateAndTimingUI();
                             renderShiftsFeed(true);
@@ -3525,11 +3528,11 @@ function renderLocationMapPreview(embedUrl) {
                                 const start = new Date(workerSelectedDate);
                                 const [hour, minute] = session.preferredTime.split(':').map(Number);
                                 start.setHours(hour, minute, 0, 0);
-                                const startsAt = Math.floor(start.getTime()/1000);
-                                const r = await fetch('/api/applicant/availability', { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({availability:[{starts_at:startsAt,ends_at:startsAt+8*3600,status:'available'}]}) });
-                                const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error || 'Could not save scheduled availability.');
+                                const startsAt = Math.floor(start.getTime() / 1000);
+                                const r = await fetch('/api/applicant/availability', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ availability: [{ starts_at: startsAt, ends_at: startsAt + 8 * 3600, status: 'available' }] }) });
+                                const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not save scheduled availability.');
                                 saveWorkerSession(session);
-                            } catch(err) { showToast(err.message,true); return; }
+                            } catch (err) { showToast(err.message, true); return; }
                             renderMainServicesDisplay();
                             updateRateAndTimingUI();
                             renderShiftsFeed(true);
@@ -3659,47 +3662,47 @@ function renderLocationMapPreview(embedUrl) {
 
                     // Quick chip clicks
                     feedLocationMenu.querySelectorAll('.app-feed-loc-chip').forEach(chip => {
-                chip.addEventListener('click', (e) => {
+                        chip.addEventListener('click', (e) => {
                             e.stopPropagation();
-                    void applyFeedLocation(chip.dataset.city);
+                            void applyFeedLocation(chip.dataset.city);
                         });
                     });
 
-                  // Use current location button (real geolocation)
-if (feedUseCurrentBtn) {
-    const feedBtnDefaultHTML = feedUseCurrentBtn.innerHTML;
-    feedUseCurrentBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (feedUseCurrentBtn.disabled) return;
+                    // Use current location button (real geolocation)
+                    if (feedUseCurrentBtn) {
+                        const feedBtnDefaultHTML = feedUseCurrentBtn.innerHTML;
+                        feedUseCurrentBtn.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            if (feedUseCurrentBtn.disabled) return;
 
-        if (!window.InstantCrewLocation) {
-            showToast('Location service failed to load. Please pick your city from the list.', true);
-            return;
-        }
+                            if (!window.InstantCrewLocation) {
+                                showToast('Location service failed to load. Please pick your city from the list.', true);
+                                return;
+                            }
 
-        feedUseCurrentBtn.innerHTML = '<span>Detecting…</span>';
-        feedUseCurrentBtn.disabled = true;
+                            feedUseCurrentBtn.innerHTML = '<span>Detecting…</span>';
+                            feedUseCurrentBtn.disabled = true;
 
-        try {
-            const geo = await window.InstantCrewLocation.locate();
-            const city = resolveDetectedCity(geo.city);
-            if (!city) {
-                showToast("Couldn't work out your city. Please pick it from the list.", true);
-            } else {
-                if (!PHILIPPINES_CITIES.includes(city)) PHILIPPINES_CITIES.unshift(city);
-                if (await applyFeedLocation(city)) feedUseCurrentBtn.innerHTML = '<span>Detected</span>';
-            }
-        } catch (err) {
-            showToast((err && err.message) || 'Could not get your location.', true);
-        } finally {
-            setTimeout(() => {
-                feedUseCurrentBtn.innerHTML = feedBtnDefaultHTML;
-                feedUseCurrentBtn.disabled = false;
-            }, 1500);
-        }
-    });
-}
-                    
+                            try {
+                                const geo = await window.InstantCrewLocation.locate();
+                                const city = resolveDetectedCity(geo.city);
+                                if (!city) {
+                                    showToast("Couldn't work out your city. Please pick it from the list.", true);
+                                } else {
+                                    if (!PHILIPPINES_CITIES.includes(city)) PHILIPPINES_CITIES.unshift(city);
+                                    if (await applyFeedLocation(city)) feedUseCurrentBtn.innerHTML = '<span>Detected</span>';
+                                }
+                            } catch (err) {
+                                showToast((err && err.message) || 'Could not get your location.', true);
+                            } finally {
+                                setTimeout(() => {
+                                    feedUseCurrentBtn.innerHTML = feedBtnDefaultHTML;
+                                    feedUseCurrentBtn.disabled = false;
+                                }, 1500);
+                            }
+                        });
+                    }
+
                 }
 
                 // Document click to close all feed dropdowns
@@ -4152,13 +4155,15 @@ if (feedUseCurrentBtn) {
             let assignmentFetchedAt = 0;
             function mapAssignment(a) {
                 const j = a.job;
-                return { id: String(j.id), jobId: String(j.id), title: j.role_label, role: j.role_label,
+                return {
+                    id: String(j.id), jobId: String(j.id), title: j.role_label, role: j.role_label,
                     category: j.category, venue: j.map_location || j.city, location: j.city,
                     mapLocation: j.map_location, googleMapsUrl: j.maps_url,
                     rate: `₱${j.rate}`, timing: j.timing, employmentType: j.employment_type,
                     status: a.ended_at ? 'ended' : 'active', endedAt: a.ended_at,
                     transitStatus: a.transit_status === 'en_route' ? 'on_the_way' : a.transit_status,
-                    acceptedAt: a.accepted_at };
+                    acceptedAt: a.accepted_at
+                };
             }
             function refreshApplicantAssignments(force = false) {
                 if (assignmentFetchPending || (!force && serverAssignments !== null && Date.now() - assignmentFetchedAt < 2500)) return;
@@ -4322,16 +4327,16 @@ if (feedUseCurrentBtn) {
             function updateWorkerContractTransit(contractId, transitStatus) {
                 const status = transitStatus === 'on_the_way' ? 'en_route' : transitStatus;
                 fetch(`/api/applicant/assignments/${contractId}/transit`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
-                    .then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error || 'Could not update transit status.'); serverAssignments=null; assignmentFetchedAt=0; refreshApplicantAssignments(true); })
+                    .then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not update transit status.'); serverAssignments = null; assignmentFetchedAt = 0; refreshApplicantAssignments(true); })
                     .catch(err => showToast(err.message, true));
             }
 
             async function endWorkerContract(contractId) {
                 try {
-                    const r=await fetch(`/api/applicant/assignments/${contractId}/end`,{method:'POST',credentials:'same-origin'});
-                    const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Could not end this contract.');
-                    serverAssignments=null;assignmentFetchedAt=0;await refreshApplicantAssignments(true);renderShiftsFeed(true);showToast('Contract ended.');
-                } catch(err){showToast(err.message,true);}
+                    const r = await fetch(`/api/applicant/assignments/${contractId}/end`, { method: 'POST', credentials: 'same-origin' });
+                    const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not end this contract.');
+                    serverAssignments = null; assignmentFetchedAt = 0; await refreshApplicantAssignments(true); renderShiftsFeed(true); showToast('Contract ended.');
+                } catch (err) { showToast(err.message, true); }
             }
 
             /* ═══════════════════════════════════════════════════════════
@@ -4707,8 +4712,8 @@ if (feedUseCurrentBtn) {
                 if (rejectBtn) rejectBtn.disabled = true;
                 try {
                     const response = await fetch(`/api/applicant/jobs/${shift.id}/reject`, { method: 'POST', credentials: 'same-origin' });
-                    if (!response.ok) { const d=await response.json().catch(()=>({})); throw new Error(d.error || 'Could not decline this shift.'); }
-                } catch (err) { if(rejectBtn) rejectBtn.disabled=false; showToast(err.message,true); return; }
+                    if (!response.ok) { const d = await response.json().catch(() => ({})); throw new Error(d.error || 'Could not decline this shift.'); }
+                } catch (err) { if (rejectBtn) rejectBtn.disabled = false; showToast(err.message, true); return; }
                 cardEl.style.transition = 'all 0.25s ease';
                 cardEl.style.opacity = '0';
                 cardEl.style.transform = 'translateX(-20px)';
@@ -5141,9 +5146,9 @@ if (feedUseCurrentBtn) {
                 if (applicantNotifications === null || Date.now() - applicantNotificationsFetchedAt > 2500) {
                     if (!applicantNotificationsPending) {
                         applicantNotificationsPending = true;
-                        fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||'Could not load notifications.'); applicantNotifications=d.notifications||[]; applicantNotificationsFetchedAt=Date.now(); renderWorkerNotifications(); }).catch(e=>showToast(e.message,true)).finally(()=>{applicantNotificationsPending=false;});
+                        fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not load notifications.'); applicantNotifications = d.notifications || []; applicantNotificationsFetchedAt = Date.now(); renderWorkerNotifications(); }).catch(e => showToast(e.message, true)).finally(() => { applicantNotificationsPending = false; });
                     }
-                    if (applicantNotifications === null) applicantNotifications=[];
+                    if (applicantNotifications === null) applicantNotifications = [];
                 }
                 const workerServices = Array.isArray(session.services) ? session.services : [];
                 const targetPref = session.employmentPreference || 'full-time';
@@ -5255,7 +5260,7 @@ if (feedUseCurrentBtn) {
 
             if (clearNotifsBtn) {
                 clearNotifsBtn.addEventListener('click', () => {
-                    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { applicantNotifications=[]; applicantNotificationsFetchedAt=Date.now(); renderWorkerNotifications(); });
+                    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { applicantNotifications = []; applicantNotificationsFetchedAt = Date.now(); renderWorkerNotifications(); });
                 });
             }
 
@@ -5337,32 +5342,32 @@ if (feedUseCurrentBtn) {
                 'Makati City', 'Taguig', 'Pasig', 'Mandaluyong',
                 'Pasay', 'Iloilo City', 'Bacolod', 'Cagayan de Oro'
             ];
-            
+
             // Map a geocoder city name (e.g. "Cebu", "City of Cebu") onto your city list
-function resolveDetectedCity(raw) {
-    if (!raw) return '';
-    const norm = s => s.toLowerCase().replace(/^city of\s+/, '').trim();
-    const n = norm(raw);
-    const match = CITIES_LIST.find(c => {
-        const cn = norm(c);
-        return cn === n || cn.includes(n) || n.includes(cn);
-    });
-    return match || raw.trim(); // unknown city: use as-is
-}
+            function resolveDetectedCity(raw) {
+                if (!raw) return '';
+                const norm = s => s.toLowerCase().replace(/^city of\s+/, '').trim();
+                const n = norm(raw);
+                const match = CITIES_LIST.find(c => {
+                    const cn = norm(c);
+                    return cn === n || cn.includes(n) || n.includes(cn);
+                });
+                return match || raw.trim(); // unknown city: use as-is
+            }
 
-function buildMapsUrlFor(query) {
-    return (window.InstantCrewShared && window.InstantCrewShared.formatGoogleMapsUrl)
-        ? window.InstantCrewShared.formatGoogleMapsUrl(query)
-        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
+            function buildMapsUrlFor(query) {
+                return (window.InstantCrewShared && window.InstantCrewShared.formatGoogleMapsUrl)
+                    ? window.InstantCrewShared.formatGoogleMapsUrl(query)
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+            }
 
-function getAppMapFields() {
-    return {
-        mapLocation: appState.mapLocation || '',
-        googleMapsUrl: appState.googleMapsUrl || '',
-        geo: appState.geo || null
-    };
-}
+            function getAppMapFields() {
+                return {
+                    mapLocation: appState.mapLocation || '',
+                    googleMapsUrl: appState.googleMapsUrl || '',
+                    geo: appState.geo || null
+                };
+            }
 
             const appState = {
                 step: 1,
@@ -5638,51 +5643,51 @@ function getAppMapFields() {
 
             function initApplicantStepsListeners() {
                 // Step 2 "Use Current" (real geolocation)
-const appUseCurrentBtn = document.getElementById('appUseCurrentBtn');
-if (appUseCurrentBtn) {
-    const appBtnDefaultHTML = appUseCurrentBtn.innerHTML;
-    appUseCurrentBtn.addEventListener('click', async () => {
-        if (appUseCurrentBtn.disabled) return;
-        if (!window.InstantCrewLocation) {
-            showToast('Location service failed to load. Please pick your city from the list.', true);
-            return;
-        }
+                const appUseCurrentBtn = document.getElementById('appUseCurrentBtn');
+                if (appUseCurrentBtn) {
+                    const appBtnDefaultHTML = appUseCurrentBtn.innerHTML;
+                    appUseCurrentBtn.addEventListener('click', async () => {
+                        if (appUseCurrentBtn.disabled) return;
+                        if (!window.InstantCrewLocation) {
+                            showToast('Location service failed to load. Please pick your city from the list.', true);
+                            return;
+                        }
 
-        appUseCurrentBtn.disabled = true;
-        appUseCurrentBtn.textContent = 'Locating…';
+                        appUseCurrentBtn.disabled = true;
+                        appUseCurrentBtn.textContent = 'Locating…';
 
-        try {
-            const geo = await window.InstantCrewLocation.locate();
-            const city = resolveDetectedCity(geo.city);
-            if (!city) {
-                showToast("Couldn't work out your city. Please pick it from the list.", true);
-            } else {
-                if (!CITIES_LIST.includes(city)) CITIES_LIST.unshift(city);
-                appState.location = city;
-if (appLocationTriggerText) appLocationTriggerText.textContent = city;
-renderAppLocationDropdown('');
+                        try {
+                            const geo = await window.InstantCrewLocation.locate();
+                            const city = resolveDetectedCity(geo.city);
+                            if (!city) {
+                                showToast("Couldn't work out your city. Please pick it from the list.", true);
+                            } else {
+                                if (!CITIES_LIST.includes(city)) CITIES_LIST.unshift(city);
+                                appState.location = city;
+                                if (appLocationTriggerText) appLocationTriggerText.textContent = city;
+                                renderAppLocationDropdown('');
 
-// Fill the Google Map card with the detected address + exact pin
-appState.mapLocation = geo.label;
-appState.googleMapsUrl = geo.mapsUrl;
-appState.geo = { lat: geo.lat, lng: geo.lng, label: geo.label, mapsUrl: geo.mapsUrl };
-const mapInput = document.getElementById('appMapLocationInput');
-const clearBtn = document.getElementById('appClearMapBtn');
-if (mapInput) mapInput.value = geo.label;
-if (clearBtn) clearBtn.style.display = 'block';
+                                // Fill the Google Map card with the detected address + exact pin
+                                appState.mapLocation = geo.label;
+                                appState.googleMapsUrl = geo.mapsUrl;
+                                appState.geo = { lat: geo.lat, lng: geo.lng, label: geo.label, mapsUrl: geo.mapsUrl };
+                                const mapInput = document.getElementById('appMapLocationInput');
+                                const clearBtn = document.getElementById('appClearMapBtn');
+                                if (mapInput) mapInput.value = geo.label;
+                                if (clearBtn) clearBtn.style.display = 'block';
 
-updateStepSummary();
-showToast(`Location set to ${city}`);
-            }
-        } catch (err) {
-            showToast((err && err.message) || 'Could not get your location.', true);
-        } finally {
-            appUseCurrentBtn.innerHTML = appBtnDefaultHTML;
-            appUseCurrentBtn.disabled = false;
-        }
-    });
-}
-      
+                                updateStepSummary();
+                                showToast(`Location set to ${city}`);
+                            }
+                        } catch (err) {
+                            showToast((err && err.message) || 'Could not get your location.', true);
+                        } finally {
+                            appUseCurrentBtn.innerHTML = appBtnDefaultHTML;
+                            appUseCurrentBtn.disabled = false;
+                        }
+                    });
+                }
+
 
                 // Category clicks — clicking category switches category without dropping down right away
                 [
@@ -5808,47 +5813,47 @@ showToast(`Location set to ${city}`);
                         renderAppLocationDropdown(e.target.value);
                     });
                 }
-                
+
                 // ── Step 2: Google Map Location card ──
-const appMapInput = document.getElementById('appMapLocationInput');
-const appClearMapBtn = document.getElementById('appClearMapBtn');
-const appPreviewMapBtn = document.getElementById('appPreviewMapBtn');
+                const appMapInput = document.getElementById('appMapLocationInput');
+                const appClearMapBtn = document.getElementById('appClearMapBtn');
+                const appPreviewMapBtn = document.getElementById('appPreviewMapBtn');
 
-if (appMapInput) {
-    appMapInput.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        appState.mapLocation = val;
-        appState.geo = null; // typed manually, so drop the GPS pin
-        appState.googleMapsUrl = val ? buildMapsUrlFor(val) : '';
-        if (appClearMapBtn) appClearMapBtn.style.display = val ? 'block' : 'none';
-    });
-    appMapInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (appToStep3) appToStep3.click();
-        }
-    });
-}
+                if (appMapInput) {
+                    appMapInput.addEventListener('input', (e) => {
+                        const val = e.target.value.trim();
+                        appState.mapLocation = val;
+                        appState.geo = null; // typed manually, so drop the GPS pin
+                        appState.googleMapsUrl = val ? buildMapsUrlFor(val) : '';
+                        if (appClearMapBtn) appClearMapBtn.style.display = val ? 'block' : 'none';
+                    });
+                    appMapInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (appToStep3) appToStep3.click();
+                        }
+                    });
+                }
 
-if (appClearMapBtn) {
-    appClearMapBtn.addEventListener('click', () => {
-        if (appMapInput) { appMapInput.value = ''; appMapInput.focus(); }
-        appState.mapLocation = '';
-        appState.googleMapsUrl = '';
-        appState.geo = null;
-        appClearMapBtn.style.display = 'none';
-    });
-}
+                if (appClearMapBtn) {
+                    appClearMapBtn.addEventListener('click', () => {
+                        if (appMapInput) { appMapInput.value = ''; appMapInput.focus(); }
+                        appState.mapLocation = '';
+                        appState.googleMapsUrl = '';
+                        appState.geo = null;
+                        appClearMapBtn.style.display = 'none';
+                    });
+                }
 
-if (appPreviewMapBtn) {
-    appPreviewMapBtn.addEventListener('click', () => {
-        const query = (appMapInput && appMapInput.value.trim()) || appState.location || 'Cebu City';
-        const url = (appState.geo && query === appState.geo.label)
-            ? appState.geo.mapsUrl
-            : buildMapsUrlFor(query);
-        window.open(url, '_blank');
-    });
-}
+                if (appPreviewMapBtn) {
+                    appPreviewMapBtn.addEventListener('click', () => {
+                        const query = (appMapInput && appMapInput.value.trim()) || appState.location || 'Cebu City';
+                        const url = (appState.geo && query === appState.geo.label)
+                            ? appState.geo.mapsUrl
+                            : buildMapsUrlFor(query);
+                        window.open(url, '_blank');
+                    });
+                }
 
                 // Step 2 -> Step 3
                 if (appToStep3) {
@@ -6103,7 +6108,7 @@ if (appPreviewMapBtn) {
                     saveWorkerSession(session);
                     applySessionToDashboard(session);
                     updateViewMode();
-                }).catch(() => {});
+                }).catch(() => { });
             }
 
             // Real-time synchronization helper

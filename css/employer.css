@@ -5786,8 +5786,7 @@ body {
     width: 48px;
     height: 48px;
     border-radius: 14px;
-    background: #FFF5E5;
-    border: 1.5px solid #FCD34D;
+    background: transparent;
     color: #D97706;
     display: flex;
     align-items: center;

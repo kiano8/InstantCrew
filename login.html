@@ -198,8 +198,7 @@
                             </svg>
                         </span>
                         <input type="password" id="hirerSignupPassword" class="form-input form-input-password"
-                            placeholder="Create strong password"
-                required minlength="8" maxlength="72"> 
+                            placeholder="Create strong password" required minlength="8" maxlength="72">
                         <button type="button" class="password-toggle-btn" aria-label="Show password"
                             title="Toggle password visibility">
                             <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -322,7 +321,8 @@
                             </svg>
                         </span>
                         <input type="password" id="appSignupPassword" class="form-input form-input-password"
-                            placeholder="Create password" required minlength="8" maxlength="72" autocomplete="new-password">
+                            placeholder="Create password" required minlength="8" maxlength="72"
+                            autocomplete="new-password">
                         <button type="button" class="password-toggle-btn" aria-label="Show password"
                             title="Toggle password visibility">
                             <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -572,131 +572,131 @@
 
             // Form submissions (Go API)
             async function postJSON(path, payload) {
-              let res;
-              try{
-              res = await fetch(path, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify(payload),
-              });
-            } catch (e) {
-              throw new Error('Could not reach the server. Please try again.');
-            }
-              const data = await res.json().catch(() => ({}));
-              if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again');
-              return data;   
+                let res;
+                try {
+                    res = await fetch(path, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(payload),
+                    });
+                } catch (e) {
+                    throw new Error('Could not reach the server. Please try again.');
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again');
+                return data;
             }
 
             // Returns the user or null after showing the error 
-          async function authRequest(path, payload, btn, busyText, idleText) {
-            authErrorMsg.style.display = 'none';
-            btn.disabled = true; 
-            btn.textContent = busyText;
-            try {
-              return (await postJSON(path, payload)).user;
-            } catch (err) {
-              authErrorMsg.textContent = err.message;
-              authErrorMsg.style.display = 'block';
-              btn.disabled = false; 
-              btn.textContent = idleText;
-              return null;
+            async function authRequest(path, payload, btn, busyText, idleText) {
+                authErrorMsg.style.display = 'none';
+                btn.disabled = true;
+                btn.textContent = busyText;
+                try {
+                    return (await postJSON(path, payload)).user;
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = idleText;
+                    return null;
+                }
             }
-          }
 
-          function saveEmployerSession(user) {
-            let bookings = [];
-            let paymentPreference = null;
-            try {
-              const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY_EMPLOYER));
-              if (prev && Array.isArray(prev.bookings)) bookings = prev.bookings;
-              if (prev && prev.paymentPreference) paymentPreference = prev.paymentPreference;
-            } catch (e) { }
+            function saveEmployerSession(user) {
+                let bookings = [];
+                let paymentPreference = null;
+                try {
+                    const prev = JSON.parse(sessionStorage.getItem(SESSION_KEY_EMPLOYER));
+                    if (prev && Array.isArray(prev.bookings)) bookings = prev.bookings;
+                    if (prev && prev.paymentPreference) paymentPreference = prev.paymentPreference;
+                } catch (e) { }
 
-            const session = JSON.stringify({
-              id: user.id,
-              name: user.name, email: user.email, company: user.company,
-              joinedYear: new Date().getFullYear(), bookings, paymentPreference,
-              expiresAt: Date.now() + SESSION_TTL_MS
+                const session = JSON.stringify({
+                    id: user.id,
+                    name: user.name, email: user.email, company: user.company,
+                    joinedYear: new Date().getFullYear(), bookings, paymentPreference,
+                    expiresAt: Date.now() + SESSION_TTL_MS
+                });
+
+                sessionStorage.setItem(SESSION_KEY_EMPLOYER, session);
+                sessionStorage.setItem('ic_guest_employer_session', session);
+            }
+
+            function saveWorkerSession(user) {
+                sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
+                    ...user, services: [], rating: null, completedShifts: 0, active: false,
+                    expiresAt: Date.now() + SESSION_TTL_MS
+                }));
+            }
+
+            function succeed(html, url, delay) {
+                authSuccessMsg.innerHTML = SVG_CHECK + html;
+                authSuccessMsg.style.display = 'block';
+                setTimeout(() => { window.location.href = url }, delay);
+            }
+
+            // Employer login 
+            formHirerLogin.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btnSubmitHirerLogin');
+                const user = await authRequest('/api/auth/login', {
+                    role: 'employer',
+                    email: document.getElementById('hirerLoginEmail').value,
+                    password: document.getElementById('hirerLoginPassword').value,
+                }, btn, 'Logging in...', 'Log In to Employer');
+                if (!user) return;
+                saveEmployerSession(user);
+                btn.textContent = 'Redirecting...';
+                succeed('Login Successful! Redirecting to Employer Dashboard...', 'employer.html', 500);
+            })
+
+            // Employer signup 
+            formHirerSignup.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btnSubmitHirerSignup');
+                const user = await authRequest('/api/auth/signup', {
+                    role: 'employer',
+                    company: document.getElementById('hirerCompanyName').value,
+                    name: document.getElementById('hirerContactName').value,
+                    email: document.getElementById('hirerSignupEmail').value,
+                    password: document.getElementById('hirerSignupPassword').value,
+                }, btn, 'Creating account..', 'Create Employer Account');
+                if (!user) return;
+                saveEmployerSession(user);
+                succeed('Account registered! Opening your Employer Dashboard...', 'employer.html', 600);
             });
 
-            sessionStorage.setItem(SESSION_KEY_EMPLOYER, session);
-            sessionStorage.setItem('ic_guest_employer_session', session);
-          }   
+            // Applicant log in 
+            formApplicantLogin.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btnSubmitApplicantLogin');
+                const user = await authRequest('/api/auth/login', {
+                    role: 'applicant',
+                    email: document.getElementById('appLoginEmail').value,
+                    password: document.getElementById('appLoginPassword').value,
+                }, btn, 'Logging In...', 'Log In to Crew');
+                if (!user) return;
+                saveWorkerSession(user);
+                btn.textContent = 'Redirecting...';
+                succeed('Login successful! Redirecting to Crew Portal...', 'applicant.html', 500);
+            });
 
-          function saveWorkerSession(user) {
-            sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
-              ...user, services: [], rating: null, completedShifts: 0, active: false,
-              expiresAt: Date.now() + SESSION_TTL_MS
-            }));
-          }
-
-          function succeed(html, url, delay) {
-            authSuccessMsg.innerHTML = SVG_CHECK + html;
-            authSuccessMsg.style.display = 'block';
-            setTimeout(() => { window.location.href = url }, delay);
-          }
-
-          // Employer login 
-          formHirerLogin.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitHirerLogin');
-            const user = await authRequest('/api/auth/login', {
-              role: 'employer',
-              email: document.getElementById('hirerLoginEmail').value,
-              password: document.getElementById('hirerLoginPassword').value,
-            }, btn, 'Logging in...', 'Log In to Employer');
-            if (!user) return;
-            saveEmployerSession(user);
-            btn.textContent = 'Redirecting...';
-            succeed('Login Successful! Redirecting to Employer Dashboard...', 'employer.html', 500);
-          })
-
-          // Employer signup 
-          formHirerSignup.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitHirerSignup');
-            const user = await authRequest('/api/auth/signup', {
-              role: 'employer',
-              company: document.getElementById('hirerCompanyName').value,
-              name: document.getElementById('hirerContactName').value,
-              email: document.getElementById('hirerSignupEmail').value, 
-              password: document.getElementById('hirerSignupPassword').value, 
-            }, btn, 'Creating account..', 'Create Employer Account');
-            if (!user) return;
-            saveEmployerSession(user);
-            succeed('Account registered! Opening your Employer Dashboard...', 'employer.html', 600); 
-          });
-
-          // Applicant log in 
-          formApplicantLogin.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitApplicantLogin');
-            const user = await authRequest('/api/auth/login', {
-              role: 'applicant',
-              email: document.getElementById('appLoginEmail').value,
-              password: document.getElementById('appLoginPassword').value, 
-            }, btn, 'Logging In...', 'Log In to Crew'); 
-            if (!user) return;
-            saveWorkerSession(user); 
-            btn.textContent = 'Redirecting...';
-            succeed('Login successful! Redirecting to Crew Portal...', 'applicant.html', 500);
-          }); 
-          
-          // Applicant sign up 
-          formApplicantSignup.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitApplicantSignup');
-            const user = await authRequest('/api/auth/signup', {
-              role: 'applicant',
-              name: document.getElementById('appFullName').value,
-              email: document.getElementById('appSignupEmail').value,
-              password: document.getElementById('appSignupPassword').value,
-            }, btn, 'Joining Instant Crew...', 'Join as Crew Member');
-            if (!user) return;
-            saveWorkerSession(user);
-            succeed('Welcome to Instant Crew! Launching your worker portal...', 'applicant.html', 600)
-          });
+            // Applicant sign up 
+            formApplicantSignup.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btnSubmitApplicantSignup');
+                const user = await authRequest('/api/auth/signup', {
+                    role: 'applicant',
+                    name: document.getElementById('appFullName').value,
+                    email: document.getElementById('appSignupEmail').value,
+                    password: document.getElementById('appSignupPassword').value,
+                }, btn, 'Joining Instant Crew...', 'Join as Crew Member');
+                if (!user) return;
+                saveWorkerSession(user);
+                succeed('Welcome to Instant Crew! Launching your worker portal...', 'applicant.html', 600)
+            });
 
 
             // ── Forgot Password Modal Handlers ──

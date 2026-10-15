@@ -3110,9 +3110,9 @@ function renderEmployerNotifications() {
   if (employerNotifications === null || Date.now() - employerNotificationsFetchedAt > 2500) {
     if (!employerNotificationsPending) {
       employerNotificationsPending = true;
-      fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.error||'Could not load notifications.'); employerNotifications=d.notifications||[]; employerNotificationsLoaded=true; employerNotificationsFetchedAt=Date.now(); renderEmployerNotifications(); }).catch(e=>console.warn(e.message)).finally(()=>{employerNotificationsPending=false;});
+      fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not load notifications.'); employerNotifications = d.notifications || []; employerNotificationsLoaded = true; employerNotificationsFetchedAt = Date.now(); renderEmployerNotifications(); }).catch(e => console.warn(e.message)).finally(() => { employerNotificationsPending = false; });
     }
-    if (employerNotifications === null) employerNotifications=[];
+    if (employerNotifications === null) employerNotifications = [];
   }
   // Employer notifications are crew activity on their bookings. Shift offers
   // belong in the applicant inbox and should never appear in this panel.
@@ -3201,7 +3201,7 @@ if (notifBtn) {
 
 if (clearNotifsBtn) {
   clearNotifsBtn.addEventListener('click', () => {
-    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { employerNotifications=[]; employerNotificationsFetchedAt=Date.now(); renderEmployerNotifications(); });
+    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { employerNotifications = []; employerNotificationsFetchedAt = Date.now(); renderEmployerNotifications(); });
   });
 }
 
@@ -3409,21 +3409,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && authModal.classList.contains('open')) closeAuthModal();
 });
 if (headerLoginBtn) headerLoginBtn.addEventListener('click', () => openAuthModal('login'));
-
-[['toggleEmpModalLoginPass', 'empModalLoginPass'], ['toggleEmpModalSignupPass', 'empModalSignupPass']]
-  .forEach(([btnId, inputId]) => {
-    const btn = document.getElementById(btnId);
-    const input = document.getElementById(inputId);
-    if (!btn || !input) return;
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      btn.querySelector('.eye-open').style.display = show ? 'none' : 'block';
-      btn.querySelector('.eye-closed').style.display = show ? 'block' : 'none';
-      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-    });
-  });
 
 /* Shared submit logic: disable button, call API, show errors, restore on failure. */
 async function submitAuth(btn, path, payload, busyText) {

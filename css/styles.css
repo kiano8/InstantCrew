@@ -1126,15 +1126,13 @@ button {
 }
 
 .role-icon-employer {
-    background: #FFF5E5;
-    border: 1.2px solid #FCD34D;
+    background: transparent;
     color: #D97706;
 }
 
 .role-icon-applicant {
-    background: #ECFDF5;
-    border: 1.2px solid #A7F3D0;
-    color: #059669;
+    background: transparent;
+    color: #D97706;
 }
 
 .role-option-card:hover .role-card-icon-box {
@@ -1204,9 +1202,9 @@ button {
 }
 
 .badge-employer {
-    background: #FFFBEB;
-    color: #92400E;
-    border: 1px solid #FDE68A;
+    background: transparent;
+    color: #1e0c01;
+    border: 1px solid #D97706;
 }
 
 .badge-employer .badge-icon-bolt {
@@ -1214,16 +1212,16 @@ button {
 }
 
 .badge-applicant {
-    background: #ECFDF5;
-    color: #065F46;
-    border: 1px solid #A7F3D0;
+    background: transparent;
+    color: #1e0c01;
+    border: 1px solid #D97706;
 }
 
 .pulse-status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #10B981;
+    background: #D97706;
     position: relative;
     display: inline-block;
 }
@@ -1233,7 +1231,7 @@ button {
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    background: rgba(16, 185, 129, 0.4);
+    background: #D97706;
     animation: pulseDot 2s infinite ease-out;
 }
 
