@@ -1,0 +1,31 @@
+{
+  "name": "Instant Crew — Get Trusted Crew in Minutes",
+  "short_name": "Instant Crew",
+  "description": "Need staff for an urgent shift or looking to work flexible shifts? Instant Crew matches verified kitchen, delivery, and event staff with businesses in minutes.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FAF8F5",
+  "theme_color": "#F5A623",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/Instalogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/Instalogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/Instalogo.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

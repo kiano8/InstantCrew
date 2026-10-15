@@ -155,7 +155,7 @@ button {
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
 }
 
 .nav-admin-link {
@@ -168,6 +168,71 @@ button {
 .nav-admin-link:hover {
     color: var(--ink);
     text-decoration: underline;
+}
+
+.nav-install-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: var(--radius-full);
+    background: #FFFFFF;
+    color: var(--ink-80);
+    border: 1.5px solid var(--line);
+    font-size: 0.92rem;
+    font-weight: 600;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(18, 17, 14, 0.04);
+    transition: all 0.2s var(--ease-out);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-install-btn * {
+    pointer-events: none;
+}
+
+.nav-install-btn:hover {
+    background: var(--amber-light);
+    border-color: var(--amber);
+    color: var(--amber-deep);
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.22);
+}
+
+.nav-install-btn:active {
+    transform: translateY(0);
+}
+
+.nav-install-btn .install-btn-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--amber);
+    transition: transform 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.nav-install-btn:hover .install-btn-icon {
+    transform: translateY(1px);
+    color: var(--amber-deep);
+}
+
+.nav-install-btn.installed {
+    background: #F0FDF4;
+    border-color: #86EFAC;
+    color: #166534;
+    cursor: default;
+}
+
+.nav-install-btn.installed .install-btn-icon {
+    color: #16A34A;
+}
+
+.nav-install-btn.installed:hover {
+    transform: none;
+    box-shadow: 0 2px 6px rgba(18, 17, 14, 0.04);
 }
 
 .nav-login-btn {
@@ -1372,5 +1437,241 @@ button {
     .btn-role-continue {
         margin-top: 10px;
         padding: 10px 18px;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PWA ADD-TO-HOME-SCREEN TOAST NOTIFICATION
+   ───────────────────────────────────────────────────────────── */
+.install-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    opacity: 0;
+    visibility: hidden;
+    background: var(--ink);
+    color: #FFFFFF;
+    padding: 12px 22px;
+    border-radius: var(--radius-full);
+    font-size: 0.92rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 16px 36px -6px rgba(18, 17, 14, 0.35);
+    z-index: 2000;
+    transition: transform 0.28s var(--ease-out), opacity 0.28s var(--ease-out), visibility 0.28s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.install-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.install-toast-icon {
+    width: 20px;
+    height: 20px;
+    color: #10B981;
+    flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INSTALL INSTRUCTIONS MODAL (iOS / Safari / Browser Fallback)
+   ───────────────────────────────────────────────────────────── */
+.install-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s var(--ease-out), visibility 0.25s;
+}
+
+.install-modal-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.install-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 17, 14, 0.58);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: auto;
+}
+
+.install-modal-dialog {
+    position: relative;
+    z-index: 2;
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(18, 17, 14, 0.22), 0 0 0 1px rgba(18, 17, 14, 0.04);
+    width: 100%;
+    max-width: 440px;
+    padding: 30px 26px 24px;
+    transform: scale(0.95) translateY(14px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s;
+    text-align: center;
+}
+
+.install-modal-overlay.open .install-modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+.install-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-40);
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.install-modal-close:hover {
+    background: var(--ink-10);
+    color: var(--ink);
+    transform: rotate(90deg);
+}
+
+.install-modal-app-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    margin: 0 auto 12px;
+    display: block;
+    box-shadow: 0 8px 20px rgba(245, 166, 35, 0.25);
+    border: 1px solid var(--line);
+    object-fit: contain;
+}
+
+.install-modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 6px;
+}
+
+.install-modal-subtitle {
+    font-size: 0.88rem;
+    color: var(--ink-60);
+    margin-bottom: 20px;
+}
+
+.install-steps-list {
+    text-align: left;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.install-step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.88rem;
+    color: var(--ink-80);
+    line-height: 1.45;
+}
+
+.install-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--amber);
+    color: #FFFFFF;
+    font-weight: 700;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.install-step-item strong {
+    color: var(--ink);
+}
+
+.install-step-inline-icon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline: 3px;
+    padding: 2px 4px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    color: var(--amber-deep);
+}
+
+.btn-install-modal-action {
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: var(--radius-full);
+    background: var(--amber);
+    color: var(--ink);
+    font-size: 0.94rem;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(245, 166, 35, 0.35);
+    transition: all 0.18s ease;
+}
+
+.btn-install-modal-action:hover {
+    background: var(--amber-deep);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(245, 166, 35, 0.45);
+}
+
+@media (max-width: 600px) {
+    .nav-actions {
+        gap: 8px;
+    }
+
+    .nav-install-btn {
+        padding: 8px 13px;
+        font-size: 0.86rem;
+        gap: 5px;
+    }
+
+    .nav-login-btn {
+        padding: 8px 18px;
+        font-size: 0.88rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .nav-install-btn {
+        padding: 7px 10px;
+        font-size: 0.82rem;
+    }
+
+    .nav-login-btn {
+        padding: 7px 14px;
+        font-size: 0.84rem;
     }
 }
