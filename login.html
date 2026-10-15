@@ -625,8 +625,32 @@
             }
 
             function saveWorkerSession(user) {
+                let initialQuota = {
+                    totalHires: 5,
+                    remainingHires: 5,
+                    usedHires: 0,
+                    paidAmount: 10,
+                    batchesPaid: 1
+                };
+                try {
+                    const pendingRaw = sessionStorage.getItem('ic_applicant_pending_pass');
+                    if (pendingRaw) {
+                        const parsed = JSON.parse(pendingRaw);
+                        if (parsed && parsed.totalHires) {
+                            initialQuota = {
+                                totalHires: parsed.totalHires,
+                                remainingHires: parsed.remainingHires !== undefined ? parsed.remainingHires : parsed.totalHires,
+                                usedHires: parsed.usedHires || 0,
+                                paidAmount: parsed.paidAmount || 10,
+                                batchesPaid: parsed.batchesPaid || 1
+                            };
+                        }
+                    }
+                } catch (e) {}
+
                 sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
                     ...user, services: [], rating: null, completedShifts: 0, active: false,
+                    hiringQuota: user.hiringQuota || initialQuota,
                     expiresAt: Date.now() + SESSION_TTL_MS
                 }));
             }

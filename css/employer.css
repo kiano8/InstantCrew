@@ -3503,7 +3503,7 @@ h2 {
 .db-header-login-btn {
     padding: 8px 18px;
     border-radius: 9999px;
-    background: #111827;
+    background: #F5A623;
     color: #FFFFFF;
     font-size: 0.82rem;
     font-weight: 700;
@@ -3863,9 +3863,17 @@ h2 {
     gap: 8px;
 }
 
-.db-booking-item .app-job-card-header > .app-job-status-badge { flex-shrink: 0; }
-.db-booking-item .app-job-card-title-row { gap: 8px; }
-.db-booking-item .app-job-card-title { min-width: 0; }
+.db-booking-item .app-job-card-header>.app-job-status-badge {
+    flex-shrink: 0;
+}
+
+.db-booking-item .app-job-card-title-row {
+    gap: 8px;
+}
+
+.db-booking-item .app-job-card-title {
+    min-width: 0;
+}
 
 .app-job-card-left {
     display: flex;
@@ -4027,7 +4035,10 @@ h2 {
     min-width: 0;
 }
 
-.app-job-location-line .app-meta-venue-text { min-width: 0; flex: 1; }
+.app-job-location-line .app-meta-venue-text {
+    min-width: 0;
+    flex: 1;
+}
 
 .app-job-view-detail-btn {
     display: inline-flex;
@@ -4061,7 +4072,12 @@ h2 {
     gap: 10px;
 }
 
-.app-location-modal-card .app-loc-info-row { display: flex; flex-direction: column; gap: 2px; }
+.app-location-modal-card .app-loc-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .app-location-modal-card .app-loc-info-label {
     font-size: 0.72rem;
     font-weight: 700;
@@ -4069,9 +4085,24 @@ h2 {
     letter-spacing: 0.04em;
     color: var(--muted, #64748B);
 }
-.app-location-modal-card .app-loc-info-val { font-size: 0.92rem; color: var(--ink, #0F172A); }
-.app-location-modal-card .app-loc-info-val.highlight { font-size: 0.95rem; font-weight: 700; color: #B91C1C; }
-.app-location-modal-card .app-loc-highlight-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+.app-location-modal-card .app-loc-info-val {
+    font-size: 0.92rem;
+    color: var(--ink, #0F172A);
+}
+
+.app-location-modal-card .app-loc-info-val.highlight {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #B91C1C;
+}
+
+.app-location-modal-card .app-loc-highlight-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
 
 /* Footer / Action row */
 .app-job-card-footer.active-contract-footer {
@@ -4184,11 +4215,15 @@ h2 {
 }
 
 /* Employer booking cards open their shift when activated; keep actions visually distinct. */
-.db-booking-item[role="button"] { cursor: pointer; }
+.db-booking-item[role="button"] {
+    cursor: pointer;
+}
+
 .db-booking-item[role="button"]:focus-visible {
     outline: 3px solid #F4C430;
     outline-offset: 2px;
 }
+
 .db-booking-item .db-btn-end-contract,
 .db-booking-item .db-btn-cancel-search {
     color: var(--ink);
@@ -4198,6 +4233,7 @@ h2 {
     font-weight: 700;
     transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
+
 .db-booking-item .db-btn-end-contract:hover,
 .db-booking-item .db-btn-cancel-search:hover {
     color: var(--ink);
@@ -4206,26 +4242,31 @@ h2 {
     box-shadow: 0 4px 10px rgba(230, 184, 0, 0.28);
     transform: translateY(-1px);
 }
+
 .db-booking-item .db-btn-end-contract:active,
 .db-booking-item .db-btn-cancel-search:active {
     transform: scale(0.97);
     box-shadow: none;
 }
+
 .db-booking-item .db-btn-end-contract:focus-visible,
 .db-booking-item .db-btn-cancel-search:focus-visible {
     outline: 3px solid rgba(245, 166, 35, 0.42);
     outline-offset: 2px;
 }
+
 .db-booking-item .db-btn-review-offer {
     background: #EFF6FF;
     border-color: #BFDBFE;
     color: #1D4ED8;
 }
+
 .db-booking-item .db-btn-review-offer:hover {
     background: #DBEAFE;
     border-color: #93C5FD;
     color: #1E40AF;
 }
+
 .db-booking-item .db-job-view-details {
     display: inline-flex;
     align-items: center;
@@ -4237,6 +4278,7 @@ h2 {
     border-color: #BFDBFE;
     color: #1D4ED8;
 }
+
 .db-booking-item .db-job-view-details:hover {
     background: #DBEAFE;
     border-color: #93C5FD;
