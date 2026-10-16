@@ -539,17 +539,17 @@ body {
 /* ════ Services & Work Preferences Card ════ */
 .app-services-box {
     background: #FFFFFF;
-    border: 1.5px solid #E5E7EB;
-    border-radius: 10px;
+    border: 1.5px solid #FED7AA;
+    border-radius: 14px;
     padding: 15px 15px;
     margin-bottom: 10px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 4px rgba(245, 158, 11, 0.04);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .app-services-box:hover {
-    border-color: #D1D5DB;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    border-color: #FDBA74;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.08);
 }
 
 .app-services-header {
@@ -576,7 +576,7 @@ body {
     padding: 7px 14px;
     border-radius: var(--radius-pill);
     background: #FFFFFF;
-    border: 1.5px solid #E5E7EB;
+    border: 1.5px solid #FED7AA;
     font-size: 0.8rem;
     font-weight: 600;
     color: #374151;
@@ -601,11 +601,11 @@ body {
     grid-template-columns: 1fr auto 1fr auto 1fr;
     align-items: center;
     background: #FFFFFF;
-    border: 1.5px solid #E5E7EB;
+    border: 1.5px solid #FED7AA;
     border-radius: 14px;
     padding: 12px 18px;
     margin-bottom: 18px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.04);
 }
 
 .app-services-box .app-pref-strip {
@@ -738,7 +738,7 @@ body {
 .app-pref-divider {
     width: 1px;
     height: 32px;
-    background: #E5E7EB;
+    background: #FED7AA;
     margin: 0 14px;
 }
 
@@ -749,7 +749,7 @@ body {
     left: 0;
     min-width: 220px;
     background: #FFFFFF;
-    border: 1.5px solid #E5E7EB;
+    border: 1.5px solid #FED7AA;
     border-radius: 14px;
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
     padding: 6px;
@@ -6672,9 +6672,8 @@ body.app-sheet-open {
     width: 38px;
     height: 38px;
     border-radius: 11px;
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    color: #059669;
+    background: transparent;
+    color: #D97706;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6703,9 +6702,9 @@ body.app-sheet-open {
 .app-pass-rate-pill {
     font-size: 0.68rem;
     font-weight: 700;
-    color: #059669;
-    background: #ECFDF5;
-    border: 1px solid #D1FAE5;
+    color: #D97706;
+    background: transparent;
+    border: 1px solid #D97706;
     padding: 2px 7px;
     border-radius: 9999px;
 }
@@ -6730,7 +6729,7 @@ body.app-sheet-open {
 
 .app-pass-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+    background: linear-gradient(90deg, #D97706 0%, #D97706 100%);
     border-radius: 9999px;
     transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
 }

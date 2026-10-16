@@ -121,6 +121,7 @@ const scheduleDisplayDate = document.getElementById('scheduleDisplayDate');
 const scheduleDisplayTime = document.getElementById('scheduleDisplayTime');
 
 // Step 4 refs
+const step4BackBtn = document.getElementById('step4BackBtn');
 const crewList = document.getElementById('crewList');
 const matchLoading = document.getElementById('matchLoading');
 const matchResults = document.getElementById('matchResults');
@@ -203,6 +204,15 @@ if (toStep4Btn) {
 const dbSearchTimerBox = document.getElementById('dbSearchTimerBox');
 const dbTryTimer = document.getElementById('dbTryTimer');
 const dbSearchProgressFill = document.getElementById('dbSearchProgressFill');
+const dbCurrentTryBadge = document.getElementById('dbCurrentTryBadge');
+const dbCurrentAttemptBadge = document.getElementById('dbCurrentAttemptBadge');
+const cancelMatchBtn = document.getElementById('cancelMatchBtn') || document.getElementById('declineMatchBtn');
+const declineMatchBtn = cancelMatchBtn;
+const resultsTryBadge = document.getElementById('resultsTryBadge');
+const dbFailedBadge = document.getElementById('dbFailedBadge');
+const dbFailedHeading = document.getElementById('dbFailedHeading');
+const dbFailedSub = document.getElementById('dbFailedSub');
+const dbRepayNoticeText = document.getElementById('dbRepayNoticeText');
 const matchFailed = document.getElementById('matchFailed');
 const repayMatchFeeBtn = document.getElementById('repayMatchFeeBtn');
 const editShiftFromFailedBtn = document.getElementById('editShiftFromFailedBtn');
@@ -598,10 +608,90 @@ function validateGoogleMapLocation() {
 
 /* ─── Step navigation ─────────────────────────────────────── */
 
+function isFindingCrewActive() {
+  const step4El = document.getElementById('step4');
+  if (!step4El || !step4El.classList.contains('active')) {
+    return false;
+  }
+
+  // If matchFailed is currently visible, search is done!
+  if (matchFailed && (matchFailed.style.display === 'block' || matchFailed.style.display === 'flex')) {
+    return false;
+  }
+
+  // If no active job or booking is confirmed
+  if (!state.currentJobId || state.bookingConfirmed) {
+    return false;
+  }
+
+  const bookingStatus = state.currentBooking?.status;
+  if (bookingStatus === 'unfulfilled' || bookingStatus === 'cancelled' || bookingStatus === 'completed' || bookingStatus === 'confirmed') {
+    return false;
+  }
+
+  // If matchResults is visible, crew candidate is found and waiting for review
+  if (matchResults && (matchResults.style.display === 'block' || matchResults.style.display === 'flex')) {
+    return false;
+  }
+
+  // If active job has 'matching' status
+  if (bookingStatus === 'matching') {
+    return true;
+  }
+
+  // If matchLoading is visible
+  if (matchLoading && (matchLoading.style.display === 'flex' || matchLoading.style.display === 'block')) {
+    return true;
+  }
+
+  return false;
+}
+
+function updateStep4BackButton() {
+  const btn = document.getElementById('step4BackBtn') || step4BackBtn;
+  const step4El = document.getElementById('step4');
+  const isFinding = isFindingCrewActive();
+
+  if (step4El) {
+    step4El.classList.toggle('is-finding-crew', isFinding);
+    if (isFinding) step4El.setAttribute('data-finding', 'true');
+    else step4El.removeAttribute('data-finding');
+  }
+
+  if (btn) {
+    if (isFinding) {
+      btn.style.display = 'none';
+      btn.disabled = true;
+      btn.setAttribute('aria-hidden', 'true');
+    } else if (matchFailed && (matchFailed.style.display === 'block' || matchFailed.style.display === 'flex')) {
+      btn.style.display = 'inline-flex';
+      btn.disabled = false;
+      btn.removeAttribute('aria-hidden');
+    } else {
+      btn.style.display = 'none';
+      btn.disabled = true;
+      btn.setAttribute('aria-hidden', 'true');
+    }
+  }
+}
+
 function goStep(n) {
-  // If currently on Step 2 and attempting to proceed to Step 3 or higher, require Google Map location
   const currentActiveStep = document.querySelector('.db-step.active');
   const currentStepNum = currentActiveStep && currentActiveStep.id ? parseInt(currentActiveStep.id.replace('step', ''), 10) : 1;
+
+  // Prevent going back when still finding a crew
+  if (currentStepNum === 4 && n < 4 && isFindingCrewActive()) {
+    if (window.InstantCrewShared) {
+      window.InstantCrewShared.showPushToast(
+        'Finding Crew in Progress',
+        'You cannot go back while still finding a crew. You can only request again once done on the finding a crew.',
+        'alert'
+      );
+    }
+    return;
+  }
+
+  // If currently on Step 2 and attempting to proceed to Step 3 or higher, require Google Map location
   if (currentStepNum === 2 && n > 2) {
     if (!validateGoogleMapLocation()) {
       return;
@@ -619,6 +709,8 @@ function goStep(n) {
 
   // Hide progress bar on Step 5 (success screen)
   progress.style.display = (n >= 5) ? 'none' : 'flex';
+
+  updateStep4BackButton();
 
   // Scroll card to top smoothly
   target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1336,7 +1428,7 @@ function openPaymentModal(step = 'payment') {
   };
 
   if (payNowBtnText) {
-    payNowBtnText.textContent = step === 'search' ? 'Pay ₱100 & Find Crew' : 'Pay';
+    payNowBtnText.textContent = step === 'search' ? 'Find Crew (₱100)' : 'Pay';
   }
   let selectedMethodButton = null;
   document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
@@ -1524,7 +1616,7 @@ if (payNowBtn) {
           }
         } finally {
           if (payNowBtn) payNowBtn.disabled = false;
-          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Pay ₱100 & Find Crew';
+          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Find Crew (₱100)';
         }
       };
       if (authUser) {
@@ -1600,6 +1692,11 @@ async function startCrewSearch() {
     count: 1,
     crewRate: `₱${state.offeredRate}`,
     status: 'matching', // Waiting for crew acceptance
+    current_try: Number(searchData.job?.current_try ?? 1),
+    max_tries: Number(searchData.job?.max_tries ?? 3),
+    current_attempt: Number(searchData.job?.current_attempt ?? 1),
+    max_attempts: Number(searchData.job?.max_attempts ?? 3),
+    tries_remaining: Number(searchData.job?.tries_remaining ?? 2),
     seconds_remaining: Number(searchData.job?.seconds_remaining ?? SEARCH_MAX_SECONDS),
     bookedAt: new Date().toISOString(),
     paid: true,
@@ -1627,6 +1724,7 @@ async function startCrewSearch() {
   // Reset results pane — loading state active, results hidden until accepted!
   matchLoading.style.display = 'flex';
   matchResults.style.display = 'none';
+  updateStep4BackButton();
 
   // Start 3-minute search timer
   startSearchTimer();
@@ -1672,10 +1770,31 @@ function updateSearchTimerUI() {
     dbTryTimer.textContent = formatSearchTimer(count);
     dbTryTimer.style.display = 'inline-block';
   }
+  const curTry = Number(state.currentBooking?.current_try ?? 1);
+  const maxTries = Number(state.currentBooking?.max_tries ?? 3);
+  const curAtt = Number(state.currentBooking?.current_attempt ?? 1);
+  const maxAtt = Number(state.currentBooking?.max_attempts ?? 3);
+
+  if (dbCurrentTryBadge) {
+    dbCurrentTryBadge.textContent = `Try ${curTry} of ${maxTries}`;
+  }
+  if (dbCurrentAttemptBadge) {
+    dbCurrentAttemptBadge.textContent = `Attempt ${curAtt} of ${maxAtt}`;
+  }
+  if (dbSearchTimerNote) {
+    dbSearchTimerNote.textContent = `Each attempt lasts 3 minutes · Up to 9 mins for Try ${curTry}`;
+  }
+
+  const pct = Math.max(0, Math.min(100, (count / SEARCH_MAX_SECONDS) * 100));
   const fill = document.getElementById('dbSearchProgressFill');
   if (fill) {
-    const pct = Math.max(0, Math.min(100, (count / SEARCH_MAX_SECONDS) * 100));
     fill.style.width = `${pct}%`;
+  }
+  const circleSpinner = document.getElementById('dbCircleProgressSpinner');
+  if (circleSpinner) {
+    const circumference = 376.99; // 2 * PI * 60
+    const offset = circumference * (1 - (pct / 100));
+    circleSpinner.style.strokeDashoffset = `${offset}px`;
   }
 }
 
@@ -1687,9 +1806,7 @@ function startSearchTimer() {
     state.searchCountdown = Math.max(0, state.searchCountdown - 1);
     updateSearchTimerUI();
     if (state.searchCountdown <= 0) {
-      // The API owns expiry. Refresh the job so acceptance and timeout are
-      // resolved from persisted state, even after a paused/backgrounded tab.
-      checkCrewAcceptance();
+      handleAttemptTimeout();
     }
   }, 1000);
 }
@@ -1698,6 +1815,46 @@ function stopSearchTimer() {
   if (state.searchTimerInterval) {
     clearInterval(state.searchTimerInterval);
     state.searchTimerInterval = null;
+  }
+}
+
+async function handleAttemptTimeout() {
+  if (!state.currentJobId) return;
+  try {
+    const response = await fetch(`/api/jobs/${state.currentJobId}/next-attempt`, { method: 'POST', credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      checkCrewAcceptance();
+      return;
+    }
+    const job = data.job;
+    if (job.status === 'matching') {
+      const prevTry = Number(state.currentBooking?.current_try ?? 1);
+      state.currentBooking = {
+        ...state.currentBooking,
+        current_try: job.current_try,
+        max_tries: job.max_tries,
+        current_attempt: job.current_attempt,
+        max_attempts: job.max_attempts,
+        tries_remaining: job.tries_remaining,
+        seconds_remaining: job.seconds_remaining
+      };
+      state.searchCountdown = Number(job.seconds_remaining ?? SEARCH_MAX_SECONDS);
+      updateSearchTimerUI();
+      if (job.current_try > prevTry) {
+        if (window.InstantCrewShared) {
+          window.InstantCrewShared.showPushToast('Try Expired', `Try ${prevTry} ended without a match. Starting Try ${job.current_try} of 3.`, 'info');
+        }
+      } else {
+        if (window.InstantCrewShared) {
+          window.InstantCrewShared.showPushToast('Attempt Expired', `Starting Attempt ${job.current_attempt} of 3 for Try ${job.current_try}.`, 'info');
+        }
+      }
+    } else if (job.status === 'unfulfilled') {
+      handleSearchTimeout();
+    }
+  } catch (_) {
+    checkCrewAcceptance();
   }
 }
 
@@ -1710,6 +1867,7 @@ function handleSearchTimeout() {
 
   if (matchLoading) matchLoading.style.display = 'none';
   if (matchFailed) matchFailed.style.display = 'block';
+  updateStep4BackButton();
 
   // Update session
   const s = getSession();
@@ -1734,6 +1892,7 @@ if (repayMatchFeeBtn) {
 if (editShiftFromFailedBtn) {
   editShiftFromFailedBtn.addEventListener('click', () => {
     if (matchFailed) matchFailed.style.display = 'none';
+    updateStep4BackButton();
     goStep(3);
   });
 }
@@ -1745,6 +1904,13 @@ async function checkCrewAcceptance() {
     if (!response.ok) return;
     refreshMatchedCrew();
     const { job } = await response.json();
+    if (job && state.currentBooking) {
+      state.currentBooking.current_try = job.current_try;
+      state.currentBooking.max_tries = job.max_tries;
+      state.currentBooking.current_attempt = job.current_attempt;
+      state.currentBooking.max_attempts = job.max_attempts;
+      state.currentBooking.tries_remaining = job.tries_remaining;
+    }
     const activeCrew = (job.crew || []).filter(member => !member.ended_at);
     const crew = activeCrew.map(member => member.name);
     if (activeCrew.length > 0 && !state.acceptanceHandled) {
@@ -1829,8 +1995,25 @@ function onCrewAccepted(job) {
     state.acceptanceHandled = true;
     matchLoading.style.display = 'none';
     matchResults.style.display = 'block';
+    updateStep4BackButton();
     renderCrewResults(acceptedCrew, job);
     if (resultsPaidBadge) resultsPaidBadge.textContent = '✓ Search Fee Paid (₱100.00)';
+
+    const curTry = Number(job.current_try ?? state.currentBooking?.current_try ?? 1);
+    const maxTries = Number(job.max_tries ?? state.currentBooking?.max_tries ?? 3);
+    const triesLeft = Math.max(0, maxTries - curTry);
+
+    if (resultsTryBadge) {
+      resultsTryBadge.textContent = triesLeft > 0
+        ? `Try ${curTry} of ${maxTries} · ${triesLeft} ${triesLeft === 1 ? 'try' : 'tries'} remaining if declined`
+        : `Try ${curTry} of ${maxTries} (Final try) · Search ends if declined`;
+    }
+    if (cancelMatchBtn) {
+      cancelMatchBtn.textContent = 'Cancel';
+      cancelMatchBtn.title = triesLeft > 0
+        ? `Cancel this match (${triesLeft} ${triesLeft === 1 ? 'try' : 'tries'} remaining)`
+        : 'Cancel this match (0 tries left)';
+    }
   }
 
   const firstWorker = acceptedCrew[0] || 'A crew member';
@@ -1877,7 +2060,7 @@ function renderCrewResults(acceptedCrew = [], job = null) {
                 <p class="db-crew-name">${workerName}</p>
                 <p class="db-crew-meta">Accepted this shift</p>
             </div>
-            <span class="db-crew-role-tag" style="background:#DCFCE7; color:#15803D; font-weight:700;">✓ Accepted</span>
+            <span class="db-crew-role-tag" style="background:#DCFCE7; color:#15803D; font-weight:700;">Accepted</span>
         `;
 
     crewList.appendChild(card);
@@ -1934,6 +2117,8 @@ confirmBooking.addEventListener('click', async () => {
     }
   }
   renderBookings();
+  state.bookingConfirmed = true;
+  updateStep4BackButton();
 
   goStep(5);
 });
@@ -2027,8 +2212,23 @@ bookAnother.addEventListener('click', () => {
 /* ─── Back buttons ────────────────────────────────────────── */
 
 document.querySelectorAll('.db-back-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (event) => {
     const target = Number(btn.dataset.back);
+    const currentStepEl = document.querySelector('.db-step.active');
+    const isStep4 = currentStepEl && currentStepEl.id === 'step4';
+
+    if (isStep4 && isFindingCrewActive()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (window.InstantCrewShared) {
+        window.InstantCrewShared.showPushToast(
+          'Finding Crew in Progress',
+          'You cannot go back while still finding a crew. You can only request again once done on the finding a crew.',
+          'alert'
+        );
+      }
+      return;
+    }
 
     if (target < 4 && state.matchCheckInterval) {
       clearInterval(state.matchCheckInterval);
@@ -2495,7 +2695,6 @@ function buildBookingItem(b) {
   const jobId = b.jobId || b.id;
   const canEndJob = b.status === 'active';
   const isSearching = b.status === 'matching';
-  const hasOffer = b.status === 'accepted';
 
   let displayLocation = '';
   if (b.location && !b.location.toLowerCase().includes('current venue')) {
@@ -2597,7 +2796,6 @@ function buildBookingItem(b) {
             </div>`))}
             ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
             ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
-            ${hasOffer ? `<button type="button" class="app-btn-end-contract-clean db-btn-review-offer" data-booking-id="${jobId}">Review Offer</button>` : ''}
         </div>` : `
         <div class="app-job-card-footer ended-footer">
             <span class="app-ended-note">
@@ -2632,8 +2830,6 @@ function buildBookingItem(b) {
       confirmLabel: 'Cancel Search'
     }).then(confirmed => { if (confirmed) cancelEmployerSearch(jobId, cancelBtn); });
   });
-  const reviewBtn = item.querySelector('.db-btn-review-offer');
-  if (reviewBtn) reviewBtn.addEventListener('click', e => { e.stopPropagation(); openEmployerJobNotification(jobId); });
   const viewDetailsBtn = item.querySelector('.db-btn-view-shift');
   if (viewDetailsBtn) viewDetailsBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -2789,14 +2985,121 @@ async function endEmployerBooking(bookingId, button) {
   }
 }
 
+if (cancelMatchBtn) {
+  cancelMatchBtn.addEventListener('click', async () => {
+    if (!state.currentJobId) return;
+    const curTry = Number(state.currentBooking?.current_try ?? 1);
+    const maxTries = Number(state.currentBooking?.max_tries ?? 3);
+    const triesLeft = Math.max(0, maxTries - curTry);
+
+    const title = 'Cancel this match?';
+    const message = triesLeft > 0
+      ? `Try ${curTry} of ${maxTries} will be used up. You will have ${triesLeft} ${triesLeft === 1 ? 'try' : 'tries'} remaining to find another crew member without paying again.`
+      : `Try ${curTry} of ${maxTries} is your last try. Canceling will end this search, and you will need to pay the match fee again to search.`;
+    const confirmLabel = triesLeft > 0 ? `Start Next Try` : 'Cancel Match';
+
+    confirmJobAction({ title, message, confirmLabel }).then(async confirmed => {
+      if (!confirmed) return;
+      cancelMatchBtn.disabled = true;
+      cancelMatchBtn.textContent = 'Canceling…';
+
+      try {
+        const response = await fetch(`/api/jobs/${state.currentJobId}/decline-match`, { method: 'POST', credentials: 'same-origin' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Could not cancel this match.');
+        const job = data.job;
+
+        if (job.status === 'matching') {
+          state.currentBooking = {
+            ...state.currentBooking,
+            current_try: job.current_try,
+            max_tries: job.max_tries,
+            current_attempt: job.current_attempt,
+            max_attempts: job.max_attempts,
+            tries_remaining: job.tries_remaining,
+            status: 'matching'
+          };
+          state.acceptanceHandled = false;
+          matchResults.style.display = 'none';
+          matchLoading.style.display = 'flex';
+          updateStep4BackButton();
+          startSearchTimer();
+          matchedCrewFetchedAt = 0;
+          if (matchedCrewCount) matchedCrewCount.textContent = '0';
+          if (matchedCrewMessage) matchedCrewMessage.textContent = 'Checking the database for available crew…';
+          if (matchedCrewList) matchedCrewList.replaceChildren();
+          startCheckingForAcceptance();
+
+          if (window.InstantCrewShared) {
+            window.InstantCrewShared.showPushToast('Match Cancelled', `Try ${curTry} used. Started Try ${job.current_try} of 3 (${job.tries_remaining} left).`, 'info');
+          }
+        } else {
+          // All 3 tries exhausted
+          handleSearchTimeout();
+          if (window.InstantCrewShared) {
+            window.InstantCrewShared.showPushToast('All Tries Used', 'All 3 tries have been used. You can pay ₱100 to start new searches.', 'alert');
+          }
+        }
+      } catch (err) {
+        if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Error', err.message, 'alert');
+        else alert(err.message);
+      } finally {
+        cancelMatchBtn.disabled = false;
+        cancelMatchBtn.textContent = 'Cancel';
+      }
+    });
+  });
+}
+
 if (cancelCrewSearchBtn) cancelCrewSearchBtn.addEventListener('click', () => {
   if (!state.currentJobId) return;
+  const curTry = Number(state.currentBooking?.current_try ?? 1);
+  const maxTries = Number(state.currentBooking?.max_tries ?? 3);
+  const triesLeft = Math.max(0, maxTries - curTry);
+
+  const title = 'Cancel this search?';
+  const message = triesLeft > 0
+    ? `Try ${curTry} of ${maxTries} will be used. You will have ${triesLeft} ${triesLeft === 1 ? 'try' : 'tries'} left to find crew without paying again.`
+    : `Try ${curTry} of ${maxTries} is your last try. Cancelling will end this search window.`;
+
   confirmJobAction({
-    title: 'Cancel this search?',
-    message: 'Your crew search will stop and this job will move out of active searches.',
-    confirmLabel: 'Cancel Search'
-  }).then(confirmed => {
-    if (confirmed) cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+    title,
+    message,
+    confirmLabel: triesLeft > 0 ? `Start Try ${curTry + 1}` : 'Cancel Search'
+  }).then(async confirmed => {
+    if (!confirmed) return;
+    if (triesLeft > 0) {
+      cancelCrewSearchBtn.disabled = true;
+      cancelCrewSearchBtn.textContent = 'Switching to next try…';
+      try {
+        const response = await fetch(`/api/jobs/${state.currentJobId}/decline-match`, { method: 'POST', credentials: 'same-origin' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Could not advance to next try.');
+        const job = data.job;
+        state.currentBooking = {
+          ...state.currentBooking,
+          current_try: job.current_try,
+          max_tries: job.max_tries,
+          current_attempt: job.current_attempt,
+          max_attempts: job.max_attempts,
+          tries_remaining: job.tries_remaining,
+          status: 'matching'
+        };
+        startSearchTimer();
+        startCheckingForAcceptance();
+        updateStep4BackButton();
+        if (window.InstantCrewShared) {
+          window.InstantCrewShared.showPushToast('Next Try Started', `Started Try ${job.current_try} of 3 (${job.tries_remaining} left).`, 'info');
+        }
+      } catch (err) {
+        cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+      } finally {
+        cancelCrewSearchBtn.disabled = false;
+        cancelCrewSearchBtn.textContent = 'Cancel Search';
+      }
+    } else {
+      cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+    }
   });
 });
 
@@ -2820,6 +3123,7 @@ async function cancelEmployerSearch(jobId, button, returnToStart = false) {
       if (matchLoading) matchLoading.style.display = 'none';
       if (matchResults) matchResults.style.display = 'none';
       if (matchFailed) matchFailed.style.display = 'none';
+      updateStep4BackButton();
       goStep(1);
     }
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Crew search cancelled', 'You can start a new search whenever you are ready.', 'info');
@@ -3036,6 +3340,7 @@ function showEmployerJob(job, { notifySearchResume = false } = {}) {
     if (matchLoading) matchLoading.style.display = 'none';
     if (matchResults) matchResults.style.display = 'none';
     if (matchFailed) matchFailed.style.display = 'block';
+    updateStep4BackButton();
     if (window.InstantCrewShared) {
       window.InstantCrewShared.showPushToast('Crew search ended', 'Your 3-minute search ended while you were away. Start another search when ready.', 'alert');
     }
@@ -3468,3 +3773,11 @@ signupForm.addEventListener('submit', (e) => {
   updateAuthUI();
   await restoreEmployerSearchOnLogin();
 })();
+
+window.addEventListener('beforeunload', (e) => {
+  if (typeof isFindingCrewActive === 'function' && isFindingCrewActive()) {
+    e.preventDefault();
+    e.returnValue = 'Crew search is currently in progress. Are you sure you want to leave?';
+    return e.returnValue;
+  }
+});

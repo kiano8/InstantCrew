@@ -27,6 +27,10 @@ type Job struct {
 	Status                      string
 	SearchAttempts              int
 	SearchExpiresAt             *time.Time
+	CurrentTry                  int
+	MaxTries                    int
+	CurrentAttempt              int
+	MaxAttempts                 int
 	CreatedAt, UpdatedAt        time.Time
 }
 
@@ -50,7 +54,7 @@ type MatchedApplicant struct {
 
 const jobCols = `id, employer_id, category, role_id, role_label, employment_type, rate_centavos,
 	rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
-	accepted_count, status, search_attempts, search_expires_at, created_at, updated_at`
+	accepted_count, status, search_attempts, search_expires_at, current_try, max_tries, current_attempt, max_attempts, created_at, updated_at`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -62,10 +66,12 @@ func scanJob(r rowScanner) (*Job, error) {
 	var j Job
 	var lat, lng sql.NullFloat64
 	var sched, exp sql.NullInt64
+	var curTry, maxTries, curAtt, maxAtt sql.NullInt64
 	var created, updated int64
 	err := r.Scan(&j.ID, &j.EmployerID, &j.Category, &j.RoleID, &j.RoleLabel, &j.EmploymentType,
 		&j.RateCentavos, &j.RatePeriod, &j.City, &j.MapLocation, &j.MapsURL, &lat, &lng, &j.Timing,
-		&sched, &j.CrewNeeded, &j.AcceptedCount, &j.Status, &j.SearchAttempts, &exp, &created, &updated)
+		&sched, &j.CrewNeeded, &j.AcceptedCount, &j.Status, &j.SearchAttempts, &exp,
+		&curTry, &maxTries, &curAtt, &maxAtt, &created, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -82,6 +88,22 @@ func scanJob(r rowScanner) (*Job, error) {
 	if exp.Valid {
 		t := time.Unix(exp.Int64, 0)
 		j.SearchExpiresAt = &t
+	}
+	j.CurrentTry = 1
+	if curTry.Valid && curTry.Int64 > 0 {
+		j.CurrentTry = int(curTry.Int64)
+	}
+	j.MaxTries = 3
+	if maxTries.Valid && maxTries.Int64 > 0 {
+		j.MaxTries = int(maxTries.Int64)
+	}
+	j.CurrentAttempt = 1
+	if curAtt.Valid && curAtt.Int64 > 0 {
+		j.CurrentAttempt = int(curAtt.Int64)
+	}
+	j.MaxAttempts = 3
+	if maxAtt.Valid && maxAtt.Int64 > 0 {
+		j.MaxAttempts = int(maxAtt.Int64)
 	}
 	j.CreatedAt, j.UpdatedAt = time.Unix(created, 0), time.Unix(updated, 0)
 	return &j, nil
@@ -196,6 +218,7 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 	now := time.Now()
 	res, err := tx.ExecContext(ctx, `
 		UPDATE jobs SET status='matching', search_attempts = search_attempts + 1,
+			current_try = 1, max_tries = 3, current_attempt = 1, max_attempts = 3,
 			search_expires_at = ?, updated_at = ?
 		WHERE id = ? AND employer_id = ? AND status IN ('draft','unfulfilled')
 		AND EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id
@@ -207,8 +230,12 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
 	}
-	// The current search attempt must have its fee recorded before crew are notified.
-	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+	s.notifyMatchingCrew(ctx, tx, id, now)
+	return tx.Commit()
+}
+
+func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
+	_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
 		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_object('job_id', j.id),?
 		FROM jobs j JOIN applicant_profiles p ON p.is_active=1 AND lower(trim(p.city))=lower(trim(j.city))
 		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
@@ -219,15 +246,16 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 			WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
 			AND assigned_job.role_id=j.role_id
 		)
+		AND NOT EXISTS (
+			SELECT 1 FROM job_applications ja
+			WHERE ja.job_id=j.id AND ja.applicant_id=p.user_id AND ja.status='rejected'
+		)
 		AND ((j.timing='now' AND p.availability_mode='now') OR
 			(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
 				SELECT 1 FROM applicant_availability av
 				WHERE av.applicant_id=p.user_id AND av.status='available'
 				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
-			))))`, now.Unix(), id); err != nil {
-		return err
-	}
-	return tx.Commit()
+			))))`, now.Unix(), jobID)
 }
 
 // RecordMatchFee records the fee for the next search attempt before crew are notified.
@@ -307,16 +335,154 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 	return matches, rows.Err()
 }
 
-// ExpireSearches flips timed-out searches to 'unfulfilled'. Called by a sweeper and on reads.
+// ExpireSearches advances timed-out searches to the next attempt, next try, or unfulfilled.
 func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 	now := time.Now().Unix()
-	res, err := s.db.ExecContext(ctx, `
-		UPDATE jobs SET status='unfulfilled', updated_at = ?
-		WHERE status='matching' AND search_expires_at IS NOT NULL AND search_expires_at <= ?`, now, now)
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, employer_id FROM jobs
+		WHERE status='matching' AND search_expires_at IS NOT NULL AND search_expires_at <= ?`, now)
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	defer rows.Close()
+
+	type refItem struct {
+		id, empID int64
+	}
+	var expired []refItem
+	for rows.Next() {
+		var it refItem
+		if err := rows.Scan(&it.id, &it.empID); err == nil {
+			expired = append(expired, it)
+		}
+	}
+	rows.Close()
+
+	var count int64
+	for _, it := range expired {
+		if _, err := s.AdvanceSearchAttempt(ctx, it.empID, it.id, 3*time.Minute); err == nil {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// AdvanceSearchAttempt advances to the next attempt (within the try) or next try (up to 3 tries, 3 attempts each).
+func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, window time.Duration) (*Job, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=? AND employer_id=?`, id, employerID))
+	if err != nil {
+		return nil, err
+	}
+	if j.Status != "matching" {
+		return j, nil
+	}
+
+	now := time.Now()
+	if j.CurrentAttempt < j.MaxAttempts {
+		j.CurrentAttempt++
+		newExpires := now.Add(window).Unix()
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE jobs SET current_attempt=?, search_expires_at=?, updated_at=?
+			WHERE id=? AND employer_id=? AND status='matching'`,
+			j.CurrentAttempt, newExpires, now.Unix(), id, employerID); err != nil {
+			return nil, err
+		}
+		s.notifyMatchingCrew(ctx, tx, id, now)
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return s.GetJob(ctx, employerID, id)
+	}
+
+	// Current try's 3 attempts (9 mins max) have elapsed!
+	if j.CurrentTry < j.MaxTries {
+		j.CurrentTry++
+		j.CurrentAttempt = 1
+		newExpires := now.Add(window).Unix()
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE jobs SET current_try=?, current_attempt=?, search_expires_at=?, updated_at=?
+			WHERE id=? AND employer_id=? AND status='matching'`,
+			j.CurrentTry, j.CurrentAttempt, newExpires, now.Unix(), id, employerID); err != nil {
+			return nil, err
+		}
+		s.notifyMatchingCrew(ctx, tx, id, now)
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return s.GetJob(ctx, employerID, id)
+	}
+
+	// All 3 tries expired!
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE jobs SET status='unfulfilled', updated_at=?
+		WHERE id=? AND employer_id=? AND status='matching'`,
+		now.Unix(), id, employerID); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return s.GetJob(ctx, employerID, id)
+}
+
+// DeclineMatch handles employer declining the matched applicant.
+// The current try is used up, and the next try begins (if tries remain).
+func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window time.Duration) (*Job, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=? AND employer_id=?`, id, employerID))
+	if err != nil {
+		return nil, err
+	}
+	if j.Status != "accepted" && j.Status != "matching" {
+		return nil, ErrBadState
+	}
+
+	now := time.Now()
+
+	// Clear assignments and mark application as rejected so they aren't immediately re-matched
+	_, _ = tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at = ? WHERE job_id = ? AND ended_at IS NULL`, now.Unix(), id)
+	_, _ = tx.ExecContext(ctx, `UPDATE job_applications SET status = 'rejected', updated_at = ? WHERE job_id = ? AND status = 'accepted'`, now.Unix(), id)
+
+	// Use up the current try
+	if j.CurrentTry < j.MaxTries {
+		nextTry := j.CurrentTry + 1
+		newExpires := now.Add(window).Unix()
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE jobs SET accepted_count = 0, status = 'matching',
+				current_try = ?, current_attempt = 1, search_expires_at = ?, updated_at = ?
+			WHERE id = ? AND employer_id = ?`,
+			nextTry, newExpires, now.Unix(), id, employerID); err != nil {
+			return nil, err
+		}
+		s.notifyMatchingCrew(ctx, tx, id, now)
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return s.GetJob(ctx, employerID, id)
+	}
+
+	// All 3 tries used up!
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE jobs SET accepted_count = 0, status = 'unfulfilled', updated_at = ?
+		WHERE id = ? AND employer_id = ?`,
+		now.Unix(), id, employerID); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return s.GetJob(ctx, employerID, id)
 }
 
 // AcceptJob atomically gives the offer to the first applicant who accepts.

@@ -35,7 +35,8 @@
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <!-- Header Log In button (visible when not logged in) -->
-                <button type="button" class="db-header-login-btn" id="headerLoginBtn" style="display:none;">Log In</button>
+                <button type="button" class="db-header-login-btn" id="headerLoginBtn" style="display:none;">Log
+                    In</button>
 
                 <!-- Notification Bell -->
                 <div class="db-notif-wrap" id="headerNotifWrap">
@@ -638,7 +639,7 @@
 
                 <!-- ════ STEP 4 — Matching / Results ════ -->
                 <section class="db-step" id="step4" aria-labelledby="step4Heading">
-                    <button type="button" class="db-back-btn" data-back="3">
+                    <button type="button" class="db-back-btn" id="step4BackBtn" data-back="3">
                         <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
                             <path d="M6 1L1 6l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
                                 stroke-linejoin="round" />
@@ -647,42 +648,72 @@
                     </button>
 
                     <!-- Loading -->
-                    <div id="matchLoading" class="db-loading" aria-live="polite">
-                        <div class="db-pulse-wrap">
-                            <span class="db-pulse-ring db-pulse-outer"></span>
-                            <span class="db-pulse-ring db-pulse-mid"></span>
-                            <span class="db-avatar-hub">
-                                <svg width="30" height="30" viewBox="0 0 28 28" fill="none" stroke="#1C1C1E"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <div id="matchLoading" style="display:none;" class="db-loading" aria-live="polite">
+                        <!-- Finding Circle Loading UI -->
+                        <div class="db-pulse-wrap db-finding-circle-wrap" id="dbFindingCircleWrap">
+                            <!-- Concentric Sonar Pulse Rings -->
+                            <span class="db-sonar-ring db-sonar-ring-1"></span>
+                            <span class="db-sonar-ring db-sonar-ring-2"></span>
+                            <span class="db-sonar-ring db-sonar-ring-3"></span>
+
+                            <!-- Orbit Track -->
+                            <div class="db-circle-orbit-ring"></div>
+
+                            <!-- Radar Scanner Sweep Beam -->
+                            <div class="db-radar-sweep"></div>
+
+                            <!-- Radar Crew Candidate Blips -->
+                            <div class="db-radar-blip db-blip-1" title="Scanning crew..."></div>
+                            <div class="db-radar-blip db-blip-2" title="Scanning crew..."></div>
+                            <div class="db-radar-blip db-blip-3" title="Scanning crew..."></div>
+
+                            <!-- Circular Progress & Track SVG -->
+                            <svg class="db-circle-progress-svg" width="144" height="144" viewBox="0 0 144 144"
+                                aria-hidden="true">
+                                <defs>
+                                    <linearGradient id="dbGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#FFD633" />
+                                        <stop offset="50%" stop-color="#FFCC00" />
+                                        <stop offset="100%" stop-color="#F59E0B" />
+                                    </linearGradient>
+                                </defs>
+                                <circle class="db-circle-track" cx="72" cy="72" r="60" />
+                                <circle class="db-circle-spinner" id="dbCircleProgressSpinner" cx="72" cy="72" r="60" />
+                            </svg>
+
+                            <!-- Center Avatar Hub -->
+                            <div class="db-avatar-hub">
+                                <svg width="30" height="30" viewBox="0 0 28 28" fill="none" stroke="#111827"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="14" cy="9.5" r="4.5" />
                                     <path d="M5 25c1.5-5 5-7.5 9-7.5s7.5 2.5 9 7.5" />
                                 </svg>
-                            </span>
+                                <span class="db-hub-live-dot" title="Searching live"></span>
+                            </div>
                         </div>
+
                         <h2 id="step4Heading">Finding a crew…</h2>
                         <p class="db-step-sub" id="step4Sub">Waiting for an available crew member to accept your offer…
                         </p>
-                        <div class="db-match-status-badge">
-                            <span class="db-match-dot"></span>
-                            <span>Awaiting crew acceptance</span>
-                        </div>
-                        <div class="db-match-escrow-pill" id="matchEscrowPill" style="display:none;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            <span>Payment: <strong id="matchEscrowText">Due after acceptance</strong></span>
-                        </div>
-                        <!-- Search Window Timer (Maximum 3 Minutes) -->
+
+                        <!-- Search Window Timer & Progressive Bar (below the finding circle) -->
                         <div class="db-search-timer-box" id="dbSearchTimerBox">
+                            <div class="db-try-attempt-row">
+                                <span class="db-try-pill" id="dbCurrentTryBadge">Try 1 of 3</span>
+                                <span class="db-attempt-pill" id="dbCurrentAttemptBadge">Attempt 1 of 3</span>
+                            </div>
                             <div class="db-search-timer-header">
-                                <span class="db-search-timer-label">Searching for available crew…</span>
+                                <span class="db-search-timer-label">
+                                    <span class="db-timer-pulse-dot"></span>
+                                    Searching for available crew…
+                                </span>
                                 <span class="db-try-timer" id="dbTryTimer">3m 00s remaining</span>
                             </div>
                             <div class="db-search-progress-bar">
                                 <div class="db-search-progress-fill" id="dbSearchProgressFill"></div>
                             </div>
-                            <p class="db-search-timer-note">Maximum 3 minutes search window</p>
+                            <p class="db-search-timer-note" id="dbSearchTimerNote">Each attempt lasts 3 minutes · Up to
+                                9 mins per try</p>
                         </div>
 
                         <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading">
@@ -690,14 +721,15 @@
                                 <h3 id="matchedCrewHeading">Active crew matching this shift</h3>
                                 <span id="matchedCrewCount" class="db-matched-crew-count">0</span>
                             </div>
-                            <p id="matchedCrewMessage" class="db-matched-crew-message">Checking the database for available crew…</p>
+                            <p id="matchedCrewMessage" class="db-matched-crew-message">Checking the database for
+                                available crew…</p>
                             <div id="matchedCrewList" class="db-matched-crew-list"></div>
                         </section>
                         <button type="button" class="db-btn-secondary" id="cancelCrewSearchBtn">Cancel Search</button>
 
                     </div>
 
-                    <!-- ════ FAILED MATCH (3-Min Search Expired) ════ -->
+                    <!-- ════ FAILED MATCH (All 3 Tries Expired) ════ -->
                     <div id="matchFailed" style="display:none;" class="db-match-failed-view">
                         <div class="db-failed-icon-wrap">
                             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
@@ -707,29 +739,28 @@
                                 <line x1="9" y1="9" x2="15" y2="15" />
                             </svg>
                         </div>
-                        <div class="db-failed-badge">Search Expired (3 mins)</div>
-                        <h2 class="db-failed-heading">No Crew Matched</h2>
-                        <p class="db-failed-sub">
-                            The 3-minute search time expired, but no crew members were available to take this
-                            shift right now.
+                        <div class="db-failed-badge" id="dbFailedBadge">All 3 Tries Expired</div>
+                        <h2 class="db-failed-heading" id="dbFailedHeading">No Crew Matched</h2>
+                        <p class="db-failed-sub" id="dbFailedSub">
+                            All 3 tries have been used, but no crew members were confirmed for this shift.
                         </p>
 
-                        <div class="db-repay-notice-box">
+                        <div class="db-repay-notice-box" id="dbRepayNoticeBox">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309"
                                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10" />
                                 <line x1="12" y1="16" x2="12" y2="12" />
                                 <line x1="12" y1="8" x2="12.01" y2="8" />
                             </svg>
-                            <span>To search again for available crew, an additional fixed ₱100 match fee is
-                                required.</span>
+                            <span id="dbRepayNoticeText">To start a new search with 3 fresh tries, an additional fixed
+                                ₱100 match fee is required.</span>
                         </div>
 
                         <button type="button" class="db-btn-primary db-repay-btn" id="repayMatchFeeBtn">
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                                 <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="currentColor" />
                             </svg>
-                            Pay
+                            Pay ₱100 to Search Again
                         </button>
                         <button type="button" class="db-btn-secondary" id="editShiftFromFailedBtn"
                             style="margin-top: 10px;">
@@ -744,8 +775,8 @@
                                 <span class="db-green-dot"></span>
                                 Crew Found!
                             </div>
-                            <div class="db-results-paid-badge" id="resultsPaidBadge">
-                                ✓ Match Fee Paid (₱100)
+                            <div class="db-results-try-badge" id="resultsTryBadge">
+                                Try 1 of 3 · 2 tries remaining if declined
                             </div>
                         </div>
                         <h2 class="db-results-heading" id="resultsHeading">Great news!</h2>
@@ -756,10 +787,14 @@
                         <div class="db-rate-row">
                             <div>
                                 <p class="db-rate-amount" id="rateAmount">₱85<span>/hr</span></p>
-                                <p class="db-rate-note">Minimum 4 hours</p>
+                                <p class="db-rate-note">Employer offered rate</p>
                             </div>
-                            <button type="button" class="db-btn-primary db-btn-sm" id="confirmBooking">Confirm
-                                Booking</button>
+                            <div class="db-results-actions-group">
+                                <button type="button" class="db-btn-secondary db-btn-sm"
+                                    id="cancelMatchBtn">Cancel</button>
+                                <button type="button" class="db-btn-primary db-btn-sm"
+                                    id="confirmBooking">Confirm</button>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -872,18 +907,19 @@
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
-                            <input type="password" id="empModalLoginPass" class="db-auth-input db-auth-input-pass" placeholder="••••••••"
-                                required autocomplete="current-password">
+                            <input type="password" id="empModalLoginPass" class="db-auth-input db-auth-input-pass"
+                                placeholder="••••••••" required autocomplete="current-password">
                             <button type="button" class="db-auth-toggle-pass" id="toggleEmpModalLoginPass"
                                 aria-label="Show password" title="Toggle password visibility">
                                 <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                                 <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                    style="display: none;">
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" style="display: none;">
                                     <path
                                         d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
                                     </path>
@@ -952,18 +988,20 @@
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
-                            <input type="password" id="empModalSignupPass" class="db-auth-input db-auth-input-pass" 
-                                placeholder="At least 4 characters" required autocomplete="new-password" required minlength="8" maxlength="72">
+                            <input type="password" id="empModalSignupPass" class="db-auth-input db-auth-input-pass"
+                                placeholder="At least 4 characters" required autocomplete="new-password" required
+                                minlength="8" maxlength="72">
                             <button type="button" class="db-auth-toggle-pass" id="toggleEmpModalSignupPass"
                                 aria-label="Show password" title="Toggle password visibility">
                                 <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                                 <svg class="eye-icon eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                    style="display: none;">
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" style="display: none;">
                                     <path
                                         d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
                                     </path>
@@ -1008,7 +1046,8 @@
                         </svg>
                     </div>
                     <h3 class="db-modal-title" id="paymentModalTitle">Payment Details</h3>
-                    <p class="db-modal-sub" id="paymentModalSubtitle">Pay the fixed ₱100 search fee to start crew search.</p>
+                    <p class="db-modal-sub" id="paymentModalSubtitle">Pay the fixed ₱100 search fee to start crew
+                        search.</p>
                 </div>
 
                 <!-- Booking Summary Box -->
@@ -1088,7 +1127,8 @@
                         <p class="db-pay-cash-note">Pay the ₱100 search fee in cash to start crew search.</p>
                         <div class="db-pay-field">
                             <label for="payCashNote">Payment note (optional)</label>
-                            <input type="text" id="payCashNote" class="db-pay-input db-pay-input-full" maxlength="120" placeholder="Add a short note">
+                            <input type="text" id="payCashNote" class="db-pay-input db-pay-input-full" maxlength="120"
+                                placeholder="Add a short note">
                         </div>
                     </div>
                     <div class="db-pay-method-details" id="payMethodGcashWrap">
@@ -1418,12 +1458,12 @@
 
                 <!-- Google Maps Direction Banner -->
                 <div class="app-loc-map-preview">
-                  <!-- Live map (shown when we can build an embed URL) -->
-                  <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
-                    <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
-                  </div>              
-      
+                    <!-- Live map (shown when we can build an embed URL) -->
+                    <div class="app-loc-map-frame" id="locMapFrameWrap" style="display:none;">
+                        <iframe id="locMapFrame" title="Work location map preview" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                    </div>
+
                     <div class="app-loc-map-art" id="locMapArt">
                         <div class="app-map-roads"></div>
                         <div class="app-map-pulse-pin">
@@ -1435,7 +1475,8 @@
                             </svg>
                         </div>
                     </div>
-                    <p class="app-map-preview-hint" id="locMapHint">Location verified by employer for Google Maps navigation</p>
+                    <p class="app-map-preview-hint" id="locMapHint">Location verified by employer for Google Maps
+                        navigation</p>
                 </div>
 
             </div>
@@ -1485,7 +1526,7 @@
             <a href="#">Contact</a>
         </div>
     </footer>
-    
+
     <script src="js/location.js"></script>
     <script src="js/shared-data.js"></script>
     <script src="js/employer.js?v=20261014-employer-cancel-immediate-v1"></script>

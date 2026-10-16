@@ -40,6 +40,8 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/jobs/{id}/confirm", emp(h.Confirm))
 	mux.Handle("POST /api/jobs/{id}/end", emp(h.End))
 	mux.Handle("POST /api/jobs/{id}/cancel", emp(h.Cancel))
+	mux.Handle("POST /api/jobs/{id}/decline-match", emp(h.DeclineMatch))
+	mux.Handle("POST /api/jobs/{id}/next-attempt", emp(h.NextAttempt))
 
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
 	mux.Handle("PUT /api/applicant/profile", app(h.SaveApplicantProfile))
@@ -372,20 +374,52 @@ type jobDTO struct {
 	SearchAttempts   int        `json:"search_attempts"`
 	SearchExpiresAt  *time.Time `json:"search_expires_at,omitempty"`
 	SecondsRemaining int64      `json:"seconds_remaining"` // server clock, so the countdown can't be cheated
+	CurrentTry       int        `json:"current_try"`
+	MaxTries         int        `json:"max_tries"`
+	CurrentAttempt   int        `json:"current_attempt"`
+	MaxAttempts      int        `json:"max_attempts"`
+	TriesRemaining   int        `json:"tries_remaining"`
 	MatchFee         float64    `json:"match_fee"`
 	Crew             []crewDTO  `json:"crew,omitempty"`
 	CreatedAt        time.Time  `json:"created_at"`
 }
 
 func (h *Handler) toDTO(j *store.Job) jobDTO {
+	curTry := j.CurrentTry
+	if curTry < 1 {
+		curTry = 1
+	}
+	maxTries := j.MaxTries
+	if maxTries < 1 {
+		maxTries = 3
+	}
+	curAtt := j.CurrentAttempt
+	if curAtt < 1 {
+		curAtt = 1
+	}
+	maxAtt := j.MaxAttempts
+	if maxAtt < 1 {
+		maxAtt = 3
+	}
+	triesRem := maxTries - curTry
+	if triesRem < 0 {
+		triesRem = 0
+	}
+
 	d := jobDTO{
 		ID: j.ID, Category: j.Category, Role: j.RoleID, RoleLabel: j.RoleLabel,
 		EmploymentType: j.EmploymentType, Rate: float64(j.RateCentavos) / 100, RatePeriod: j.RatePeriod,
 		City: j.City, MapLocation: j.MapLocation, MapsURL: j.MapsURL, Lat: j.Lat, Lng: j.Lng,
 		Timing: j.Timing, ScheduledAt: j.ScheduledAt, CrewNeeded: j.CrewNeeded,
 		AcceptedCount: j.AcceptedCount, Status: j.Status, SearchAttempts: j.SearchAttempts,
-		SearchExpiresAt: j.SearchExpiresAt, MatchFee: float64(h.MatchFeeCentavos) / 100,
-		CreatedAt: j.CreatedAt,
+		SearchExpiresAt: j.SearchExpiresAt,
+		CurrentTry:      curTry,
+		MaxTries:        maxTries,
+		CurrentAttempt:  curAtt,
+		MaxAttempts:     maxAtt,
+		TriesRemaining:  triesRem,
+		MatchFee:        float64(h.MatchFeeCentavos) / 100,
+		CreatedAt:       j.CreatedAt,
 	}
 	if j.Status == "matching" && j.SearchExpiresAt != nil {
 		if rem := time.Until(*j.SearchExpiresAt); rem > 0 {
@@ -799,4 +833,32 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.writeJob(w, r, http.StatusOK, u.ID, id)
+}
+
+// POST /api/jobs/{id}/decline-match
+func (h *Handler) DeclineMatch(w http.ResponseWriter, r *http.Request) {
+	u, id, ok := h.ids(w, r)
+	if !ok {
+		return
+	}
+	job, err := h.Store.DeclineMatch(r.Context(), u.ID, id, h.SearchWindow)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"job": h.toDTO(job)})
+}
+
+// POST /api/jobs/{id}/next-attempt
+func (h *Handler) NextAttempt(w http.ResponseWriter, r *http.Request) {
+	u, id, ok := h.ids(w, r)
+	if !ok {
+		return
+	}
+	job, err := h.Store.AdvanceSearchAttempt(r.Context(), u.ID, id, h.SearchWindow)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"job": h.toDTO(job)})
 }

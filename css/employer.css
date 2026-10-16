@@ -358,11 +358,29 @@ h2 {
     font-weight: 500;
     color: var(--muted);
     margin-bottom: 20px;
-    transition: color var(--dur-fast) var(--ease-out);
+    transition: color var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
 }
 
-.db-back-btn:hover {
+.db-back-btn:hover:not(:disabled) {
     color: var(--ink);
+}
+
+.db-back-btn:disabled,
+.db-back-btn[disabled],
+.db-back-btn[aria-disabled="true"] {
+    opacity: 0.3;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+/* Hide arrow back button on Step 4 while still finding a crew or deciding on match */
+#step4.is-finding-crew #step4BackBtn,
+#step4[data-finding="true"] #step4BackBtn,
+#step4:has(#matchLoading:not([style*="display: none"])) #step4BackBtn,
+#step4:has(#matchResults:not([style*="display: none"])) #step4BackBtn {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
 }
 
 
@@ -1041,62 +1059,257 @@ h2 {
     margin-bottom: 8px;
 }
 
+.db-finding-circle-wrap,
 .db-pulse-wrap {
     position: relative;
-    width: 110px;
-    height: 110px;
-    margin: 0 auto 28px;
+    width: 170px;
+    height: 170px;
+    margin: 6px auto 24px;
     display: flex;
     align-items: center;
     justify-content: center;
+    user-select: none;
 }
 
-.db-pulse-ring {
+/* Concentric Sonar Pulse Rings */
+.db-sonar-ring {
     position: absolute;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
-    background: var(--yellow);
-    opacity: 0;
-    animation: pulseRing 2.2s var(--ease-out) infinite;
+    pointer-events: none;
+    box-sizing: border-box;
+    animation: dbSonarExpand 3s cubic-bezier(0.1, 0.4, 0.2, 1) infinite;
 }
 
-.db-pulse-outer {
-    width: 110px;
-    height: 110px;
+.db-sonar-ring-1 {
     animation-delay: 0s;
 }
 
-.db-pulse-mid {
-    width: 80px;
-    height: 80px;
-    animation-delay: 0.55s;
+.db-sonar-ring-2 {
+    animation-delay: 1s;
 }
 
-@keyframes pulseRing {
+.db-sonar-ring-3 {
+    animation-delay: 2s;
+}
+
+@keyframes dbSonarExpand {
     0% {
-        transform: scale(0.4);
-        opacity: 0.5;
+        transform: scale(0.38);
+        opacity: 0.95;
+        border: 2px solid rgba(255, 204, 0, 0.85);
+        background: radial-gradient(circle, rgba(255, 204, 0, 0.28) 0%, rgba(255, 204, 0, 0.06) 60%, transparent 80%);
+    }
+
+    50% {
+        opacity: 0.45;
+        border: 1.5px solid rgba(255, 204, 0, 0.5);
+    }
+
+    100% {
+        transform: scale(1.18);
+        opacity: 0;
+        border: 1px solid rgba(255, 204, 0, 0);
+        background: transparent;
+    }
+}
+
+/* Orbit Track (Dashed searching ring) */
+.db-circle-orbit-ring {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(245, 158, 11, 0.35);
+    box-sizing: border-box;
+    animation: dbOrbitRotate 14s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes dbOrbitRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Radar Scanner Sweep (Conical beam) */
+.db-radar-sweep {
+    position: absolute;
+    width: 136px;
+    height: 136px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 240deg, rgba(255, 204, 0, 0.05) 280deg, rgba(255, 204, 0, 0.38) 360deg);
+    animation: dbRadarSweep 2.8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.db-radar-sweep::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255, 204, 0, 0.2), #FFCC00);
+    box-shadow: 0 0 6px #FFCC00;
+    transform-origin: left center;
+}
+
+@keyframes dbRadarSweep {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Radar Crew Candidate Blips */
+.db-radar-blip {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #F59E0B;
+    border: 1.5px solid #FFFFFF;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
+    z-index: 2;
+    pointer-events: none;
+    animation: dbBlipPing 2.8s ease-out infinite;
+}
+
+.db-blip-1 {
+    top: 24px;
+    right: 32px;
+    animation-delay: 0.6s;
+}
+
+.db-blip-2 {
+    bottom: 28px;
+    left: 28px;
+    animation-delay: 1.5s;
+}
+
+.db-blip-3 {
+    bottom: 34px;
+    right: 30px;
+    animation-delay: 2.3s;
+}
+
+@keyframes dbBlipPing {
+    0% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+
+    20% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 0.85;
     }
 
     70% {
         transform: scale(1);
-        opacity: 0;
+        opacity: 0.85;
     }
 
     100% {
+        transform: scale(0.6);
         opacity: 0;
     }
 }
 
+/* Circular SVG Progress & Spinner Ring */
+.db-circle-progress-svg {
+    position: absolute;
+    width: 144px;
+    height: 144px;
+    transform: rotate(-90deg);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.db-circle-track {
+    fill: none;
+    stroke: rgba(243, 244, 246, 0.85);
+    stroke-width: 5;
+}
+
+.db-circle-spinner {
+    fill: none;
+    stroke: url(#dbGoldGradient);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-dasharray: 376.99;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+    filter: drop-shadow(0 0 4px rgba(255, 204, 0, 0.5));
+}
+
+/* Center Avatar Hub */
 .db-avatar-hub {
     position: relative;
-    z-index: 2;
-    width: 58px;
-    height: 58px;
+    z-index: 3;
+    width: 66px;
+    height: 66px;
     border-radius: 50%;
-    background: var(--yellow);
+    background: linear-gradient(135deg, #FFE169 0%, #FFCC00 55%, #F59E0B 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 6px 20px rgba(255, 204, 0, 0.45), 0 0 0 4px rgba(255, 255, 255, 0.95);
+    animation: dbHubBreathing 2.4s ease-in-out infinite;
+}
+
+@keyframes dbHubBreathing {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Live beacon dot on hub */
+.db-hub-live-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #10B981;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+    animation: dbLiveDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes dbLiveDotPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
 }
 
 
@@ -3309,55 +3522,204 @@ h2 {
 /* ─── Search Window Timer (3-Min Window) ─── */
 .db-search-timer-box {
     width: 100%;
-    max-width: 380px;
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
+    max-width: 390px;
+    background: transparent;
     border-radius: 16px;
-    padding: 12px 14px;
-    margin: 12px 0 6px;
+    padding: 14px 16px;
+    margin: 14px 0 12px;
+    box-sizing: border-box;
+}
+
+.db-try-attempt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.db-try-pill {
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #B45309;
+    background: transparent;
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+}
+
+.db-attempt-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #4B5563;
+    background: transparent;
+    border: 1px solid #E5E7EB;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.db-results-try-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #92400E;
+    background: transparent;
+    border: 1px solid #FDE68A;
+    padding: 4px 12px;
+    border-radius: 9999px;
+}
+
+.db-results-actions-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+#cancelMatchBtn,
+#declineMatchBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    color: #4B5563;
+    border: 1.5px solid #E5E7EB;
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: 9999px;
+    cursor: pointer;
+    margin: 0;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    line-height: 1;
+}
+
+#cancelMatchBtn:hover,
+#declineMatchBtn:hover {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+    color: #E11D48;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.08);
+}
+
+#cancelMatchBtn:active,
+#declineMatchBtn:active {
+    transform: scale(0.97);
+    box-shadow: none;
+}
+
+#cancelMatchBtn:disabled,
+#declineMatchBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .db-search-timer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 0.8rem;
+    margin-bottom: 10px;
+    font-size: 0.82rem;
+    gap: 8px;
 }
 
 .db-search-timer-label {
     font-weight: 700;
     color: #111827;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.db-timer-pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #F59E0B;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
+    animation: dbTimerDotPing 1.4s ease-in-out infinite;
+}
+
+@keyframes dbTimerDotPing {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 0.5;
+    }
 }
 
 .db-try-timer {
     font-weight: 700;
-    color: #D97706;
-    background: #FEF3C7;
-    padding: 2px 8px;
+    color: #B45309;
+    background: transparent;
+    padding: 4px 10px;
     border-radius: 9999px;
-    font-size: 0.74rem;
+    font-size: 0.76rem;
+    letter-spacing: 0.01em;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    white-space: nowrap;
 }
 
 .db-search-progress-bar {
     width: 100%;
-    height: 6px;
-    background: #E5E7EB;
+    height: 8px;
+    background: #F3F4F6;
     border-radius: 9999px;
     overflow: hidden;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+    position: relative;
 }
 
 .db-search-progress-fill {
     height: 100%;
     width: 100%;
-    background: linear-gradient(90deg, #F59E0B, #FFCC00);
+    background: linear-gradient(90deg, #F59E0B 0%, #FFCC00 50%, #FBBF24 100%);
     border-radius: 9999px;
     transition: width 1s linear;
+    position: relative;
+    box-shadow: 0 0 8px rgba(255, 204, 0, 0.4);
+}
+
+.db-search-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    animation: dbProgressShimmer 2.2s infinite;
+}
+
+@keyframes dbProgressShimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 .db-search-timer-note {
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     color: #6B7280;
     margin: 0;
     text-align: center;
@@ -5091,12 +5453,22 @@ body {
 
     .db-rate-row {
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
         align-items: stretch;
         width: 100%;
     }
 
-    .db-btn-primary.db-btn-sm {
+    .db-results-actions-group {
+        width: 100%;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+
+    .db-results-actions-group button,
+    .db-btn-primary.db-btn-sm,
+    #cancelMatchBtn,
+    #declineMatchBtn {
         width: 100%;
         justify-content: center;
     }
