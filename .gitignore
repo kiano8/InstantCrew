@@ -8,3 +8,9 @@ jar.txt
 /instantcrew
 
 
+data/
+instantcrew
+*.db
+*.db-wal
+*.db-shm
+deploy_key*
