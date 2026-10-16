@@ -37,6 +37,45 @@ type Notification struct {
 	Read      bool   `json:"read"`
 }
 
+type HiringPass struct {
+	TotalHires     int   `json:"totalHires"`
+	RemainingHires int   `json:"remainingHires"`
+	UsedHires      int   `json:"usedHires"`
+	PaidAmount     int64 `json:"paidAmount"`
+	BatchesPaid    int   `json:"batchesPaid"`
+}
+
+func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (HiringPass, error) {
+	var p HiringPass
+	err := s.db.QueryRowContext(ctx, `SELECT total_hires,remaining_hires,used_hires,amount_centavos,batches_paid FROM applicant_hiring_passes WHERE applicant_id=?`, applicantID).
+		Scan(&p.TotalHires, &p.RemainingHires, &p.UsedHires, &p.PaidAmount, &p.BatchesPaid)
+	if err == sql.ErrNoRows {
+		return p, nil
+	}
+	p.PaidAmount /= 100 // API exposes pesos; storage keeps centavos.
+	return p, err
+}
+
+// AddApplicantHiringPass records one fixed-price pass and grants five hires atomically.
+func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method string) (HiringPass, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return HiringPass{}, err
+	}
+	defer tx.Rollback()
+	now := time.Now().Unix()
+	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,created_at) VALUES(?,1000,?,?)`, applicantID, method, now); err != nil {
+		return HiringPass{}, err
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at) VALUES(?,5,5,0,1000,1,?) ON CONFLICT(applicant_id) DO UPDATE SET total_hires=total_hires+5,remaining_hires=remaining_hires+5,amount_centavos=amount_centavos+1000,batches_paid=batches_paid+1,updated_at=excluded.updated_at`, applicantID, now); err != nil {
+		return HiringPass{}, err
+	}
+	if err = tx.Commit(); err != nil {
+		return HiringPass{}, err
+	}
+	return s.ApplicantHiringPass(ctx, applicantID)
+}
+
 func (s *Store) Notifications(ctx context.Context, userID int64) ([]Notification, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id,title,message,type,payload,created_at,read_at FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 100`, userID)
 	if err != nil {

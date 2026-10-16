@@ -5170,12 +5170,7 @@
                     return;
                 }
 
-                // Increment accepted jobs counter & deduct 1 hire from quota
-                if (!session.hiringQuota) {
-                    session.hiringQuota = { totalHires: 5, remainingHires: 5, usedHires: 0, paidAmount: 10, batchesPaid: 1 };
-                }
-                session.hiringQuota.remainingHires = Math.max(0, (session.hiringQuota.remainingHires !== undefined ? session.hiringQuota.remainingHires : 5) - 1);
-                session.hiringQuota.usedHires = (session.hiringQuota.usedHires || 0) + 1;
+                try { await refreshHiringPass(); } catch (err) { showToast(err.message, true); }
                 saveWorkerSession(session);
                 updateHiringPassUI();
 
@@ -5882,13 +5877,12 @@
                 if (!session) return;
                 if (!session.hiringQuota) {
                     session.hiringQuota = {
-                        totalHires: 5,
-                        remainingHires: 5,
+                        totalHires: 0,
+                        remainingHires: 0,
                         usedHires: 0,
-                        paidAmount: 10,
-                        batchesPaid: 1
+                        paidAmount: 0,
+                        batchesPaid: 0
                     };
-                    saveWorkerSession(session);
                 }
 
                 const quota = session.hiringQuota;
@@ -5912,6 +5906,18 @@
                 if (warningBanner) {
                     warningBanner.style.display = remaining <= 0 ? 'flex' : 'none';
                 }
+            }
+
+            async function refreshHiringPass() {
+                const response = await fetch('/api/applicant/hiring-pass', { credentials: 'same-origin', cache: 'no-store' });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Could not load your Hiring Pass.');
+                if (session) {
+                    session.hiringQuota = data.hiring_pass || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 };
+                    saveWorkerSession(session);
+                    updateHiringPassUI();
+                }
+                return session?.hiringQuota;
             }
 
             function openApplicantTopupModal() {
@@ -6507,7 +6513,7 @@
 
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
-                    appPayAndProceedBtn.addEventListener('click', () => {
+                    appPayAndProceedBtn.addEventListener('click', async () => {
                         if (step4PaymentMethod === 'gcash') {
                             const num = document.getElementById('appStepGcashNum')?.value.trim();
                             if (!num) {
@@ -6544,13 +6550,11 @@
                             showToast('₱10.00 Hiring Pass pre-paid! Please log in or sign up to activate.');
                             openApplicantAuthModal();
                         } else {
-                            if (!session.hiringQuota) {
-                                session.hiringQuota = { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 };
-                            }
-                            session.hiringQuota.totalHires = (session.hiringQuota.totalHires || 0) + 5;
-                            session.hiringQuota.remainingHires = (session.hiringQuota.remainingHires || 0) + 5;
-                            session.hiringQuota.paidAmount = (session.hiringQuota.paidAmount || 0) + 10;
-                            session.hiringQuota.batchesPaid = (session.hiringQuota.batchesPaid || 0) + 1;
+                            const paid = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: step4PaymentMethod }) });
+                            const paidData = await paid.json().catch(() => ({}));
+                            if (!paid.ok) { showToast(paidData.error || 'Payment could not be completed.', true); return; }
+                            session.hiringQuota = paidData.hiring_pass;
+                            sessionStorage.removeItem('ic_applicant_pending_pass');
 
                             applySessionToDashboard({
                                 ...session,
@@ -6614,7 +6618,7 @@
 
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
-                    appConfirmTopupBtn.addEventListener('click', () => {
+                    appConfirmTopupBtn.addEventListener('click', async () => {
                         if (topupPaymentMethod === 'gcash') {
                             const num = document.getElementById('appTopupGcashNum')?.value.trim();
                             if (!num) { showToast('Please enter your GCash number.', true); return; }
@@ -6629,25 +6633,17 @@
                         appConfirmTopupBtn.disabled = true;
                         appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
 
-                        setTimeout(() => {
-                            if (!session) session = getWorkerSession() || {};
-                            if (!session.hiringQuota) {
-                                session.hiringQuota = { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 };
-                            }
-                            session.hiringQuota.totalHires = (session.hiringQuota.totalHires || 0) + 5;
-                            session.hiringQuota.remainingHires = (session.hiringQuota.remainingHires || 0) + 5;
-                            session.hiringQuota.paidAmount = (session.hiringQuota.paidAmount || 0) + 10;
-                            session.hiringQuota.batchesPaid = (session.hiringQuota.batchesPaid || 0) + 1;
-
-                            saveWorkerSession(session);
+                        try {
+                            const response = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: topupPaymentMethod }) });
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) throw new Error(data.error || 'Payment could not be completed.');
+                            if (session) { session.hiringQuota = data.hiring_pass; saveWorkerSession(session); }
                             updateHiringPassUI();
                             renderShiftsFeed();
-
                             closeApplicantTopupModal();
-                            appConfirmTopupBtn.disabled = false;
-                            appConfirmTopupBtn.innerHTML = '<span>Confirm &amp; Add ₱10.00 (+5 Hires)</span>';
                             showToast('Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
-                        }, 500);
+                        } catch (err) { showToast(err.message, true); }
+                        finally { appConfirmTopupBtn.disabled = false; appConfirmTopupBtn.innerHTML = '<span>Confirm &amp; Add ₱10.00 (+5 Hires)</span>'; }
                     });
                 }
 
@@ -6784,24 +6780,21 @@
                                         remainingHires: parsedPending.remainingHires !== undefined ? parsedPending.remainingHires : parsedPending.totalHires,
                                         usedHires: parsedPending.usedHires || 0,
                                         paidAmount: parsedPending.paidAmount || 10,
-                                        batchesPaid: parsedPending.batchesPaid || 1
+                                        batchesPaid: parsedPending.batchesPaid || 1,
+                                        paymentMethod: parsedPending.paymentMethod || 'gcash'
                                     };
                                 }
-                                sessionStorage.removeItem('ic_applicant_pending_pass');
                             }
                         } catch (e) { }
 
-                        const existingQuota = getWorkerSession()?.hiringQuota;
-                        newSession.hiringQuota = pendingPassQuota || existingQuota || {
-                            totalHires: 5,
-                            remainingHires: 5,
-                            usedHires: 0,
-                            paidAmount: 10,
-                            batchesPaid: 1
-                        };
-
                         saveWorkerSession(newSession);
                         session = newSession;
+                        if (pendingPassQuota) {
+                            const paid = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: pendingPassQuota.paymentMethod }) });
+                            if (!paid.ok) throw new Error('Account logged in, but Hiring Pass payment could not be completed.');
+                            sessionStorage.removeItem('ic_applicant_pending_pass');
+                        }
+                        await refreshHiringPass();
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
@@ -6857,10 +6850,10 @@
                                         remainingHires: parsedPending.remainingHires !== undefined ? parsedPending.remainingHires : parsedPending.totalHires,
                                         usedHires: parsedPending.usedHires || 0,
                                         paidAmount: parsedPending.paidAmount || 10,
-                                        batchesPaid: parsedPending.batchesPaid || 1
+                                        batchesPaid: parsedPending.batchesPaid || 1,
+                                        paymentMethod: parsedPending.paymentMethod || 'gcash'
                                     };
                                 }
-                                sessionStorage.removeItem('ic_applicant_pending_pass');
                             }
                         } catch (e) { }
 
@@ -6874,14 +6867,17 @@
                             ratePeriod: `per ${profileData.profile?.rate_period || period}`,
                             timingPreference: profileData.profile?.availability_mode || (appState.timing === 'later' ? 'later' : 'now'),
                             acceptedShifts: [],
-                            hiringQuota: pendingPassQuota || {
-                                totalHires: 5,
-                                remainingHires: 5,
-                                usedHires: 0,
-                                paidAmount: 10,
-                                batchesPaid: 1
-                            }
+                            hiringQuota: { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 }
                         };
+                        session = newSession;
+
+                        if (pendingPassQuota) {
+                            const paid = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: pendingPassQuota.paymentMethod }) });
+                            if (!paid.ok) throw new Error('Account created, but Hiring Pass payment could not be completed.');
+                            sessionStorage.removeItem('ic_applicant_pending_pass');
+                        }
+                        await refreshHiringPass();
+                        saveWorkerSession(newSession);
 
                         if (appState.timing === 'later') {
                             const startsAt = Math.floor(Date.now() / 1000) + 3600;
@@ -6893,7 +6889,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast('Account created! Your ₱10 Hiring Pass with 5 hires is active.');
+                        showToast(pendingPassQuota ? 'Account created! Your ₱10 Hiring Pass with 5 hires is active.' : 'Account created. Add ₱10 to activate 5 hiring opportunities.');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -6910,15 +6906,15 @@
                 fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(data => {
                     if (!data || !data.user || data.user.role !== 'applicant') return;
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
-                    session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 5, remainingHires: 5, usedHires: 0, paidAmount: 10, batchesPaid: 1 } };
+                    session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };
                     return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
                         if (profileData?.profile) Object.assign(session, { services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                     }).then(() => loadApplicantAvailability(session));
                 }).then(() => {
                     if (!hasWorkerSession()) return;
-                    if (!session.hiringQuota) {
-                        session.hiringQuota = { totalHires: 5, remainingHires: 5, usedHires: 0, paidAmount: 10, batchesPaid: 1 };
-                    }
+                    return refreshHiringPass();
+                }).then(() => {
+                    if (!hasWorkerSession()) return;
                     saveWorkerSession(session);
                     applySessionToDashboard(session);
                     updateViewMode();

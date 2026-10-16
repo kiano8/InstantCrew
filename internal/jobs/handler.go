@@ -42,6 +42,8 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/jobs/{id}/cancel", emp(h.Cancel))
 
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
+	mux.Handle("GET /api/applicant/hiring-pass", app(h.ApplicantHiringPass))
+	mux.Handle("POST /api/applicant/hiring-pass/pay", app(h.PayApplicantHiringPass))
 	mux.Handle("PUT /api/applicant/profile", app(h.SaveApplicantProfile))
 	mux.Handle("GET /api/applicant/jobs", app(h.ApplicantJobs))
 	mux.Handle("GET /api/applicant/jobs/{id}", app(h.ApplicantJob))
@@ -185,6 +187,37 @@ func (h *Handler) ApplicantProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"profile": p})
+}
+
+func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
+	u, _ := auth.UserFrom(r.Context())
+	p, err := h.Store.ApplicantHiringPass(r.Context(), u.ID)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"hiring_pass": p})
+}
+
+func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
+	u, _ := auth.UserFrom(r.Context())
+	var req struct {
+		Method string `json:"method"`
+	}
+	if !httpx.Decode(w, r, &req) {
+		return
+	}
+	method := strings.ToLower(strings.TrimSpace(req.Method))
+	if method != "gcash" && method != "maya" && method != "card" {
+		httpx.Error(w, http.StatusBadRequest, "method must be gcash, maya, or card")
+		return
+	}
+	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"hiring_pass": p, "paid": true, "amount": 10})
 }
 
 func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
@@ -405,6 +438,8 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusConflict, "this action isn't allowed in the job's current status")
 	case errors.Is(err, store.ErrAlreadyAccepted):
 		httpx.Error(w, http.StatusConflict, "already accepted")
+	case errors.Is(err, store.ErrHiringPassEmpty):
+		httpx.Error(w, http.StatusPaymentRequired, err.Error())
 	default:
 		log.Printf("jobs: %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
