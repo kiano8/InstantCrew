@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	ErrNotFound   = errors.New("not found")
-	ErrEmailTaken = errors.New("email already registered")
+	ErrNotFound        = errors.New("not found")
+	ErrEmailTaken      = errors.New("email already registered")
+	ErrHiringPassEmpty = errors.New("hiring pass exhausted; add ₱10 for 5 hires")
 )
 
 type User struct {

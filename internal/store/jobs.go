@@ -493,6 +493,13 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		return err
 	}
 	defer tx.Rollback()
+	quota, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_passes SET remaining_hires=remaining_hires-1,used_hires=used_hires+1,updated_at=? WHERE applicant_id=? AND remaining_hires>0`, time.Now().Unix(), applicantID)
+	if err != nil {
+		return err
+	}
+	if n, _ := quota.RowsAffected(); n == 0 {
+		return ErrHiringPassEmpty
+	}
 
 	now := time.Now().Unix()
 	res, err := tx.ExecContext(ctx, `
