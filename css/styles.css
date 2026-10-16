@@ -1292,6 +1292,29 @@ button {
     transform: translateY(0);
 }
 
+.role-modal-footer {
+    margin-top: 14px;
+    text-align: center;
+}
+
+.role-modal-full-login-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink-60);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+    cursor: pointer;
+}
+
+.role-modal-full-login-link:hover {
+    color: var(--ink);
+    text-decoration-color: var(--amber-deep);
+}
+
 @media (max-width: 480px) {
     .role-modal-overlay {
         padding: 14px 12px;

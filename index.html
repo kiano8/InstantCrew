@@ -208,6 +208,9 @@
                     <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
             </button>
+            <div class="role-modal-footer">
+                <a href="login.html" class="role-modal-full-login-link" id="roleModalFullLoginLink">View full login page</a>
+            </div>
         </div>
     </div>
 
@@ -224,6 +227,7 @@
             const optionEmployer = document.getElementById('optionEmployer');
             const optionApplicant = document.getElementById('optionApplicant');
             const btnRoleContinue = document.getElementById('btnRoleContinue');
+            const roleModalFullLoginLink = document.getElementById('roleModalFullLoginLink');
 
             let selectedRole = null;
 
@@ -255,6 +259,9 @@
                 }
                 btnRoleContinue.disabled = false;
                 btnRoleContinue.classList.add('active');
+                if (roleModalFullLoginLink) {
+                    roleModalFullLoginLink.href = role === 'employer' ? 'login.html?role=hirer' : 'login.html?role=applicant';
+                }
             }
 
             function proceedToPortal() {
