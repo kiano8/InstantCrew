@@ -4,3 +4,7 @@ data/*.db-wal
 jar.txt
 
 .env
+
+/instantcrew
+
+
