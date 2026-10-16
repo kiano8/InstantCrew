@@ -2519,12 +2519,6 @@ h2 {
     letter-spacing: -0.02em;
 }
 
-.db-modal-sub {
-    font-size: 0.88rem;
-    color: #6B7280;
-    margin-top: 4px;
-}
-
 /* Quick Presets */
 .db-cal-presets {
     display: flex;
@@ -3062,7 +3056,7 @@ h2 {
     width: 38px;
     height: 38px;
     border-radius: 12px;
-    background: #FEF3C7;
+    background: transparent;
     border: 1px solid #FDE68A;
     color: #D97706;
     display: flex;
@@ -3262,7 +3256,7 @@ h2 {
 
 .db-pay-method-tabs {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     margin-bottom: 10px;
 }

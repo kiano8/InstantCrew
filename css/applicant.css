@@ -721,8 +721,8 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+    background: #D97706;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
     display: inline-block;
     flex-shrink: 0;
 }
@@ -5142,8 +5142,8 @@ body.app-sheet-open {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+    background: #D97706;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
     flex-shrink: 0;
 }
 

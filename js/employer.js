@@ -1439,10 +1439,9 @@ function openPaymentModal(step = 'payment') {
   });
   if (selectedMethodButton) selectedMethodButton.click();
   const savedDetailInput = state.selectedPaymentMethod === 'gcash' ? document.getElementById('payGcashNumber')
-    : state.selectedPaymentMethod === 'maya' ? document.getElementById('payMayaNumber')
-      : state.selectedPaymentMethod === 'cash' ? document.getElementById('payCashNote') : null;
+    : state.selectedPaymentMethod === 'maya' ? document.getElementById('payMayaNumber') : null;
   if (savedDetailInput && state.selectedPaymentDetails) savedDetailInput.value = state.selectedPaymentDetails;
-  if (payCancelBtn) payCancelBtn.textContent = 'Back to Shift Details';
+  if (payCancelBtn) payCancelBtn.textContent = 'Back to Details';
   if (paymentError) {
     paymentError.textContent = '';
     paymentError.style.display = 'none';
@@ -1461,7 +1460,7 @@ function openPaymentModal(step = 'payment') {
 
 function loadEmployerPaymentPreference() {
   const preference = getSession()?.paymentPreference;
-  if (!preference || !['cash', 'gcash', 'maya', 'card'].includes(preference.method)) return;
+  if (!preference || !['gcash', 'maya', 'card'].includes(preference.method)) return;
   state.selectedPaymentMethod = preference.method;
   state.selectedPaymentDetails = preference.details || '';
 }
@@ -1491,12 +1490,10 @@ document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
     btn.setAttribute('aria-checked', 'true');
 
     const method = btn.getAttribute('data-method');
-    const cashWrap = document.getElementById('payMethodCashWrap');
     const gcashWrap = document.getElementById('payMethodGcashWrap');
     const mayaWrap = document.getElementById('payMethodMayaWrap');
     const cardWrap = document.getElementById('payMethodCardWrap');
 
-    if (cashWrap) cashWrap.style.display = method === 'cash' ? 'block' : 'none';
     if (gcashWrap) gcashWrap.style.display = method === 'gcash' ? 'block' : 'none';
     if (mayaWrap) mayaWrap.style.display = method === 'maya' ? 'block' : 'none';
     if (cardWrap) cardWrap.style.display = method === 'card' ? 'block' : 'none';
@@ -1582,11 +1579,10 @@ if (payNowBtn) {
   payNowBtn.addEventListener('click', async () => {
     const methodTab = document.querySelector('.db-pay-method-btn.active');
     const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
-    const methodLabels = { cash: 'Cash', gcash: 'GCash', maya: 'Maya', card: 'Card' };
+    const methodLabels = { gcash: 'GCash', maya: 'Maya', card: 'Card' };
     const methodLabel = methodLabels[method] || 'GCash';
     const detailInput = method === 'gcash' ? document.getElementById('payGcashNumber')
-      : method === 'maya' ? document.getElementById('payMayaNumber')
-        : method === 'cash' ? document.getElementById('payCashNote') : null;
+      : method === 'maya' ? document.getElementById('payMayaNumber') : null;
     const details = detailInput ? detailInput.value.trim() : '';
     if ((method === 'gcash' || method === 'maya') && (details.replace(/\D/g, '').length < 10 || details.replace(/\D/g, '').length > 13)) {
       if (paymentError) {
@@ -1739,7 +1735,7 @@ async function startCrewSearch() {
 
 async function recordSearchFee(methodLabel, details = '') {
   const method = String(methodLabel).toLowerCase();
-  const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: ['cash', 'gcash', 'maya'].includes(method) ? method : 'card', details }) });
+  const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: ['gcash', 'maya'].includes(method) ? method : 'card', details }) });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Payment could not be recorded.');
   state.paymentMethod = methodLabel;
@@ -2160,7 +2156,7 @@ bookAnother.addEventListener('click', () => {
   state.currentBooking = null;
   state.paid = false;
   state.pendingPayment = null;
-  state.paymentMethod = 'Cash';
+  state.paymentMethod = 'GCash';
   stopSearchTimer();
   if (matchFailed) matchFailed.style.display = 'none';
   if (state.matchCheckInterval) {

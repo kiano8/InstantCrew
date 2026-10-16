@@ -1607,17 +1607,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="app-pass-widget-right">
-                            <button type="button" class="app-pass-topup-btn" id="appPassTopupBtn"
-                                title="Add 10 pesos for 5 more hires">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                <span>Add ₱10 (+5 Hires)</span>
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Quota Exhausted Warning Alert (shown when remainingHires <= 0) -->
@@ -2089,8 +2078,8 @@
                             <div class="db-pay-field">
                                 <label for="appTopupCardCvc">CVV</label>
                                 <div class="db-pay-input-wrap db-pay-cvv-wrap">
-                                    <input type="password" id="appTopupCardCvc" class="db-pay-input"
-                                        placeholder="123" maxlength="4">
+                                    <input type="password" id="appTopupCardCvc" class="db-pay-input" placeholder="123"
+                                        maxlength="4">
                                     <button type="button" class="db-cvv-toggle-btn" id="toggleAppTopupCardCvcBtn"
                                         aria-label="Show CVV" title="Show CVV">
                                         <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
@@ -2117,7 +2106,7 @@
                 <!-- Submit Button -->
                 <button type="button" class="db-btn-primary" id="appConfirmTopupBtn"
                     style="margin-top: 18px; width: 100%;">
-                    <span>Confirm &amp; Add ₱10.00 (+5 Hires)</span>
+                    <span>Confirm ₱10.00 (+5 Hires)</span>
                 </button>
             </div>
         </div>
@@ -5900,7 +5889,7 @@
                 }
                 if (fillEl) {
                     fillEl.style.width = `${pct}%`;
-                    fillEl.style.background = remaining <= 1 ? '#DC2626' : (remaining <= 2 ? '#F59E0B' : 'linear-gradient(90deg, #10B981 0%, #059669 100%)');
+                    fillEl.style.background = remaining <= 1 ? '#DC2626' : (remaining <= 2 ? '#F59E0B' : '#D97706');
                 }
 
                 if (warningBanner) {
