@@ -1428,7 +1428,7 @@ function openPaymentModal(step = 'payment') {
   };
 
   if (payNowBtnText) {
-    payNowBtnText.textContent = step === 'search' ? 'Find Crew (₱100)' : 'Pay';
+    payNowBtnText.textContent = step === 'search' ? 'Find Crew ₱100' : 'Pay';
   }
   let selectedMethodButton = null;
   document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
@@ -1612,7 +1612,7 @@ if (payNowBtn) {
           }
         } finally {
           if (payNowBtn) payNowBtn.disabled = false;
-          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Find Crew (₱100)';
+          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Find Crew ₱100';
         }
       };
       if (authUser) {

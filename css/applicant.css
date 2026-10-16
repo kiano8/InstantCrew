@@ -6160,13 +6160,18 @@ body.app-sheet-open {
 
 .app-steps-main .db-card-wrapper {
     max-width: 1140px;
+    align-items: flex-start;
 }
 
-/* Sizing applicant character on onboarding to match employer standing crew size */
+/* Sizing applicant character on onboarding to match employer standing crew size and lock vertical position */
 .app-steps-main .db-char-left {
     width: 490px;
     max-height: min(540px, 74vh);
     margin-right: -20px;
+    align-self: flex-start;
+    margin-top: 20px;
+    position: sticky;
+    top: 28px;
 }
 
 @media (max-width: 1024px) {
@@ -6210,6 +6215,273 @@ body.app-sheet-open {
         width: 100%;
         padding: 22px 16px 26px;
     }
+}
+
+/* ════ Step 3 Calendar & Time Picker (Full width matching schedule card) ════ */
+#appStep3ScheduleCard.worker-schedule-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 14px 0 0 0;
+    padding: 16px 18px 18px;
+    border-radius: 16px;
+    border: 1.5px solid #E2E8F0;
+    background: #FFFFFF;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+#appStep3ScheduleCard .worker-cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 0 4px;
+}
+
+#appStep3ScheduleCard .worker-cal-month-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.01em;
+}
+
+#appStep3ScheduleCard .worker-cal-nav-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid #E2E8F0;
+    background: #F8FAFC;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+#appStep3ScheduleCard .worker-cal-nav-btn:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+}
+
+#appStep3ScheduleCard .worker-cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+#appStep3ScheduleCard .worker-cal-weekdays span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 0;
+}
+
+#appStep3ScheduleCard .worker-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px 4px;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+#appStep3ScheduleCard .worker-cal-day {
+    aspect-ratio: 1;
+    width: 36px;
+    height: 36px;
+    min-height: 34px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.12s ease;
+}
+
+#appStep3ScheduleCard .worker-cal-day:not(.disabled):not(.empty):hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+#appStep3ScheduleCard .worker-cal-day.disabled {
+    color: #CBD5E1;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#appStep3ScheduleCard .worker-cal-day.empty {
+    pointer-events: none;
+    cursor: default;
+}
+
+#appStep3ScheduleCard .worker-cal-day.today:not(.selected)::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #FFCC00;
+}
+
+#appStep3ScheduleCard .worker-cal-day.selected {
+    background: #FFCC00 !important;
+    color: #111827 !important;
+    font-weight: 800;
+    box-shadow: 0 3px 10px rgba(255, 204, 0, 0.45);
+    transform: scale(1.06);
+}
+
+#appStep3ScheduleCard .app-custom-time-section {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 10px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 0;
+}
+
+#appStep3ScheduleCard .app-custom-time-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#appStep3ScheduleCard .app-custom-time-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+#appStep3ScheduleCard .app-custom-time-badge {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+    font-size: 0.74rem;
+    font-weight: 800;
+    padding: 2px 9px;
+    border-radius: 10px;
+    letter-spacing: 0.02em;
+    box-shadow: 0 1px 2px rgba(217, 119, 6, 0.08);
+}
+
+#appStep3ScheduleCard .app-time-stepper-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 6px 12px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+#appStep3ScheduleCard .app-time-digit-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+}
+
+#appStep3ScheduleCard .app-time-step-arrow {
+    width: 34px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid #E2E8F0;
+    background: #F8FAFC;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    padding: 0;
+}
+
+#appStep3ScheduleCard .app-time-step-arrow:hover {
+    background: #FFCC00;
+    border-color: #E6B800;
+    color: #111827;
+    transform: scale(1.06);
+}
+
+#appStep3ScheduleCard .app-time-digit {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0F172A;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    width: 36px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    line-height: 26px;
+}
+
+#appStep3ScheduleCard .app-time-colon {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #94A3B8;
+    margin: 0 2px;
+    user-select: none;
+    line-height: 1;
+}
+
+#appStep3ScheduleCard .app-time-ampm-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #F1F5F9;
+    padding: 2px;
+    border-radius: 7px;
+    border: 1px solid #E2E8F0;
+    margin-left: 6px;
+}
+
+#appStep3ScheduleCard .app-time-ampm-btn {
+    width: 32px;
+    height: 18px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #64748B;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.14s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#appStep3ScheduleCard .app-time-ampm-btn.active {
+    background: #111827;
+    color: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .db-header-login-btn {
@@ -6524,12 +6796,12 @@ body.app-sheet-open {
 
 /* ── Step 4 Package Card ── */
 .app-pass-package-card {
-    background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%);
-    border: 1.5px solid #10B981;
+    background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 100%);
+    border: 1.5px solid #D97706;
     border-radius: 16px;
     padding: 16px 18px;
     margin-top: 6px;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.08);
     position: relative;
     overflow: hidden;
 }
@@ -6537,7 +6809,7 @@ body.app-sheet-open {
 .app-pass-package-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 8px;
     margin-bottom: 10px;
 }
@@ -6546,21 +6818,21 @@ body.app-sheet-open {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: #DCFCE7;
-    color: #15803D;
+    background: #FEF3C7;
+    color: #B45309;
     font-size: 0.72rem;
     font-weight: 700;
     padding: 3.5px 10px;
     border-radius: 9999px;
-    border: 1px solid #BBF7D0;
+    border: 1px solid #FDE68A;
     letter-spacing: 0.02em;
 }
 
 .app-pass-per-hire-tag {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #0F172A;
-    background: #FFFFFF;
+    color: #D97706;
+    background: transparent;
     border: 1px solid #E2E8F0;
     padding: 3px 10px;
     border-radius: 9999px;
@@ -6600,7 +6872,7 @@ body.app-sheet-open {
 .app-pass-currency {
     font-size: 1.15rem;
     font-weight: 800;
-    color: #059669;
+    color: #D97706;
     margin-right: 1px;
 }
 
@@ -6623,7 +6895,7 @@ body.app-sheet-open {
     flex-direction: column;
     gap: 7px;
     padding-top: 11px;
-    border-top: 1px dashed #D1FAE5;
+    border-top: 1px dashed #FDE68A;
 }
 
 .app-pass-feature-item {

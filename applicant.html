@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css">
-    <link rel="stylesheet" href="css/applicant.css?v=20261014-job-details-action-modal">
+    <link rel="stylesheet" href="css/applicant.css?v=20261016-step4-amber-pass">
 
 </head>
 
@@ -853,7 +853,8 @@
                     <!-- Scheduled date/time picker (hidden if instant) -->
                     <div class="db-later-field" id="appLaterField" style="display:none; margin-top:16px;">
                         <p class="db-field-label">Preferred Start Time</p>
-                        <div class="db-schedule-card">
+                        <div class="db-schedule-card" id="appOpenScheduleCard" role="button" tabindex="0"
+                            aria-label="Toggle calendar selection" style="cursor:pointer;">
                             <div class="db-schedule-card-left">
                                 <div class="db-schedule-icon-badge">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -869,6 +870,111 @@
                                         Dispatch</p>
                                     <p class="db-schedule-sub-text" id="appScheduleTime">Anytime &middot; Flexible
                                         Shifts</p>
+                                </div>
+                            </div>
+                            <span class="db-schedule-change-btn" id="appScheduleChangeBtn">Change</span>
+                        </div>
+
+                        <!-- Step 3 Interactive Calendar & Time Picker Card matching reference photo -->
+                        <div class="worker-schedule-card" id="appStep3ScheduleCard" style="margin-top:12px;">
+                            <!-- Custom Month Navigator -->
+                            <div class="worker-cal-nav">
+                                <button type="button" class="worker-cal-nav-btn" id="appStep3CalPrevBtn"
+                                    aria-label="Previous month">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                                <span class="worker-cal-month-label" id="appStep3CalMonthLabel">October 2026</span>
+                                <button type="button" class="worker-cal-nav-btn" id="appStep3CalNextBtn"
+                                    aria-label="Next month">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Weekday Headers -->
+                            <div class="worker-cal-weekdays">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            <!-- Calendar Days Grid -->
+                            <div class="worker-cal-grid" id="appStep3CalDaysGrid" role="grid"
+                                aria-label="Days of month"></div>
+
+                            <!-- Custom Interactive Time Selector (matching reference photo) -->
+                            <div class="app-custom-time-section">
+                                <div class="app-custom-time-top-row">
+                                    <span class="app-custom-time-label">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        Start Time
+                                    </span>
+                                    <span class="app-custom-time-badge" id="appStep3TimeBadge">9:00 AM</span>
+                                </div>
+
+                                <!-- Stepper Controls Row -->
+                                <div class="app-time-stepper-row">
+                                    <!-- Hour Stepper -->
+                                    <div class="app-time-digit-block">
+                                        <button type="button" class="app-time-step-arrow" id="appStep3HourUp"
+                                            aria-label="Increase hour">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="18 15 12 9 6 15"></polyline>
+                                            </svg>
+                                        </button>
+                                        <span class="app-time-digit" id="appStep3DisplayHour">09</span>
+                                        <button type="button" class="app-time-step-arrow" id="appStep3HourDown"
+                                            aria-label="Decrease hour">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="6 9 12 15 18 9"></polyline>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <span class="app-time-colon">:</span>
+
+                                    <!-- Minute Stepper -->
+                                    <div class="app-time-digit-block">
+                                        <button type="button" class="app-time-step-arrow" id="appStep3MinUp"
+                                            aria-label="Increase minute">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="18 15 12 9 6 15"></polyline>
+                                            </svg>
+                                        </button>
+                                        <span class="app-time-digit" id="appStep3DisplayMin">00</span>
+                                        <button type="button" class="app-time-step-arrow" id="appStep3MinDown"
+                                            aria-label="Decrease minute">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="6 9 12 15 18 9"></polyline>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- AM/PM Toggle Segment -->
+                                    <div class="app-time-ampm-block" role="group" aria-label="AM or PM">
+                                        <button type="button" class="app-time-ampm-btn active"
+                                            id="appStep3BtnTimeAM">AM</button>
+                                        <button type="button" class="app-time-ampm-btn"
+                                            id="appStep3BtnTimePM">PM</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -921,16 +1027,9 @@
                         <h2 id="appStep4Heading">Hiring Pass &amp; Activation</h2>
                     </div>
 
-                    <!-- Selected Package Showcase (Automatically Added) -->
+                    <!-- Selected Package Showcase -->
                     <div class="app-pass-package-card">
                         <div class="app-pass-package-header">
-                            <div class="app-pass-package-badge">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                <span>Automatically Added</span>
-                            </div>
                             <span class="app-pass-per-hire-tag">₱2.00 / Hire</span>
                         </div>
                         <div class="app-pass-package-main">
@@ -946,21 +1045,21 @@
                         </div>
                         <div class="app-pass-feature-list">
                             <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981"
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
                                     stroke-width="2.5">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
                                 <span>Includes <strong>5 Hires</strong> (₱2.00 per hire)</span>
                             </div>
                             <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981"
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
                                     stroke-width="2.5">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
                                 <span>Unlocked matching with verified employers</span>
                             </div>
                             <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981"
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
                                     stroke-width="2.5">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
@@ -5770,6 +5869,8 @@
             const appToggleNow = document.getElementById('appToggleNow');
             const appToggleLater = document.getElementById('appToggleLater');
             const appLaterField = document.getElementById('appLaterField');
+            const appScheduleDate = document.getElementById('appScheduleDate');
+            const appScheduleTime = document.getElementById('appScheduleTime');
             const summaryRoleText = document.getElementById('summaryRoleText');
             const summaryRateText = document.getElementById('summaryRateText');
             const summaryWorkTypeText = document.getElementById('summaryWorkTypeText');
@@ -5818,7 +5919,9 @@
                 mapLocation: '',
                 googleMapsurl: '',
                 geo: null,
-                timing: 'instant'
+                timing: 'instant',
+                scheduledDate: null,
+                scheduledTime: '09:00'
             };
 
             function updateViewMode() {
@@ -6379,6 +6482,333 @@
                     appBackToStep2.addEventListener('click', () => goToAppStep(2));
                 }
 
+                // ═════════════════════════════════════════════════════════════════
+                // Step 3 Schedule Ahead: Interactive Calendar & Time Picker
+                // ═════════════════════════════════════════════════════════════════
+                const STEP3_WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const STEP3_MONTH_NAMES = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+
+                const appOpenScheduleCard = document.getElementById('appOpenScheduleCard');
+                const appScheduleChangeBtn = document.getElementById('appScheduleChangeBtn');
+                const appStep3ScheduleCard = document.getElementById('appStep3ScheduleCard');
+                const appStep3CalPrevBtn = document.getElementById('appStep3CalPrevBtn');
+                const appStep3CalNextBtn = document.getElementById('appStep3CalNextBtn');
+                const appStep3CalMonthLabel = document.getElementById('appStep3CalMonthLabel');
+                const appStep3CalDaysGrid = document.getElementById('appStep3CalDaysGrid');
+                const appStep3TimeBadge = document.getElementById('appStep3TimeBadge');
+                const appStep3HourUp = document.getElementById('appStep3HourUp');
+                const appStep3HourDown = document.getElementById('appStep3HourDown');
+                const appStep3MinUp = document.getElementById('appStep3MinUp');
+                const appStep3MinDown = document.getElementById('appStep3MinDown');
+                const appStep3DisplayHour = document.getElementById('appStep3DisplayHour');
+                const appStep3DisplayMin = document.getElementById('appStep3DisplayMin');
+                const appStep3BtnTimeAM = document.getElementById('appStep3BtnTimeAM');
+                const appStep3BtnTimePM = document.getElementById('appStep3BtnTimePM');
+
+                const STEP3_TODAY = new Date();
+                STEP3_TODAY.setHours(0, 0, 0, 0);
+
+                let appStep3CalViewYear = STEP3_TODAY.getFullYear();
+                let appStep3CalViewMonth = STEP3_TODAY.getMonth();
+                let appStep3CalInitialized = false;
+
+                function formatAppStep3Date(d) {
+                    if (!d) return 'Fri, Oct 16, 2026';
+                    const weekday = STEP3_WEEKDAY_NAMES[d.getDay()];
+                    const month = STEP3_MONTH_NAMES[d.getMonth()].slice(0, 3);
+                    return `${weekday}, ${month} ${d.getDate()}, ${d.getFullYear()}`;
+                }
+
+                function formatAppStep3TimeDisplay(timeStr) {
+                    if (!timeStr) return '9:00 AM';
+                    const parts = timeStr.split(':');
+                    let h = parseInt(parts[0], 10);
+                    if (isNaN(h)) h = 9;
+                    const m = parts[1] || '00';
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12;
+                    if (h === 0) h = 12;
+                    return `${h}:${m} ${ampm}`;
+                }
+
+                function updateAppStep3ScheduleCard() {
+                    if (!appState.scheduledDate) {
+                        appState.scheduledDate = new Date(STEP3_TODAY);
+                    }
+                    const formattedDate = formatAppStep3Date(appState.scheduledDate);
+                    const formattedTime = formatAppStep3TimeDisplay(appState.scheduledTime || '09:00');
+
+                    const diffDays = Math.round((appState.scheduledDate.getTime() - STEP3_TODAY.getTime()) / (1000 * 60 * 60 * 24));
+                    let displayPrefix = formattedDate;
+                    if (diffDays === 0) {
+                        displayPrefix = `Today · ${formattedDate}`;
+                    } else if (diffDays === 1) {
+                        displayPrefix = `Tomorrow · ${formattedDate}`;
+                    }
+
+                    if (appScheduleDate) {
+                        appScheduleDate.textContent = displayPrefix;
+                    }
+                    if (appScheduleTime) {
+                        appScheduleTime.textContent = `${formattedTime} · Flexible Shifts`;
+                    }
+                }
+
+                function syncAppStep3TimeUI() {
+                    const parts = (appState.scheduledTime || '09:00').split(':');
+                    let h24 = parseInt(parts[0], 10);
+                    if (isNaN(h24)) h24 = 9;
+                    const mStr = parts[1] || '00';
+                    const ampm = (h24 >= 12) ? 'PM' : 'AM';
+                    let h12 = h24 % 12;
+                    if (h12 === 0) h12 = 12;
+
+                    const hStr = String(h12).padStart(2, '0');
+
+                    if (appStep3DisplayHour) appStep3DisplayHour.textContent = hStr;
+                    if (appStep3DisplayMin) appStep3DisplayMin.textContent = mStr;
+                    if (appStep3BtnTimeAM) appStep3BtnTimeAM.classList.toggle('active', ampm === 'AM');
+                    if (appStep3BtnTimePM) appStep3BtnTimePM.classList.toggle('active', ampm === 'PM');
+                    if (appStep3TimeBadge) appStep3TimeBadge.textContent = `${h12}:${mStr} ${ampm}`;
+
+                    updateAppStep3ScheduleCard();
+                }
+
+                function setAppStep3Time(h12, mStr, ampm) {
+                    let h = parseInt(h12, 10);
+                    if (isNaN(h) || h < 1) h = 12;
+                    if (h > 12) h = 12;
+
+                    const ap = String(ampm).toUpperCase();
+                    let h24 = h;
+                    if (ap === 'PM' && h < 12) h24 += 12;
+                    if (ap === 'AM' && h === 12) h24 = 0;
+
+                    const m = String(mStr).padStart(2, '0');
+                    appState.scheduledTime = `${String(h24).padStart(2, '0')}:${m}`;
+                    syncAppStep3TimeUI();
+                }
+
+                function stepAppStep3Hour(delta) {
+                    const parts = (appState.scheduledTime || '09:00').split(':');
+                    let h24 = parseInt(parts[0], 10);
+                    if (isNaN(h24)) h24 = 9;
+                    const mStr = parts[1] || '00';
+                    const ampm = (h24 >= 12) ? 'PM' : 'AM';
+                    let h12 = h24 % 12;
+                    if (h12 === 0) h12 = 12;
+
+                    let nextH12 = h12 + delta;
+                    if (nextH12 > 12) nextH12 = 1;
+                    if (nextH12 < 1) nextH12 = 12;
+
+                    setAppStep3Time(nextH12, mStr, ampm);
+                }
+
+                function stepAppStep3Minute(delta) {
+                    const parts = (appState.scheduledTime || '09:00').split(':');
+                    let h24 = parseInt(parts[0], 10);
+                    if (isNaN(h24)) h24 = 9;
+                    let curM = parseInt(parts[1], 10) || 0;
+                    const ampm = (h24 >= 12) ? 'PM' : 'AM';
+                    let h12 = h24 % 12;
+                    if (h12 === 0) h12 = 12;
+
+                    const intervals = [0, 15, 30, 45];
+                    let curIdx = intervals.findIndex(val => val === curM);
+                    if (curIdx === -1) {
+                        curIdx = delta > 0 ? 0 : 3;
+                    }
+
+                    let nextIdx = curIdx + delta;
+                    let nextH12 = h12;
+                    if (nextIdx >= intervals.length) {
+                        nextIdx = 0;
+                        nextH12 = h12 + 1;
+                        if (nextH12 > 12) nextH12 = 1;
+                    } else if (nextIdx < 0) {
+                        nextIdx = intervals.length - 1;
+                        nextH12 = h12 - 1;
+                        if (nextH12 < 1) nextH12 = 12;
+                    }
+
+                    const nextMStr = String(intervals[nextIdx]).padStart(2, '0');
+                    setAppStep3Time(nextH12, nextMStr, ampm);
+                }
+
+                function renderAppStep3Calendar() {
+                    if (!appStep3CalDaysGrid || !appStep3CalMonthLabel) return;
+                    appStep3CalMonthLabel.textContent = `${STEP3_MONTH_NAMES[appStep3CalViewMonth]} ${appStep3CalViewYear}`;
+                    appStep3CalDaysGrid.innerHTML = '';
+
+                    const currentYear = STEP3_TODAY.getFullYear();
+                    const currentMonth = STEP3_TODAY.getMonth();
+                    if (appStep3CalPrevBtn) {
+                        const isPastMonth = (appStep3CalViewYear < currentYear) || (appStep3CalViewYear === currentYear && appStep3CalViewMonth <= currentMonth);
+                        appStep3CalPrevBtn.disabled = isPastMonth;
+                        appStep3CalPrevBtn.style.opacity = isPastMonth ? '0.35' : '1';
+                        appStep3CalPrevBtn.style.cursor = isPastMonth ? 'not-allowed' : 'pointer';
+                    }
+
+                    const firstDayIndex = new Date(appStep3CalViewYear, appStep3CalViewMonth, 1).getDay();
+                    const daysInMonth = new Date(appStep3CalViewYear, appStep3CalViewMonth + 1, 0).getDate();
+
+                    for (let i = 0; i < firstDayIndex; i++) {
+                        const emptyCell = document.createElement('button');
+                        emptyCell.type = 'button';
+                        emptyCell.className = 'worker-cal-day empty';
+                        emptyCell.tabIndex = -1;
+                        emptyCell.disabled = true;
+                        emptyCell.setAttribute('aria-hidden', 'true');
+                        appStep3CalDaysGrid.appendChild(emptyCell);
+                    }
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dayBtn = document.createElement('button');
+                        dayBtn.type = 'button';
+                        dayBtn.className = 'worker-cal-day';
+                        dayBtn.textContent = String(day);
+
+                        const cellDate = new Date(appStep3CalViewYear, appStep3CalViewMonth, day);
+                        cellDate.setHours(0, 0, 0, 0);
+
+                        if (cellDate < STEP3_TODAY) {
+                            dayBtn.classList.add('disabled');
+                            dayBtn.disabled = true;
+                        } else {
+                            if (cellDate.getTime() === STEP3_TODAY.getTime()) {
+                                dayBtn.classList.add('today');
+                            }
+                            if (appState.scheduledDate && cellDate.getTime() === appState.scheduledDate.getTime()) {
+                                dayBtn.classList.add('selected');
+                            }
+                            dayBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                appState.scheduledDate = new Date(cellDate);
+                                renderAppStep3Calendar();
+                                updateAppStep3ScheduleCard();
+                            });
+                        }
+                        appStep3CalDaysGrid.appendChild(dayBtn);
+                    }
+                }
+
+                function initAppStep3CalendarControls() {
+                    if (appStep3CalInitialized) return;
+                    appStep3CalInitialized = true;
+
+                    if (!appState.scheduledDate) {
+                        appState.scheduledDate = new Date(STEP3_TODAY);
+                    }
+
+                    if (appStep3CalPrevBtn) {
+                        appStep3CalPrevBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const currentYear = STEP3_TODAY.getFullYear();
+                            const currentMonth = STEP3_TODAY.getMonth();
+                            if (appStep3CalViewYear > currentYear || (appStep3CalViewYear === currentYear && appStep3CalViewMonth > currentMonth)) {
+                                appStep3CalViewMonth--;
+                                if (appStep3CalViewMonth < 0) {
+                                    appStep3CalViewMonth = 11;
+                                    appStep3CalViewYear--;
+                                }
+                                renderAppStep3Calendar();
+                            }
+                        });
+                    }
+
+                    if (appStep3CalNextBtn) {
+                        appStep3CalNextBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            appStep3CalViewMonth++;
+                            if (appStep3CalViewMonth > 11) {
+                                appStep3CalViewMonth = 0;
+                                appStep3CalViewYear++;
+                            }
+                            renderAppStep3Calendar();
+                        });
+                    }
+
+                    if (appStep3HourUp) {
+                        appStep3HourUp.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            stepAppStep3Hour(1);
+                        });
+                    }
+                    if (appStep3HourDown) {
+                        appStep3HourDown.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            stepAppStep3Hour(-1);
+                        });
+                    }
+                    if (appStep3MinUp) {
+                        appStep3MinUp.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            stepAppStep3Minute(1);
+                        });
+                    }
+                    if (appStep3MinDown) {
+                        appStep3MinDown.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            stepAppStep3Minute(-1);
+                        });
+                    }
+                    if (appStep3BtnTimeAM) {
+                        appStep3BtnTimeAM.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const parts = (appState.scheduledTime || '09:00').split(':');
+                            let h24 = parseInt(parts[0], 10) || 9;
+                            let h12 = h24 % 12;
+                            if (h12 === 0) h12 = 12;
+                            setAppStep3Time(h12, parts[1] || '00', 'AM');
+                        });
+                    }
+                    if (appStep3BtnTimePM) {
+                        appStep3BtnTimePM.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const parts = (appState.scheduledTime || '09:00').split(':');
+                            let h24 = parseInt(parts[0], 10) || 9;
+                            let h12 = h24 % 12;
+                            if (h12 === 0) h12 = 12;
+                            setAppStep3Time(h12, parts[1] || '00', 'PM');
+                        });
+                    }
+
+                    const hourBlock = appStep3DisplayHour ? appStep3DisplayHour.closest('.app-time-digit-block') : null;
+                    if (hourBlock) {
+                        hourBlock.addEventListener('wheel', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            stepAppStep3Hour(e.deltaY < 0 ? 1 : -1);
+                        }, { passive: false });
+                    }
+                    const minBlock = appStep3DisplayMin ? appStep3DisplayMin.closest('.app-time-digit-block') : null;
+                    if (minBlock) {
+                        minBlock.addEventListener('wheel', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            stepAppStep3Minute(e.deltaY < 0 ? 1 : -1);
+                        }, { passive: false });
+                    }
+
+                    if (appOpenScheduleCard) {
+                        appOpenScheduleCard.addEventListener('click', (e) => {
+                            if (!appStep3ScheduleCard) return;
+                            const isClosed = appStep3ScheduleCard.style.display === 'none';
+                            appStep3ScheduleCard.style.display = isClosed ? 'block' : 'none';
+                            if (appScheduleChangeBtn) {
+                                appScheduleChangeBtn.textContent = isClosed ? 'Done' : 'Change';
+                            }
+                        });
+                    }
+
+                    renderAppStep3Calendar();
+                    syncAppStep3TimeUI();
+                }
+
                 // Step 3 Availability toggles
                 if (appToggleNow && appToggleLater) {
                     appToggleNow.addEventListener('click', () => {
@@ -6393,6 +6823,11 @@
                         appToggleNow.classList.remove('active');
                         appState.timing = 'scheduled';
                         if (appLaterField) appLaterField.style.display = 'block';
+                        if (appStep3ScheduleCard) appStep3ScheduleCard.style.display = 'block';
+                        if (appScheduleChangeBtn) appScheduleChangeBtn.textContent = 'Change';
+                        initAppStep3CalendarControls();
+                        renderAppStep3Calendar();
+                        syncAppStep3TimeUI();
                         updateStepSummary();
                     });
                 }
@@ -6823,7 +7258,7 @@
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
                         const roleId = appState.role;
                         const period = String(appState.ratePeriod || 'per hour').replace(/^per\s+/, '').replace(/s$/, '');
-                        const profileResponse = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: appState.workType || 'full-time', expected_rate: Number(appState.rate) || 95, rate_period: period, city: appState.location || 'Cebu City', location_address: (getAppMapFields().mapLocation || ''), maps_url: (getAppMapFields().googleMapsUrl || ''), lat: (getAppMapFields().geo || {}).lat || null, lng: (getAppMapFields().geo || {}).lng || null, availability_mode: appState.timing === 'later' ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
+                        const profileResponse = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: appState.workType || 'full-time', expected_rate: Number(appState.rate) || 95, rate_period: period, city: appState.location || 'Cebu City', location_address: (getAppMapFields().mapLocation || ''), maps_url: (getAppMapFields().googleMapsUrl || ''), lat: (getAppMapFields().geo || {}).lat || null, lng: (getAppMapFields().geo || {}).lng || null, availability_mode: (appState.timing === 'later' || appState.timing === 'scheduled') ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
                         if (!profileResponse.ok) { const profileErr = await profileResponse.json().catch(() => ({})); throw new Error(profileErr.error || 'Account created, but the applicant profile could not be saved. Please log in and try again.'); }
                         const profileData = await profileResponse.json();
 
@@ -6854,7 +7289,7 @@
                             location: profileData.profile?.city || appState.location || 'Cebu City',
                             offeredRate: profileData.profile?.expected_rate ?? Number(appState.rate) ?? 95,
                             ratePeriod: `per ${profileData.profile?.rate_period || period}`,
-                            timingPreference: profileData.profile?.availability_mode || (appState.timing === 'later' ? 'later' : 'now'),
+                            timingPreference: profileData.profile?.availability_mode || ((appState.timing === 'later' || appState.timing === 'scheduled') ? 'later' : 'now'),
                             acceptedShifts: [],
                             hiringQuota: { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 }
                         };
@@ -6868,8 +7303,13 @@
                         await refreshHiringPass();
                         saveWorkerSession(newSession);
 
-                        if (appState.timing === 'later') {
-                            const startsAt = Math.floor(Date.now() / 1000) + 3600;
+                        if (appState.timing === 'later' || appState.timing === 'scheduled') {
+                            const selD = appState.scheduledDate || new Date();
+                            const parts = (appState.scheduledTime || '09:00').split(':');
+                            const startH = parseInt(parts[0], 10) || 9;
+                            const startM = parseInt(parts[1], 10) || 0;
+                            const schedDateObj = new Date(selD.getFullYear(), selD.getMonth(), selD.getDate(), startH, startM, 0);
+                            const startsAt = Math.floor(schedDateObj.getTime() / 1000);
                             const availabilityResponse = await fetch('/api/applicant/availability', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ availability: [{ starts_at: startsAt, ends_at: startsAt + 8 * 3600, status: 'available' }] }) });
                             if (!availabilityResponse.ok) throw new Error('Account created, but scheduled availability could not be saved.');
                         }
