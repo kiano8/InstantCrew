@@ -31,6 +31,7 @@
 
 html {
     scroll-behavior: smooth;
+    height: 100%;
 }
 
 body {
@@ -40,6 +41,19 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    min-height: 100vh;
+    /* fallback for old browsers */
+    min-height: 100dvh;
+    /* mobile: handles address bar resize */
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+    /* take all spare space */
+    display: flex;
+    flex-direction: column;
 }
 
 h1,
@@ -89,6 +103,13 @@ button {
     padding-block: 16px;
     transition: all 0.25s ease;
 }
+
+.site-header,
+.site-footer {
+    flex-shrink: 0;
+}
+
+
 
 .nav-container {
     display: flex;
@@ -269,7 +290,7 @@ button {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   HERO SECTION — BASED ON THE REFERENCE IMAGE
+   HERO SECTION 
    Left: Courier runner with motion lines
    Right: Bold headline + "We got you." + Single "Instant Crew" CTA
    ───────────────────────────────────────────────────────────── */
@@ -278,6 +299,11 @@ button {
     padding-top: clamp(36px, 5vw, 64px);
     padding-bottom: clamp(50px, 7vw, 80px);
     overflow: hidden;
+    flex: 1;
+    /* hero stretch so skyline sits right above footer */
+    display: flex;
+    align-items: center;
+    /* center hero grid vertically in extra space */
 }
 
 .hero-grid {
@@ -287,6 +313,10 @@ button {
     gap: clamp(24px, 5vw, 60px);
     position: relative;
     z-index: 2;
+}
+
+.hero-section .hero-grid {
+    width: 100%;
 }
 
 /* Left Column: Courier Runner Illustration */
