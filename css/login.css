@@ -151,6 +151,15 @@ body {
 
 .role-tab-btn .role-icon {
     font-size: 1.25rem;
+    color: #D97706;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.role-tab-btn:hover .role-icon {
+    transform: scale(1.05);
 }
 
 .role-tab-btn .role-title {
@@ -171,12 +180,16 @@ body {
     border: 1px solid var(--amber-border);
 }
 
+.role-tab-btn.active .role-icon {
+    color: #D97706;
+}
+
 .role-tab-btn.active .role-title {
     color: var(--ink);
 }
 
 .role-tab-btn.active .role-sub {
-    color: var(--amber-deep);
+    color: black;
     font-weight: 500;
 }
 
