@@ -44,6 +44,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/jobs/{id}/next-attempt", emp(h.NextAttempt))
 
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
+	mux.Handle("GET /api/applicant/rating", app(h.ApplicantRating))
 	mux.Handle("GET /api/applicant/hiring-pass", app(h.ApplicantHiringPass))
 	mux.Handle("POST /api/applicant/hiring-pass/pay", app(h.PayApplicantHiringPass))
 	mux.Handle("PUT /api/applicant/profile", app(h.SaveApplicantProfile))
@@ -191,6 +192,16 @@ func (h *Handler) ApplicantProfile(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"profile": p})
 }
 
+func (h *Handler) ApplicantRating(w http.ResponseWriter, r *http.Request) {
+	u, _ := auth.UserFrom(r.Context())
+	p, err := h.Store.ApplicantProfile(r.Context(), u.ID)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]float64{"rating": p.Rating})
+}
+
 func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
 	p, err := h.Store.ApplicantHiringPass(r.Context(), u.ID)
@@ -278,13 +289,22 @@ func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"profile": p})
+	savedProfile, err := h.Store.ApplicantProfile(r.Context(), u.ID)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"profile": savedProfile})
 }
 
 func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
 	jobs, err := h.Store.ApplicantJobs(r.Context(), u.ID)
 	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	if err := h.Store.RecordApplicantOfferViews(r.Context(), u.ID, jobs); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -354,6 +374,10 @@ func (h *Handler) ApplicantReject(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
+	if err = h.Store.AdjustApplicantRating(r.Context(), id, u.ID, "declined"); err != nil {
+		h.fail(w, err)
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -371,7 +395,7 @@ func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 			h.fail(w, err)
 			return
 		}
-		out = append(out, map[string]any{"job": h.toDTO(j), "accepted_at": assignment.AcceptedAt, "ended_at": assignment.EndedAt, "transit_status": assignment.Transit})
+		out = append(out, map[string]any{"job": h.toDTO(j), "accepted_at": assignment.AcceptedAt, "ended_at": assignment.EndedAt, "transit_status": assignment.Transit, "confirmed": j.Status == "active" || j.Status == "completed"})
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"assignments": out})
 }

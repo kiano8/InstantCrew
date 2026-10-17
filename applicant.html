@@ -2682,14 +2682,25 @@
                 if (panelUserEmailEl) panelUserEmailEl.textContent = email;
                 if (crewGreetingEl) crewGreetingEl.textContent = `Welcome back, ${parts[0]}!`;
 
-                if (panelRatingEl) panelRatingEl.textContent = session.rating ?? '—';
+                if (panelRatingEl) panelRatingEl.textContent = Number(session.rating ?? 4.9).toFixed(2).replace(/0$/, '');
                 if (statRatingEl) {
                     const starSvg = window.InstantCrewShared ? window.InstantCrewShared.ICONS.star(18) : '';
-                    statRatingEl.innerHTML = `${starSvg}<span>${session.rating ?? '—'}</span>`;
+                    statRatingEl.innerHTML = `${starSvg}<span>${Number(session.rating ?? 4.9).toFixed(2).replace(/0$/, '')}</span>`;
                 }
                 if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs ?? session.completedShifts ?? '0';
 
                 updateStatusUI();
+            }
+
+            async function refreshCrewRating() {
+                try {
+                    const response = await fetch('/api/applicant/rating', { credentials: 'same-origin', cache: 'no-store' });
+                    const data = await response.json();
+                    if (!response.ok) return;
+                    session.rating = Number(data.rating ?? 4.9);
+                    saveWorkerSession(session);
+                    renderProfileInfo();
+                } catch { }
             }
 
             // Status Switch UI (Active / Offline)
@@ -4665,7 +4676,7 @@
                     category: j.category, venue: j.map_location || j.city, location: j.city,
                     mapLocation: j.map_location, googleMapsUrl: j.maps_url,
                     rate: `₱${j.rate}`, timing: j.timing, employmentType: j.employment_type,
-                    status: a.ended_at ? 'ended' : 'active', endedAt: a.ended_at,
+                    status: a.ended_at ? 'ended' : (a.confirmed ? 'active' : 'pending'), confirmed: !!a.confirmed, endedAt: a.ended_at,
                     transitStatus: a.transit_status === 'en_route' ? 'on_the_way' : a.transit_status,
                     acceptedAt: a.accepted_at
                 };
@@ -4743,7 +4754,9 @@
                     const cleanContractTitle = (contract.title || contract.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
 
                     let transitHtml = '';
-                    if (contract.transitStatus === 'on_the_way') {
+                    if (!contract.confirmed) {
+                        transitHtml = `<div class="app-contract-transit-group"><span class="app-contract-transit-status">Waiting for the employer to confirm your booking before you start.</span></div>`;
+                    } else if (contract.transitStatus === 'on_the_way') {
                         transitHtml = `
                             <div class="app-contract-transit-group">
                                 <span class="app-contract-transit-status on-the-way">
@@ -5240,6 +5253,7 @@
                 setTimeout(() => {
                     serverApplicantJobs = null;
                     renderShiftsFeed();
+                    refreshCrewRating();
                     showToast('Shift declined and removed from feed.');
                 }, 250);
             }
@@ -5259,6 +5273,7 @@
                 }
 
                 try { await refreshHiringPass(); } catch (err) { showToast(err.message, true); }
+                refreshCrewRating();
                 saveWorkerSession(session);
                 updateHiringPassUI();
 
@@ -5360,7 +5375,7 @@
 
                     ${!isEnded ? `
                     <div class="app-job-card-footer active-contract-footer">
-                        ${item.transitStatus === 'on_the_way' ? `
+                        ${!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">Waiting for employer confirmation before starting.</span></div>` : item.transitStatus === 'on_the_way' ? `
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status on-the-way">
                                 <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
@@ -5455,7 +5470,7 @@
             function renderAcceptedShiftsList(force = false) {
                 refreshApplicantAssignments();
                 const contracts = serverAssignments || [];
-                const activeContracts = contracts.filter(c => c.status === 'active');
+                const activeContracts = contracts.filter(c => c.status === 'active' || c.status === 'pending');
                 const endedContracts = contracts.filter(c => c.status === 'ended' || c.status === 'completed');
 
                 if (activeJobsCountBadge) activeJobsCountBadge.textContent = activeContracts.length;
@@ -7188,7 +7203,7 @@
                         const profileResponse = await fetch('/api/applicant/profile', { credentials: 'same-origin' });
                         if (profileResponse.ok) {
                             const profileData = await profileResponse.json();
-                            if (profileData.profile) Object.assign(newSession, { services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                         }
                         await loadApplicantAvailability(newSession);
 
@@ -7337,7 +7352,7 @@
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
                     session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };
                     return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
-                        if (profileData?.profile) Object.assign(session, { services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                     }).then(() => loadApplicantAvailability(session));
                 }).then(() => {
                     if (!hasWorkerSession()) return;
