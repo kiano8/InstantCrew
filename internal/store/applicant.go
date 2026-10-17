@@ -18,6 +18,7 @@ type ApplicantProfile struct {
 	Availability   string   `json:"availability_mode"`
 	Active         *bool    `json:"is_active"`
 	Roles          []string `json:"roles"`
+	Rating         float64  `json:"rating"`
 }
 
 type Availability struct {
@@ -122,7 +123,8 @@ func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID i
 		return err
 	}
 	defer tx.Rollback()
-	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status=? WHERE job_id=? AND applicant_id=? AND ended_at IS NULL`, status, jobID, applicantID)
+	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status=? WHERE job_id=? AND applicant_id=? AND ended_at IS NULL
+		AND EXISTS (SELECT 1 FROM jobs WHERE id=? AND status='active')`, status, jobID, applicantID, jobID)
 	if err != nil {
 		return err
 	}
@@ -208,10 +210,11 @@ func (s *Store) SaveApplicantAvailability(ctx context.Context, id int64, items [
 func (s *Store) ApplicantProfile(ctx context.Context, id int64) (*ApplicantProfile, error) {
 	p := &ApplicantProfile{}
 	var active int
+	var rating int
 	err := s.db.QueryRowContext(ctx, `SELECT employment_type, expected_rate, rate_period, city,
-		COALESCE(location_address,''), COALESCE(maps_url,''), lat, lng, availability_mode,is_active
+		COALESCE(location_address,''), COALESCE(maps_url,''), lat, lng, availability_mode,is_active,rating_hundredths
 		FROM applicant_profiles WHERE user_id=?`, id).Scan(&p.EmploymentType, &p.ExpectedRate,
-		&p.RatePeriod, &p.City, &p.Location, &p.MapsURL, &p.Lat, &p.Lng, &p.Availability, &active)
+		&p.RatePeriod, &p.City, &p.Location, &p.MapsURL, &p.Lat, &p.Lng, &p.Availability, &active, &rating)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -220,6 +223,7 @@ func (s *Store) ApplicantProfile(ctx context.Context, id int64) (*ApplicantProfi
 	}
 	b := active != 0
 	p.Active = &b
+	p.Rating = float64(rating) / 100
 	rows, err := s.db.QueryContext(ctx, `SELECT role_id FROM applicant_roles WHERE applicant_id=? ORDER BY is_primary DESC, role_id`, id)
 	if err != nil {
 		return nil, err
@@ -343,6 +347,61 @@ func (s *Store) RejectJob(ctx context.Context, jobID, applicantID int64) error {
 		return ErrBadState
 	}
 	return nil
+}
+
+func (s *Store) AdjustApplicantRating(ctx context.Context, jobID, applicantID int64, outcome string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES(?,?,?)`, jobID, applicantID, outcome)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		if outcome == "declined" {
+			_, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=MAX(100,rating_hundredths-10) WHERE user_id=?`, applicantID)
+		} else {
+			_, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=MIN(500,rating_hundredths+1) WHERE user_id=?`, applicantID)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// RecordApplicantOfferViews marks eligible offers shown to an online worker.
+// Unanswered offers that close while the worker is still online lower the rating once.
+func (s *Store) RecordApplicantOfferViews(ctx context.Context, applicantID int64, jobs []*Job) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, j := range jobs {
+		if _, err = tx.ExecContext(ctx, `INSERT OR IGNORE INTO applicant_offer_impressions(job_id,applicant_id,shown_at) VALUES(?,?,?)`, j.ID, applicantID, time.Now().Unix()); err != nil {
+			return err
+		}
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=MAX(100,rating_hundredths-5*(
+		 SELECT COUNT(*) FROM applicant_offer_impressions i JOIN jobs j ON j.id=i.job_id
+		 WHERE i.applicant_id=? AND i.resolved=0 AND j.status<>'matching'
+		 AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=? AND a.status IN ('accepted','rejected'))
+		))
+		WHERE user_id=? AND is_active=1 AND EXISTS (
+		 SELECT 1 FROM applicant_offer_impressions i JOIN jobs j ON j.id=i.job_id
+		 WHERE i.applicant_id=? AND i.resolved=0 AND j.status<>'matching'
+		 AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=? AND a.status IN ('accepted','rejected'))
+		)`, applicantID, applicantID, applicantID, applicantID, applicantID); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE applicant_offer_impressions SET resolved=1 WHERE applicant_id=? AND resolved=0
+		AND EXISTS(SELECT 1 FROM jobs j WHERE j.id=applicant_offer_impressions.job_id AND j.status<>'matching')`, applicantID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Store) ApplicantAssignments(ctx context.Context, applicantID int64) ([]*Job, error) {

@@ -21,28 +21,82 @@ func r(id, label string) Role { return Role{id, label} }
 
 var Catalog = []Category{
 	{"kitchen", "Kitchen", []Role{
-		r("chef", "Chef"), r("sous-chef", "Sous Chef"), r("line-cook", "Line Cook"),
-		r("prep-assistant", "Prep Assistant"), r("kitchen-helper", "Kitchen Helper"),
-		r("dishwasher", "Dishwasher"), r("pastry-chef", "Pastry Chef"), r("grill-cook", "Grill Cook"),
-		r("barista", "Barista"), r("bartender", "Bartender"), r("food-runner", "Food Runner"),
-		r("buffet-server", "Buffet Server"), r("kitchen-steward", "Kitchen Steward"),
+		// Kitchen staff
+		r("chef", "Chef"),
+		r("sous-chef", "Sous Chef"),
+		r("line-cook", "Line Cook"),
+		r("cook", "Cook"),
+		r("all-around-kitchen-crew", "All-around Kitchen Crew"),
+		r("prep-assistant", "Prep Assistant"),
+		r("kitchen-helper", "Kitchen Helper"),
+		r("dishwasher", "Dishwasher"),
+		r("pastry-chef", "Pastry Chef"),
+		r("baker", "Baker"),
+		r("grill-cook", "Grill Cook"),
+		r("kitchen-steward", "Kitchen Steward"),
 		r("catering-assistant", "Catering Assistant"),
+
+		// Food and beverage service
+		r("all-around-service-crew", "All-around Service Crew"),
+		r("waiter-server", "Waiter / Server"),
+		r("food-runner", "Food Runner"),
+		r("buffet-server", "Buffet Server"),
+		r("barista", "Barista"),
+		r("bartender", "Bartender"),
+
+		// Store operations
+		r("cashier", "Cashier"),
+		r("store-manager", "Store Manager"),
+		r("janitorial-cleaning-staff", "Janitorial / Cleaning Staff"),
 	}},
 	{"delivery", "Delivery", []Role{
-		r("motorcycle", "Motorcycle Rider"), r("food-delivery", "Food Delivery Rider"),
-		r("car-driver", "Car Driver"), r("bicycle", "Bicycle Courier"),
-		r("escooter", "E-Scooter Courier"), r("van-driver", "Van Driver"),
-		r("express-messenger", "Express Messenger"), r("pickup-driver", "Pickup Truck Driver"),
-		r("truck-driver", "Heavy Truck Driver"), r("document-courier", "Document Courier"),
-		r("dispatch-driver", "Warehouse Dispatch Driver"), r("last-mile", "Last-Mile Delivery Specialist"),
+		// Drivers and couriers
+		r("motorcycle", "Motorcycle Rider"),
+		r("food-delivery", "Food Delivery Rider"),
+		r("2-wheel-driver", "2-Wheel Driver"),
+		r("bicycle", "Bicycle Courier"),
+		r("escooter", "E-Scooter Courier"),
+		r("car-driver", "Car Driver"),
+		r("van-driver", "Van Driver"),
+		r("suv-van-driver", "SUV / Van Driver"),
+		r("pickup-driver", "Pickup Truck Driver"),
+		r("truck-driver", "Heavy Truck Driver"),
+		r("4-10-wheel-truck-driver", "4–10 Wheel Truck Driver"),
+		r("express-messenger", "Express Messenger"),
+		r("document-courier", "Document Courier"),
+		r("dispatch-driver", "Warehouse Dispatch Driver"),
+		r("last-mile", "Last-Mile Delivery Specialist"),
+
+		// Warehouse and loading operations
+		r("warehouse", "Warehouse Helper"),
+		r("warehouse-picker-packer", "Warehouse Picker / Packer"),
+		r("loading-crew", "Loading & Unloading Crew"),
+		r("kargador-loader-unloader", "Kargador / Loader / Unloader"),
+		r("forklift-operator", "Forklift Operator"),
 	}},
 	{"helpers", "Helpers", []Role{
-		r("event", "Event Helper"), r("banquet", "Banquet Server"), r("warehouse", "Warehouse Helper"),
-		r("inventory", "Inventory & Stock Assistant"), r("loading-crew", "Loading & Unloading Crew"),
-		r("office", "Office Helper"), r("moving", "Moving Helper"), r("cleaning", "Cleaning Crew"),
-		r("sanitation", "Sanitation Staff"), r("staging", "Staging & Booth Builder"),
-		r("general-laborer", "General Laborer"), r("retail-assistant", "Retail Store Assistant"),
-		r("maintenance", "Maintenance Assistant"), r("usher-assistant", "Security / Usher Assistant"),
+		// General and event assistance
+		r("event", "Event Helper"),
+		r("banquet", "Banquet Server"),
+		r("office", "Office Helper"),
+		r("moving", "Moving Helper"),
+		r("retail-assistant", "Retail Store Assistant"),
+		r("inventory", "Inventory & Stock Assistant"),
+		r("staging", "Staging & Booth Builder"),
+		r("usher-assistant", "Security / Usher Assistant"),
+
+		// Cleaning and maintenance
+		r("cleaning", "Cleaning Crew"),
+		r("sanitation", "Sanitation Staff"),
+		r("maintenance", "Maintenance Assistant"),
+
+		// Construction and skilled trades
+		r("general-laborer", "General Laborer"),
+		r("construction-worker", "Construction Worker / Laborer"),
+		r("electrician", "Electrician"),
+		r("plumber", "Plumber"),
+		r("welder", "Welder"),
+		r("carpenter-painter", "Carpenter / Painter"),
 	}},
 }
 

@@ -4,3 +4,13 @@ data/*.db-wal
 jar.txt
 
 .env
+
+/instantcrew
+
+
+data/
+instantcrew
+*.db
+*.db-wal
+*.db-shm
+deploy_key*

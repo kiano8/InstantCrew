@@ -528,6 +528,12 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		return err
 	}
 	_, _ = tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES(?,?,'accepted',?,?) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now)
+	if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES(?,?,'accepted')`, jobID, applicantID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=MIN(500,rating_hundredths+1) WHERE user_id=? AND EXISTS(SELECT 1 FROM applicant_rating_events WHERE job_id=? AND applicant_id=? AND outcome='accepted')`, applicantID, jobID, applicantID); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
