@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -18,6 +19,16 @@ import (
 func getenv(k, def string) string {
 	if v := os.Getenv(k); v != "" {
 		return v
+	}
+	return def
+}
+
+func getenvInt(k string, def int) int {
+	if v := os.Getenv(k); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			return n
+		}
+		log.Printf("ignoring invalid %s=%q, using %d", k, v, def)
 	}
 	return def
 }
@@ -41,6 +52,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer st.Close()
+
+	// Beta settings (override with env vars).
+	idleTimeout := time.Duration(getenvInt("SESSION_IDLE_MINUTES", 15)) * time.Minute
+	st.SetSessionIdleTimeout(idleTimeout)
+
 	if err := jobs.SyncCatalog(context.Background(), st); err != nil {
 		log.Fatal(err)
 	}
@@ -48,6 +64,8 @@ func main() {
 	authH := &auth.Handler{
 		Store:        st,
 		SessionTTL:   7 * 24 * time.Hour,
+		IdleTimeout:  idleTimeout,
+		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
 	}
 	// Development mode must not create implicit accounts. Authentication always
@@ -67,6 +85,7 @@ func main() {
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/auth/logout", authH.Logout)
 	mux.Handle("GET /api/auth/me", authH.RequireAuth(http.HandlerFunc(authH.Me)))
+	mux.Handle("POST /api/auth/activity", authH.RequireAuth(http.HandlerFunc(authH.Activity)))
 
 	// Frontend
 	static := http.FileServer(http.Dir("."))
@@ -97,8 +116,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	go func() { // purge expired sessions hourly
-		t := time.NewTicker(time.Hour)
+	go func() { // purge expired and idle sessions every minute
+		t := time.NewTicker(time.Minute)
 		defer t.Stop()
 		for {
 			select {

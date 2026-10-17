@@ -17,6 +17,7 @@ var (
 	ErrNotFound        = errors.New("not found")
 	ErrEmailTaken      = errors.New("email already registered")
 	ErrHiringPassEmpty = errors.New("hiring pass exhausted; add ₱10 for 5 hires")
+	ErrBetaFull        = errors.New("beta tester limit reached")
 )
 
 type User struct {
@@ -28,7 +29,13 @@ type User struct {
 	Company      string
 }
 
-type Store struct{ db *sql.DB }
+type Store struct {
+	db          *sql.DB
+	idleTimeout time.Duration // 0 = no idle timeout
+}
+
+// SetSessionIdleTimeout must be called once at startup, before serving requests.
+func (s *Store) SetSessionIdleTimeout(d time.Duration) { s.idleTimeout = d }
 
 type RoleRow struct{ ID, Category, Label string }
 
@@ -158,17 +165,68 @@ func (s *Store) UserByEmailRole(ctx context.Context, email, role string) (*User,
 }
 
 func (s *Store) CreateSession(ctx context.Context, tokenHash string, userID int64, expires time.Time) error {
+	now := time.Now().Unix()
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO sessions (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)`,
-		tokenHash, userID, expires.Unix(), time.Now().Unix())
+		`INSERT INTO sessions (token_hash, user_id, expires_at, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)`,
+		tokenHash, userID, expires.Unix(), now, now)
 	return err
 }
 
+// idleCutoff returns the oldest last_seen_at that still counts as active.
+func (s *Store) idleCutoff(now time.Time) int64 {
+	if s.idleTimeout <= 0 {
+		return 0
+	}
+	return now.Add(-s.idleTimeout).Unix()
+}
+
+// TouchSession records real user activity. It never revives a session that is
+// already expired or idle, and writes at most once per 20 seconds per session.
+func (s *Store) TouchSession(ctx context.Context, tokenHash string) error {
+	now := time.Now()
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE sessions SET last_seen_at = ?
+		 WHERE token_hash = ? AND expires_at > ? AND last_seen_at > ? AND last_seen_at < ?`,
+		now.Unix(), tokenHash, now.Unix(), s.idleCutoff(now), now.Unix()-20)
+	return err
+}
+
+// CreateUserCapped creates a user unless the beta already has max distinct
+// people (distinct emails). A person adding a second role with an email that
+// already exists is not a new tester, so it is always allowed. The check and
+// the insert are one statement, so concurrent signups cannot exceed the cap.
+// max <= 0 means no cap.
+func (s *Store) CreateUserCapped(ctx context.Context, u *User, max int) error {
+	if max <= 0 {
+		return s.CreateUser(ctx, u)
+	}
+	res, err := s.db.ExecContext(ctx,
+		`INSERT INTO users (email, password_hash, role, name, company, created_at)
+		 SELECT ?, ?, ?, ?, ?, ?
+		 WHERE EXISTS (SELECT 1 FROM users WHERE email = ?)
+		    OR (SELECT COUNT(DISTINCT email) FROM users) < ?`,
+		u.Email, u.PasswordHash, u.Role, u.Name, u.Company, time.Now().Unix(),
+		u.Email, max)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return ErrEmailTaken
+		}
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrBetaFull
+	}
+	u.ID, _ = res.LastInsertId()
+	return nil
+}
+
 func (s *Store) UserBySession(ctx context.Context, tokenHash string) (*User, error) {
+	now := time.Now()
 	return scanUser(s.db.QueryRowContext(ctx,
 		`SELECT u.id, u.email, u.password_hash, u.role, u.name, u.company
 		 FROM sessions s JOIN users u ON u.id = s.user_id
-		 WHERE s.token_hash = ? AND s.expires_at > ?`, tokenHash, time.Now().Unix()))
+		 WHERE s.token_hash = ? AND s.expires_at > ? AND s.last_seen_at > ?`,
+		tokenHash, now.Unix(), s.idleCutoff(now)))
 }
 
 func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
@@ -177,6 +235,9 @@ func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
 }
 
 func (s *Store) DeleteExpiredSessions(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= ?`, time.Now().Unix())
+	now := time.Now()
+	_, err := s.db.ExecContext(ctx,
+		`DELETE FROM sessions WHERE expires_at <= ? OR last_seen_at <= ?`,
+		now.Unix(), s.idleCutoff(now))
 	return err
 }

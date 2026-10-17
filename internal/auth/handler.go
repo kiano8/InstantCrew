@@ -22,6 +22,8 @@ const CookieName = "ic_session"
 type Handler struct {
 	Store        *store.Store
 	SessionTTL   time.Duration
+	IdleTimeout  time.Duration // sign out after this long without user activity; 0 = off
+	MaxUsers     int           // beta cap on distinct testers; 0 = unlimited
 	CookieSecure bool
 }
 
@@ -128,7 +130,11 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := &store.User{Email: email, PasswordHash: string(hash), Role: req.Role, Name: name, Company: company}
-	if err := h.Store.CreateUser(r.Context(), u); err != nil {
+	if err := h.Store.CreateUserCapped(r.Context(), u, h.MaxUsers); err != nil {
+		if errors.Is(err, store.ErrBetaFull) {
+			httpx.Error(w, http.StatusForbidden, "the beta is full right now. Please check back soon.")
+			return
+		}
 		if errors.Is(err, store.ErrEmailTaken) {
 			httpx.Error(w, http.StatusConflict, "an account with this email already exists")
 			return
@@ -196,5 +202,18 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // GET /api/auth/me  (wrap with RequireAuth)
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	u, _ := UserFrom(r.Context())
-	httpx.JSON(w, http.StatusOK, map[string]any{"user": toDTO(u)})
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"user":                 toDTO(u),
+		"idle_timeout_seconds": int(h.IdleTimeout.Seconds()),
+	})
+}
+
+// POST /api/auth/activity  (wrap with RequireAuth)
+// The browser calls this when the person actually interacts with the page.
+// Background polling does not call it, so a forgotten open tab still times out.
+func (h *Handler) Activity(w http.ResponseWriter, r *http.Request) {
+	if c, err := r.Cookie(CookieName); err == nil {
+		_ = h.Store.TouchSession(r.Context(), hashToken(c.Value))
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
