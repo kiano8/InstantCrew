@@ -267,6 +267,38 @@ a {
     z-index: 2;
 }
 
+/* ── Peeking Mascot Character (Shown on Mobile / when big character on left is not visible) ── */
+.peeking-char-wrap {
+    display: none;
+    position: absolute;
+    top: -55px;
+    right: 18px;
+    z-index: 10;
+    pointer-events: none;
+    user-select: none;
+    line-height: 0;
+}
+
+.peeking-char-img {
+    width: clamp(96px, 24vw, 116px);
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08));
+}
+
+/* Shown on mobile / tablet when the left character is hidden */
+@media (max-width: 820px) {
+    .peeking-char-wrap {
+        display: block;
+    }
+}
+
+/* Also show if the left character is hidden for any reason */
+.db-card-wrapper:has(.db-char-left[style*="display: none"]) .peeking-char-wrap,
+.db-card-wrapper:has(.db-char-left.hidden) .peeking-char-wrap,
+.db-card-wrapper:not(:has(.db-char-left)) .peeking-char-wrap {
+    display: block;
+}
 
 /* ── Progress bar ────────────────────────────────────────────── */
 .db-progress {
@@ -5149,7 +5181,7 @@ body {
     }
 
     .db-main {
-        padding: 24px 20px 36px;
+        padding: 48px 20px 36px;
         align-items: flex-start;
     }
 
@@ -5206,7 +5238,7 @@ body {
     }
 
     .db-main {
-        padding: 14px 14px 32px;
+        padding: 46px 14px 32px;
         align-items: flex-start;
         min-height: calc(100vh - 54px - 48px);
     }
@@ -6334,6 +6366,33 @@ body {
 .db-auth-toggle-pass:focus-visible {
     outline: 2px solid #F5A623;
     outline-offset: 1px;
+}
+
+.db-auth-toggle-pass .eye-icon {
+    display: block;
+    pointer-events: none;
+}
+
+.db-auth-hint {
+    font-size: 0.74rem;
+    color: #6B7280;
+    margin: 8px 0 0;
+    line-height: 1.4;
+}
+
+.db-auth-error-banner {
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+outline: 2px solid #F5A623;
+outline-offset: 1px;
 }
 
 .db-auth-toggle-pass .eye-icon {

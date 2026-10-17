@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css">
-    <link rel="stylesheet" href="css/applicant.css?v=20261016-step4-amber-pass">
+    <link rel="stylesheet" href="css/employer.css?v=20261017-peeking-crew">
+    <link rel="stylesheet" href="css/applicant.css?v=20261017-peeking-crew">
 
 </head>
 
@@ -509,6 +509,11 @@
             <img src="images/phonecrew.png" alt="Crew Character" class="db-char-left" aria-hidden="true">
 
             <div class="db-card app-steps-card" id="appStepsCard">
+                <!-- Peeking Mascot (Visible on mobile / when left character is hidden) -->
+                <div class="peeking-char-wrap" aria-hidden="true">
+                    <img src="images/peekingcrew.png" alt="Instant Crew" class="peeking-char-img">
+                </div>
+
                 <!-- Progress Bar: 4 Steps -->
                 <div class="db-progress" id="appProgress" aria-label="Applicant setup progress">
                     <span class="db-progress-seg active" data-seg="1"></span>
@@ -881,18 +886,16 @@
                             <div class="worker-cal-nav">
                                 <button type="button" class="worker-cal-nav-btn" id="appStep3CalPrevBtn"
                                     aria-label="Previous month">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="15 18 9 12 15 6"></polyline>
                                     </svg>
                                 </button>
                                 <span class="worker-cal-month-label" id="appStep3CalMonthLabel">October 2026</span>
                                 <button type="button" class="worker-cal-nav-btn" id="appStep3CalNextBtn"
                                     aria-label="Next month">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="9 18 15 12 9 6"></polyline>
                                     </svg>
                                 </button>
@@ -2035,7 +2038,9 @@
                     </button>
                 </form>
 
-                <a href="login.html?role=applicant" id="applicantFullLoginLink" style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;font-weight:600;color:#6B7280;text-decoration:underline;">View full login page</a>
+                <a href="login.html?role=applicant" id="applicantFullLoginLink"
+                    style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;font-weight:600;color:#6B7280;text-decoration:underline;">View
+                    full login page</a>
 
             </div>
         </div>
@@ -7413,7 +7418,7 @@
             initApplicantStepsListeners();
         })();
     </script>
-<script src="/js/session.js"></script>
+    <script src="/js/session.js"></script>
 </body>
 
 </html>

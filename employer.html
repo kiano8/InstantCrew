@@ -188,6 +188,10 @@
             <!-- Character Decoration -->
             <img src="images/standingcrew.png" alt="Crew Character" class="db-char-left" aria-hidden="true">
             <div class="db-card" id="dbCard">
+                <!-- Peeking Mascot (Visible on mobile / when left character is hidden) -->
+                <div class="peeking-char-wrap" aria-hidden="true">
+                    <img src="images/peekingcrew.png" alt="Instant Crew" class="peeking-char-img">
+                </div>
 
                 <!-- Progress Bar -->
                 <div class="db-progress" id="dbProgress" aria-label="Booking progress">
@@ -1020,7 +1024,9 @@
                     </button>
                 </form>
 
-                <a href="login.html?role=hirer" id="employerFullLoginLink" style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;font-weight:600;color:#6B7280;text-decoration:underline;">View full login page</a>
+                <a href="login.html?role=hirer" id="employerFullLoginLink"
+                    style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;font-weight:600;color:#6B7280;text-decoration:underline;">View
+                    full login page</a>
 
             </div>
         </div>
@@ -1518,7 +1524,7 @@
     <script src="js/location.js"></script>
     <script src="js/shared-data.js"></script>
     <script src="js/employer.js?v=20261014-employer-cancel-immediate-v1"></script>
-<script src="/js/session.js"></script>
+    <script src="/js/session.js"></script>
 </body>
 
 </html>
