@@ -1091,25 +1091,114 @@
                             </button>
                         </div>
 
-                        <!-- Method Details -->
+                        <!-- Step 4 GCash QR Code & Proof of Payment -->
                         <div class="db-pay-method-details" id="appStepGcashWrap">
-                            <div class="db-pay-field">
-                                <label for="appStepGcashNum">GCash Mobile Number</label>
-                                <div class="db-pay-input-wrap">
-                                    <span class="db-pay-prefix">+63</span>
-                                    <input type="tel" id="appStepGcashNum" class="db-pay-input"
-                                        placeholder="917 555 0199">
+                            <div class="db-qr-container">
+                                <div class="db-qr-card">
+                                    <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code" class="db-qr-image">
+                                    <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
+                                </div>
+                                <div class="db-qr-instructions">
+                                    <ol>
+                                        <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.
+                                        </li>
+                                        <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
+                                        <li>Take a screenshot of the completed payment receipt.</li>
+                                        <li>Upload the screenshot below as Proof of Payment.</li>
+                                    </ol>
+                                </div>
+                                <div class="db-proof-upload-section">
+                                    <div class="db-proof-upload-label">
+                                        <span>Proof of Payment Screenshot</span>
+                                        <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                    </div>
+                                    <div class="db-proof-dropzone" id="appStepGcashDropzone">
+                                        <input type="file" id="appStepGcashProofFile" class="db-proof-file-input"
+                                            accept="image/*">
+                                        <div class="db-proof-icon-wrap">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="17 8 12 3 7 8"></polyline>
+                                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                                            </svg>
+                                        </div>
+                                        <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                        <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                    </div>
+                                    <div class="db-proof-attached-box" id="appStepGcashAttachedBox">
+                                        <img src="" alt="Proof Preview" class="db-proof-thumb" id="appStepGcashThumb">
+                                        <div class="db-proof-info">
+                                            <span class="db-proof-filename" id="appStepGcashFilename">receipt.jpg</span>
+                                            <span class="db-proof-status-tag">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                                Receipt attached &amp; ready
+                                            </span>
+                                        </div>
+                                        <button type="button" class="db-proof-remove-btn"
+                                            id="appStepGcashRemoveBtn">Change</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Step 4 Maya QR Code & Proof of Payment -->
                         <div class="db-pay-method-details" id="appStepMayaWrap" style="display:none;">
-                            <div class="db-pay-field">
-                                <label for="appStepMayaNum">Maya Mobile Number</label>
-                                <div class="db-pay-input-wrap">
-                                    <span class="db-pay-prefix">+63</span>
-                                    <input type="tel" id="appStepMayaNum" class="db-pay-input"
-                                        placeholder="918 777 2233">
+                            <div class="db-qr-container">
+                                <div class="db-qr-card">
+                                    <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code" class="db-qr-image">
+                                    <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
+                                </div>
+                                <div class="db-qr-instructions">
+                                    <ol>
+                                        <li>Open your <strong>Maya</strong> app and tap <strong>Scan to Pay</strong>.
+                                        </li>
+                                        <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
+                                        <li>Take a screenshot of the completed payment receipt.</li>
+                                        <li>Upload the screenshot below as Proof of Payment.</li>
+                                    </ol>
+                                </div>
+                                <div class="db-proof-upload-section">
+                                    <div class="db-proof-upload-label">
+                                        <span>Proof of Payment Screenshot</span>
+                                        <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                    </div>
+                                    <div class="db-proof-dropzone" id="appStepMayaDropzone">
+                                        <input type="file" id="appStepMayaProofFile" class="db-proof-file-input"
+                                            accept="image/*">
+                                        <div class="db-proof-icon-wrap">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="17 8 12 3 7 8"></polyline>
+                                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                                            </svg>
+                                        </div>
+                                        <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                        <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                    </div>
+                                    <div class="db-proof-attached-box" id="appStepMayaAttachedBox">
+                                        <img src="" alt="Proof Preview" class="db-proof-thumb" id="appStepMayaThumb">
+                                        <div class="db-proof-info">
+                                            <span class="db-proof-filename" id="appStepMayaFilename">receipt.jpg</span>
+                                            <span class="db-proof-status-tag">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                                Receipt attached &amp; ready
+                                            </span>
+                                        </div>
+                                        <button type="button" class="db-proof-remove-btn"
+                                            id="appStepMayaRemoveBtn">Change</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1174,13 +1263,13 @@
                     </div>
 
                     <!-- Payment & Proceed Button -->
-                    <button type="button" class="db-btn-primary" id="appPayAndProceedBtn" style="margin-top: 24px;">
+                    <button type="button" class="db-btn-primary" id="appPayAndProceedBtn" style="margin-top: 24px; opacity: 0.5; cursor: not-allowed;" disabled title="Please upload your proof of payment screenshot to continue">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5">
                             <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                             <line x1="2" y1="10" x2="22" y2="10"></line>
                         </svg>
-                        <span>Pay ₱10.00 &amp; Continue</span>
+                        <span>Continue</span>
                     </button>
                 </section>
             </div>
@@ -2132,21 +2221,112 @@
                         </button>
                     </div>
 
+                    <!-- Top-Up GCash QR Code & Proof of Payment -->
                     <div class="db-pay-method-details" id="appTopupGcashWrap">
-                        <div class="db-pay-field">
-                            <label for="appTopupGcashNum">GCash Mobile Number</label>
-                            <div class="db-pay-input-wrap">
-                                <span class="db-pay-prefix">+63</span>
-                                <input type="tel" id="appTopupGcashNum" class="db-pay-input" placeholder="917 555 0199">
+                        <div class="db-qr-container">
+                            <div class="db-qr-card">
+                                <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code" class="db-qr-image">
+                                <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
+                            </div>
+                            <div class="db-qr-instructions">
+                                <ol>
+                                    <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.</li>
+                                    <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
+                                    <li>Take a screenshot of the completed payment receipt.</li>
+                                    <li>Upload the screenshot below as Proof of Payment.</li>
+                                </ol>
+                            </div>
+                            <div class="db-proof-upload-section">
+                                <div class="db-proof-upload-label">
+                                    <span>Proof of Payment Screenshot</span>
+                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                </div>
+                                <div class="db-proof-dropzone" id="appTopupGcashDropzone">
+                                    <input type="file" id="appTopupGcashProofFile" class="db-proof-file-input"
+                                        accept="image/*">
+                                    <div class="db-proof-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                </div>
+                                <div class="db-proof-attached-box" id="appTopupGcashAttachedBox">
+                                    <img src="" alt="Proof Preview" class="db-proof-thumb" id="appTopupGcashThumb">
+                                    <div class="db-proof-info">
+                                        <span class="db-proof-filename" id="appTopupGcashFilename">receipt.jpg</span>
+                                        <span class="db-proof-status-tag">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            Receipt attached &amp; ready
+                                        </span>
+                                    </div>
+                                    <button type="button" class="db-proof-remove-btn"
+                                        id="appTopupGcashRemoveBtn">Change</button>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Top-Up Maya QR Code & Proof of Payment -->
                     <div class="db-pay-method-details" id="appTopupMayaWrap" style="display:none;">
-                        <div class="db-pay-field">
-                            <label for="appTopupMayaNum">Maya Mobile Number</label>
-                            <div class="db-pay-input-wrap">
-                                <span class="db-pay-prefix">+63</span>
-                                <input type="tel" id="appTopupMayaNum" class="db-pay-input" placeholder="918 777 2233">
+                        <div class="db-qr-container">
+                            <div class="db-qr-card">
+                                <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code" class="db-qr-image">
+                                <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
+                            </div>
+                            <div class="db-qr-instructions">
+                                <ol>
+                                    <li>Open your <strong>Maya</strong> app and tap <strong>Scan to Pay</strong>.</li>
+                                    <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
+                                    <li>Take a screenshot of the completed payment receipt.</li>
+                                    <li>Upload the screenshot below as Proof of Payment.</li>
+                                </ol>
+                            </div>
+                            <div class="db-proof-upload-section">
+                                <div class="db-proof-upload-label">
+                                    <span>Proof of Payment Screenshot</span>
+                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                </div>
+                                <div class="db-proof-dropzone" id="appTopupMayaDropzone">
+                                    <input type="file" id="appTopupMayaProofFile" class="db-proof-file-input"
+                                        accept="image/*">
+                                    <div class="db-proof-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                </div>
+                                <div class="db-proof-attached-box" id="appTopupMayaAttachedBox">
+                                    <img src="" alt="Proof Preview" class="db-proof-thumb" id="appTopupMayaThumb">
+                                    <div class="db-proof-info">
+                                        <span class="db-proof-filename" id="appTopupMayaFilename">receipt.jpg</span>
+                                        <span class="db-proof-status-tag">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            Receipt attached &amp; ready
+                                        </span>
+                                    </div>
+                                    <button type="button" class="db-proof-remove-btn"
+                                        id="appTopupMayaRemoveBtn">Change</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2211,7 +2391,8 @@
 
                 <!-- Submit Button -->
                 <button type="button" class="db-btn-primary" id="appConfirmTopupBtn"
-                    style="margin-top: 18px; width: 100%;">
+                    style="margin-top: 18px; width: 100%; opacity: 0.5; cursor: not-allowed;" disabled
+                    title="Please upload your proof of payment screenshot to continue">
                     <span>Confirm ₱10.00 (+5 Hires)</span>
                 </button>
             </div>
@@ -5980,6 +6161,9 @@
                 if (stepNum === 3) {
                     updateStepSummary();
                 }
+                if (stepNum === 4 && typeof updateStep4ContinueBtn === 'function') {
+                    updateStep4ContinueBtn();
+                }
 
                 const card = document.getElementById('appStepsCard');
                 if (card) {
@@ -6039,6 +6223,7 @@
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
+                    if (typeof updateTopupConfirmBtn === 'function') updateTopupConfirmBtn();
                 }
             }
 
@@ -6890,6 +7075,7 @@
                             if (appStepGcashWrap) appStepGcashWrap.style.display = step4PaymentMethod === 'gcash' ? 'block' : 'none';
                             if (appStepMayaWrap) appStepMayaWrap.style.display = step4PaymentMethod === 'maya' ? 'block' : 'none';
                             if (appStepCardWrap) appStepCardWrap.style.display = step4PaymentMethod === 'card' ? 'block' : 'none';
+                            updateStep4ContinueBtn();
                         });
                     });
                 }
@@ -6957,21 +7143,126 @@
                 setupCardInputToggle('toggleAppTopupCardCvcBtn', 'appTopupCardCvc', 'db-cvv-eye-open', 'db-cvv-eye-closed', 'Show CVV', 'Hide CVV');
                 setupCardFormatting('appTopupCardNum');
 
+                // Helper to wire up proof uploaders
+                function setupProofUploader(fileInputId, dropzoneId, attachedBoxId, thumbId, filenameId, removeBtnId, onFileSelected, onFileRemoved) {
+                    const fileInput = document.getElementById(fileInputId);
+                    const dropzone = document.getElementById(dropzoneId);
+                    const attachedBox = document.getElementById(attachedBoxId);
+                    const thumb = document.getElementById(thumbId);
+                    const filename = document.getElementById(filenameId);
+                    const removeBtn = document.getElementById(removeBtnId);
+                    if (!fileInput || !dropzone || !attachedBox) return;
+
+                    const handleFile = (file) => {
+                        if (!file || !file.type.startsWith('image/')) {
+                            showToast('Please select a valid image file (PNG, JPG, WebP).', true);
+                            return;
+                        }
+                        if (file.size > 15 * 1024 * 1024) {
+                            showToast('Image file too large. Max size is 15MB.', true);
+                            return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            if (thumb) thumb.src = e.target.result;
+                            if (filename) filename.textContent = file.name;
+                            dropzone.style.display = 'none';
+                            attachedBox.style.display = 'flex';
+                            if (onFileSelected) onFileSelected(file, e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    };
+
+                    fileInput.addEventListener('change', (e) => {
+                        if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+                    });
+
+                    dropzone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        dropzone.classList.add('dragover');
+                    });
+                    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+                    dropzone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        dropzone.classList.remove('dragover');
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+                    });
+
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            fileInput.value = '';
+                            if (thumb) thumb.src = '';
+                            attachedBox.style.display = 'none';
+                            dropzone.style.display = 'flex';
+                            if (onFileRemoved) onFileRemoved();
+                        });
+                    }
+                }
+
+                // Step 4 proof state
+                let step4ProofFile = null;
+                let step4ProofDataUrl = '';
+
+                function updateStep4ContinueBtn() {
+                    if (!appPayAndProceedBtn) return;
+                    if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
+                        const hasProof = !!(step4ProofFile || step4ProofDataUrl);
+                        appPayAndProceedBtn.disabled = !hasProof;
+                        appPayAndProceedBtn.style.opacity = hasProof ? '1' : '0.5';
+                        appPayAndProceedBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
+                        appPayAndProceedBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
+                    } else {
+                        appPayAndProceedBtn.disabled = false;
+                        appPayAndProceedBtn.style.opacity = '1';
+                        appPayAndProceedBtn.style.cursor = 'pointer';
+                        appPayAndProceedBtn.title = '';
+                    }
+                }
+
+                setupProofUploader('appStepGcashProofFile', 'appStepGcashDropzone', 'appStepGcashAttachedBox', 'appStepGcashThumb', 'appStepGcashFilename', 'appStepGcashRemoveBtn',
+                    (file, dataUrl) => { step4ProofFile = file; step4ProofDataUrl = dataUrl; updateStep4ContinueBtn(); },
+                    () => { step4ProofFile = null; step4ProofDataUrl = ''; updateStep4ContinueBtn(); }
+                );
+                setupProofUploader('appStepMayaProofFile', 'appStepMayaDropzone', 'appStepMayaAttachedBox', 'appStepMayaThumb', 'appStepMayaFilename', 'appStepMayaRemoveBtn',
+                    (file, dataUrl) => { step4ProofFile = file; step4ProofDataUrl = dataUrl; updateStep4ContinueBtn(); },
+                    () => { step4ProofFile = null; step4ProofDataUrl = ''; updateStep4ContinueBtn(); }
+                );
+
+                // Helper to upload proof file to server
+                async function uploadProofImage(file, fallbackUrl) {
+                    if (!file) return fallbackUrl || '';
+                    try {
+                        const formData = new FormData();
+                        formData.append('proof', file);
+                        const res = await fetch('/api/upload-proof', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            body: formData
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && data.url) return data.url;
+                        }
+                    } catch (err) {
+                        console.warn('Upload API failed, falling back to data URL', err);
+                    }
+                    return fallbackUrl || '';
+                }
+
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
                     appPayAndProceedBtn.addEventListener('click', async () => {
-                        if (step4PaymentMethod === 'gcash') {
-                            const num = document.getElementById('appStepGcashNum')?.value.trim();
-                            if (!num) {
-                                showToast('Please enter your GCash mobile number.', true);
+                        let proofUrl = step4ProofDataUrl;
+
+                        if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
+                            if (!step4ProofFile && !step4ProofDataUrl) {
+                                const walletName = step4PaymentMethod === 'gcash' ? 'GCash' : 'Maya';
+                                showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
                                 return;
                             }
-                        } else if (step4PaymentMethod === 'maya') {
-                            const num = document.getElementById('appStepMayaNum')?.value.trim();
-                            if (!num) {
-                                showToast('Please enter your Maya mobile number.', true);
-                                return;
-                            }
+                            proofUrl = await uploadProofImage(step4ProofFile, step4ProofDataUrl);
                         } else if (step4PaymentMethod === 'card') {
                             const num = document.getElementById('appStepCardNum')?.value.trim();
                             if (!num || num.replace(/\s/g, '').length < 12) {
@@ -6988,6 +7279,7 @@
                             paidAmount: 10,
                             batchesPaid: 1,
                             paymentMethod: step4PaymentMethod,
+                            proofImage: proofUrl,
                             paidAt: Date.now()
                         };
                         sessionStorage.setItem('ic_applicant_pending_pass', JSON.stringify(pendingPass));
@@ -6996,7 +7288,12 @@
                             showToast('₱10.00 Hiring Pass pre-paid! Please log in or sign up to activate.');
                             openApplicantAuthModal();
                         } else {
-                            const paid = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: step4PaymentMethod }) });
+                            const paid = await fetch('/api/applicant/hiring-pass/pay', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ method: step4PaymentMethod, proof_image: proofUrl })
+                            });
                             const paidData = await paid.json().catch(() => ({}));
                             if (!paid.ok) { showToast(paidData.error || 'Payment could not be completed.', true); return; }
                             session.hiringQuota = paidData.hiring_pass;
@@ -7038,6 +7335,34 @@
 
                 // Top-Up Payment Method Tabs (GCash, Maya, Card)
                 let topupPaymentMethod = 'gcash';
+                let topupProofFile = null;
+                let topupProofDataUrl = '';
+
+                function updateTopupConfirmBtn() {
+                    if (!appConfirmTopupBtn) return;
+                    if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
+                        const hasProof = !!(topupProofFile || topupProofDataUrl);
+                        appConfirmTopupBtn.disabled = !hasProof;
+                        appConfirmTopupBtn.style.opacity = hasProof ? '1' : '0.5';
+                        appConfirmTopupBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
+                        appConfirmTopupBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
+                    } else {
+                        appConfirmTopupBtn.disabled = false;
+                        appConfirmTopupBtn.style.opacity = '1';
+                        appConfirmTopupBtn.style.cursor = 'pointer';
+                        appConfirmTopupBtn.title = '';
+                    }
+                }
+
+                setupProofUploader('appTopupGcashProofFile', 'appTopupGcashDropzone', 'appTopupGcashAttachedBox', 'appTopupGcashThumb', 'appTopupGcashFilename', 'appTopupGcashRemoveBtn',
+                    (file, dataUrl) => { topupProofFile = file; topupProofDataUrl = dataUrl; updateTopupConfirmBtn(); },
+                    () => { topupProofFile = null; topupProofDataUrl = ''; updateTopupConfirmBtn(); }
+                );
+                setupProofUploader('appTopupMayaProofFile', 'appTopupMayaDropzone', 'appTopupMayaAttachedBox', 'appTopupMayaThumb', 'appTopupMayaFilename', 'appTopupMayaRemoveBtn',
+                    (file, dataUrl) => { topupProofFile = file; topupProofDataUrl = dataUrl; updateTopupConfirmBtn(); },
+                    () => { topupProofFile = null; topupProofDataUrl = ''; updateTopupConfirmBtn(); }
+                );
+
                 const appTopupPayTabs = document.getElementById('appTopupPayTabs');
                 const appTopupGcashWrap = document.getElementById('appTopupGcashWrap');
                 const appTopupMayaWrap = document.getElementById('appTopupMayaWrap');
@@ -7058,6 +7383,7 @@
                             if (appTopupGcashWrap) appTopupGcashWrap.style.display = topupPaymentMethod === 'gcash' ? 'block' : 'none';
                             if (appTopupMayaWrap) appTopupMayaWrap.style.display = topupPaymentMethod === 'maya' ? 'block' : 'none';
                             if (appTopupCardWrap) appTopupCardWrap.style.display = topupPaymentMethod === 'card' ? 'block' : 'none';
+                            updateTopupConfirmBtn();
                         });
                     });
                 }
@@ -7065,12 +7391,15 @@
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
-                        if (topupPaymentMethod === 'gcash') {
-                            const num = document.getElementById('appTopupGcashNum')?.value.trim();
-                            if (!num) { showToast('Please enter your GCash number.', true); return; }
-                        } else if (topupPaymentMethod === 'maya') {
-                            const num = document.getElementById('appTopupMayaNum')?.value.trim();
-                            if (!num) { showToast('Please enter your Maya number.', true); return; }
+                        let proofUrl = topupProofDataUrl;
+
+                        if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
+                            if (!topupProofFile && !topupProofDataUrl) {
+                                const walletName = topupPaymentMethod === 'gcash' ? 'GCash' : 'Maya';
+                                showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
+                                return;
+                            }
+                            proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
                         } else if (topupPaymentMethod === 'card') {
                             const num = document.getElementById('appTopupCardNum')?.value.trim();
                             if (!num || num.replace(/\s/g, '').length < 12) { showToast('Please enter a valid card number.', true); return; }
@@ -7080,7 +7409,12 @@
                         appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
 
                         try {
-                            const response = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: topupPaymentMethod }) });
+                            const response = await fetch('/api/applicant/hiring-pass/pay', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ method: topupPaymentMethod, proof_image: proofUrl })
+                            });
                             const data = await response.json().catch(() => ({}));
                             if (!response.ok) throw new Error(data.error || 'Payment could not be completed.');
                             if (session) { session.hiringQuota = data.hiring_pass; saveWorkerSession(session); }
@@ -7206,6 +7540,11 @@
                         const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Invalid email or password.');
+                        if (data.user && data.user.role === 'admin') {
+                            sessionStorage.setItem('ic_admin_session', JSON.stringify({ ...data.user, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }));
+                            window.location.href = 'admin.html';
+                            return;
+                        }
                         const newSession = { ...data.user, services: [], active: false, acceptedShifts: [] };
                         const profileResponse = await fetch('/api/applicant/profile', { credentials: 'same-origin' });
                         if (profileResponse.ok) {

@@ -179,17 +179,6 @@ button {
     gap: 12px;
 }
 
-.nav-admin-link {
-    font-size: 0.92rem;
-    font-weight: 500;
-    color: var(--ink-60);
-    transition: color 0.15s ease;
-}
-
-.nav-admin-link:hover {
-    color: var(--ink);
-    text-decoration: underline;
-}
 
 .nav-install-btn {
     display: inline-flex;
@@ -961,10 +950,6 @@ button {
 
     .mobile-nav-toggle {
         display: block;
-    }
-
-    .nav-admin-link {
-        display: none;
     }
 
     .metrics-grid {

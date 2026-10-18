@@ -222,7 +222,7 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 			search_expires_at = ?, updated_at = ?
 		WHERE id = ? AND employer_id = ? AND status IN ('draft','unfulfilled')
 		AND EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id
-			AND p.search_attempt=jobs.search_attempts+1 AND p.status='paid')`,
+			AND p.search_attempt=jobs.search_attempts+1 AND p.status IN ('paid', 'pending', 'verified'))`,
 		now.Add(window).Unix(), now.Unix(), id, employerID)
 	if err != nil {
 		return err
@@ -259,13 +259,13 @@ func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64,
 }
 
 // RecordMatchFee records the fee for the next search attempt before crew are notified.
-func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method, details string, feeCentavos int64, ref string) error {
+func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method, details, proofImage string, feeCentavos int64, ref string) error {
 	res, err := s.db.ExecContext(ctx, `
-		INSERT INTO payments (job_id, user_id, amount_centavos, method, details, search_attempt, status, provider_ref, created_at)
-		SELECT id, employer_id, ?, ?, ?, search_attempts+1, 'paid', ?, ? FROM jobs
+		INSERT INTO payments (job_id, user_id, amount_centavos, method, details, proof_image, search_attempt, status, provider_ref, created_at)
+		SELECT id, employer_id, ?, ?, ?, ?, search_attempts+1, 'pending', ?, ? FROM jobs
 		WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')
 		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.search_attempt=jobs.search_attempts+1)`,
-		feeCentavos, method, details, ref, time.Now().Unix(), id, employerID)
+		feeCentavos, method, details, proofImage, ref, time.Now().Unix(), id, employerID)
 	if err != nil {
 		return err
 	}
@@ -275,8 +275,8 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 			WHERE j.id=? AND j.employer_id=?
 			AND ((j.status IN ('draft','unfulfilled') AND p.search_attempt=j.search_attempts+1)
 				OR (j.status='matching' AND p.search_attempt=j.search_attempts))
-			AND p.status='paid' AND p.method=? AND p.details=?`,
-			id, employerID, method, details).Scan(&sameAttempt)
+			AND p.status IN ('paid', 'pending', 'verified') AND p.method=?`,
+			id, employerID, method).Scan(&sameAttempt)
 		if err != nil {
 			return err
 		}

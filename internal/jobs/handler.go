@@ -4,13 +4,16 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 	"unicode/utf8"
 
 	"instantcrew/internal/auth"
@@ -61,6 +64,10 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/notifications/read", a.RequireAuth(http.HandlerFunc(h.ReadNotifications)))
 	mux.Handle("DELETE /api/notifications", a.RequireAuth(http.HandlerFunc(h.ClearNotifications)))
 
+	// Proof of payment upload and Admin / Accounting endpoints
+	mux.HandleFunc("POST /api/upload-proof", h.UploadProof)
+	mux.HandleFunc("GET /api/admin/payments", h.AdminPayments)
+	mux.HandleFunc("POST /api/admin/payments/verify", h.AdminVerifyPayment)
 }
 
 func (h *Handler) assignmentID(w http.ResponseWriter, r *http.Request) (*store.User, int64, bool) {
@@ -215,7 +222,8 @@ func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
 	var req struct {
-		Method string `json:"method"`
+		Method     string `json:"method"`
+		ProofImage string `json:"proof_image"`
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
@@ -225,7 +233,12 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		httpx.Error(w, http.StatusBadRequest, "method must be gcash, maya, or card")
 		return
 	}
-	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method)
+	proofImage := strings.TrimSpace(req.ProofImage)
+	if (method == "gcash" || method == "maya") && proofImage == "" {
+		httpx.Error(w, http.StatusBadRequest, "proof of payment is required for GCash and Maya")
+		return
+	}
+	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -781,54 +794,41 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	h.writeJob(w, r, http.StatusOK, u.ID, id)
 }
 
-// POST /api/jobs/{id}/pay body: {"method":"gcash"} records the search fee before crew are notified.
-// MOCK PAYMENT. Never send card numbers/CVV to this server; real payments should use a
-// provider's hosted checkout or tokens (PayMongo, Xendit, Maya) and confirm via webhook.
+// POST /api/jobs/{id}/pay body: {"method":"gcash", "proof_image":"..."} records the search fee before crew are notified.
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	u, id, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
 	var req struct {
-		Method  string `json:"method"`
-		Details string `json:"details"`
+		Method     string `json:"method"`
+		Details    string `json:"details"`
+		ProofImage string `json:"proof_image"`
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
 	}
+	req.Method = strings.ToLower(strings.TrimSpace(req.Method))
 	if req.Method != "cash" && req.Method != "gcash" && req.Method != "maya" && req.Method != "card" {
 		httpx.Error(w, http.StatusBadRequest, "method must be cash, gcash, maya or card")
 		return
 	}
 	req.Details = strings.TrimSpace(req.Details)
-	if len(req.Details) > 120 {
-		httpx.Error(w, http.StatusBadRequest, "payment details must be 120 characters or fewer")
+	req.ProofImage = strings.TrimSpace(req.ProofImage)
+	if len(req.Details) > 255 {
+		httpx.Error(w, http.StatusBadRequest, "payment details must be 255 characters or fewer")
 		return
 	}
-	if (req.Method == "gcash" || req.Method == "maya") && req.Details == "" {
-		httpx.Error(w, http.StatusBadRequest, "enter the mobile number for the selected wallet")
+	if (req.Method == "gcash" || req.Method == "maya") && req.ProofImage == "" && req.Details == "" {
+		httpx.Error(w, http.StatusBadRequest, "proof of payment screenshot is required for GCash and Maya")
 		return
 	}
-	if req.Method == "gcash" || req.Method == "maya" {
-		digits := 0
-		for _, ch := range req.Details {
-			if unicode.IsDigit(ch) {
-				digits++
-			} else if !strings.ContainsRune("+ -()", ch) {
-				httpx.Error(w, http.StatusBadRequest, "enter a valid wallet mobile number")
-				return
-			}
-		}
-		if digits < 10 || digits > 13 {
-			httpx.Error(w, http.StatusBadRequest, "enter a valid wallet mobile number")
-			return
-		}
-	}
+
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
-	ref := "mock_" + hex.EncodeToString(b)
+	ref := "pay_" + hex.EncodeToString(b)
 
-	if err := h.Store.RecordMatchFee(r.Context(), u.ID, id, req.Method, req.Details, h.MatchFeeCentavos, ref); err != nil {
+	if err := h.Store.RecordMatchFee(r.Context(), u.ID, id, req.Method, req.Details, req.ProofImage, h.MatchFeeCentavos, ref); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -920,4 +920,118 @@ func (h *Handler) NextAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"job": h.toDTO(job)})
+}
+
+// POST /api/upload-proof
+func (h *Handler) UploadProof(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httpx.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	// Limit to 15MB
+	r.Body = http.MaxBytesReader(w, r.Body, 15<<20)
+	if err := r.ParseMultipartForm(15 << 20); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid file upload or file too large (max 15MB)")
+		return
+	}
+	file, header, err := r.FormFile("proof")
+	if err != nil {
+		file, header, err = r.FormFile("file")
+	}
+	if err != nil {
+		httpx.Error(w, http.StatusBadRequest, "no proof file provided")
+		return
+	}
+	defer file.Close()
+
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" && ext != ".gif" {
+		ext = ".jpg"
+	}
+
+	if err := os.MkdirAll("uploads", 0o755); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "failed to create uploads directory")
+		return
+	}
+
+	randBytes := make([]byte, 8)
+	_, _ = rand.Read(randBytes)
+	filename := fmt.Sprintf("proof_%d_%s%s", time.Now().Unix(), hex.EncodeToString(randBytes), ext)
+	dstPath := filepath.Join("uploads", filename)
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "failed to save uploaded file")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "failed to write file")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"success":  true,
+		"url":      "/uploads/" + filename,
+		"filename": filename,
+	})
+}
+
+// GET /api/admin/payments
+func (h *Handler) AdminPayments(w http.ResponseWriter, r *http.Request) {
+	records, err := h.Store.ListAllPayments(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"payments": records,
+		"count":    len(records),
+	})
+}
+
+// POST /api/admin/payments/verify
+func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Type     string `json:"type"` // "employer" or "applicant"
+		ID       int64  `json:"id"`
+		Verified *bool  `json:"verified,omitempty"`
+		Status   string `json:"status,omitempty"` // "verified", "rejected", "pending"
+	}
+	if !httpx.Decode(w, r, &req) {
+		return
+	}
+	req.Type = strings.ToLower(strings.TrimSpace(req.Type))
+	if req.Type != "employer" && req.Type != "applicant" {
+		httpx.Error(w, http.StatusBadRequest, "type must be employer or applicant")
+		return
+	}
+	if req.ID < 1 {
+		httpx.Error(w, http.StatusBadRequest, "invalid payment id")
+		return
+	}
+	status := strings.ToLower(strings.TrimSpace(req.Status))
+	if status == "" {
+		if req.Verified != nil && *req.Verified {
+			status = "verified"
+		} else {
+			status = "pending"
+		}
+	}
+	verifier := "Accounting Staff"
+	if u, ok := auth.UserFrom(r.Context()); ok && u != nil && u.Name != "" {
+		verifier = u.Name
+	}
+	if err := h.Store.SetPaymentStatus(r.Context(), req.Type, req.ID, status, verifier); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"success":  true,
+		"status":   status,
+		"verified": status == "verified",
+		"type":     req.Type,
+		"id":       req.ID,
+	})
 }

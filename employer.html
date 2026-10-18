@@ -1124,23 +1124,100 @@
                         </button>
                     </div>
 
-                    <!-- Method Input Fields -->
+                    <!-- GCash QR Code & Proof of Payment -->
                     <div class="db-pay-method-details" id="payMethodGcashWrap">
-                        <div class="db-pay-field">
-                            <label for="payGcashNumber">GCash Mobile Number</label>
-                            <div class="db-pay-input-wrap">
-                                <span class="db-pay-prefix">+63</span>
-                                <input type="tel" id="payGcashNumber" class="db-pay-input" placeholder="917 555 0199">
+                        <div class="db-qr-container">
+                            <div class="db-qr-card">
+                                <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code" class="db-qr-image" id="empGcashQrImg">
+                                <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
+                            </div>
+
+                            <div class="db-qr-instructions">
+                                <ol>
+                                    <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.</li>
+                                    <li>Scan the QR code above and transfer exactly <strong>₱100.00</strong>.</li>
+                                    <li>Take a screenshot of the completed payment receipt.</li>
+                                    <li>Upload the screenshot below as Proof of Payment.</li>
+                                </ol>
+                            </div>
+
+                            <div class="db-proof-upload-section">
+                                <div class="db-proof-upload-label">
+                                    <span>Proof of Payment Screenshot</span>
+                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                </div>
+                                <div class="db-proof-dropzone" id="empGcashDropzone">
+                                    <input type="file" id="empGcashProofFile" class="db-proof-file-input" accept="image/*">
+                                    <div class="db-proof-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                </div>
+                                <div class="db-proof-attached-box" id="empGcashAttachedBox">
+                                    <img src="" alt="Proof Preview" class="db-proof-thumb" id="empGcashThumb">
+                                    <div class="db-proof-info">
+                                        <span class="db-proof-filename" id="empGcashFilename">receipt.jpg</span>
+                                        <span class="db-proof-status-tag">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            Receipt attached &amp; ready
+                                        </span>
+                                    </div>
+                                    <button type="button" class="db-proof-remove-btn" id="empGcashRemoveBtn">Change</button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Maya QR Code & Proof of Payment -->
                     <div class="db-pay-method-details" id="payMethodMayaWrap" style="display:none;">
-                        <div class="db-pay-field">
-                            <label for="payMayaNumber">Maya Mobile Number</label>
-                            <div class="db-pay-input-wrap">
-                                <span class="db-pay-prefix">+63</span>
-                                <input type="tel" id="payMayaNumber" class="db-pay-input" placeholder="918 777 2233">
+                        <div class="db-qr-container">
+                            <div class="db-qr-card">
+                                <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code" class="db-qr-image" id="empMayaQrImg">
+                                <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
+                            </div>
+
+                            <div class="db-qr-instructions">
+                                <ol>
+                                    <li>Open your <strong>Maya</strong> app and tap <strong>Scan to Pay</strong>.</li>
+                                    <li>Scan the QR code above and transfer exactly <strong>₱100.00</strong>.</li>
+                                    <li>Take a screenshot of the completed payment receipt.</li>
+                                    <li>Upload the screenshot below as Proof of Payment.</li>
+                                </ol>
+                            </div>
+
+                            <div class="db-proof-upload-section">
+                                <div class="db-proof-upload-label">
+                                    <span>Proof of Payment Screenshot</span>
+                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                </div>
+                                <div class="db-proof-dropzone" id="empMayaDropzone">
+                                    <input type="file" id="empMayaProofFile" class="db-proof-file-input" accept="image/*">
+                                    <div class="db-proof-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                </div>
+                                <div class="db-proof-attached-box" id="empMayaAttachedBox">
+                                    <img src="" alt="Proof Preview" class="db-proof-thumb" id="empMayaThumb">
+                                    <div class="db-proof-info">
+                                        <span class="db-proof-filename" id="empMayaFilename">receipt.jpg</span>
+                                        <span class="db-proof-status-tag">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            Receipt attached &amp; ready
+                                        </span>
+                                    </div>
+                                    <button type="button" class="db-proof-remove-btn" id="empMayaRemoveBtn">Change</button>
+                                </div>
                             </div>
                         </div>
                     </div>

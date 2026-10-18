@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Instant Crew — Accounting &amp; Payment Verifications</title>
+    <meta name="description"
+        content="Instant Crew Accounting & Payment Verification portal. Review, inspect receipts, and verify payments from employers and applicants." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css?v=20261018">
+</head>
+
+<body>
+
+    <!-- ════ Header ════ -->
+    <header class="adm-header">
+        <div class="adm-header-wrap">
+            <div class="adm-brand-group">
+                <a href="index.html" title="Back to Home">
+                    <img src="images/logo.png" alt="Instant Crew" class="adm-logo-img">
+                </a>
+            </div>
+
+            <nav class="adm-nav-actions" aria-label="Portal Navigation">
+                <button type="button" id="adminLogoutBtn" class="adm-nav-link"
+                    style="background:none; border:none; cursor:pointer; font:inherit; color:#EF4444; font-weight:700;">Sign
+                    Out</button>
+                <span class="adm-brand-badge">
+                    <span class="adm-live-dot"></span>
+                    Admin Portal
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ════ Main Content ════ -->
+    <main class="adm-main">
+        <!-- Page Header -->
+        <div class="adm-page-header">
+            <div class="adm-page-title-box">
+                <h1>Payment Verifications &amp; Audit</h1>
+                <p>Review proof of payment receipts submitted via GCash, Maya across all employers and applicants.</p>
+            </div>
+            <div class="adm-header-btns">
+                <button type="button" class="adm-refresh-btn" id="refreshBtn" title="Reload Payments">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    Refresh Feed
+                </button>
+            </div>
+        </div>
+
+        <!-- Metrics KPI Cards -->
+        <div class="adm-metrics-grid">
+            <div class="adm-metric-card revenue">
+                <div class="adm-metric-label">
+                    <span>Total Revenue</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <div class="adm-metric-val" id="kpiRevenue" style="color:var(--adm-amber);">₱0.00</div>
+                <div class="adm-metric-sub" id="kpiRevenueSub">Verified incoming payments</div>
+            </div>
+
+            <div class="adm-metric-card verified">
+                <div class="adm-metric-label">
+                    <span>Verified Payments</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="adm-metric-val" id="kpiVerified" style="color:var(--adm-amber);">0</div>
+                <div class="adm-metric-sub">Confirmed by Accounting</div>
+            </div>
+
+            <div class="adm-metric-card total">
+                <div class="adm-metric-label">
+                    <span>Total Processed</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </div>
+                <div class="adm-metric-val" id="kpiTotal" style="color:var(--adm-amber);">0</div>
+                <div class="adm-metric-sub" id="kpiBreakdown">0 Employer • 0 Applicant</div>
+            </div>
+        </div>
+
+        <!-- Controls: Status Tabs, Role & Method Filters, Search -->
+        <div class="adm-controls-bar">
+            <div class="adm-status-tabs" role="tablist">
+                <button type="button" class="adm-tab-btn active" data-status="all" role="tab" aria-selected="true">
+                    All Payments
+                    <span class="adm-tab-count" id="countTabAll">0</span>
+                </button>
+                <button type="button" class="adm-tab-btn" data-status="verified" role="tab" aria-selected="false">
+                    Verified
+                    <span class="adm-tab-count verified" id="countTabVerified">0</span>
+                </button>
+                <button type="button" class="adm-tab-btn" data-status="rejected" role="tab" aria-selected="false">
+                    Rejected
+                    <span class="adm-tab-count rejected" id="countTabRejected">0</span>
+                </button>
+            </div>
+
+            <div class="adm-filter-group">
+                <select class="adm-select" id="filterParty" aria-label="Filter by Party">
+                    <option value="all">All Parties</option>
+                    <option value="employer">Employers (₱100 Search Fee)</option>
+                    <option value="applicant">Applicants (₱10 Hiring Pass)</option>
+                </select>
+
+                <select class="adm-select" id="filterMethod" aria-label="Filter by Method">
+                    <option value="all">All Methods</option>
+                    <option value="gcash">GCash (QR)</option>
+                    <option value="maya">Maya (QR)</option>
+                    <option value="card">Card</option>
+                </select>
+
+                <div class="adm-search-wrap">
+                    <svg class="adm-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="adm-search-input" id="searchInput" placeholder="Search payer, ref, job…">
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="adm-table-card">
+            <div class="adm-table-wrap">
+                <table class="adm-table" id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Date &amp; Time</th>
+                            <th>Payer Details</th>
+                            <th>Transaction Item</th>
+                            <th>Method</th>
+                            <th>Amount</th>
+                            <th>Proof of Payment</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div class="adm-empty-state" id="emptyState" style="display: none;">
+                <svg class="adm-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+                <h3>No payments found</h3>
+                <p id="emptyStateMsg">There are no transactions matching your current filters.</p>
+                <button type="button" class="adm-refresh-btn" id="btnLoadDemo" style="margin-top: 14px;">
+                    Load Demo Payments
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ════ Receipt Lightbox Modal ════ -->
+    <div class="adm-modal-overlay" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="adm-modal-card">
+            <div class="adm-modal-header">
+                <h3 id="modalTitle">Proof of Payment Receipt</h3>
+                <button type="button" class="adm-modal-close" id="modalCloseBtn" aria-label="Close modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="adm-modal-body">
+                <div class="adm-modal-img-wrap">
+                    <img src="" alt="Proof Receipt" class="adm-modal-receipt-img" id="modalReceiptImg">
+                </div>
+            </div>
+
+            <div class="adm-modal-footer">
+                <button type="button" class="adm-btn-reject action-reject" id="modalRejectBtn">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span>Reject</span>
+                </button>
+                <button type="button" class="adm-btn-verify action-verify" id="modalVerifyBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Verify</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════ Toast Feedback ════ -->
+    <div class="adm-toast" id="admToast" role="status"></div>
+
+    <!-- ════ Accounting Client Script ════ -->
+    <script>
+        (function () {
+            'use strict';
+
+            let paymentsData = [];
+            let activeTab = 'all'; // 'all', 'pending', 'verified'
+            let activeParty = 'all'; // 'all', 'employer', 'applicant'
+            let activeMethod = 'all'; // 'all', 'gcash', 'maya', 'card'
+            let searchQuery = '';
+            let currentViewingPayment = null;
+
+            // DOM Elements
+            const tableBody = document.getElementById('paymentsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const filterParty = document.getElementById('filterParty');
+            const filterMethod = document.getElementById('filterMethod');
+            const searchInput = document.getElementById('searchInput');
+            const statusTabs = document.querySelectorAll('.adm-tab-btn');
+
+            // KPI Elements
+            const kpiRevenue = document.getElementById('kpiRevenue');
+            const kpiRevenueSub = document.getElementById('kpiRevenueSub');
+            const kpiPending = document.getElementById('kpiPending');
+            const kpiVerified = document.getElementById('kpiVerified');
+            const kpiTotal = document.getElementById('kpiTotal');
+            const kpiBreakdown = document.getElementById('kpiBreakdown');
+
+            // Tab Counters
+            const countTabAll = document.getElementById('countTabAll');
+            const countTabPending = document.getElementById('countTabPending');
+            const countTabVerified = document.getElementById('countTabVerified');
+            const countTabRejected = document.getElementById('countTabRejected');
+
+            // Modal Elements
+            const receiptModal = document.getElementById('receiptModal');
+            const modalReceiptImg = document.getElementById('modalReceiptImg');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+            const modalRejectBtn = document.getElementById('modalRejectBtn');
+            const modalVerifyBtn = document.getElementById('modalVerifyBtn');
+            const admToast = document.getElementById('admToast');
+
+            // Show Toast Notification
+            function showToast(msg, isSuccess = true) {
+                admToast.textContent = msg;
+                admToast.className = 'adm-toast show' + (isSuccess ? ' success' : '');
+                setTimeout(() => {
+                    admToast.className = 'adm-toast';
+                }, 3500);
+            }
+
+            // Format Date Helper
+            function formatDate(ts) {
+                if (!ts) return '-';
+                const d = new Date(ts > 1e11 ? ts : ts * 1000);
+                return d.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                }) + ' ' + d.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+
+            // Fetch Payments from Server & LocalStorage
+            async function fetchPayments() {
+                if (refreshBtn) refreshBtn.classList.add('rotating');
+                try {
+                    let serverRecords = [];
+                    const res = await fetch('/api/admin/payments', { credentials: 'same-origin' }).catch(() => null);
+                    if (res && res.ok) {
+                        const data = await res.json();
+                        if (data && Array.isArray(data.payments)) {
+                            serverRecords = data.payments;
+                        }
+                    }
+
+                    // Also check for local client session demo payments
+                    const localRecords = JSON.parse(localStorage.getItem('ic_local_payments') || '[]');
+
+                    // Merge deduplicated by ID
+                    const map = new Map();
+                    serverRecords.forEach(r => map.set(r.id, r));
+                    localRecords.forEach(r => {
+                        if (!map.has(r.id)) map.set(r.id, r);
+                    });
+
+                    paymentsData = Array.from(map.values());
+
+                    // If completely empty, seed standard initial demonstration payments
+                    if (paymentsData.length === 0) {
+                        seedSampleData();
+                    } else {
+                        renderAll();
+                    }
+                } catch (err) {
+                    console.error('Failed to load payments', err);
+                    showToast('Could not reach backend, displaying cached records.', false);
+                } finally {
+                    setTimeout(() => {
+                        if (refreshBtn) refreshBtn.classList.remove('rotating');
+                    }, 400);
+                }
+            }
+
+            // Seed demonstration records if brand new database
+            function seedSampleData() {
+                const now = Math.floor(Date.now() / 1000);
+                paymentsData = [
+                    {
+                        id: 'emp_demo_1',
+                        raw_id: 1,
+                        type: 'employer',
+                        type_label: 'Employer Search Fee',
+                        user_id: 101,
+                        user_name: 'Maria Santos',
+                        user_email: 'maria@bistrocebu.ph',
+                        user_role: 'employer',
+                        company: 'Bistro Cebu Corp.',
+                        amount_centavos: 10000,
+                        amount_pesos: '₱100.00',
+                        method: 'gcash',
+                        details: 'GCash InstaPay Transfer',
+                        proof_image: 'images/payment_qr.jpg',
+                        status: 'pending',
+                        is_verified: false,
+                        verified_at: null,
+                        verified_by: '',
+                        created_at: now - 360,
+                        ref: 'GCASH-9921448',
+                        job_role: 'Service Crew'
+                    },
+                    {
+                        id: 'app_demo_2',
+                        raw_id: 2,
+                        type: 'applicant',
+                        type_label: 'Applicant Hiring Pass (5 Hires)',
+                        user_id: 202,
+                        user_name: 'Juan Dela Cruz',
+                        user_email: 'juandelacruz@gmail.com',
+                        user_role: 'applicant',
+                        company: '',
+                        amount_centavos: 1000,
+                        amount_pesos: '₱10.00',
+                        method: 'maya',
+                        details: 'Maya QR Payment',
+                        proof_image: 'images/payment_qr.jpg',
+                        status: 'pending',
+                        is_verified: false,
+                        verified_at: null,
+                        verified_by: '',
+                        created_at: now - 1400,
+                        ref: 'MAYA-8812391'
+                    },
+                    {
+                        id: 'emp_demo_3',
+                        raw_id: 3,
+                        type: 'employer',
+                        type_label: 'Employer Search Fee',
+                        user_id: 103,
+                        user_name: 'Arthur Gomez',
+                        user_email: 'arthur@cebudelivery.com',
+                        user_role: 'employer',
+                        company: 'Cebu Delivery Hub',
+                        amount_centavos: 10000,
+                        amount_pesos: '₱100.00',
+                        method: 'gcash',
+                        details: 'GCash Express Pay',
+                        proof_image: 'images/payment_qr.jpg',
+                        status: 'verified',
+                        is_verified: true,
+                        verified_at: now - 3600,
+                        verified_by: 'Accounting Staff',
+                        created_at: now - 7200,
+                        ref: 'GCASH-7719234',
+                        job_role: 'Delivery Driver'
+                    }
+                ];
+                localStorage.setItem('ic_local_payments', JSON.stringify(paymentsData));
+                renderAll();
+            }
+
+            // Update KPI Statistics
+            function updateKPIs() {
+                let totalCents = 0;
+                let verifiedCount = 0;
+                let pendingCount = 0;
+                let rejectedCount = 0;
+                let empCount = 0;
+                let appCount = 0;
+
+                paymentsData.forEach(p => {
+                    const isVer = p.is_verified || p.status === 'verified';
+                    const isRej = p.status === 'rejected';
+                    if (isVer) {
+                        totalCents += (p.amount_centavos || 0);
+                        verifiedCount++;
+                    } else if (isRej) {
+                        rejectedCount++;
+                    } else {
+                        pendingCount++;
+                    }
+                    if (p.type === 'employer') empCount++;
+                    else appCount++;
+                });
+
+                kpiRevenue.textContent = `₱${(totalCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                kpiRevenueSub.textContent = `${verifiedCount} verified transaction${verifiedCount === 1 ? '' : 's'}`;
+                if (kpiPending) kpiPending.textContent = pendingCount;
+                kpiVerified.textContent = verifiedCount;
+                kpiTotal.textContent = paymentsData.length;
+                kpiBreakdown.textContent = `${empCount} Employer • ${appCount} Applicant`;
+
+                countTabAll.textContent = paymentsData.length;
+                if (countTabPending) countTabPending.textContent = pendingCount;
+                countTabVerified.textContent = verifiedCount;
+                if (countTabRejected) countTabRejected.textContent = rejectedCount;
+            }
+
+            // Filter Payments
+            function getFilteredPayments() {
+                return paymentsData.filter(p => {
+                    const isVer = p.is_verified || p.status === 'verified';
+                    const isRej = p.status === 'rejected';
+
+                    // Tab Status Filter
+                    if (activeTab === 'pending' && (isVer || isRej)) return false;
+                    if (activeTab === 'verified' && !isVer) return false;
+                    if (activeTab === 'rejected' && !isRej) return false;
+
+                    // Party / Role Filter
+                    if (activeParty !== 'all' && p.type !== activeParty) return false;
+
+                    // Method Filter
+                    if (activeMethod !== 'all' && (p.method || '').toLowerCase() !== activeMethod.toLowerCase()) return false;
+
+                    // Search Query
+                    if (searchQuery) {
+                        const q = searchQuery.toLowerCase();
+                        const matchName = (p.user_name || '').toLowerCase().includes(q);
+                        const matchEmail = (p.user_email || '').toLowerCase().includes(q);
+                        const matchCompany = (p.company || '').toLowerCase().includes(q);
+                        const matchRef = (p.ref || '').toLowerCase().includes(q);
+                        const matchRole = (p.job_role || p.type_label || '').toLowerCase().includes(q);
+                        if (!matchName && !matchEmail && !matchCompany && !matchRef && !matchRole) return false;
+                    }
+
+                    return true;
+                });
+            }
+
+            // Render Table Rows
+            function renderTable() {
+                const list = getFilteredPayments();
+                tableBody.innerHTML = '';
+
+                if (list.length === 0) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                emptyState.style.display = 'none';
+
+                list.forEach(p => {
+                    const isVer = p.is_verified || p.status === 'verified';
+                    const isRej = p.status === 'rejected';
+                    const initials = (p.user_name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    const method = (p.method || 'gcash').toLowerCase();
+
+                    const tr = document.createElement('tr');
+                    tr.id = `row_${p.id}`;
+
+                    tr.innerHTML = `
+                        <td>
+                            <div style="font-weight:700; color:var(--adm-text-primary);">${formatDate(p.created_at)}</div>
+                            <span class="adm-item-ref">${p.ref || p.id}</span>
+                        </td>
+                        <td>
+                            <div class="adm-payer-cell">
+                                <div class="adm-avatar ${p.type === 'applicant' ? 'applicant' : ''}">${initials}</div>
+                                <div class="adm-payer-meta">
+                                    <span class="adm-payer-name">${p.user_name || 'Anonymous User'}</span>
+                                    <span class="adm-payer-email">${p.user_email || 'No email provided'}</span>
+                                    <div>
+                                        <span class="adm-role-tag ${p.type === 'employer' ? 'employer' : 'applicant'}">
+                                            ${p.type === 'employer' ? (p.company ? p.company : 'Hirer') : 'Crew Member'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="adm-item-title">${p.type_label || (p.type === 'employer' ? 'Employer Search Fee' : 'Applicant Hiring Pass')}</div>
+                            ${p.job_role ? `<div style="font-size:0.74rem; color:var(--adm-text-secondary);">Role: ${p.job_role}</div>` : ''}
+                        </td>
+                        <td>
+                            <span class="adm-method-badge ${method}">
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                                ${method.toUpperCase()}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="adm-amount-cell">${p.amount_pesos || `₱${((p.amount_centavos || 0) / 100).toFixed(2)}`}</span>
+                        </td>
+                        <td>
+                            ${p.proof_image ? `
+                                <button type="button" class="adm-proof-thumb-btn view-proof-btn" data-id="${p.id}" title="Click to view full receipt">
+                                    <img src="${p.proof_image}" alt="Receipt" class="adm-proof-mini-img">
+                                    <span>View Proof</span>
+                                </button>
+                            ` : `
+                                <span class="adm-proof-none">${method === 'card' ? 'Card Checkout' : 'No proof attached'}</span>
+                            `}
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="adm-action-btns">
+                                ${!isVer ? `
+                                <button type="button" class="adm-btn-reject ${isRej ? 'action-rejected' : 'action-reject'} toggle-reject-btn" data-id="${p.id}" data-rejected="${isRej}" title="${isRej ? 'Marked as Rejected (Click to reset)' : 'Reject payment receipt'}">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    <span>${isRej ? 'Rejected' : 'Reject'}</span>
+                                </button>
+                                ` : ''}
+                                <button type="button" class="adm-btn-verify ${isVer ? 'action-verified' : 'action-verify'} toggle-verify-btn" data-id="${p.id}" data-verified="${isVer}" title="${isVer ? 'Confirmed (Done!)' : 'Verify payment receipt'}">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>${isVer ? 'Done!' : 'Verify'}</span>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            function renderAll() {
+                updateKPIs();
+                renderTable();
+            }
+
+            // Set Payment Status: 'verified', 'rejected', or 'pending'
+            async function setPaymentStatus(paymentId, targetStatus) {
+                const item = paymentsData.find(p => p.id === paymentId);
+                if (!item) return;
+
+                const isVerified = targetStatus === 'verified';
+                const isRejected = targetStatus === 'rejected';
+                const nowSec = Math.floor(Date.now() / 1000);
+
+                // Optimistic UI update
+                item.status = targetStatus;
+                item.is_verified = isVerified;
+                item.verified_at = isVerified ? nowSec : null;
+                item.verified_by = isVerified ? 'Accounting' : (isRejected ? 'Rejected by Accounting' : '');
+
+                renderAll();
+
+                // Call Go API
+                try {
+                    const rawId = item.raw_id || parseInt(String(paymentId).replace(/\D/g, ''), 10) || 1;
+                    const res = await fetch('/api/admin/payments/verify', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: item.type || 'employer',
+                            id: rawId,
+                            status: targetStatus,
+                            verified: isVerified
+                        })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        console.warn('Backend API note:', err.error);
+                    }
+                } catch (e) {
+                    console.warn('Backend verify API offline, stored locally', e);
+                }
+
+                // Persist local state
+                localStorage.setItem('ic_local_payments', JSON.stringify(paymentsData));
+
+                if (isVerified) {
+                    showToast(`Payment #${item.ref || item.id} marked as Done!`, true);
+                } else if (isRejected) {
+                    showToast(`Payment #${item.ref || item.id} has been Rejected.`, false);
+                } else {
+                    showToast(`Payment #${item.ref || item.id} reset to Pending.`, true);
+                }
+            }
+
+            // Open Receipt Modal
+            function openReceiptModal(paymentId) {
+                const item = paymentsData.find(p => p.id === paymentId);
+                if (!item) return;
+                currentViewingPayment = item;
+
+                modalReceiptImg.src = item.proof_image || 'images/payment_qr.jpg';
+
+                const isVer = item.is_verified || item.status === 'verified';
+                const isRej = item.status === 'rejected';
+
+                if (modalVerifyBtn) {
+                    modalVerifyBtn.className = 'adm-btn-verify ' + (isVer ? 'action-verified' : 'action-verify');
+                    modalVerifyBtn.innerHTML = `
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>${isVer ? 'Done!' : 'Verify'}</span>
+                    `;
+                }
+
+                if (modalRejectBtn) {
+                    if (isVer) {
+                        modalRejectBtn.style.display = 'none';
+                    } else {
+                        modalRejectBtn.style.display = 'inline-flex';
+                        modalRejectBtn.className = 'adm-btn-reject ' + (isRej ? 'action-rejected' : 'action-reject');
+                        modalRejectBtn.innerHTML = `
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            <span>${isRej ? 'Rejected' : 'Reject'}</span>
+                        `;
+                    }
+                }
+
+                receiptModal.classList.add('open');
+            }
+
+            function closeReceiptModal() {
+                receiptModal.classList.remove('open');
+                currentViewingPayment = null;
+            }
+
+            // Event Listeners
+            statusTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    statusTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    activeTab = tab.dataset.status || 'all';
+                    renderTable();
+                });
+            });
+
+            if (filterParty) {
+                filterParty.addEventListener('change', () => {
+                    activeParty = filterParty.value;
+                    renderTable();
+                });
+            }
+
+            if (filterMethod) {
+                filterMethod.addEventListener('change', () => {
+                    activeMethod = filterMethod.value;
+                    renderTable();
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    searchQuery = e.target.value.trim();
+                    renderTable();
+                });
+            }
+
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', fetchPayments);
+            }
+
+            // Table Action Delegations
+            tableBody.addEventListener('click', (e) => {
+                const verifyBtn = e.target.closest('.toggle-verify-btn');
+                if (verifyBtn) {
+                    const id = verifyBtn.dataset.id;
+                    const currentlyVerified = verifyBtn.dataset.verified === 'true';
+                    if (currentlyVerified) {
+                        return; // Once Done!, do not go back to verify
+                    }
+                    setPaymentStatus(id, 'verified');
+                    return;
+                }
+
+                const rejectBtn = e.target.closest('.toggle-reject-btn');
+                if (rejectBtn) {
+                    const id = rejectBtn.dataset.id;
+                    const currentlyRejected = rejectBtn.dataset.rejected === 'true';
+                    setPaymentStatus(id, currentlyRejected ? 'pending' : 'rejected');
+                    return;
+                }
+
+                const viewBtn = e.target.closest('.view-proof-btn');
+                if (viewBtn) {
+                    openReceiptModal(viewBtn.dataset.id);
+                    return;
+                }
+            });
+
+            // Modal Events
+            if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeReceiptModal);
+            if (receiptModal) {
+                receiptModal.addEventListener('click', (e) => {
+                    if (e.target === receiptModal) closeReceiptModal();
+                });
+            }
+
+            if (modalVerifyBtn) {
+                modalVerifyBtn.addEventListener('click', () => {
+                    if (!currentViewingPayment) return;
+                    const currentlyVerified = currentViewingPayment.is_verified || currentViewingPayment.status === 'verified';
+                    if (currentlyVerified) {
+                        closeReceiptModal();
+                        return; // Once Done!, do not go back to verify
+                    }
+                    setPaymentStatus(currentViewingPayment.id, 'verified');
+                    closeReceiptModal();
+                });
+            }
+
+            if (modalRejectBtn) {
+                modalRejectBtn.addEventListener('click', () => {
+                    if (!currentViewingPayment) return;
+                    const currentlyRejected = currentViewingPayment.status === 'rejected';
+                    setPaymentStatus(currentViewingPayment.id, currentlyRejected ? 'pending' : 'rejected');
+                    closeReceiptModal();
+                });
+            }
+
+            const btnLoadDemo = document.getElementById('btnLoadDemo');
+            if (btnLoadDemo) {
+                btnLoadDemo.addEventListener('click', () => {
+                    seedSampleData();
+                    showToast('Sample demonstration payments loaded!');
+                });
+            }
+
+            const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+            if (adminLogoutBtn) {
+                adminLogoutBtn.addEventListener('click', async () => {
+                    try {
+                        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+                    } catch (e) { }
+                    sessionStorage.removeItem('ic_admin_session');
+                    window.location.href = 'login.html';
+                });
+            }
+
+            // Initial load
+            fetchPayments();
+        })();
+    </script>
+</body>
+
+</html>

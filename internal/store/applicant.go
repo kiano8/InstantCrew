@@ -58,14 +58,14 @@ func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (Hir
 }
 
 // AddApplicantHiringPass records one fixed-price pass and grants five hires atomically.
-func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method string) (HiringPass, error) {
+func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method, proofImage string) (HiringPass, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return HiringPass{}, err
 	}
 	defer tx.Rollback()
 	now := time.Now().Unix()
-	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,created_at) VALUES(?,1000,?,?)`, applicantID, method, now); err != nil {
+	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,created_at) VALUES(?,1000,?,?,'pending',?)`, applicantID, method, proofImage, now); err != nil {
 		return HiringPass{}, err
 	}
 	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at) VALUES(?,5,5,0,1000,1,?) ON CONFLICT(applicant_id) DO UPDATE SET total_hires=total_hires+5,remaining_hires=remaining_hires+5,amount_centavos=amount_centavos+1000,batches_paid=batches_paid+1,updated_at=excluded.updated_at`, applicantID, now); err != nil {

@@ -1428,7 +1428,7 @@ function openPaymentModal(step = 'payment') {
   };
 
   if (payNowBtnText) {
-    payNowBtnText.textContent = step === 'search' ? 'Find Crew ₱100' : 'Pay';
+    payNowBtnText.textContent = step === 'search' ? 'Confirm' : 'Pay';
   }
   let selectedMethodButton = null;
   document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
@@ -1438,17 +1438,13 @@ function openPaymentModal(step = 'payment') {
     if (selected) selectedMethodButton = btn;
   });
   if (selectedMethodButton) selectedMethodButton.click();
-  const savedDetailInput = state.selectedPaymentMethod === 'gcash' ? document.getElementById('payGcashNumber')
-    : state.selectedPaymentMethod === 'maya' ? document.getElementById('payMayaNumber') : null;
-  if (savedDetailInput && state.selectedPaymentDetails) savedDetailInput.value = state.selectedPaymentDetails;
   if (payCancelBtn) payCancelBtn.textContent = 'Back to Details';
   if (paymentError) {
     paymentError.textContent = '';
     paymentError.style.display = 'none';
   }
   if (payNowBtn) {
-    payNowBtn.disabled = false;
-    payNowBtn.style.background = '';
+    updateEmployerPayBtn();
   }
 
   if (paymentModal) {
@@ -1479,6 +1475,109 @@ function closePaymentModal() {
   }
 }
 
+// State for employer proof of payment
+state.selectedPaymentProof = '';
+state.selectedPaymentProofFile = null;
+
+function setupEmployerProofUpload(fileInputId, dropzoneId, attachedBoxId, thumbId, filenameId, removeBtnId) {
+  const fileInput = document.getElementById(fileInputId);
+  const dropzone = document.getElementById(dropzoneId);
+  const attachedBox = document.getElementById(attachedBoxId);
+  const thumb = document.getElementById(thumbId);
+  const filename = document.getElementById(filenameId);
+  const removeBtn = document.getElementById(removeBtnId);
+
+  if (!fileInput || !dropzone || !attachedBox) return;
+
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      if (paymentError) {
+        paymentError.textContent = 'Please select a valid image file (PNG, JPG, WebP).';
+        paymentError.style.display = 'block';
+      }
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      if (paymentError) {
+        paymentError.textContent = 'Image file is too large. Max size is 15MB.';
+        paymentError.style.display = 'block';
+      }
+      return;
+    }
+    state.selectedPaymentProofFile = file;
+    if (paymentError) paymentError.style.display = 'none';
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      state.selectedPaymentProof = e.target.result;
+      if (thumb) thumb.src = e.target.result;
+      if (filename) filename.textContent = file.name;
+      dropzone.style.display = 'none';
+      attachedBox.style.display = 'flex';
+      updateEmployerPayBtn();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  });
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  if (removeBtn) {
+    removeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      state.selectedPaymentProofFile = null;
+      state.selectedPaymentProof = '';
+      fileInput.value = '';
+      if (thumb) thumb.src = '';
+      attachedBox.style.display = 'none';
+      dropzone.style.display = 'flex';
+      updateEmployerPayBtn();
+    });
+  }
+}
+
+function updateEmployerPayBtn() {
+  if (!payNowBtn) return;
+  const method = state.selectedPaymentMethod || 'gcash';
+  if (method === 'gcash' || method === 'maya') {
+    const hasProof = !!(state.selectedPaymentProofFile || state.selectedPaymentProof);
+    payNowBtn.disabled = !hasProof;
+    payNowBtn.style.opacity = hasProof ? '1' : '0.5';
+    payNowBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
+    payNowBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
+  } else {
+    payNowBtn.disabled = false;
+    payNowBtn.style.opacity = '1';
+    payNowBtn.style.cursor = 'pointer';
+    payNowBtn.title = '';
+  }
+}
+
+// Wire up GCash and Maya proof uploader on employer payment modal
+setupEmployerProofUpload('empGcashProofFile', 'empGcashDropzone', 'empGcashAttachedBox', 'empGcashThumb', 'empGcashFilename', 'empGcashRemoveBtn');
+setupEmployerProofUpload('empMayaProofFile', 'empMayaDropzone', 'empMayaAttachedBox', 'empMayaThumb', 'empMayaFilename', 'empMayaRemoveBtn');
+
 // Payment method tab switching
 document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1490,6 +1589,7 @@ document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
     btn.setAttribute('aria-checked', 'true');
 
     const method = btn.getAttribute('data-method');
+    state.selectedPaymentMethod = method;
     const gcashWrap = document.getElementById('payMethodGcashWrap');
     const mayaWrap = document.getElementById('payMethodMayaWrap');
     const cardWrap = document.getElementById('payMethodCardWrap');
@@ -1497,11 +1597,7 @@ document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
     if (gcashWrap) gcashWrap.style.display = method === 'gcash' ? 'block' : 'none';
     if (mayaWrap) mayaWrap.style.display = method === 'maya' ? 'block' : 'none';
     if (cardWrap) cardWrap.style.display = method === 'card' ? 'block' : 'none';
-
-    const gcashNumber = document.getElementById('payGcashNumber');
-    const mayaNumber = document.getElementById('payMayaNumber');
-    if (gcashNumber) gcashNumber.required = method === 'gcash';
-    if (mayaNumber) mayaNumber.required = method === 'maya';
+    updateEmployerPayBtn();
   });
 });
 
@@ -1581,20 +1677,48 @@ if (payNowBtn) {
     const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
     const methodLabels = { gcash: 'GCash', maya: 'Maya', card: 'Card' };
     const methodLabel = methodLabels[method] || 'GCash';
-    const detailInput = method === 'gcash' ? document.getElementById('payGcashNumber')
-      : method === 'maya' ? document.getElementById('payMayaNumber') : null;
-    const details = detailInput ? detailInput.value.trim() : '';
-    if ((method === 'gcash' || method === 'maya') && (details.replace(/\D/g, '').length < 10 || details.replace(/\D/g, '').length > 13)) {
-      if (paymentError) {
-        paymentError.textContent = 'Enter a valid mobile number for the selected wallet.';
-        paymentError.style.display = 'block';
+
+    let proofImageUrl = state.selectedPaymentProof || '';
+
+    if (method === 'gcash' || method === 'maya') {
+      if (!proofImageUrl && !state.selectedPaymentProofFile) {
+        if (paymentError) {
+          paymentError.textContent = `Please upload your ${methodLabel} proof of payment screenshot.`;
+          paymentError.style.display = 'block';
+        }
+        return;
       }
-      if (detailInput) detailInput.focus();
-      return;
     }
 
+    if (paymentError) paymentError.style.display = 'none';
+
+    // Upload file if selected
+    if (state.selectedPaymentProofFile) {
+      try {
+        const formData = new FormData();
+        formData.append('proof', state.selectedPaymentProofFile);
+        const upRes = await fetch('/api/upload-proof', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: formData
+        });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          if (upData && upData.url) {
+            proofImageUrl = upData.url;
+            state.selectedPaymentProof = proofImageUrl;
+          }
+        }
+      } catch (e) {
+        console.warn('Upload API fallback to data URL', e);
+      }
+    }
+
+    const details = (method === 'card') ? 'Card checkout' : 'InstaPay QR Receipt Uploaded';
     state.selectedPaymentMethod = method;
     state.selectedPaymentDetails = details;
+    state.selectedPaymentProof = proofImageUrl;
+
     if (state.paymentStep === 'search') {
       const beginSearch = async () => {
         state.selectedPaymentMethod = method;
@@ -1612,7 +1736,7 @@ if (payNowBtn) {
           }
         } finally {
           if (payNowBtn) payNowBtn.disabled = false;
-          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Find Crew ₱100';
+          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Confirm';
         }
       };
       if (authUser) {
@@ -1631,7 +1755,7 @@ if (payNowBtn) {
     if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Recording payment…';
     if (paymentError) paymentError.style.display = 'none';
     try {
-      await recordSearchFee(methodLabel, details);
+      await recordSearchFee(methodLabel, details, proofImageUrl);
     } catch (err) {
       if (paymentError) {
         paymentError.textContent = err.message || 'Could not start the crew search. Please try again.';
@@ -1668,7 +1792,7 @@ async function startCrewSearch() {
   const jobId = createData.job.id;
   state.currentJobId = jobId;
   state.currentBooking = { id: jobId, status: createData.job.status || 'draft' };
-  await recordSearchFee(state.selectedPaymentMethod, state.selectedPaymentDetails);
+  await recordSearchFee(state.selectedPaymentMethod, state.selectedPaymentDetails, state.selectedPaymentProof);
   const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
   const searchData = await searchResponse.json().catch(() => ({}));
   if (!searchResponse.ok) throw new Error(searchData.error || 'Could not start the crew search.');
@@ -1698,6 +1822,7 @@ async function startCrewSearch() {
     paid: true,
     paymentMethod: state.paymentMethod,
     paymentAmount: state.paymentAmount,
+    proofImage: state.selectedPaymentProof,
     escrowStatus: 'Search fee paid before crew search'
   };
 
@@ -1733,13 +1858,24 @@ async function startCrewSearch() {
   startCheckingForAcceptance();
 }
 
-async function recordSearchFee(methodLabel, details = '') {
+async function recordSearchFee(methodLabel, details = '', proofImage = '') {
   const method = String(methodLabel).toLowerCase();
-  const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: ['gcash', 'maya'].includes(method) ? method : 'card', details }) });
+  const proof = proofImage || state.selectedPaymentProof || '';
+  const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      method: ['gcash', 'maya'].includes(method) ? method : 'card',
+      details: details || (proof ? 'Receipt uploaded' : ''),
+      proof_image: proof
+    })
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Payment could not be recorded.');
   state.paymentMethod = methodLabel;
   state.paymentAmount = (state.pendingPayment && state.pendingPayment.total) || 100;
+  state.paymentProof = proof;
   state.paid = true;
   if (resultsPaidBadge) resultsPaidBadge.textContent = `✓ Search Fee Paid (₱${state.paymentAmount.toFixed(2)})`;
   closePaymentModal();
@@ -1747,6 +1883,7 @@ async function recordSearchFee(methodLabel, details = '') {
     state.currentBooking.paid = true;
     state.currentBooking.paymentMethod = methodLabel;
     state.currentBooking.paymentAmount = state.paymentAmount;
+    state.currentBooking.proofImage = proof;
   }
 }
 
@@ -3692,6 +3829,14 @@ function requireLogin(action) {
 }
 
 function onAuthSuccess(user) {
+  if (user && user.role === 'admin') {
+    sessionStorage.setItem('ic_admin_session', JSON.stringify({
+      ...user,
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+    }));
+    window.location.href = 'admin.html';
+    return;
+  }
   authUser = user;
   saveEmployerSessionFromUser(user);
   const action = pendingAuthAction;

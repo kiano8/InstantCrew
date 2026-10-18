@@ -42,7 +42,7 @@ func toDTO(u *store.User) userDTO {
 	return userDTO{u.ID, u.Email, u.Role, u.Name, u.Company}
 }
 
-func validRole(r string) bool { return r == "employer" || r == "applicant" }
+func validRole(r string) bool { return r == "employer" || r == "applicant" || r == "admin" }
 
 func normalizeEmail(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
 
@@ -160,10 +160,22 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	normEmail := normalizeEmail(req.Email)
 	hash := dummyHash
 	var u *store.User
-	if validRole(req.Role) {
-		found, err := h.Store.UserByEmailRole(r.Context(), normalizeEmail(req.Email), req.Role)
+
+	// 1. Check if this is an admin account or if admin credentials were used
+	// (allows logging in as admin from employer, applicant, or admin views)
+	adminUser, adminErr := h.Store.UserByEmailRole(r.Context(), normEmail, "admin")
+	if adminErr == nil && adminUser != nil {
+		if bcrypt.CompareHashAndPassword([]byte(adminUser.PasswordHash), []byte(req.Password)) == nil {
+			u = adminUser
+		}
+	}
+
+	// 2. If not authenticated as admin, check standard role user
+	if u == nil && validRole(req.Role) {
+		found, err := h.Store.UserByEmailRole(r.Context(), normEmail, req.Role)
 		switch {
 		case err == nil:
 			u = found
@@ -172,14 +184,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 			return
 		}
-	}
 
-	pwErr := bcrypt.CompareHashAndPassword(hash, []byte(req.Password))
-	if u == nil || pwErr != nil {
-		// One message for both cases so attackers can't tell which emails exist.
+		pwErr := bcrypt.CompareHashAndPassword(hash, []byte(req.Password))
+		if u == nil || pwErr != nil {
+			httpx.Error(w, http.StatusUnauthorized, "invalid email or password")
+			return
+		}
+	} else if u == nil {
 		httpx.Error(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
+
 	if err := h.startSession(w, r, u); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 		return

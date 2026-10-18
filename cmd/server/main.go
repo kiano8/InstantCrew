@@ -37,6 +37,7 @@ func getenvInt(k string, def int) int {
 var pages = map[string]bool{
 	"index.html": true, "login.html": true,
 	"employer.html": true, "applicant.html": true,
+	"admin.html": true, "accounting.html": true,
 }
 
 func main() {
@@ -45,6 +46,9 @@ func main() {
 	dbPath := getenv("DB_PATH", "data/instantcrew.db")
 
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.MkdirAll("uploads", 0o755); err != nil {
 		log.Fatal(err)
 	}
 	st, err := store.Open(dbPath)
@@ -59,6 +63,14 @@ func main() {
 
 	if err := jobs.SyncCatalog(context.Background(), st); err != nil {
 		log.Fatal(err)
+	}
+
+	// Seed default Admin / Accounting staff accounts
+	if err := st.EnsureAdminUser(context.Background(), "admin@instantcrew.com", "admin123", "Instant Crew Administrator"); err != nil {
+		log.Printf("warning: seed admin account: %v", err)
+	}
+	if err := st.EnsureAdminUser(context.Background(), "accounting@instantcrew.com", "admin123", "Accounting Manager"); err != nil {
+		log.Printf("warning: seed accounting account: %v", err)
 	}
 
 	authH := &auth.Handler{
@@ -89,16 +101,26 @@ func main() {
 
 	// Frontend
 	static := http.FileServer(http.Dir("."))
-	for _, p := range []string{"/css/", "/js/", "/images/"} {
+	for _, p := range []string{"/css/", "/js/", "/images/", "/uploads/"} {
 		mux.Handle("GET "+p, static)
 	}
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
+	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "admin.html")
+	})
+	mux.HandleFunc("GET /accounting", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "admin.html")
+	})
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {
 		p := r.PathValue("page")
 		if !pages[p] {
 			http.NotFound(w, r)
+			return
+		}
+		if p == "accounting.html" {
+			http.ServeFile(w, r, "admin.html")
 			return
 		}
 		http.ServeFile(w, r, p)

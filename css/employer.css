@@ -3449,6 +3449,206 @@ h2 {
     pointer-events: none;
 }
 
+/* ── QR Code & Proof of Payment Styles ── */
+.db-qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.db-qr-card {
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 220px;
+    margin: 0 auto;
+}
+
+.db-qr-image {
+    width: 165px;
+    height: 165px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+}
+
+.db-qr-caption {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #64748B;
+    margin-top: 6px;
+    text-align: center;
+}
+
+.db-qr-instructions {
+    background: #F1F5F9;
+    border-radius: 10px;
+    padding: 8px 12px;
+    width: 100%;
+    font-size: 0.72rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+.db-qr-instructions ol {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.db-qr-instructions li {
+    margin-bottom: 2px;
+}
+.db-qr-instructions li:last-child {
+    margin-bottom: 0;
+}
+
+/* ── Proof of Payment File Uploader ── */
+.db-proof-upload-section {
+    width: 100%;
+    margin-top: 2px;
+}
+
+.db-proof-upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.db-proof-dropzone {
+    border: 2px dashed #CBD5E1;
+    border-radius: 12px;
+    background: #FFFFFF;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.db-proof-dropzone:hover {
+    border-color: #0F172A;
+    background: #F8FAFC;
+    transform: translateY(-1px);
+}
+
+.db-proof-dropzone.dragover {
+    border-color: #007DFE;
+    background: #EFF6FF;
+}
+
+.db-proof-file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.db-proof-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
+}
+
+.db-proof-prompt-text {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.db-proof-hint-text {
+    font-size: 0.68rem;
+    color: #64748B;
+}
+
+/* File attached preview state */
+.db-proof-attached-box {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #F0FDF4;
+    border: 1.5px solid #BBF7D0;
+    border-radius: 12px;
+    padding: 8px 12px;
+    width: 100%;
+}
+
+.db-proof-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #86EFAC;
+    background: #FFFFFF;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.db-proof-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.db-proof-filename {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #14532D;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.db-proof-status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #15803D;
+}
+
+.db-proof-remove-btn {
+    border: none;
+    background: transparent;
+    color: #DC2626;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.db-proof-remove-btn:hover {
+    background: #FEE2E2;
+}
+
 .db-pay-quick-chip {
     margin-top: 8px;
     font-size: 0.74rem;
