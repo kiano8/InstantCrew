@@ -65,12 +65,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Seed default Admin / Accounting staff accounts
-	if err := st.EnsureAdminUser(context.Background(), "admin@instantcrew.com", "admin123", "Instant Crew Administrator"); err != nil {
-		log.Printf("warning: seed admin account: %v", err)
+	adminEmail := getenv("ADMIN_EMAIL", "admin@instantcrew.com")
+	adminPass := os.Getenv("ADMIN_PASSWORD")
+	if adminPass == "" && env == "dev" {
+		adminPass = "admin123"
+		log.Printf("dev admin login: %s / admin123 (set ADMIN_PASSWORD in production)", adminEmail)
 	}
-	if err := st.EnsureAdminUser(context.Background(), "accounting@instantcrew.com", "admin123", "Accounting Manager"); err != nil {
-		log.Printf("warning: seed accounting account: %v", err)
+	if adminPass != "" {
+		if err := st.EnsureAdminUser(context.Background(), adminEmail, adminPass, "Instant Crew Administrator"); err != nil {
+			log.Printf("warning: seed admin account: %v", err)
+		}
+	} else {
+		log.Printf("ADMIN_PASSWORD is unset; admin account will not be auto-created")
+	}
+	if accPass := os.Getenv("ACCOUNTING_PASSWORD"); accPass != "" {
+		accEmail := getenv("ACCOUNTING_EMAIL", "accounting@instantcrew.com")
+		if err := st.EnsureAdminUser(context.Background(), accEmail, accPass, "Accounting Manager"); err != nil {
+			log.Printf("warning: seed accounting account: %v", err)
+		}
 	}
 
 	authH := &auth.Handler{

@@ -6591,3 +6591,15 @@ body {
     font-weight: 600;
     margin-bottom: 14px;
 }
+
+.db-auth-info-banner {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    color: #1E40AF;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin-bottom: 14px;
+}

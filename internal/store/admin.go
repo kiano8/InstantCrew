@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -11,32 +12,33 @@ import (
 )
 
 type AdminPaymentRecord struct {
-	ID             string `json:"id"`
-	RawID          int64  `json:"raw_id"`
-	Type           string `json:"type"`       // "employer" or "applicant"
-	TypeLabel      string `json:"type_label"` // "Employer Search Fee" or "Applicant Hiring Pass"
-	UserID         int64  `json:"user_id"`
-	UserName       string `json:"user_name"`
-	UserEmail      string `json:"user_email"`
-	UserRole       string `json:"user_role"`
-	Company        string `json:"company"`
-	AmountCentavos int64  `json:"amount_centavos"`
-	AmountPesos    string `json:"amount_pesos"`
-	Method         string `json:"method"`
-	Details        string `json:"details"`
-	ProofImage     string `json:"proof_image"`
-	Status         string `json:"status"` // "paid" (or "pending"), "verified"
-	IsVerified     bool   `json:"is_verified"`
-	VerifiedAt     *int64 `json:"verified_at"`
-	VerifiedBy     string `json:"verified_by"`
-	CreatedAt      int64  `json:"created_at"`
-	Ref            string `json:"ref"`
-	JobID          *int64 `json:"job_id,omitempty"`
-	JobRole        string `json:"job_role,omitempty"`
+	ID              string `json:"id"`
+	RawID           int64  `json:"raw_id"`
+	Type            string `json:"type"`       // "employer" or "applicant"
+	TypeLabel       string `json:"type_label"` // "Employer Search Fee" or "Applicant Hiring Pass"
+	UserID          int64  `json:"user_id"`
+	UserName        string `json:"user_name"`
+	UserEmail       string `json:"user_email"`
+	UserRole        string `json:"user_role"`
+	Company         string `json:"company"`
+	AmountCentavos  int64  `json:"amount_centavos"`
+	AmountPesos     string `json:"amount_pesos"`
+	Method          string `json:"method"`
+	Details         string `json:"details"`
+	ProofImage      string `json:"proof_image"`
+	Status          string `json:"status"` // "pending", "verified", or "rejected"
+	IsVerified      bool   `json:"is_verified"`
+	VerifiedAt      *int64 `json:"verified_at"`
+	VerifiedBy      string `json:"verified_by"`
+	RejectionReason string `json:"rejection_reason"`
+	CreatedAt       int64  `json:"created_at"`
+	Ref             string `json:"ref"`
+	JobID           *int64 `json:"job_id,omitempty"`
+	JobRole         string `json:"job_role,omitempty"`
 }
 
 func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, error) {
-	var records []AdminPaymentRecord
+	records := make([]AdminPaymentRecord, 0)
 
 	// 1. Fetch employer payments
 	empRows, err := s.db.QueryContext(ctx, `
@@ -44,6 +46,7 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 			p.id, p.job_id, p.user_id, p.amount_centavos, p.method, 
 			COALESCE(p.details, ''), COALESCE(p.proof_image, ''), 
 			COALESCE(p.status, 'paid'), p.verified_at, COALESCE(p.verified_by, ''),
+			COALESCE(p.rejection_reason, ''),
 			p.provider_ref, p.created_at,
 			COALESCE(u.name, ''), COALESCE(u.email, ''), COALESCE(u.company, ''),
 			COALESCE(j.role_label, '')
@@ -59,15 +62,15 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 
 	for empRows.Next() {
 		var (
-			rawID, jobID, userID, amountCentavos, createdAt int64
-			method, details, proofImage, status, verifiedBy, ref string
-			userName, userEmail, company, jobRole               string
-			verifiedAt                                         sql.NullInt64
+			rawID, jobID, userID, amountCentavos, createdAt                    int64
+			method, details, proofImage, status, verifiedBy, rejectReason, ref string
+			userName, userEmail, company, jobRole                              string
+			verifiedAt                                                         sql.NullInt64
 		)
 		if err := empRows.Scan(
 			&rawID, &jobID, &userID, &amountCentavos, &method,
 			&details, &proofImage, &status, &verifiedAt, &verifiedBy,
-			&ref, &createdAt,
+			&rejectReason, &ref, &createdAt,
 			&userName, &userEmail, &company, &jobRole,
 		); err != nil {
 			return nil, err
@@ -83,34 +86,35 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 		displayStatus := status
 		if isVerified {
 			displayStatus = "verified"
-		} else if displayStatus == "" {
+		} else if displayStatus == "paid" || displayStatus == "" {
 			displayStatus = "pending"
 		}
 
 		jid := jobID
 		records = append(records, AdminPaymentRecord{
-			ID:             fmt.Sprintf("emp_%d", rawID),
-			RawID:          rawID,
-			Type:           "employer",
-			TypeLabel:      "Employer Search Fee",
-			UserID:         userID,
-			UserName:       userName,
-			UserEmail:      userEmail,
-			UserRole:       "employer",
-			Company:        company,
-			AmountCentavos: amountCentavos,
-			AmountPesos:    fmt.Sprintf("₱%.2f", float64(amountCentavos)/100),
-			Method:         method,
-			Details:        details,
-			ProofImage:     proofImage,
-			Status:         displayStatus,
-			IsVerified:     isVerified,
-			VerifiedAt:     vAt,
-			VerifiedBy:     verifiedBy,
-			CreatedAt:      createdAt,
-			Ref:            ref,
-			JobID:          &jid,
-			JobRole:        jobRole,
+			ID:              fmt.Sprintf("emp_%d", rawID),
+			RawID:           rawID,
+			Type:            "employer",
+			TypeLabel:       "Employer Search Fee",
+			UserID:          userID,
+			UserName:        userName,
+			UserEmail:       userEmail,
+			UserRole:        "employer",
+			Company:         company,
+			AmountCentavos:  amountCentavos,
+			AmountPesos:     fmt.Sprintf("₱%.2f", float64(amountCentavos)/100),
+			Method:          method,
+			Details:         details,
+			ProofImage:      proofImage,
+			Status:          displayStatus,
+			IsVerified:      isVerified,
+			VerifiedAt:      vAt,
+			VerifiedBy:      verifiedBy,
+			RejectionReason: rejectReason,
+			CreatedAt:       createdAt,
+			Ref:             ref,
+			JobID:           &jid,
+			JobRole:         jobRole,
 		})
 	}
 	if err := empRows.Err(); err != nil {
@@ -122,7 +126,8 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 		SELECT 
 			ap.id, ap.applicant_id, ap.amount_centavos, ap.method,
 			COALESCE(ap.proof_image, ''), COALESCE(ap.status, 'paid'),
-			ap.verified_at, COALESCE(ap.verified_by, ''), ap.created_at,
+			ap.verified_at, COALESCE(ap.verified_by, ''),
+			COALESCE(ap.rejection_reason, ''), ap.created_at,
 			COALESCE(u.name, ''), COALESCE(u.email, '')
 		FROM applicant_hiring_pass_payments ap
 		LEFT JOIN users u ON u.id = ap.applicant_id
@@ -135,14 +140,14 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 
 	for appRows.Next() {
 		var (
-			rawID, applicantID, amountCentavos, createdAt int64
-			method, proofImage, status, verifiedBy       string
-			userName, userEmail                           string
-			verifiedAt                                    sql.NullInt64
+			rawID, applicantID, amountCentavos, createdAt        int64
+			method, proofImage, status, verifiedBy, rejectReason string
+			userName, userEmail                                  string
+			verifiedAt                                           sql.NullInt64
 		)
 		if err := appRows.Scan(
 			&rawID, &applicantID, &amountCentavos, &method,
-			&proofImage, &status, &verifiedAt, &verifiedBy, &createdAt,
+			&proofImage, &status, &verifiedAt, &verifiedBy, &rejectReason, &createdAt,
 			&userName, &userEmail,
 		); err != nil {
 			return nil, err
@@ -158,102 +163,183 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 		displayStatus := status
 		if isVerified {
 			displayStatus = "verified"
-		} else if displayStatus == "" {
+		} else if displayStatus == "paid" || displayStatus == "" {
 			displayStatus = "pending"
 		}
 
 		records = append(records, AdminPaymentRecord{
-			ID:             fmt.Sprintf("app_%d", rawID),
-			RawID:          rawID,
-			Type:           "applicant",
-			TypeLabel:      "Applicant Hiring Pass (5 Hires)",
-			UserID:         applicantID,
-			UserName:       userName,
-			UserEmail:      userEmail,
-			UserRole:       "applicant",
-			Company:        "",
-			AmountCentavos: amountCentavos,
-			AmountPesos:    fmt.Sprintf("₱%.2f", float64(amountCentavos)/100),
-			Method:         method,
-			Details:        "Hiring Pass Batch (5 hires)",
-			ProofImage:     proofImage,
-			Status:         displayStatus,
-			IsVerified:     isVerified,
-			VerifiedAt:     vAt,
-			VerifiedBy:     verifiedBy,
-			CreatedAt:      createdAt,
-			Ref:            fmt.Sprintf("PASS-%d", rawID),
+			ID:              fmt.Sprintf("app_%d", rawID),
+			RawID:           rawID,
+			Type:            "applicant",
+			TypeLabel:       "Applicant Hiring Pass (5 Hires)",
+			UserID:          applicantID,
+			UserName:        userName,
+			UserEmail:       userEmail,
+			UserRole:        "applicant",
+			Company:         "",
+			AmountCentavos:  amountCentavos,
+			AmountPesos:     fmt.Sprintf("₱%.2f", float64(amountCentavos)/100),
+			Method:          method,
+			Details:         "Hiring Pass Batch (5 hires)",
+			ProofImage:      proofImage,
+			Status:          displayStatus,
+			IsVerified:      isVerified,
+			VerifiedAt:      vAt,
+			VerifiedBy:      verifiedBy,
+			RejectionReason: rejectReason,
+			CreatedAt:       createdAt,
+			Ref:             fmt.Sprintf("PASS-%d", rawID),
 		})
 	}
 	if err := appRows.Err(); err != nil {
 		return nil, err
 	}
 
-	// Sort combined records by CreatedAt descending
-	for i := 0; i < len(records); i++ {
-		for j := i + 1; j < len(records); j++ {
-			if records[i].CreatedAt < records[j].CreatedAt {
-				records[i], records[j] = records[j], records[i]
-			}
-		}
-	}
+	sort.Slice(records, func(i, j int) bool {
+		return records[i].CreatedAt > records[j].CreatedAt
+	})
 
 	return records, nil
 }
 
-func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, status string, actor string) error {
+// SetPaymentStatus lets an admin verify or reject a receipt. Rejecting stores an
+// optional reason that is shown back to the payer and in the admin portal.
+func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, status string, actor string, reason string) error {
 	now := time.Now().Unix()
 	normStatus := strings.ToLower(strings.TrimSpace(status))
-	if normStatus == "" {
+	switch normStatus {
+	case "verified", "rejected", "pending":
+	default:
 		normStatus = "pending"
 	}
+	reason = strings.TrimSpace(reason)
+	if len(reason) > 500 {
+		reason = reason[:500]
+	}
+	if normStatus != "rejected" {
+		reason = ""
+	}
 
-	var (
-		vAt *int64
-		vBy string
-	)
-	if normStatus == "verified" {
-		vAt = &now
+	vBy := ""
+	switch normStatus {
+	case "verified":
 		if actor == "" {
 			vBy = "Admin / Accounting"
 		} else {
 			vBy = actor
 		}
-	} else if normStatus == "rejected" {
-		vAt = nil
+	case "rejected":
 		if actor == "" {
 			vBy = "Rejected by Accounting"
 		} else {
 			vBy = "Rejected by " + actor
 		}
-	} else {
-		normStatus = "pending"
-		vAt = nil
-		vBy = ""
 	}
 
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var userID int64
+	var prevStatus string
+	var creditsGranted int
 	switch strings.ToLower(pType) {
 	case "employer":
-		var err error
-		if vAt != nil {
-			_, err = s.db.ExecContext(ctx, `UPDATE payments SET status=?, verified_at=?, verified_by=? WHERE id=?`, normStatus, *vAt, vBy, id)
-		} else {
-			_, err = s.db.ExecContext(ctx, `UPDATE payments SET status=?, verified_at=NULL, verified_by=? WHERE id=?`, normStatus, vBy, id)
+		err = tx.QueryRowContext(ctx, `SELECT user_id, COALESCE(status,'') FROM payments WHERE id=?`, id).Scan(&userID, &prevStatus)
+		if err == sql.ErrNoRows {
+			return ErrNotFound
 		}
-		return err
-
+		if err != nil {
+			return err
+		}
+		if normStatus == "verified" {
+			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=?, verified_at=?, verified_by=?, rejection_reason='' WHERE id=?`, normStatus, now, vBy, id)
+			if err != nil {
+				return err
+			}
+			if n, _ := res.RowsAffected(); n == 0 {
+				return ErrNotFound
+			}
+		} else {
+			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=?, verified_at=NULL, verified_by=?, rejection_reason=? WHERE id=?`, normStatus, vBy, reason, id)
+			if err != nil {
+				return err
+			}
+			if n, _ := res.RowsAffected(); n == 0 {
+				return ErrNotFound
+			}
+		}
 	case "applicant":
-		var err error
-		if vAt != nil {
-			_, err = s.db.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=?, verified_at=?, verified_by=? WHERE id=?`, normStatus, *vAt, vBy, id)
-		} else {
-			_, err = s.db.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=?, verified_at=NULL, verified_by=? WHERE id=?`, normStatus, vBy, id)
+		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0) FROM applicant_hiring_pass_payments WHERE id=?`, id).Scan(&userID, &prevStatus, &creditsGranted)
+		if err == sql.ErrNoRows {
+			return ErrNotFound
 		}
-		return err
-
+		if err != nil {
+			return err
+		}
+		if normStatus == "verified" {
+			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=?, verified_at=?, verified_by=?, rejection_reason='' WHERE id=?`, normStatus, now, vBy, id)
+			if err != nil {
+				return err
+			}
+			if n, _ := res.RowsAffected(); n == 0 {
+				return ErrNotFound
+			}
+			if creditsGranted == 0 && prevStatus != "verified" {
+				if _, err = tx.ExecContext(ctx, `
+					INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at)
+					VALUES(?,5,5,0,1000,1,?)
+					ON CONFLICT(applicant_id) DO UPDATE SET
+						total_hires=total_hires+5, remaining_hires=remaining_hires+5,
+						amount_centavos=amount_centavos+1000, batches_paid=batches_paid+1, updated_at=excluded.updated_at`,
+					userID, now); err != nil {
+					return err
+				}
+				if _, err = tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET credits_granted=1 WHERE id=?`, id); err != nil {
+					return err
+				}
+			}
+		} else {
+			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=?, verified_at=NULL, verified_by=?, rejection_reason=? WHERE id=?`, normStatus, vBy, reason, id)
+			if err != nil {
+				return err
+			}
+			if n, _ := res.RowsAffected(); n == 0 {
+				return ErrNotFound
+			}
+		}
 	default:
 		return fmt.Errorf("unknown payment type: %s", pType)
 	}
+
+	title, message, kind := "", "", "payment"
+	switch normStatus {
+	case "verified":
+		if strings.ToLower(pType) == "employer" {
+			title, message = "Search fee verified", "Accounting verified your receipt. You can now start crew search."
+		} else {
+			title, message = "Hiring pass verified", "Accounting verified your ₱10 receipt. Five hiring opportunities are now active."
+		}
+	case "rejected":
+		if strings.ToLower(pType) == "employer" {
+			title, message = "Search fee rejected", "Accounting could not verify your receipt. Please upload a new proof of payment."
+		} else {
+			title, message = "Hiring pass rejected", "Accounting could not verify your receipt. Please upload a new proof of payment."
+		}
+		if reason != "" {
+			message += " Reason: " + reason
+		}
+	}
+	if title != "" && prevStatus != normStatus {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES(?,?,?,?,?,?)`,
+			userID, title, message, kind, "{}", now); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *Store) VerifyPayment(ctx context.Context, pType string, id int64, verified bool, verifiedBy string) error {
@@ -261,12 +347,15 @@ func (s *Store) VerifyPayment(ctx context.Context, pType string, id int64, verif
 	if verified {
 		status = "verified"
 	}
-	return s.SetPaymentStatus(ctx, pType, id, status, verifiedBy)
+	return s.SetPaymentStatus(ctx, pType, id, status, verifiedBy, "")
 }
 
-// EnsureAdminUser guarantees that an admin user exists in the database with the provided credentials.
+// EnsureAdminUser inserts an admin account when missing. Existing passwords are left unchanged.
 func (s *Store) EnsureAdminUser(ctx context.Context, email, password, name string) error {
 	normEmail := strings.ToLower(strings.TrimSpace(email))
+	if normEmail == "" || password == "" {
+		return fmt.Errorf("admin email and password are required")
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -275,20 +364,15 @@ func (s *Store) EnsureAdminUser(ctx context.Context, email, password, name strin
 
 	var id int64
 	err = s.db.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND role = 'admin'`, normEmail).Scan(&id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			_, insertErr := s.db.ExecContext(ctx, `
-				INSERT INTO users (email, password_hash, role, name, company, created_at)
-				VALUES (?, ?, 'admin', ?, 'Instant Crew Accounting', ?)
-			`, normEmail, string(hash), name, now)
-			return insertErr
-		}
+	if err == nil {
+		return nil
+	}
+	if err != sql.ErrNoRows {
 		return err
 	}
-
-	// Update existing admin password and name to guarantee validity
-	_, updateErr := s.db.ExecContext(ctx, `
-		UPDATE users SET password_hash = ?, name = ? WHERE id = ?
-	`, string(hash), name, id)
-	return updateErr
+	_, insertErr := s.db.ExecContext(ctx, `
+		INSERT INTO users (email, password_hash, role, name, company, created_at)
+		VALUES (?, ?, 'admin', ?, 'Instant Crew Accounting', ?)
+	`, normEmail, string(hash), name, now)
+	return insertErr
 }

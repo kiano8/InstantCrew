@@ -30,6 +30,7 @@ type Handler struct {
 func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	emp := func(f http.HandlerFunc) http.Handler { return a.RequireRole("employer", f) }
 	app := func(f http.HandlerFunc) http.Handler { return a.RequireRole("applicant", f) }
+	adm := func(f http.HandlerFunc) http.Handler { return a.RequireRole("admin", f) }
 
 	mux.HandleFunc("GET /api/catalog", h.Catalog) // public: the applicant side needs it too
 
@@ -64,10 +65,9 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/notifications/read", a.RequireAuth(http.HandlerFunc(h.ReadNotifications)))
 	mux.Handle("DELETE /api/notifications", a.RequireAuth(http.HandlerFunc(h.ClearNotifications)))
 
-	// Proof of payment upload and Admin / Accounting endpoints
-	mux.HandleFunc("POST /api/upload-proof", h.UploadProof)
-	mux.HandleFunc("GET /api/admin/payments", h.AdminPayments)
-	mux.HandleFunc("POST /api/admin/payments/verify", h.AdminVerifyPayment)
+	mux.Handle("POST /api/upload-proof", a.RequireAuth(http.HandlerFunc(h.UploadProof)))
+	mux.Handle("GET /api/admin/payments", adm(h.AdminPayments))
+	mux.Handle("POST /api/admin/payments/verify", adm(h.AdminVerifyPayment))
 }
 
 func (h *Handler) assignmentID(w http.ResponseWriter, r *http.Request) (*store.User, int64, bool) {
@@ -243,7 +243,15 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		h.fail(w, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"hiring_pass": p, "paid": true, "amount": 10})
+	pending := p.PendingPayment != nil && p.PendingPayment.Status == "pending"
+	rejected := p.PendingPayment != nil && p.PendingPayment.Status == "rejected"
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"hiring_pass": p,
+		"paid":        !pending && !rejected,
+		"pending":     pending,
+		"rejected":    rejected,
+		"amount":      10,
+	})
 }
 
 func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
@@ -424,34 +432,35 @@ type crewDTO struct {
 }
 
 type jobDTO struct {
-	ID               int64      `json:"id"`
-	Category         string     `json:"category"`
-	Role             string     `json:"role"`
-	RoleLabel        string     `json:"role_label"`
-	EmploymentType   string     `json:"employment_type"`
-	Rate             float64    `json:"rate"`
-	RatePeriod       string     `json:"rate_period"`
-	City             string     `json:"city"`
-	MapLocation      string     `json:"map_location"`
-	MapsURL          string     `json:"maps_url"`
-	Lat              *float64   `json:"lat,omitempty"`
-	Lng              *float64   `json:"lng,omitempty"`
-	Timing           string     `json:"timing"`
-	ScheduledAt      *time.Time `json:"scheduled_at,omitempty"`
-	CrewNeeded       int        `json:"crew_needed"`
-	AcceptedCount    int        `json:"accepted_count"`
-	Status           string     `json:"status"`
-	SearchAttempts   int        `json:"search_attempts"`
-	SearchExpiresAt  *time.Time `json:"search_expires_at,omitempty"`
-	SecondsRemaining int64      `json:"seconds_remaining"` // server clock, so the countdown can't be cheated
-	CurrentTry       int        `json:"current_try"`
-	MaxTries         int        `json:"max_tries"`
-	CurrentAttempt   int        `json:"current_attempt"`
-	MaxAttempts      int        `json:"max_attempts"`
-	TriesRemaining   int        `json:"tries_remaining"`
-	MatchFee         float64    `json:"match_fee"`
-	Crew             []crewDTO  `json:"crew,omitempty"`
-	CreatedAt        time.Time  `json:"created_at"`
+	ID               int64             `json:"id"`
+	Category         string            `json:"category"`
+	Role             string            `json:"role"`
+	RoleLabel        string            `json:"role_label"`
+	EmploymentType   string            `json:"employment_type"`
+	Rate             float64           `json:"rate"`
+	RatePeriod       string            `json:"rate_period"`
+	City             string            `json:"city"`
+	MapLocation      string            `json:"map_location"`
+	MapsURL          string            `json:"maps_url"`
+	Lat              *float64          `json:"lat,omitempty"`
+	Lng              *float64          `json:"lng,omitempty"`
+	Timing           string            `json:"timing"`
+	ScheduledAt      *time.Time        `json:"scheduled_at,omitempty"`
+	CrewNeeded       int               `json:"crew_needed"`
+	AcceptedCount    int               `json:"accepted_count"`
+	Status           string            `json:"status"`
+	SearchAttempts   int               `json:"search_attempts"`
+	SearchExpiresAt  *time.Time        `json:"search_expires_at,omitempty"`
+	SecondsRemaining int64             `json:"seconds_remaining"` // server clock, so the countdown can't be cheated
+	CurrentTry       int               `json:"current_try"`
+	MaxTries         int               `json:"max_tries"`
+	CurrentAttempt   int               `json:"current_attempt"`
+	MaxAttempts      int               `json:"max_attempts"`
+	TriesRemaining   int               `json:"tries_remaining"`
+	MatchFee         float64           `json:"match_fee"`
+	Crew             []crewDTO         `json:"crew,omitempty"`
+	Payment          *store.JobPayment `json:"payment,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
 }
 
 func (h *Handler) toDTO(j *store.Job) jobDTO {
@@ -509,8 +518,14 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusConflict, "this action isn't allowed in the job's current status")
 	case errors.Is(err, store.ErrAlreadyAccepted):
 		httpx.Error(w, http.StatusConflict, "already accepted")
+	case errors.Is(err, store.ErrHiringPassPending):
+		httpx.Error(w, http.StatusPaymentRequired, err.Error())
 	case errors.Is(err, store.ErrHiringPassEmpty):
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
+	case errors.Is(err, store.ErrPaymentNotVerified), errors.Is(err, store.ErrPaymentRejected):
+		httpx.Error(w, http.StatusPaymentRequired, err.Error())
+	case errors.Is(err, store.ErrPaymentPendingExists):
+		httpx.Error(w, http.StatusConflict, err.Error())
 	default:
 		log.Printf("jobs: %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
@@ -545,6 +560,12 @@ func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, e
 	}
 	for _, c := range crew {
 		d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+	}
+	if pay, err := h.Store.LatestJobPayment(ctx, j.ID); err != nil {
+		h.fail(w, err)
+		return
+	} else if pay != nil {
+		d.Payment = pay
 	}
 	httpx.JSON(w, status, map[string]any{"job": d})
 }
@@ -747,6 +768,12 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, c := range crew {
 			d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+		}
+		if pay, payErr := h.Store.LatestJobPayment(r.Context(), j.ID); payErr != nil {
+			h.fail(w, payErr)
+			return
+		} else if pay != nil {
+			d.Payment = pay
 		}
 		out = append(out, d)
 	}
@@ -998,6 +1025,7 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		ID       int64  `json:"id"`
 		Verified *bool  `json:"verified,omitempty"`
 		Status   string `json:"status,omitempty"` // "verified", "rejected", "pending"
+		Reason   string `json:"reason,omitempty"` // optional note shown when rejected
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
@@ -1023,7 +1051,18 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 	if u, ok := auth.UserFrom(r.Context()); ok && u != nil && u.Name != "" {
 		verifier = u.Name
 	}
-	if err := h.Store.SetPaymentStatus(r.Context(), req.Type, req.ID, status, verifier); err != nil {
+	reason := strings.TrimSpace(req.Reason)
+	if len(reason) > 500 {
+		reason = reason[:500]
+	}
+	if status != "rejected" {
+		reason = ""
+	}
+	if err := h.Store.SetPaymentStatus(r.Context(), req.Type, req.ID, status, verifier, reason); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			httpx.Error(w, http.StatusNotFound, "payment not found")
+			return
+		}
 		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -1033,5 +1072,6 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		"verified": status == "verified",
 		"type":     req.Type,
 		"id":       req.ID,
+		"reason":   reason,
 	})
 }

@@ -195,6 +195,10 @@
                 <div class="adm-modal-img-wrap">
                     <img src="" alt="Proof Receipt" class="adm-modal-receipt-img" id="modalReceiptImg">
                 </div>
+                <div id="modalRejectReason"
+                    style="display:none; margin-top:10px; padding:10px 12px; border-radius:10px; background:#FEF2F2; border:1px solid #FECACA; color:#B91C1C; font-size:0.8rem; line-height:1.45;">
+                    <strong>Rejection reason:</strong> <span id="modalRejectReasonText"></span>
+                </div>
             </div>
 
             <div class="adm-modal-footer">
@@ -216,6 +220,32 @@
         </div>
     </div>
 
+    <!-- ════ Reject Reason Dialog ════ -->
+    <div id="rejectReasonOverlay"
+        style="display:none; position:fixed; inset:0; z-index:120; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; padding:20px;">
+        <div role="dialog" aria-modal="true" aria-labelledby="rejectReasonTitle"
+            style="background:#fff; border-radius:16px; width:min(440px, 100%); padding:22px; box-shadow:0 24px 60px rgba(15,23,42,0.25);">
+            <h4 id="rejectReasonTitle" style="margin:0 0 6px; font-size:1rem; color:#0F172A;">Reject this receipt?</h4>
+            <p style="margin:0 0 12px; font-size:0.8rem; color:#64748B; line-height:1.5;">
+                Tell the payer why (optional). The reason is sent to them and shown in this portal so they can
+                upload a corrected proof of payment.
+            </p>
+            <textarea id="rejectReasonInput" rows="3" maxlength="500"
+                placeholder="e.g. Amount does not match the ₱100.00 search fee"
+                style="width:100%; box-sizing:border-box; border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px; font:inherit; font-size:0.85rem; color:#0F172A; resize:vertical;"></textarea>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+                <button type="button" id="rejectReasonCancel"
+                    style="border:1px solid #E2E8F0; background:#fff; color:#475569; border-radius:10px; padding:9px 16px; font:inherit; font-size:0.82rem; font-weight:700; cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="button" id="rejectReasonConfirm"
+                    style="border:none; background:#DC2626; color:#fff; border-radius:10px; padding:9px 16px; font:inherit; font-size:0.82rem; font-weight:700; cursor:pointer;">
+                    Reject Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ════ Toast Feedback ════ -->
     <div class="adm-toast" id="admToast" role="status"></div>
 
@@ -230,6 +260,31 @@
             let activeMethod = 'all'; // 'all', 'gcash', 'maya', 'card'
             let searchQuery = '';
             let currentViewingPayment = null;
+            let serverReachable = false; // true when the Go API answered; demo data is offline-only
+
+            // Guard: only signed-in admins may view this portal. The API enforces
+            // the same rule; this keeps non-admins from seeing an empty console.
+            async function ensureAdminAccess() {
+                try {
+                    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+                    if (res.status === 401 || res.status === 403) {
+                        window.location.replace('login.html?role=admin');
+                        return false;
+                    }
+                    if (res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        if (!data.user || data.user.role !== 'admin') {
+                            window.location.replace('login.html?role=admin');
+                            return false;
+                        }
+                        const badge = document.querySelector('.adm-brand-badge');
+                        if (badge && data.user.name) badge.title = `Signed in as ${data.user.name}`;
+                    }
+                } catch (_) {
+                    /* offline: allow the cached/demo view below */
+                }
+                return true;
+            }
 
             // DOM Elements
             const tableBody = document.getElementById('paymentsTableBody');
@@ -286,6 +341,13 @@
                 });
             }
 
+            // Escape free-form text (rejection reasons) before injecting it as HTML.
+            function escHtml(value) {
+                return String(value == null ? '' : value)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
             // Fetch Payments from Server & LocalStorage
             async function fetchPayments() {
                 if (refreshBtn) refreshBtn.classList.add('rotating');
@@ -293,27 +355,28 @@
                     let serverRecords = [];
                     const res = await fetch('/api/admin/payments', { credentials: 'same-origin' }).catch(() => null);
                     if (res && res.ok) {
+                        serverReachable = true;
                         const data = await res.json();
                         if (data && Array.isArray(data.payments)) {
                             serverRecords = data.payments;
                         }
                     }
 
-                    // Also check for local client session demo payments
-                    const localRecords = JSON.parse(localStorage.getItem('ic_local_payments') || '[]');
+                    if (serverReachable) {
+                        // Live database records are the source of truth in production.
+                        paymentsData = serverRecords;
+                        localStorage.removeItem('ic_local_payments');
+                    } else {
+                        // Offline fallback: cached records, then demonstration data.
+                        paymentsData = JSON.parse(localStorage.getItem('ic_local_payments') || '[]');
+                    }
 
-                    // Merge deduplicated by ID
-                    const map = new Map();
-                    serverRecords.forEach(r => map.set(r.id, r));
-                    localRecords.forEach(r => {
-                        if (!map.has(r.id)) map.set(r.id, r);
-                    });
-
-                    paymentsData = Array.from(map.values());
-
-                    // If completely empty, seed standard initial demonstration payments
                     if (paymentsData.length === 0) {
-                        seedSampleData();
+                        if (serverReachable) {
+                            renderAll();
+                        } else {
+                            seedSampleData();
+                        }
                     } else {
                         renderAll();
                     }
@@ -515,6 +578,7 @@
                         <td>
                             <div class="adm-item-title">${p.type_label || (p.type === 'employer' ? 'Employer Search Fee' : 'Applicant Hiring Pass')}</div>
                             ${p.job_role ? `<div style="font-size:0.74rem; color:var(--adm-text-secondary);">Role: ${p.job_role}</div>` : ''}
+                            ${isRej && p.rejection_reason ? `<div title="Rejection reason" style="margin-top:4px; font-size:0.72rem; color:#DC2626; font-weight:600;">✕ ${escHtml(p.rejection_reason)}</div>` : ''}
                         </td>
                         <td>
                             <span class="adm-method-badge ${method}">
@@ -564,8 +628,39 @@
                 renderTable();
             }
 
+            // Optional rejection-reason prompt. Resolves with the reason, or
+            // null when the admin cancels (no status change is sent).
+            function askRejectReason() {
+                const overlay = document.getElementById('rejectReasonOverlay');
+                const input = document.getElementById('rejectReasonInput');
+                const confirmBtn = document.getElementById('rejectReasonConfirm');
+                const cancelBtn = document.getElementById('rejectReasonCancel');
+                return new Promise(resolve => {
+                    if (!overlay) { resolve(''); return; }
+                    const finish = value => {
+                        overlay.style.display = 'none';
+                        confirmBtn.removeEventListener('click', onConfirm);
+                        cancelBtn.removeEventListener('click', onCancel);
+                        overlay.removeEventListener('click', onBackdrop);
+                        document.removeEventListener('keydown', onKey);
+                        resolve(value);
+                    };
+                    const onConfirm = () => finish((input ? input.value : '').trim());
+                    const onCancel = () => finish(null);
+                    const onBackdrop = e => { if (e.target === overlay) finish(null); };
+                    const onKey = e => { if (e.key === 'Escape') finish(null); };
+                    confirmBtn.addEventListener('click', onConfirm);
+                    cancelBtn.addEventListener('click', onCancel);
+                    overlay.addEventListener('click', onBackdrop);
+                    document.addEventListener('keydown', onKey);
+                    if (input) input.value = '';
+                    overlay.style.display = 'flex';
+                    if (input) input.focus();
+                });
+            }
+
             // Set Payment Status: 'verified', 'rejected', or 'pending'
-            async function setPaymentStatus(paymentId, targetStatus) {
+            async function setPaymentStatus(paymentId, targetStatus, reason = '') {
                 const item = paymentsData.find(p => p.id === paymentId);
                 if (!item) return;
 
@@ -578,6 +673,7 @@
                 item.is_verified = isVerified;
                 item.verified_at = isVerified ? nowSec : null;
                 item.verified_by = isVerified ? 'Accounting' : (isRejected ? 'Rejected by Accounting' : '');
+                item.rejection_reason = isRejected ? reason : '';
 
                 renderAll();
 
@@ -592,13 +688,16 @@
                             type: item.type || 'employer',
                             id: rawId,
                             status: targetStatus,
-                            verified: isVerified
+                            verified: isVerified,
+                            reason: isRejected ? reason : ''
                         })
                     });
                     if (!res.ok) {
                         const err = await res.json().catch(() => ({}));
-                        console.warn('Backend API note:', err.error);
+                        showToast(err.error || 'The server rejected that change. Please try again.', false);
+                        return;
                     }
+                    fetchPayments(); // sync with the database's canonical state
                 } catch (e) {
                     console.warn('Backend verify API offline, stored locally', e);
                 }
@@ -625,6 +724,17 @@
 
                 const isVer = item.is_verified || item.status === 'verified';
                 const isRej = item.status === 'rejected';
+
+                const reasonBox = document.getElementById('modalRejectReason');
+                const reasonText = document.getElementById('modalRejectReasonText');
+                if (reasonBox) {
+                    if (isRej && item.rejection_reason) {
+                        if (reasonText) reasonText.textContent = item.rejection_reason;
+                        reasonBox.style.display = 'block';
+                    } else {
+                        reasonBox.style.display = 'none';
+                    }
+                }
 
                 if (modalVerifyBtn) {
                     modalVerifyBtn.className = 'adm-btn-verify ' + (isVer ? 'action-verified' : 'action-verify');
@@ -712,7 +822,14 @@
                 if (rejectBtn) {
                     const id = rejectBtn.dataset.id;
                     const currentlyRejected = rejectBtn.dataset.rejected === 'true';
-                    setPaymentStatus(id, currentlyRejected ? 'pending' : 'rejected');
+                    if (currentlyRejected) {
+                        setPaymentStatus(id, 'pending');
+                        return;
+                    }
+                    askRejectReason().then(reason => {
+                        if (reason === null) return; // cancelled
+                        setPaymentStatus(id, 'rejected', reason);
+                    });
                     return;
                 }
 
@@ -748,8 +865,16 @@
                 modalRejectBtn.addEventListener('click', () => {
                     if (!currentViewingPayment) return;
                     const currentlyRejected = currentViewingPayment.status === 'rejected';
-                    setPaymentStatus(currentViewingPayment.id, currentlyRejected ? 'pending' : 'rejected');
-                    closeReceiptModal();
+                    if (currentlyRejected) {
+                        setPaymentStatus(currentViewingPayment.id, 'pending');
+                        closeReceiptModal();
+                        return;
+                    }
+                    askRejectReason().then(reason => {
+                        if (reason === null) return; // cancelled; keep the receipt open
+                        setPaymentStatus(currentViewingPayment.id, 'rejected', reason);
+                        closeReceiptModal();
+                    });
                 });
             }
 
@@ -772,8 +897,8 @@
                 });
             }
 
-            // Initial load
-            fetchPayments();
+            // Initial load (admin session gate first)
+            ensureAdminAccess().then(ok => { if (ok) fetchPayments(); });
         })();
     </script>
 </body>

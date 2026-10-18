@@ -38,12 +38,22 @@ type Notification struct {
 	Read      bool   `json:"read"`
 }
 
+type HiringPassPending struct {
+	ID              int64  `json:"id"`
+	Status          string `json:"status"` // pending | rejected
+	Method          string `json:"method"`
+	ProofImage      string `json:"proof_image,omitempty"`
+	RejectionReason string `json:"rejection_reason,omitempty"`
+	CreatedAt       int64  `json:"createdAt"`
+}
+
 type HiringPass struct {
-	TotalHires     int   `json:"totalHires"`
-	RemainingHires int   `json:"remainingHires"`
-	UsedHires      int   `json:"usedHires"`
-	PaidAmount     int64 `json:"paidAmount"`
-	BatchesPaid    int   `json:"batchesPaid"`
+	TotalHires     int                `json:"totalHires"`
+	RemainingHires int                `json:"remainingHires"`
+	UsedHires      int                `json:"usedHires"`
+	PaidAmount     int64              `json:"paidAmount"`
+	BatchesPaid    int                `json:"batchesPaid"`
+	PendingPayment *HiringPassPending `json:"pendingPayment,omitempty"`
 }
 
 func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (HiringPass, error) {
@@ -51,13 +61,28 @@ func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (Hir
 	err := s.db.QueryRowContext(ctx, `SELECT total_hires,remaining_hires,used_hires,amount_centavos,batches_paid FROM applicant_hiring_passes WHERE applicant_id=?`, applicantID).
 		Scan(&p.TotalHires, &p.RemainingHires, &p.UsedHires, &p.PaidAmount, &p.BatchesPaid)
 	if err == sql.ErrNoRows {
-		return p, nil
+		err = nil
+	} else if err != nil {
+		return p, err
+	} else {
+		p.PaidAmount /= 100 // API exposes pesos; storage keeps centavos.
 	}
-	p.PaidAmount /= 100 // API exposes pesos; storage keeps centavos.
+	var pending HiringPassPending
+	scanErr := s.db.QueryRowContext(ctx, `
+		SELECT id, COALESCE(status,''), COALESCE(method,''), COALESCE(proof_image,''), COALESCE(rejection_reason,''), created_at
+		FROM applicant_hiring_pass_payments
+		WHERE applicant_id=? AND status IN ('pending','rejected')
+		ORDER BY id DESC LIMIT 1`, applicantID).
+		Scan(&pending.ID, &pending.Status, &pending.Method, &pending.ProofImage, &pending.RejectionReason, &pending.CreatedAt)
+	if scanErr == nil {
+		p.PendingPayment = &pending
+	} else if scanErr != sql.ErrNoRows {
+		return p, scanErr
+	}
 	return p, err
 }
 
-// AddApplicantHiringPass records one fixed-price pass and grants five hires atomically.
+// AddApplicantHiringPass records a ₱10 receipt as pending. Hires are granted only after admin verification.
 func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method, proofImage string) (HiringPass, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -65,11 +90,26 @@ func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, m
 	}
 	defer tx.Rollback()
 	now := time.Now().Unix()
-	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,created_at) VALUES(?,1000,?,?,'pending',?)`, applicantID, method, proofImage, now); err != nil {
-		return HiringPass{}, err
+
+	var existingID int64
+	var existingStatus string
+	scanErr := tx.QueryRowContext(ctx, `
+		SELECT id, COALESCE(status,'') FROM applicant_hiring_pass_payments
+		WHERE applicant_id=? ORDER BY id DESC LIMIT 1`, applicantID).Scan(&existingID, &existingStatus)
+	if scanErr != nil && scanErr != sql.ErrNoRows {
+		return HiringPass{}, scanErr
 	}
-	if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at) VALUES(?,5,5,0,1000,1,?) ON CONFLICT(applicant_id) DO UPDATE SET total_hires=total_hires+5,remaining_hires=remaining_hires+5,amount_centavos=amount_centavos+1000,batches_paid=batches_paid+1,updated_at=excluded.updated_at`, applicantID, now); err != nil {
-		return HiringPass{}, err
+	if scanErr == nil && (existingStatus == "pending" || existingStatus == "rejected") {
+		if _, err = tx.ExecContext(ctx, `
+			UPDATE applicant_hiring_pass_payments
+			SET method=?, proof_image=?, status='pending', verified_at=NULL, verified_by='', rejection_reason='', created_at=?
+			WHERE id=? AND applicant_id=?`, method, proofImage, now, existingID, applicantID); err != nil {
+			return HiringPass{}, err
+		}
+	} else {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,credits_granted,created_at) VALUES(?,1000,?,?,'pending',0,?)`, applicantID, method, proofImage, now); err != nil {
+			return HiringPass{}, err
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return HiringPass{}, err

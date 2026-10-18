@@ -52,6 +52,16 @@ type MatchedApplicant struct {
 	AvailabilityMode string `json:"availability_mode"`
 }
 
+type JobPayment struct {
+	ID              int64  `json:"id"`
+	Status          string `json:"status"` // pending | verified | rejected
+	Method          string `json:"method"`
+	ProofImage      string `json:"proof_image,omitempty"`
+	SearchAttempt   int    `json:"search_attempt"`
+	VerifiedAt      *int64 `json:"verified_at,omitempty"`
+	RejectionReason string `json:"rejection_reason,omitempty"`
+}
+
 const jobCols = `id, employer_id, category, role_id, role_label, employment_type, rate_centavos,
 	rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
 	accepted_count, status, search_attempts, search_expires_at, current_try, max_tries, current_attempt, max_attempts, created_at, updated_at`
@@ -206,7 +216,7 @@ func (s *Store) ListJobs(ctx context.Context, employerID int64, statuses []strin
 	return out, rows.Err()
 }
 
-// StartSearch opens a search window only after its fee has been recorded.
+// StartSearch opens a search window only after accounting has verified the fee.
 // The status guard makes double-clicks and concurrent requests safe: only one wins.
 func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window time.Duration) error {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -215,6 +225,26 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 	}
 	defer tx.Rollback()
 
+	var payStatus string
+	err = tx.QueryRowContext(ctx, `
+		SELECT p.status FROM jobs j
+		JOIN payments p ON p.job_id=j.id AND p.search_attempt=j.search_attempts+1
+		WHERE j.id=? AND j.employer_id=? AND j.status IN ('draft','unfulfilled')`,
+		id, employerID).Scan(&payStatus)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrPaymentNotVerified
+	}
+	if err != nil {
+		return err
+	}
+	switch strings.ToLower(payStatus) {
+	case "verified":
+	case "rejected":
+		return ErrPaymentRejected
+	default:
+		return ErrPaymentNotVerified
+	}
+
 	now := time.Now()
 	res, err := tx.ExecContext(ctx, `
 		UPDATE jobs SET status='matching', search_attempts = search_attempts + 1,
@@ -222,7 +252,7 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 			search_expires_at = ?, updated_at = ?
 		WHERE id = ? AND employer_id = ? AND status IN ('draft','unfulfilled')
 		AND EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id
-			AND p.search_attempt=jobs.search_attempts+1 AND p.status IN ('paid', 'pending', 'verified'))`,
+			AND p.search_attempt=jobs.search_attempts+1 AND p.status='verified')`,
 		now.Add(window).Unix(), now.Unix(), id, employerID)
 	if err != nil {
 		return err
@@ -232,6 +262,31 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 	}
 	s.notifyMatchingCrew(ctx, tx, id, now)
 	return tx.Commit()
+}
+
+func (s *Store) LatestJobPayment(ctx context.Context, jobID int64) (*JobPayment, error) {
+	var p JobPayment
+	var verifiedAt sql.NullInt64
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, COALESCE(status,''), COALESCE(method,''), COALESCE(proof_image,''), search_attempt, verified_at, COALESCE(rejection_reason,'')
+		FROM payments WHERE job_id=? ORDER BY search_attempt DESC, id DESC LIMIT 1`, jobID).
+		Scan(&p.ID, &p.Status, &p.Method, &p.ProofImage, &p.SearchAttempt, &verifiedAt, &p.RejectionReason)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if verifiedAt.Valid && verifiedAt.Int64 > 0 {
+		v := verifiedAt.Int64
+		p.VerifiedAt = &v
+		if p.Status == "" || p.Status == "paid" {
+			p.Status = "verified"
+		}
+	} else if p.Status == "paid" || p.Status == "" {
+		p.Status = "pending"
+	}
+	return &p, nil
 }
 
 func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
@@ -259,33 +314,51 @@ func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64,
 }
 
 // RecordMatchFee records the fee for the next search attempt before crew are notified.
+// Receipts start as pending until an admin verifies them. A rejected receipt can be replaced.
 func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method, details, proofImage string, feeCentavos int64, ref string) error {
+	now := time.Now().Unix()
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO payments (job_id, user_id, amount_centavos, method, details, proof_image, search_attempt, status, provider_ref, created_at)
 		SELECT id, employer_id, ?, ?, ?, ?, search_attempts+1, 'pending', ?, ? FROM jobs
 		WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')
 		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.search_attempt=jobs.search_attempts+1)`,
-		feeCentavos, method, details, proofImage, ref, time.Now().Unix(), id, employerID)
+		feeCentavos, method, details, proofImage, ref, now, id, employerID)
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		var sameAttempt int
-		err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM jobs j JOIN payments p ON p.job_id=j.id
-			WHERE j.id=? AND j.employer_id=?
-			AND ((j.status IN ('draft','unfulfilled') AND p.search_attempt=j.search_attempts+1)
-				OR (j.status='matching' AND p.search_attempt=j.search_attempts))
-			AND p.status IN ('paid', 'pending', 'verified') AND p.method=?`,
-			id, employerID, method).Scan(&sameAttempt)
-		if err != nil {
-			return err
-		}
-		if sameAttempt > 0 {
-			return nil
-		}
-		return missOrBadState(ctx, s.db, employerID, id)
+	if n, _ := res.RowsAffected(); n > 0 {
+		return nil
 	}
-	return nil
+
+	// Replace a rejected receipt for the same attempt.
+	res, err = s.db.ExecContext(ctx, `
+		UPDATE payments SET method=?, details=?, proof_image=?, status='pending',
+			provider_ref=?, created_at=?, verified_at=NULL, verified_by='', rejection_reason=''
+		WHERE job_id=? AND search_attempt=(
+			SELECT search_attempts+1 FROM jobs WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')
+		) AND status='rejected'`,
+		method, details, proofImage, ref, now, id, id, employerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		return nil
+	}
+
+	var sameAttempt int
+	err = s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM jobs j JOIN payments p ON p.job_id=j.id
+		WHERE j.id=? AND j.employer_id=?
+		AND ((j.status IN ('draft','unfulfilled') AND p.search_attempt=j.search_attempts+1)
+			OR (j.status='matching' AND p.search_attempt=j.search_attempts))
+		AND p.status IN ('paid', 'pending', 'verified') AND p.method=?`,
+		id, employerID, method).Scan(&sameAttempt)
+	if err != nil {
+		return err
+	}
+	if sameAttempt > 0 {
+		return nil
+	}
+	return missOrBadState(ctx, s.db, employerID, id)
 }
 
 // MatchingApplicants reads eligible active profiles for an employer-owned job.
@@ -498,6 +571,18 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		return err
 	}
 	if n, _ := quota.RowsAffected(); n == 0 {
+		// Distinguish "never paid / exhausted" from "receipt waiting on accounting".
+		var payStatus string
+		payErr := tx.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM applicant_hiring_pass_payments
+			WHERE applicant_id=? ORDER BY id DESC LIMIT 1`, applicantID).Scan(&payStatus)
+		if payErr == nil {
+			switch strings.ToLower(payStatus) {
+			case "pending":
+				return ErrHiringPassPending
+			case "rejected":
+				return ErrPaymentRejected
+			}
+		}
 		return ErrHiringPassEmpty
 	}
 

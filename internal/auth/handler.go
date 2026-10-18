@@ -98,7 +98,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(req.Name)
 	company := strings.TrimSpace(req.Company)
 
-	if !validRole(req.Role) {
+	if req.Role == "admin" || !validRole(req.Role) {
 		httpx.Error(w, http.StatusBadRequest, "invalid role")
 		return
 	}

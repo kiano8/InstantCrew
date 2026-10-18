@@ -14,10 +14,14 @@ import (
 )
 
 var (
-	ErrNotFound        = errors.New("not found")
-	ErrEmailTaken      = errors.New("email already registered")
-	ErrHiringPassEmpty = errors.New("hiring pass exhausted; add ₱10 for 5 hires")
-	ErrBetaFull        = errors.New("beta tester limit reached")
+	ErrNotFound             = errors.New("not found")
+	ErrEmailTaken           = errors.New("email already registered")
+	ErrHiringPassEmpty      = errors.New("hiring pass exhausted; add ₱10 for 5 hires")
+	ErrHiringPassPending    = errors.New("your ₱10 receipt is awaiting verification; hires activate once accounting approves it")
+	ErrBetaFull             = errors.New("beta tester limit reached")
+	ErrPaymentNotVerified   = errors.New("accounting has not verified this payment yet")
+	ErrPaymentRejected      = errors.New("this payment receipt was rejected; please upload a new proof of payment")
+	ErrPaymentPendingExists = errors.New("a payment is already waiting for accounting verification")
 )
 
 type User struct {

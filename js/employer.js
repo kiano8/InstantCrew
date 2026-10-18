@@ -58,6 +58,7 @@ const state = {
   selectedPaymentMethod: 'gcash',
   selectedPaymentDetails: '',
   paymentStep: 'payment',
+  feePendingVerification: false,
   paymentAmount: 0,
   pendingPayment: null,
   searchCountdown: 180,
@@ -169,6 +170,7 @@ const payCancelBtn = document.getElementById('payCancelBtn');
 const payNowBtn = document.getElementById('payNowBtn');
 const payNowBtnText = document.getElementById('payNowBtnText');
 const paymentError = document.getElementById('paymentError');
+const paymentPendingNotice = document.getElementById('paymentPendingNotice');
 const paySummaryRole = document.getElementById('paySummaryRole');
 const paySummaryCat = document.getElementById('paySummaryCat');
 const paySummaryTime = document.getElementById('paySummaryTime');
@@ -1443,6 +1445,10 @@ function openPaymentModal(step = 'payment') {
     paymentError.textContent = '';
     paymentError.style.display = 'none';
   }
+  if (paymentPendingNotice) {
+    paymentPendingNotice.textContent = '';
+    paymentPendingNotice.style.display = 'none';
+  }
   if (payNowBtn) {
     updateEmployerPayBtn();
   }
@@ -1450,6 +1456,9 @@ function openPaymentModal(step = 'payment') {
   if (paymentModal) {
     const payBody = document.getElementById('paymentModalBody');
     if (payBody) payBody.scrollTop = 0;
+  }
+  if (state.currentJobId) {
+    checkCurrentJobPaymentStatus(state.currentJobId);
   }
   return true;
 }
@@ -1468,7 +1477,117 @@ function persistEmployerPaymentPreference(method, details) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(employerSession));
 }
 
+let feeVerificationPollTimer = null;
+
+function stopFeeVerificationPolling() {
+  if (feeVerificationPollTimer) {
+    clearInterval(feeVerificationPollTimer);
+    feeVerificationPollTimer = null;
+  }
+}
+
+function startFeeVerificationPolling(jobId) {
+  stopFeeVerificationPolling();
+  if (!jobId) return;
+
+  feeVerificationPollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`, { credentials: 'same-origin', cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      const p = data.job?.payment;
+      if (!p) return;
+
+      if (p.status === 'verified') {
+        stopFeeVerificationPolling();
+        state.feePendingVerification = false;
+        if (paymentPendingNotice) {
+          paymentPendingNotice.style.display = 'block';
+          paymentPendingNotice.style.background = '#ECFDF5';
+          paymentPendingNotice.style.borderColor = '#A7F3D0';
+          paymentPendingNotice.style.color = '#065F46';
+          paymentPendingNotice.textContent = '✓ Payment verified! Starting crew search…';
+        }
+        const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
+        const searchData = await searchResponse.json().catch(() => ({}));
+        if (searchResponse.ok) {
+          closePaymentModal();
+          activateMatchingScreen(jobId, searchData);
+        }
+      } else if (p.status === 'rejected') {
+        stopFeeVerificationPolling();
+        state.feePendingVerification = false;
+        const reason = p.rejection_reason || 'Accounting could not verify the receipt.';
+        if (paymentPendingNotice) {
+          paymentPendingNotice.style.display = 'block';
+          paymentPendingNotice.style.background = '#FEF2F2';
+          paymentPendingNotice.style.borderColor = '#FECACA';
+          paymentPendingNotice.style.color = '#B91C1C';
+          paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${reason}. Please upload a new proof of payment.`;
+        }
+        if (payNowBtn) {
+          payNowBtn.disabled = false;
+          if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
+        }
+      }
+    } catch (err) {
+      console.warn('Fee verification polling error:', err);
+    }
+  }, 3000);
+}
+
+async function checkCurrentJobPaymentStatus(jobId) {
+  if (!jobId) return;
+  try {
+    const res = await fetch(`/api/jobs/${jobId}`, { credentials: 'same-origin', cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const p = data.job?.payment;
+    if (!p) return;
+
+    if (p.status === 'pending') {
+      state.feePendingVerification = true;
+      if (paymentPendingNotice) {
+        paymentPendingNotice.style.display = 'block';
+        paymentPendingNotice.style.background = '#EFF6FF';
+        paymentPendingNotice.style.borderColor = '#BFDBFE';
+        paymentPendingNotice.style.color = '#1E40AF';
+        paymentPendingNotice.textContent = '⏳ Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
+      }
+      if (payNowBtnText) payNowBtnText.textContent = 'Check Verification & Start Search';
+      updateEmployerPayBtn();
+      startFeeVerificationPolling(jobId);
+    } else if (p.status === 'rejected') {
+      state.feePendingVerification = false;
+      const reason = p.rejection_reason || 'Accounting could not verify the receipt.';
+      if (paymentPendingNotice) {
+        paymentPendingNotice.style.display = 'block';
+        paymentPendingNotice.style.background = '#FEF2F2';
+        paymentPendingNotice.style.borderColor = '#FECACA';
+        paymentPendingNotice.style.color = '#B91C1C';
+        paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${reason}. Please upload a new proof of payment.`;
+      }
+      if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
+      updateEmployerPayBtn();
+    } else if (p.status === 'verified') {
+      state.feePendingVerification = false;
+      if (paymentPendingNotice) {
+        paymentPendingNotice.style.display = 'block';
+        paymentPendingNotice.style.background = '#ECFDF5';
+        paymentPendingNotice.style.borderColor = '#A7F3D0';
+        paymentPendingNotice.style.color = '#065F46';
+        paymentPendingNotice.textContent = '✓ Payment verified! Ready to start crew search.';
+      }
+      if (payNowBtnText) payNowBtnText.textContent = 'Start Crew Search';
+      updateEmployerPayBtn();
+    }
+  } catch (e) {
+    console.warn('Check payment status error:', e);
+  }
+}
+
 function closePaymentModal() {
+  stopFeeVerificationPolling();
   if (paymentModal) {
     paymentModal.classList.remove('open');
     paymentModal.setAttribute('aria-hidden', 'true');
@@ -1559,6 +1678,14 @@ function setupEmployerProofUpload(fileInputId, dropzoneId, attachedBoxId, thumbI
 
 function updateEmployerPayBtn() {
   if (!payNowBtn) return;
+  if (state.feePendingVerification) {
+    // The receipt is already uploaded; the button re-checks verification.
+    payNowBtn.disabled = false;
+    payNowBtn.style.opacity = '1';
+    payNowBtn.style.cursor = 'pointer';
+    payNowBtn.title = '';
+    return;
+  }
   const method = state.selectedPaymentMethod || 'gcash';
   if (method === 'gcash' || method === 'maya') {
     const hasProof = !!(state.selectedPaymentProofFile || state.selectedPaymentProof);
@@ -1719,6 +1846,61 @@ if (payNowBtn) {
     state.selectedPaymentDetails = details;
     state.selectedPaymentProof = proofImageUrl;
 
+    if (state.feePendingVerification && state.currentJobId) {
+      if (payNowBtn) payNowBtn.disabled = true;
+      if (payNowBtnText) payNowBtnText.innerHTML = '<span class="db-btn-spinner"></span> Checking verification…';
+      try {
+        const searchRes = await fetch(`/api/jobs/${state.currentJobId}/search`, { method: 'POST', credentials: 'same-origin' });
+        const searchData = await searchRes.json().catch(() => ({}));
+        if (searchRes.ok) {
+          state.feePendingVerification = false;
+          stopFeeVerificationPolling();
+          closePaymentModal();
+          activateMatchingScreen(state.currentJobId, searchData);
+          return;
+        }
+        if (searchRes.status === 402) {
+          const jobRes = await fetch(`/api/jobs/${state.currentJobId}`, { credentials: 'same-origin', cache: 'no-store' });
+          const jobData = await jobRes.json().catch(() => ({}));
+          const p = jobData.job?.payment;
+          if (p?.status === 'rejected') {
+            state.feePendingVerification = false;
+            stopFeeVerificationPolling();
+            if (paymentPendingNotice) {
+              paymentPendingNotice.style.display = 'block';
+              paymentPendingNotice.style.background = '#FEF2F2';
+              paymentPendingNotice.style.borderColor = '#FECACA';
+              paymentPendingNotice.style.color = '#B91C1C';
+              paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${p.rejection_reason || 'Please upload a new proof of payment.'}`;
+            }
+            if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
+          } else {
+            if (paymentPendingNotice) {
+              paymentPendingNotice.style.display = 'block';
+              paymentPendingNotice.style.background = '#EFF6FF';
+              paymentPendingNotice.style.borderColor = '#BFDBFE';
+              paymentPendingNotice.style.color = '#1E40AF';
+              paymentPendingNotice.textContent = '⏳ Still awaiting verification by accounting. As soon as it is approved, your search starts automatically.';
+            }
+            if (payNowBtnText) payNowBtnText.textContent = 'Check Verification & Start Search';
+          }
+        } else {
+          if (paymentError) {
+            paymentError.textContent = searchData.error || 'Could not verify payment.';
+            paymentError.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (paymentError) {
+          paymentError.textContent = e.message || 'Network error checking payment.';
+          paymentError.style.display = 'block';
+        }
+      } finally {
+        if (payNowBtn) payNowBtn.disabled = false;
+      }
+      return;
+    }
+
     if (state.paymentStep === 'search') {
       const beginSearch = async () => {
         state.selectedPaymentMethod = method;
@@ -1735,8 +1917,8 @@ if (payNowBtn) {
             paymentError.style.display = 'block';
           }
         } finally {
-          if (payNowBtn) payNowBtn.disabled = false;
-          if (payNowBtnText && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Confirm';
+          if (payNowBtn && !state.feePendingVerification) payNowBtn.disabled = false;
+          if (payNowBtnText && !state.feePendingVerification && paymentModal?.classList.contains('open')) payNowBtnText.textContent = 'Confirm';
         }
       };
       if (authUser) {
@@ -1767,35 +1949,11 @@ if (payNowBtn) {
   });
 }
 
-async function startCrewSearch() {
+function activateMatchingScreen(jobId, searchData, customMapLoc, customMapsUrl, customTiming) {
+  const finalMapLoc = customMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapsUrl = customMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
+  const timingText = customTiming || (state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
 
-  const timingText = state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
-  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
-  const finalMapsUrl = (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
-
-  const timingMode = state.timing === 'later' ? 'later' : 'now';
-  let scheduledAt = '';
-  if (timingMode === 'later') {
-    const scheduled = new Date(state.scheduledDate);
-    const [hh, mm] = String(state.scheduledTime || '08:00').split(':').map(Number);
-    scheduled.setHours(hh, mm, 0, 0);
-    scheduledAt = scheduled.toISOString();
-  }
-  const reusableStatus = state.currentBooking?.status;
-  const reusingUnfulfilledJob = state.currentJobId && (reusableStatus === 'draft' || reusableStatus === 'unfulfilled');
-  // The Go API derives maps_url from map_location/coordinates; sending maps_url
-  // here is rejected by its strict request decoder as an unknown JSON field.
-  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: 1 };
-  const createResponse = await fetch(reusingUnfulfilledJob ? `/api/jobs/${state.currentJobId}` : '/api/jobs', { method: reusingUnfulfilledJob ? 'PUT' : 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(jobPayload) });
-  const createData = await createResponse.json().catch(() => ({}));
-  if (!createResponse.ok) throw new Error(createData.error || 'Could not create the shift. Please try again.');
-  const jobId = createData.job.id;
-  state.currentJobId = jobId;
-  state.currentBooking = { id: jobId, status: createData.job.status || 'draft' };
-  await recordSearchFee(state.selectedPaymentMethod, state.selectedPaymentDetails, state.selectedPaymentProof);
-  const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
-  const searchData = await searchResponse.json().catch(() => ({}));
-  if (!searchResponse.ok) throw new Error(searchData.error || 'Could not start the crew search.');
   const bookingId = jobId;
   const bookingData = {
     id: bookingId,
@@ -1811,13 +1969,13 @@ async function startCrewSearch() {
     timing: timingText,
     count: 1,
     crewRate: `₱${state.offeredRate}`,
-    status: 'matching', // Waiting for crew acceptance
-    current_try: Number(searchData.job?.current_try ?? 1),
-    max_tries: Number(searchData.job?.max_tries ?? 3),
-    current_attempt: Number(searchData.job?.current_attempt ?? 1),
-    max_attempts: Number(searchData.job?.max_attempts ?? 3),
-    tries_remaining: Number(searchData.job?.tries_remaining ?? 2),
-    seconds_remaining: Number(searchData.job?.seconds_remaining ?? SEARCH_MAX_SECONDS),
+    status: 'matching',
+    current_try: Number(searchData?.job?.current_try ?? 1),
+    max_tries: Number(searchData?.job?.max_tries ?? 3),
+    current_attempt: Number(searchData?.job?.current_attempt ?? 1),
+    max_attempts: Number(searchData?.job?.max_attempts ?? 3),
+    tries_remaining: Number(searchData?.job?.tries_remaining ?? 2),
+    seconds_remaining: Number(searchData?.job?.seconds_remaining ?? SEARCH_MAX_SECONDS),
     bookedAt: new Date().toISOString(),
     paid: true,
     paymentMethod: state.paymentMethod,
@@ -1829,33 +1987,78 @@ async function startCrewSearch() {
   state.currentBooking = bookingData;
   state.acceptanceHandled = false;
   saveBookingToSession(bookingData);
-
   state.currentJobId = jobId;
 
-  // The fee is recorded before this search begins.
   if (matchEscrowPill) {
     matchEscrowPill.style.display = 'inline-flex';
-    if (matchEscrowText) matchEscrowText.textContent = 'Search fee paid before crew search';
+    if (matchEscrowText) matchEscrowText.textContent = 'Search fee verified before crew search';
   }
 
   if (matchFailed) matchFailed.style.display = 'none';
 
   goStep(4);
 
-  // Reset results pane — loading state active, results hidden until accepted!
   matchLoading.style.display = 'flex';
   matchResults.style.display = 'none';
   updateStep4BackButton();
 
-  // Start 3-minute search timer
   startSearchTimer();
 
-  // Start checking for crew acceptance (listening & polling)
   matchedCrewFetchedAt = 0;
   if (matchedCrewCount) matchedCrewCount.textContent = '0';
   if (matchedCrewMessage) matchedCrewMessage.textContent = 'Checking the database for available crew…';
   if (matchedCrewList) matchedCrewList.replaceChildren();
   startCheckingForAcceptance();
+}
+
+async function startCrewSearch() {
+  const timingText = state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
+  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapsUrl = (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
+
+  const timingMode = state.timing === 'later' ? 'later' : 'now';
+  let scheduledAt = '';
+  if (timingMode === 'later') {
+    const scheduled = new Date(state.scheduledDate);
+    const [hh, mm] = String(state.scheduledTime || '08:00').split(':').map(Number);
+    scheduled.setHours(hh, mm, 0, 0);
+    scheduledAt = scheduled.toISOString();
+  }
+  const reusableStatus = state.currentBooking?.status;
+  const reusingUnfulfilledJob = state.currentJobId && (reusableStatus === 'draft' || reusableStatus === 'unfulfilled');
+  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: 1 };
+  const createResponse = await fetch(reusingUnfulfilledJob ? `/api/jobs/${state.currentJobId}` : '/api/jobs', { method: reusingUnfulfilledJob ? 'PUT' : 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(jobPayload) });
+  const createData = await createResponse.json().catch(() => ({}));
+  if (!createResponse.ok) throw new Error(createData.error || 'Could not create the shift. Please try again.');
+  const jobId = createData.job.id;
+  state.currentJobId = jobId;
+  state.currentBooking = { id: jobId, status: createData.job.status || 'draft' };
+
+  await recordSearchFee(state.selectedPaymentMethod, state.selectedPaymentDetails, state.selectedPaymentProof);
+
+  const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
+  const searchData = await searchResponse.json().catch(() => ({}));
+  if (!searchResponse.ok) {
+    if (searchResponse.status === 402) {
+      state.feePendingVerification = true;
+      if (paymentPendingNotice) {
+        paymentPendingNotice.style.display = 'block';
+        paymentPendingNotice.style.background = '#EFF6FF';
+        paymentPendingNotice.style.borderColor = '#BFDBFE';
+        paymentPendingNotice.style.color = '#1E40AF';
+        paymentPendingNotice.textContent = '⏳ Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
+      }
+      if (paymentError) paymentError.style.display = 'none';
+      if (payNowBtnText) payNowBtnText.textContent = 'Check Verification & Start Search';
+      updateEmployerPayBtn();
+      startFeeVerificationPolling(jobId);
+      return;
+    }
+    throw new Error(searchData.error || 'Could not start the crew search.');
+  }
+
+  closePaymentModal();
+  activateMatchingScreen(jobId, searchData, finalMapLoc, finalMapsUrl, timingText);
 }
 
 async function recordSearchFee(methodLabel, details = '', proofImage = '') {
@@ -1878,7 +2081,6 @@ async function recordSearchFee(methodLabel, details = '', proofImage = '') {
   state.paymentProof = proof;
   state.paid = true;
   if (resultsPaidBadge) resultsPaidBadge.textContent = `✓ Search Fee Paid (₱${state.paymentAmount.toFixed(2)})`;
-  closePaymentModal();
   if (state.currentBooking) {
     state.currentBooking.paid = true;
     state.currentBooking.paymentMethod = methodLabel;

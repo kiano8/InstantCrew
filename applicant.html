@@ -1823,6 +1823,39 @@
                             Hires</button>
                     </div>
 
+                    <!-- Quota Pending Verification Alert -->
+                    <div class="app-quota-warning-banner" id="appQuotaPendingBanner" style="display:none; background:#EFF6FF; border-color:#BFDBFE;">
+                        <div class="app-quota-warning-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="app-quota-warning-content">
+                            <h4 style="color:#1E40AF;">₱10 Receipt Awaiting Admin Verification</h4>
+                            <p style="color:#1E3A8A;">Your proof of payment has been uploaded. Instant Crew accounting will verify your receipt shortly to activate your 5 new hiring opportunities.</p>
+                        </div>
+                        <button type="button" class="app-btn-topup-now" id="appQuotaPendingRefreshBtn" style="background:#2563EB;">Check Status</button>
+                    </div>
+
+                    <!-- Quota Rejected Alert -->
+                    <div class="app-quota-warning-banner" id="appQuotaRejectedBanner" style="display:none; background:#FEF2F2; border-color:#FECACA;">
+                        <div class="app-quota-warning-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg>
+                        </div>
+                        <div class="app-quota-warning-content">
+                            <h4 style="color:#B91C1C;">Receipt Rejected by Accounting</h4>
+                            <p style="color:#991B1B;" id="appQuotaRejectedReason">Accounting could not verify your receipt. Please re-upload a clear proof of payment.</p>
+                        </div>
+                        <button type="button" class="app-btn-topup-now" id="appQuotaReuploadBtn" style="background:#DC2626;">Re-upload Proof</button>
+                    </div>
+
                     <div class="app-shifts-list" id="shiftsListContainer"></div>
 
                 </div>
@@ -6196,18 +6229,74 @@
                 const countText = document.getElementById('appPassCountText');
                 const fillEl = document.getElementById('appPassProgressFill');
                 const warningBanner = document.getElementById('appQuotaWarningBanner');
+                const pendingBanner = document.getElementById('appQuotaPendingBanner');
+                const rejectedBanner = document.getElementById('appQuotaRejectedBanner');
+                const rejectedReasonEl = document.getElementById('appQuotaRejectedReason');
+
+                const pendingPayment = quota.pendingPayment;
+                const isPending = pendingPayment && pendingPayment.status === 'pending';
+                const isRejected = pendingPayment && pendingPayment.status === 'rejected';
 
                 if (countText) {
-                    countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining (${used} achieved)`;
+                    if (isPending) {
+                        countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining <span style="color:#2563EB; font-weight:600;">(₱10 top-up awaiting admin verification)</span>`;
+                    } else if (isRejected) {
+                        countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining <span style="color:#DC2626; font-weight:600;">(Receipt rejected — re-upload needed)</span>`;
+                    } else {
+                        countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining (${used} achieved)`;
+                    }
                 }
                 if (fillEl) {
                     fillEl.style.width = `${pct}%`;
-                    fillEl.style.background = remaining <= 1 ? '#DC2626' : (remaining <= 2 ? '#F59E0B' : '#D97706');
+                    fillEl.style.background = isPending ? '#2563EB' : (remaining <= 1 ? '#DC2626' : (remaining <= 2 ? '#F59E0B' : '#D97706'));
                 }
 
-                if (warningBanner) {
-                    warningBanner.style.display = remaining <= 0 ? 'flex' : 'none';
+                if (pendingBanner) {
+                    pendingBanner.style.display = isPending ? 'flex' : 'none';
                 }
+                if (rejectedBanner) {
+                    rejectedBanner.style.display = isRejected ? 'flex' : 'none';
+                    if (rejectedReasonEl && isRejected) {
+                        rejectedReasonEl.textContent = pendingPayment.rejection_reason
+                            ? `Reason: ${pendingPayment.rejection_reason}. Please re-upload a clear proof of payment.`
+                            : 'Accounting could not verify your receipt. Please re-upload a clear proof of payment.';
+                    }
+                }
+                if (warningBanner) {
+                    warningBanner.style.display = (remaining <= 0 && !isPending && !isRejected) ? 'flex' : 'none';
+                }
+
+                if (isPending) {
+                    startApplicantPassPolling();
+                } else {
+                    stopApplicantPassPolling();
+                }
+            }
+
+            let appPassPollTimer = null;
+            function stopApplicantPassPolling() {
+                if (appPassPollTimer) {
+                    clearInterval(appPassPollTimer);
+                    appPassPollTimer = null;
+                }
+            }
+            function startApplicantPassPolling() {
+                if (appPassPollTimer) return;
+                appPassPollTimer = setInterval(async () => {
+                    try {
+                        const prevRemaining = session?.hiringQuota?.remainingHires ?? 0;
+                        const updated = await refreshHiringPass();
+                        if (updated && (updated.remainingHires > prevRemaining || !updated.pendingPayment || updated.pendingPayment.status !== 'pending')) {
+                            stopApplicantPassPolling();
+                            if (updated.remainingHires > prevRemaining) {
+                                showToast('✓ Your ₱10 payment was verified by accounting! 5 hires are active.');
+                                renderShiftsFeed();
+                            } else if (updated.pendingPayment?.status === 'rejected') {
+                                showToast('✕ Your ₱10 payment receipt was rejected by accounting.', true);
+                            }
+                        }
+                    } catch (e) {}
+                }, 4000);
             }
 
             async function refreshHiringPass() {
@@ -7425,10 +7514,36 @@
                             updateHiringPassUI();
                             renderShiftsFeed();
                             closeApplicantTopupModal();
-                            showToast('Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
+                            showToast(data.pending
+                                ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
+                                : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
                         } catch (err) { showToast(err.message, true); }
                         finally { appConfirmTopupBtn.disabled = false; appConfirmTopupBtn.innerHTML = '<span>Confirm &amp; Add ₱10.00 (+5 Hires)</span>'; }
                     });
+                }
+
+                const appQuotaPendingRefreshBtn = document.getElementById('appQuotaPendingRefreshBtn');
+                if (appQuotaPendingRefreshBtn) {
+                    appQuotaPendingRefreshBtn.addEventListener('click', async () => {
+                        appQuotaPendingRefreshBtn.disabled = true;
+                        try {
+                            const updated = await refreshHiringPass();
+                            if (updated?.pendingPayment?.status === 'pending') {
+                                showToast('Receipt is still awaiting accounting verification. Please allow a few moments.');
+                            } else if (updated?.remainingHires > 0) {
+                                showToast('✓ Payment verified! 5 hires are active.');
+                            }
+                        } catch (e) {
+                            showToast('Could not check status right now.', true);
+                        } finally {
+                            appQuotaPendingRefreshBtn.disabled = false;
+                        }
+                    });
+                }
+
+                const appQuotaReuploadBtn = document.getElementById('appQuotaReuploadBtn');
+                if (appQuotaReuploadBtn) {
+                    appQuotaReuploadBtn.addEventListener('click', openApplicantTopupModal);
                 }
 
                 // Global document click to close dropdowns
