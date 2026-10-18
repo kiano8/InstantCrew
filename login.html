@@ -12,6 +12,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/login.css?v=20261017-split-curved-theme">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
+    <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
@@ -210,17 +213,22 @@
 
                         <!-- Admin / Accounting Login Form (Hidden by default) -->
                         <form id="formAdminLogin" class="auth-form" style="display:none;" onsubmit="return false;">
-                            <div style="background:#F1F5F9; border:1px solid #E2E8F0; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-                                <span style="display:inline-flex; width:8px; height:8px; border-radius:50%; background:#0284C7;"></span>
-                                <span style="font-size:0.78rem; font-weight:700; color:#1E293B;">Admin &amp; Accounting Verification</span>
+                            <div
+                                style="background:#F1F5F9; border:1px solid #E2E8F0; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                                <span
+                                    style="display:inline-flex; width:8px; height:8px; border-radius:50%; background:#0284C7;"></span>
+                                <span style="font-size:0.78rem; font-weight:700; color:#1E293B;">Admin &amp; Accounting
+                                    Verification</span>
                             </div>
 
                             <div class="form-group">
                                 <div class="input-wrapper">
                                     <input type="email" id="adminLoginEmail" class="form-input"
-                                        placeholder="Admin Email" required autocomplete="email" value="admin@instantcrew.com">
+                                        placeholder="Admin Email" required autocomplete="email"
+                                        value="admin@instantcrew.com">
                                     <span class="input-icon-right">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
                                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                                         </svg>
                                     </span>
@@ -229,8 +237,9 @@
 
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <input type="password" id="adminLoginPassword" class="form-input form-input-password"
-                                        placeholder="Admin Password" required autocomplete="current-password">
+                                    <input type="password" id="adminLoginPassword"
+                                        class="form-input form-input-password" placeholder="Admin Password" required
+                                        autocomplete="current-password">
                                     <button type="button" class="password-toggle-btn" aria-label="Show password"
                                         title="Toggle password visibility">
                                         <svg class="eye-icon eye-open" width="18" height="18" viewBox="0 0 24 24"
@@ -251,7 +260,8 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn-auth-submit" id="btnSubmitAdminLogin" style="background:#0F172A; color:#FFFFFF;">Verify &amp; Access Accounting</button>
+                            <button type="submit" class="btn-auth-submit" id="btnSubmitAdminLogin"
+                                style="background:#0F172A; color:#FFFFFF;">Verify &amp; Access Accounting</button>
                         </form>
 
                         <!-- Social Login Row (Exactly as shown in reference) -->

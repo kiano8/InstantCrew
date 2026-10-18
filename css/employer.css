@@ -3506,6 +3506,7 @@ h2 {
 .db-qr-instructions li {
     margin-bottom: 2px;
 }
+
 .db-qr-instructions li:last-child {
     margin-bottom: 0;
 }
