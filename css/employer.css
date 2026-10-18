@@ -6590,30 +6590,3 @@ body {
     font-weight: 600;
     margin-bottom: 14px;
 }
-
-outline: 2px solid #F5A623;
-outline-offset: 1px;
-}
-
-.db-auth-toggle-pass .eye-icon {
-    display: block;
-    pointer-events: none;
-}
-
-.db-auth-hint {
-    font-size: 0.74rem;
-    color: #6B7280;
-    margin: 8px 0 0;
-    line-height: 1.4;
-}
-
-.db-auth-error-banner {
-    padding: 9px 12px;
-    border-radius: 10px;
-    background: #FEF2F2;
-    border: 1px solid #FCA5A5;
-    color: #991B1B;
-    font-size: 0.82rem;
-    font-weight: 600;
-    margin-bottom: 14px;
-}
