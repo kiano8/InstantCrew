@@ -33,6 +33,38 @@ func getenvInt(k string, def int) int {
 	return def
 }
 
+func googleCredentialsPath() string {
+	if configured := os.Getenv("GOOGLE_OAUTH_CREDENTIALS"); configured != "" {
+		return configured
+	}
+	name := "client_secret_95317878064-1pd11edtj1i76buqrpbhj752gat1jmuf.apps.googleusercontent.com.json"
+	var roots []string
+	if cwd, err := os.Getwd(); err == nil {
+		roots = append(roots, cwd)
+	}
+	if exe, err := os.Executable(); err == nil {
+		roots = append(roots, filepath.Dir(exe))
+	}
+	seen := make(map[string]bool)
+	for _, root := range roots {
+		for i := 0; i < 6 && root != "." && root != string(filepath.Separator); i++ {
+			if !seen[root] {
+				seen[root] = true
+				candidate := filepath.Join(root, name)
+				if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+					return candidate
+				}
+			}
+			parent := filepath.Dir(root)
+			if parent == root {
+				break
+			}
+			root = parent
+		}
+	}
+	return name
+}
+
 // Only these files are public. The Go source and the database are never served.
 var pages = map[string]bool{
 	"index.html": true, "login.html": true,
@@ -92,7 +124,7 @@ func main() {
 		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
 	}
-	if err := authH.ConfigureGoogleFromFile(getenv("GOOGLE_OAUTH_CREDENTIALS", "client_secret_95317878064-1pd11edtj1i76buqrpbhj752gat1jmuf.apps.googleusercontent.com.json"), getenv("GOOGLE_REDIRECT_URL", "")); err != nil {
+	if err := authH.ConfigureGoogleFromFile(googleCredentialsPath(), getenv("GOOGLE_REDIRECT_URL", "")); err != nil {
 		log.Printf("Google SSO disabled: %v", err)
 	}
 	// Development mode must not create implicit accounts. Authentication always

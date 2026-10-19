@@ -8,10 +8,11 @@ import (
 	"time"
 )
 
-// InitialFreeHires is how many hires a new applicant gets without paying.
-const InitialFreeHires = 5
+// InitialFreeHires is how many hires a new applicant gets before paying.
+const InitialFreeHires = 0
 
-// grantInitialHires creates the applicant's hiring pass with the free hires.
+// grantInitialHires creates the applicant's empty hiring pass. Paid hires are
+// added only after accounting verifies the signup payment.
 // INSERT OR IGNORE keeps it idempotent: an existing pass is never reset.
 func (s *Store) grantInitialHires(ctx context.Context, applicantID int64) error {
 	_, err := s.db.ExecContext(ctx, `
@@ -22,9 +23,8 @@ func (s *Store) grantInitialHires(ctx context.Context, applicantID int64) error 
 	return err
 }
 
-// afterUserCreated runs for every signup path (quick wizard and the full
-// login/signup page both hit the same endpoint). If the free hires cannot be
-// granted, the half-created account is removed so nobody is left locked out.
+// afterUserCreated runs for every signup path. If the hiring-pass row cannot
+// be created, remove the half-created account.
 func (s *Store) afterUserCreated(ctx context.Context, u *User) error {
 	if u.Role != "applicant" {
 		return nil
@@ -133,12 +133,12 @@ func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([
 	return out, rows.Err()
 }
 
-// ApplicantPaymentHistory is the applicant's log: the free starter hires,
-// every hiring-pass top-up, and each hire that was used on a shift. Newest first.
+// ApplicantPaymentHistory is the applicant's log: hiring-pass payments and
+// each hire used on a shift. Newest first.
 func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) ([]PaymentLogEntry, error) {
 	out := make([]PaymentLogEntry, 0)
 
-	// Free starter hires, dated at account creation.
+	// Include a starter entry only when free starter hires are enabled.
 	var created int64
 	var hasPass int
 	err := s.db.QueryRowContext(ctx, `SELECT u.created_at, (SELECT COUNT(*) FROM applicant_hiring_passes WHERE applicant_id = u.id)
@@ -146,7 +146,7 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-	if err == nil && hasPass > 0 {
+	if err == nil && hasPass > 0 && InitialFreeHires > 0 {
 		out = append(out, PaymentLogEntry{
 			ID: "free_start", Kind: "free_hires", Title: "Starter hires",
 			Description: fmt.Sprintf("%d free hires included with your account", InitialFreeHires),

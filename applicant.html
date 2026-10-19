@@ -1035,16 +1035,16 @@
                     <!-- Selected Package Showcase -->
                     <div class="app-pass-package-card">
                         <div class="app-pass-package-header">
-                            <span class="app-pass-per-hire-tag">FREE to start</span>
+                            <span class="app-pass-per-hire-tag">₱10 to activate</span>
                         </div>
                         <div class="app-pass-package-main">
                             <div>
                                 <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">5 free Hiring Opportunities — no payment needed</p>
+                                <p class="app-pass-package-desc">Submit ₱10 and upload your receipt to activate 5 hiring opportunities</p>
                             </div>
                             <div class="app-pass-package-price">
                                 <span class="app-pass-currency">₱</span>
-                                <span class="app-pass-amount">0</span>
+                                <span class="app-pass-amount">10</span>
                                 <span class="app-pass-decimal">.00</span>
                             </div>
                         </div>
@@ -1054,7 +1054,7 @@
                                     stroke-width="2.5">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
-                                <span>Includes <strong>5 free hires</strong> — you pay nothing upfront</span>
+                                <span>₱10 payment activates <strong>5 hires</strong> after receipt verification</span>
                             </div>
                             <div class="app-pass-feature-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
@@ -2211,10 +2211,10 @@
                     </div>
                     <div class="app-pass-package-main">
                         <div>
-                            <h4 class="app-pass-package-title" style="font-size:1.1rem; margin:0 0 4px 0;">5 Hires
-                                Opportunity Reload</h4>
+                            <h4 class="app-pass-package-title" style="font-size:1.1rem; margin:0 0 4px 0;">5 Hiring
+                                Opportunities</h4>
                             <p class="app-pass-package-desc" style="margin:0; font-size:0.82rem; color:#64748B;">Unlock
-                                5 more instant job match acceptances</p>
+                                instant job match acceptances</p>
                         </div>
                         <div class="app-pass-package-price">
                             <span class="app-pass-currency">₱</span>
@@ -5315,8 +5315,8 @@
                     let canAccept = true;
                     let lockedReason = '';
 
-                    const quota = session.hiringQuota || { remainingHires: 5 };
-                    const remainingHires = quota.remainingHires !== undefined ? quota.remainingHires : 5;
+                    const quota = session.hiringQuota || { remainingHires: 0 };
+                    const remainingHires = quota.remainingHires !== undefined ? quota.remainingHires : 0;
 
                     if (remainingHires <= 0) {
                         canAccept = false;
@@ -6075,6 +6075,7 @@
             const appConfirmTopupBtn = document.getElementById('appConfirmTopupBtn');
             const appPassTopupBtn = document.getElementById('appPassTopupBtn');
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
+            let initialApplicantPassActivation = false;
 
             // Step 1 category & role elements (using unique stepCat IDs to avoid collisions)
             const stepCatKitchen = document.getElementById('stepCatKitchen');
@@ -6312,8 +6313,18 @@
                 return session?.hiringQuota;
             }
 
-            function openApplicantTopupModal() {
+            function openApplicantTopupModal(initialActivation = false) {
                 if (applicantTopupModal) {
+                    initialActivation = initialActivation === true;
+                    initialApplicantPassActivation = initialActivation;
+                    const title = document.getElementById('appTopupModalTitle');
+                    const subtitle = applicantTopupModal.querySelector('.db-payment-header .db-modal-sub');
+                    const confirmText = appConfirmTopupBtn?.querySelector('span');
+                    if (title) title.textContent = initialActivation ? 'Activate Your First 5 Hires' : 'Add ₱10 for 5 Hires';
+                    if (subtitle) subtitle.textContent = initialActivation
+                        ? 'Submit your ₱10 payment receipt. Accounting will verify it before your 5 hiring opportunities are activated.'
+                        : 'Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift opportunities.';
+                    if (confirmText) confirmText.textContent = initialActivation ? 'Submit ₱10 Payment for 5 Hires' : 'Confirm ₱10.00 (+5 Hires)';
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -6542,11 +6553,11 @@
 
                 if (!userSession.hiringQuota) {
                     userSession.hiringQuota = {
-                        totalHires: 5,
-                        remainingHires: 5,
+                        totalHires: 0,
+                        remainingHires: 0,
                         usedHires: 0,
-                        paidAmount: 10,
-                        batchesPaid: 1
+                        paidAmount: 0,
+                        batchesPaid: 0
                     };
                     saveWorkerSession(userSession);
                 }
@@ -7303,7 +7314,7 @@
                     if (!appPayAndProceedBtn) return;
                     if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
                         const hasProof = !!(step4ProofFile || step4ProofDataUrl);
-                        appPayAndProceedBtn.disabled = false; // free starter hires: no proof needed
+                        appPayAndProceedBtn.disabled = false; // Proof is collected after signup in the reusable payment modal.
                         appPayAndProceedBtn.style.opacity = '1';
                         appPayAndProceedBtn.style.cursor = 'pointer';
                         appPayAndProceedBtn.title = '';
@@ -7348,14 +7359,17 @@
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
                     appPayAndProceedBtn.addEventListener('click', async () => {
-                        // New crew members start with 5 free hires granted by the server at signup.
-                        // No upfront payment: just continue to sign up / log in, or straight to the dashboard.
+                        // Applicant signup opens the payment modal before any hires are activated.
                         if (!hasWorkerSession()) {
-                            showToast('Create your free account to start with 5 hires.');
+                            showToast('Create your account, then submit ₱10 to activate your first 5 hires.');
                             openApplicantAuthModal();
                             return;
                         }
                         try { await refreshHiringPass(); } catch (e) { /* dashboard refresh will retry */ }
+                        if ((session.hiringQuota?.remainingHires || 0) <= 0) {
+                            openApplicantTopupModal((session.hiringQuota?.totalHires || 0) === 0);
+                            return;
+                        }
                         applySessionToDashboard({
                             ...session,
                             services: [appState.role],
@@ -7369,69 +7383,7 @@
                         });
                         saveWorkerSession(session);
                         updateViewMode();
-                        showToast('You have 5 free hires. Start accepting shifts!');
-                        return;
-                        // eslint-disable-next-line no-unreachable -- legacy upfront-payment path below is intentionally disabled
-                        let proofUrl = step4ProofDataUrl;
-
-                        if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
-                            if (!step4ProofFile && !step4ProofDataUrl) {
-                                const walletName = step4PaymentMethod === 'gcash' ? 'GCash' : 'Maya';
-                                showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
-                                return;
-                            }
-                            proofUrl = await uploadProofImage(step4ProofFile, step4ProofDataUrl);
-                        } else if (step4PaymentMethod === 'card') {
-                            const num = document.getElementById('appStepCardNum')?.value.trim();
-                            if (!num || num.replace(/\s/g, '').length < 12) {
-                                showToast('Please enter a valid card number.', true);
-                                return;
-                            }
-                        }
-
-                        // Store pending pass activation in sessionStorage (₱10 for 5 hires, ₱2/hire)
-                        const pendingPass = {
-                            totalHires: 5,
-                            remainingHires: 5,
-                            usedHires: 0,
-                            paidAmount: 10,
-                            batchesPaid: 1,
-                            paymentMethod: step4PaymentMethod,
-                            proofImage: proofUrl,
-                            paidAt: Date.now()
-                        };
-                        sessionStorage.setItem('ic_applicant_pending_pass', JSON.stringify(pendingPass));
-
-                        if (!hasWorkerSession()) {
-                            showToast('₱10.00 Hiring Pass pre-paid! Please log in or sign up to activate.');
-                            openApplicantAuthModal();
-                        } else {
-                            const paid = await fetch('/api/applicant/hiring-pass/pay', {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ method: step4PaymentMethod, proof_image: proofUrl })
-                            });
-                            const paidData = await paid.json().catch(() => ({}));
-                            if (!paid.ok) { showToast(paidData.error || 'Payment could not be completed.', true); return; }
-                            session.hiringQuota = paidData.hiring_pass;
-                            sessionStorage.removeItem('ic_applicant_pending_pass');
-
-                            applySessionToDashboard({
-                                ...session,
-                                services: [appState.role],
-                                role: appState.role,
-                                offeredRate: appState.rate,
-                                ratePeriod: appState.ratePeriod,
-                                employmentPreference: appState.workType,
-                                location: appState.location,
-                                ...getAppMapFields(),
-                                timingPreference: appState.timing
-                            });
-                            saveWorkerSession(session);
-                            updateViewMode();
-                            showToast('₱10 Hiring Pass activated! You have 5 hiring opportunities.');
-                        }
+                        showToast('Profile ready. You can now accept shifts within your hiring pass.');
                     });
                 }
 
@@ -7539,9 +7491,12 @@
                             updateHiringPassUI();
                             renderShiftsFeed();
                             closeApplicantTopupModal();
-                            showToast(data.pending
-                                ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
+                        showToast(data.pending
+                                ? (initialApplicantPassActivation
+                                    ? 'Payment receipt submitted. Your first 5 hires will activate after accounting verifies it.'
+                                    : 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.')
                                 : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
+                            initialApplicantPassActivation = false;
                         } catch (err) { showToast(err.message, true); }
                         finally { appConfirmTopupBtn.disabled = false; appConfirmTopupBtn.innerHTML = '<span>Confirm &amp; Add ₱10.00 (+5 Hires)</span>'; }
                     });
@@ -7700,7 +7655,7 @@
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
                         try {
-                            // Hires are free now; drop any stale pre-paid pass left in the browser so it is never posted.
+                            // Drop any stale pre-paid pass left in the browser so it is never posted.
                             sessionStorage.removeItem('ic_applicant_pending_pass');
                             const rawPending = null;
                             if (rawPending) {
@@ -7772,7 +7727,7 @@
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
                         try {
-                            // Hires are free now; drop any stale pre-paid pass left in the browser so it is never posted.
+                            // Drop any stale pre-paid pass left in the browser so it is never posted.
                             sessionStorage.removeItem('ic_applicant_pending_pass');
                             const rawPending = null;
                             if (rawPending) {
@@ -7827,7 +7782,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast(pendingPassQuota ? 'Account created! Your ₱10 Hiring Pass with 5 hires is active.' : 'Account created. You start with 5 free hires!');
+                        openApplicantTopupModal(true);
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
