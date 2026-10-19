@@ -1071,13 +1071,11 @@
                                 <span>Add ₱10 again after achieving 5 hires to keep receiving opportunities</span>
                             </div>
                         </div>
-                    </div>
-
-
                     <!-- Payment Method Selector -->
-                    <div class="db-payment-methods-section" style="margin-top: 16px; display: none;">
+                    <div class="db-payment-methods-section" style="margin-top: 16px;">
                         <label class="db-payment-section-label">Select Payment Method</label>
-                        <div class="db-pay-method-tabs" role="radiogroup" id="appStepPayTabs">
+                        <div class="db-pay-method-tabs" role="radiogroup" id="appStepPayTabs"
+                            style="grid-template-columns: repeat(2, minmax(0, 1fr));">
                             <button type="button" class="db-pay-method-btn active" data-method="gcash"
                                 aria-checked="true">
                                 <span class="db-pay-dot"></span>
@@ -1086,10 +1084,6 @@
                             <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
                                 <span class="db-pay-dot"></span>
                                 <span class="db-pay-method-name">Maya</span>
-                            </button>
-                            <button type="button" class="db-pay-method-btn" data-method="card" aria-checked="false">
-                                <span class="db-pay-dot"></span>
-                                <span class="db-pay-method-name">Card</span>
                             </button>
                         </div>
 
@@ -1266,15 +1260,15 @@
 
                     <!-- Payment & Proceed Button -->
                     <button type="button" class="db-btn-primary" id="appPayAndProceedBtn"
-                        style="margin-top: 24px; opacity: 0.5; cursor: not-allowed;" disabled
-                        title="Please upload your proof of payment screenshot to continue">
+                        style="margin-top: 24px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5">
                             <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                             <line x1="2" y1="10" x2="22" y2="10"></line>
                         </svg>
-                        <span>Continue</span>
+                        <span>Continue &amp; Submit Payment</span>
                     </button>
+                    </div>
                 </section>
             </div>
         </div>
@@ -6075,9 +6069,10 @@
             const appConfirmTopupBtn = document.getElementById('appConfirmTopupBtn');
             const appPassTopupBtn = document.getElementById('appPassTopupBtn');
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
-            let initialApplicantPassActivation = false;
             let pendingInitialApplicantProof = false;
-            let initialStep4PaymentPromptShown = false;
+            let pendingInitialApplicantProofFile = null;
+            let pendingInitialApplicantProofDataUrl = '';
+            let pendingInitialApplicantPaymentMethod = 'gcash';
 
             // Step 1 category & role elements (using unique stepCat IDs to avoid collisions)
             const stepCatKitchen = document.getElementById('stepCatKitchen');
@@ -6315,31 +6310,14 @@
                 return session?.hiringQuota;
             }
 
-            function openApplicantTopupModal(initialActivation = false) {
+            function openApplicantTopupModal() {
                 if (applicantTopupModal) {
-                    initialActivation = initialActivation === true;
-                    initialApplicantPassActivation = initialActivation;
-                    if (initialActivation && typeof topupPaymentMethod !== 'undefined') {
-                        topupPaymentMethod = 'gcash';
-                        if (appTopupPayTabs) {
-                            appTopupPayTabs.querySelectorAll('.db-pay-method-btn').forEach(btn => {
-                                const active = btn.dataset.method === 'gcash';
-                                btn.classList.toggle('active', active);
-                                btn.setAttribute('aria-checked', active ? 'true' : 'false');
-                            });
-                        }
-                        if (appTopupGcashWrap) appTopupGcashWrap.style.display = 'block';
-                        if (appTopupMayaWrap) appTopupMayaWrap.style.display = 'none';
-                        if (appTopupCardWrap) appTopupCardWrap.style.display = 'none';
-                    }
                     const title = document.getElementById('appTopupModalTitle');
                     const subtitle = applicantTopupModal.querySelector('.db-payment-header .db-modal-sub');
                     const confirmText = appConfirmTopupBtn?.querySelector('span');
-                    if (title) title.textContent = initialActivation ? 'Activate Your First 5 Hires' : 'Add ₱10 for 5 Hires';
-                    if (subtitle) subtitle.textContent = initialActivation
-                        ? 'Pay ₱10 using the QR code and upload your receipt. Continue to create your account and submit it for verification.'
-                        : 'Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift opportunities.';
-                    if (confirmText) confirmText.textContent = initialActivation ? 'Continue to Create Account' : 'Confirm ₱10.00 (+5 Hires)';
+                    if (title) title.textContent = 'Add ₱10 for 5 Hires';
+                    if (subtitle) subtitle.textContent = 'Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift opportunities.';
+                    if (confirmText) confirmText.textContent = 'Confirm ₱10.00 (+5 Hires)';
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -7163,10 +7141,6 @@
                 if (appToStep4) {
                     appToStep4.addEventListener('click', () => {
                         goToAppStep(4);
-                        if (!hasWorkerSession() && !initialStep4PaymentPromptShown) {
-                            initialStep4PaymentPromptShown = true;
-                            openApplicantTopupModal(true);
-                        }
                     });
                 }
 
@@ -7195,6 +7169,20 @@
                             btn.classList.add('active');
                             btn.setAttribute('aria-checked', 'true');
                             step4PaymentMethod = btn.dataset.method || 'gcash';
+                            step4ProofFile = null;
+                            step4ProofDataUrl = '';
+                            ['appStepGcashProofFile', 'appStepMayaProofFile'].forEach(id => {
+                                const input = document.getElementById(id);
+                                if (input) input.value = '';
+                            });
+                            ['appStepGcashAttachedBox', 'appStepMayaAttachedBox'].forEach(id => {
+                                const attached = document.getElementById(id);
+                                if (attached) attached.style.display = 'none';
+                            });
+                            ['appStepGcashDropzone', 'appStepMayaDropzone'].forEach(id => {
+                                const dropzone = document.getElementById(id);
+                                if (dropzone) dropzone.style.display = 'flex';
+                            });
 
                             if (appStepGcashWrap) appStepGcashWrap.style.display = step4PaymentMethod === 'gcash' ? 'block' : 'none';
                             if (appStepMayaWrap) appStepMayaWrap.style.display = step4PaymentMethod === 'maya' ? 'block' : 'none';
@@ -7331,18 +7319,10 @@
 
                 function updateStep4ContinueBtn() {
                     if (!appPayAndProceedBtn) return;
-                    if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
-                        const hasProof = !!(step4ProofFile || step4ProofDataUrl);
-                        appPayAndProceedBtn.disabled = false; // Proof is collected after signup in the reusable payment modal.
-                        appPayAndProceedBtn.style.opacity = '1';
-                        appPayAndProceedBtn.style.cursor = 'pointer';
-                        appPayAndProceedBtn.title = '';
-                    } else {
-                        appPayAndProceedBtn.disabled = false;
-                        appPayAndProceedBtn.style.opacity = '1';
-                        appPayAndProceedBtn.style.cursor = 'pointer';
-                        appPayAndProceedBtn.title = '';
-                    }
+                    appPayAndProceedBtn.disabled = false;
+                    appPayAndProceedBtn.style.opacity = '1';
+                    appPayAndProceedBtn.style.cursor = 'pointer';
+                    appPayAndProceedBtn.title = '';
                 }
 
                 setupProofUploader('appStepGcashProofFile', 'appStepGcashDropzone', 'appStepGcashAttachedBox', 'appStepGcashThumb', 'appStepGcashFilename', 'appStepGcashRemoveBtn',
@@ -7375,33 +7355,60 @@
                     return fallbackUrl || '';
                 }
 
+                async function submitStep4ApplicantPayment() {
+                    appPayAndProceedBtn.disabled = true;
+                    const idleHTML = appPayAndProceedBtn.innerHTML;
+                    appPayAndProceedBtn.innerHTML = '<span class="db-btn-spinner"></span> Submitting receipt…';
+                    try {
+                        const proofUrl = await uploadProofImage(step4ProofFile, step4ProofDataUrl);
+                        const response = await fetch('/api/applicant/hiring-pass/pay', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ method: step4PaymentMethod, proof_image: proofUrl })
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.error || 'Payment receipt could not be submitted.');
+                        if (session) {
+                            session.hiringQuota = data.hiring_pass;
+                            saveWorkerSession(session);
+                            updateHiringPassUI();
+                        }
+                        showToast(data.pending
+                            ? 'Receipt submitted. Your 5 hires will activate after accounting verifies it.'
+                            : 'Your 5 hiring opportunities are active.');
+                    } catch (err) {
+                        showToast(err.message || 'Payment receipt could not be submitted.', true);
+                    } finally {
+                        appPayAndProceedBtn.disabled = false;
+                        appPayAndProceedBtn.innerHTML = idleHTML;
+                    }
+                }
+
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
                     appPayAndProceedBtn.addEventListener('click', async () => {
-                        // Applicant signup opens the payment modal before any hires are activated.
+                        if (step4PaymentMethod === 'card') {
+                            showToast('Please pay by GCash or Maya and upload your receipt.', true);
+                            return;
+                        }
+                        if (!step4ProofFile && !step4ProofDataUrl) {
+                            const walletName = step4PaymentMethod === 'maya' ? 'Maya' : 'GCash';
+                            showToast(`Please upload your ${walletName} payment receipt.`, true);
+                            return;
+                        }
+
                         if (!hasWorkerSession()) {
-                            openApplicantTopupModal(true);
+                            pendingInitialApplicantProof = true;
+                            pendingInitialApplicantProofFile = step4ProofFile;
+                            pendingInitialApplicantProofDataUrl = step4ProofDataUrl;
+                            pendingInitialApplicantPaymentMethod = step4PaymentMethod;
+                            openApplicantAuthModal();
+                            if (tabApplicantSignup) tabApplicantSignup.click();
+                            showToast('Create your account to submit the receipt for verification.');
                             return;
                         }
-                        try { await refreshHiringPass(); } catch (e) { /* dashboard refresh will retry */ }
-                        if ((session.hiringQuota?.remainingHires || 0) <= 0) {
-                            openApplicantTopupModal((session.hiringQuota?.totalHires || 0) === 0);
-                            return;
-                        }
-                        applySessionToDashboard({
-                            ...session,
-                            services: [appState.role],
-                            role: appState.role,
-                            offeredRate: appState.rate,
-                            ratePeriod: appState.ratePeriod,
-                            employmentPreference: appState.workType,
-                            location: appState.location,
-                            ...getAppMapFields(),
-                            timingPreference: appState.timing
-                        });
-                        saveWorkerSession(session);
-                        updateViewMode();
-                        showToast('Profile ready. You can now accept shifts within your hiring pass.');
+                        await submitStep4ApplicantPayment();
                     });
                 }
 
@@ -7479,11 +7486,6 @@
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
-                        const awaitingSignup = initialApplicantPassActivation && !hasWorkerSession();
-                        if (awaitingSignup && topupPaymentMethod === 'card') {
-                            showToast('Choose GCash or Maya and upload the payment receipt to continue.', true);
-                            return;
-                        }
                         let proofUrl = topupProofDataUrl;
 
                         if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
@@ -7499,17 +7501,9 @@
                         }
 
                         appConfirmTopupBtn.disabled = true;
-                        appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> ' + (awaitingSignup ? 'Continuing…' : 'Adding ₱10 (+5 Hires)…');
+                        appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
 
                         try {
-                            if (awaitingSignup) {
-                                pendingInitialApplicantProof = true;
-                                closeApplicantTopupModal();
-                                openApplicantAuthModal();
-                                if (tabApplicantSignup) tabApplicantSignup.click();
-                                showToast('Create your account to submit the receipt. Your 5 hires activate after verification.');
-                                return;
-                            }
                             const response = await fetch('/api/applicant/hiring-pass/pay', {
                                 method: 'POST',
                                 credentials: 'same-origin',
@@ -7522,16 +7516,13 @@
                             updateHiringPassUI();
                             renderShiftsFeed();
                             closeApplicantTopupModal();
-                        showToast(data.pending
-                                ? (initialApplicantPassActivation
-                                    ? 'Payment receipt submitted. Your first 5 hires will activate after accounting verifies it.'
-                                    : 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.')
+                            showToast(data.pending
+                                ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
                                 : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
-                            initialApplicantPassActivation = false;
                         } catch (err) { showToast(err.message, true); }
                         finally {
                             appConfirmTopupBtn.disabled = false;
-                            appConfirmTopupBtn.innerHTML = '<span>' + (initialApplicantPassActivation ? 'Continue to Create Account' : 'Confirm ₱10.00 (+5 Hires)') + '</span>';
+                            appConfirmTopupBtn.innerHTML = '<span>Confirm ₱10.00 (+5 Hires)</span>';
                         }
                     });
                 }
@@ -7653,20 +7644,19 @@
                 // Modal Login Form Submission
                 async function submitPendingInitialApplicantPayment(targetSession) {
                     if (!pendingInitialApplicantProof) return null;
-                    const proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
+                    const proofUrl = await uploadProofImage(pendingInitialApplicantProofFile, pendingInitialApplicantProofDataUrl);
                     const response = await fetch('/api/applicant/hiring-pass/pay', {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ method: topupPaymentMethod, proof_image: proofUrl })
+                        body: JSON.stringify({ method: pendingInitialApplicantPaymentMethod, proof_image: proofUrl })
                     });
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok) throw new Error(data.error || 'Your account is ready, but the payment receipt could not be submitted. Please try again.');
                     targetSession.hiringQuota = data.hiring_pass;
                     pendingInitialApplicantProof = false;
-                    initialApplicantPassActivation = false;
-                    topupProofFile = null;
-                    topupProofDataUrl = '';
+                    pendingInitialApplicantProofFile = null;
+                    pendingInitialApplicantProofDataUrl = '';
                     return data;
                 }
 
@@ -7846,7 +7836,7 @@
                                 ? 'Receipt submitted. Your first 5 hires will activate after accounting verifies it.'
                                 : 'Payment submitted for your first 5 hires.');
                         } else {
-                            openApplicantTopupModal(true);
+                            showToast('Account created. Use Add ₱10 for 5 Hires in your hiring pass panel to activate opportunities.');
                         }
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
