@@ -92,6 +92,9 @@ func main() {
 		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
 	}
+	if err := authH.ConfigureGoogleFromFile(getenv("GOOGLE_OAUTH_CREDENTIALS", "client_secret_95317878064-1pd11edtj1i76buqrpbhj752gat1jmuf.apps.googleusercontent.com.json"), getenv("GOOGLE_REDIRECT_URL", "")); err != nil {
+		log.Printf("Google SSO disabled: %v", err)
+	}
 	// Development mode must not create implicit accounts. Authentication always
 	// uses credentials explicitly written through the signup endpoint.
 
@@ -108,6 +111,8 @@ func main() {
 	mux.HandleFunc("POST /api/auth/signup", authH.Signup)
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/auth/logout", authH.Logout)
+	mux.HandleFunc("GET /api/auth/google", authH.GoogleStart)
+	mux.HandleFunc("GET /api/auth/google/callback", authH.GoogleCallback)
 	mux.Handle("GET /api/auth/me", authH.RequireAuth(http.HandlerFunc(authH.Me)))
 	mux.Handle("POST /api/auth/activity", authH.RequireAuth(http.HandlerFunc(authH.Activity)))
 

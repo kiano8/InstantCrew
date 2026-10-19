@@ -25,6 +25,7 @@ type Handler struct {
 	IdleTimeout  time.Duration // sign out after this long without user activity; 0 = off
 	MaxUsers     int           // beta cap on distinct testers; 0 = unlimited
 	CookieSecure bool
+	google       *googleOAuth
 }
 
 // Compared against when the email doesn't exist, so response time doesn't reveal valid emails.

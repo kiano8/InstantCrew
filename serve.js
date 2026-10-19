@@ -16,6 +16,11 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
     let reqPath = req.url.split('?')[0];
     if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
+    if (/\/(?:client_secret|oauth_client_secret)[^/]*\.json$/i.test(reqPath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+        return;
+    }
     const filePath = path.join(__dirname, reqPath);
 
     fs.readFile(filePath, (err, data) => {
