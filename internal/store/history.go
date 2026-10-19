@@ -197,11 +197,11 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 	}
 	rows.Close()
 
-	// Hires used (one per accepted shift).
+	// Hires used: one per shift the employer confirmed (that is when a hire is spent).
 	used, err := s.db.QueryContext(ctx, `
 		SELECT a.job_id, a.accepted_at, COALESCE(j.role_label,'')
 		FROM job_assignments a JOIN jobs j ON j.id = a.job_id
-		WHERE a.applicant_id = ?`, applicantID)
+		WHERE a.applicant_id = ? AND j.status IN ('active','completed')`, applicantID)
 	if err != nil {
 		return nil, err
 	}

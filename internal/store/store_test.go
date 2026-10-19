@@ -336,13 +336,22 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("expected still 5 remaining hires, got %d", pass.RemainingHires)
 	}
 
-	// Applicant accepts job -> succeeds and decrements remaining hires to 4!
+	// Applicant accepts job -> succeeds, but NO hire is spent yet (employer has not confirmed).
 	err = st.AcceptJob(ctx, job.ID, applicant.ID)
 	if err != nil {
 		t.Fatalf("AcceptJob failed after hiring pass verified: %v", err)
 	}
 	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
-	if err != nil || pass.RemainingHires != 4 {
-		t.Fatalf("expected 4 remaining hires after acceptance, got %d", pass.RemainingHires)
+	if err != nil || pass.RemainingHires != 5 {
+		t.Fatalf("expected 5 remaining hires before employer confirmation, got %d", pass.RemainingHires)
+	}
+
+	// Employer confirms the booking -> the hire is spent now.
+	if err := st.ConfirmJob(ctx, employer.ID, job.ID); err != nil {
+		t.Fatalf("ConfirmJob failed: %v", err)
+	}
+	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
+	if err != nil || pass.RemainingHires != 4 || pass.UsedHires != 1 {
+		t.Fatalf("expected 4 remaining / 1 used after confirmation, got %+v", pass)
 	}
 }

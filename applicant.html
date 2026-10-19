@@ -7700,7 +7700,9 @@
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
                         try {
-                            const rawPending = sessionStorage.getItem('ic_applicant_pending_pass');
+                            // Hires are free now; drop any stale pre-paid pass left in the browser so it is never posted.
+                            sessionStorage.removeItem('ic_applicant_pending_pass');
+                            const rawPending = null;
                             if (rawPending) {
                                 const parsedPending = JSON.parse(rawPending);
                                 if (parsedPending && parsedPending.totalHires) {
@@ -7727,7 +7729,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast('Welcome! Your ₱10 Hiring Pass with 5 hires is active.');
+                        showToast('Welcome back!');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
@@ -7770,7 +7772,9 @@
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
                         try {
-                            const rawPending = sessionStorage.getItem('ic_applicant_pending_pass');
+                            // Hires are free now; drop any stale pre-paid pass left in the browser so it is never posted.
+                            sessionStorage.removeItem('ic_applicant_pending_pass');
+                            const rawPending = null;
                             if (rawPending) {
                                 const parsedPending = JSON.parse(rawPending);
                                 if (parsedPending && parsedPending.totalHires) {

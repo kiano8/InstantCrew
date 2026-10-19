@@ -356,7 +356,7 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("admin verify applicant payment expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	// 12. The verified top-up adds 5 hires on top of what is left of the 5 free ones (5 - 1 used + 5).
+	// 12. Accepting spent nothing: 5 free + 5 top-up = 10 until the employer confirms.
 	do := func(method, path string, c *http.Cookie, payload any) *httptest.ResponseRecorder {
 		var rdr io.Reader
 		if payload != nil {
@@ -378,8 +378,8 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		} `json:"hiring_pass"`
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &passRes)
-	if passRes.HiringPass.RemainingHires != 9 || passRes.HiringPass.BatchesPaid != 1 {
-		t.Fatalf("expected 9 remaining hires and 1 paid batch, got %+v", passRes.HiringPass)
+	if passRes.HiringPass.RemainingHires != 10 || passRes.HiringPass.BatchesPaid != 1 {
+		t.Fatalf("expected 10 remaining hires (none spent before confirmation) and 1 paid batch, got %+v", passRes.HiringPass)
 	}
 
 	// 13. Transit is blocked until the employer confirms the booking, and must go in order.
@@ -389,6 +389,11 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	}
 	if rec = do("POST", "/api/jobs/"+jsonNumber(jobID)+"/confirm", empCookie, nil); rec.Code != http.StatusOK {
 		t.Fatalf("employer confirm expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	rec = do("GET", "/api/applicant/hiring-pass", appCookie, nil)
+	_ = json.Unmarshal(rec.Body.Bytes(), &passRes)
+	if passRes.HiringPass.RemainingHires != 9 {
+		t.Fatalf("expected the hire to be spent on employer confirmation (9 left), got %d", passRes.HiringPass.RemainingHires)
 	}
 	if rec = do("POST", transit, appCookie, map[string]string{"status": "arrived"}); rec.Code != http.StatusConflict {
 		t.Fatalf("arrived before en_route expected 409, got %d: %s", rec.Code, rec.Body.String())

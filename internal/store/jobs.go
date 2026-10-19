@@ -566,11 +566,18 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		return err
 	}
 	defer tx.Rollback()
-	quota, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_passes SET remaining_hires=remaining_hires-1,used_hires=used_hires+1,updated_at=? WHERE applicant_id=? AND remaining_hires>0`, time.Now().Unix(), applicantID)
-	if err != nil {
+	// A hire is only spent when the employer confirms the booking (see ConfirmJob).
+	// Here we only require a hire that is not already reserved by another
+	// accepted-but-unconfirmed shift, so confirmation can always spend one.
+	var available int
+	err = tx.QueryRowContext(ctx, `SELECT p.remaining_hires - (
+			SELECT COUNT(*) FROM job_assignments a JOIN jobs j ON j.id=a.job_id
+			WHERE a.applicant_id=p.applicant_id AND a.ended_at IS NULL AND j.status='accepted')
+		FROM applicant_hiring_passes p WHERE p.applicant_id=?`, applicantID).Scan(&available)
+	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	if n, _ := quota.RowsAffected(); n == 0 {
+	if err == sql.ErrNoRows || available <= 0 {
 		// Distinguish "never paid / exhausted" from "receipt waiting on accounting".
 		var payStatus string
 		payErr := tx.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM applicant_hiring_pass_payments
@@ -639,8 +646,33 @@ func (s *Store) transition(ctx context.Context, employerID, id int64, to string,
 	return nil
 }
 
+// ConfirmJob is the moment an employer secures the crew member. The job moves
+// accepted -> active and one hire is spent for each assigned crew member, in the
+// same transaction, so a hire is never charged for an unconfirmed or declined match.
 func (s *Store) ConfirmJob(ctx context.Context, employerID, id int64) error {
-	return s.transition(ctx, employerID, id, "active", "accepted")
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	now := time.Now().Unix()
+	res, err := tx.ExecContext(ctx,
+		`UPDATE jobs SET status='active', updated_at=? WHERE id=? AND employer_id=? AND status='accepted'`,
+		now, id, employerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return missOrBadState(ctx, tx, employerID, id)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_passes
+		SET remaining_hires=remaining_hires-1, used_hires=used_hires+1, updated_at=?
+		WHERE remaining_hires>0 AND applicant_id IN (
+			SELECT applicant_id FROM job_assignments WHERE job_id=? AND ended_at IS NULL)`, now, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Store) CancelJob(ctx context.Context, employerID, id int64) error {
