@@ -43,6 +43,9 @@
                 <button type="button" class="db-header-login-btn" id="headerLoginBtn" style="display:none;">Log
                     In</button>
 
+                <!-- Payment & Hires Log Button -->
+                <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payments &amp; hires log</button>
+
                 <!-- Notification Bell -->
                 <div class="db-notif-wrap">
                     <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
@@ -6189,6 +6192,7 @@
             function updateViewMode() {
                 const isLogged = hasWorkerSession();
                 const notifWrap = document.querySelector('.db-notif-wrap');
+                const phHeaderBtn = document.getElementById('phHeaderBtn');
                 if (isLogged) {
                     if (appStepsWrap) appStepsWrap.style.display = 'none';
                     if (appDashboardWrap) appDashboardWrap.style.display = 'block';
@@ -6196,6 +6200,7 @@
                     if (headerLoginBtn) headerLoginBtn.style.display = 'none';
                     if (openProfilePanelBtn) openProfilePanelBtn.style.display = 'flex';
                     if (notifWrap) notifWrap.style.display = 'inline-block';
+                    if (phHeaderBtn) phHeaderBtn.style.display = 'inline-flex';
                 } else {
                     if (appStepsWrap) appStepsWrap.style.display = 'block';
                     if (appDashboardWrap) appDashboardWrap.style.display = 'none';
@@ -6203,6 +6208,7 @@
                     if (headerLoginBtn) headerLoginBtn.style.display = 'inline-block';
                     if (openProfilePanelBtn) openProfilePanelBtn.style.display = 'none';
                     if (notifWrap) notifWrap.style.display = 'none';
+                    if (phHeaderBtn) phHeaderBtn.style.display = 'none';
                 }
             }
 
@@ -7939,6 +7945,7 @@
         })();
     </script>
     <script src="/js/session.js"></script>
+    <script src="js/payment-history.js"></script>
 </body>
 
 </html>
