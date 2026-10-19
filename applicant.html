@@ -6076,6 +6076,8 @@
             const appPassTopupBtn = document.getElementById('appPassTopupBtn');
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
             let initialApplicantPassActivation = false;
+            let pendingInitialApplicantProof = false;
+            let initialStep4PaymentPromptShown = false;
 
             // Step 1 category & role elements (using unique stepCat IDs to avoid collisions)
             const stepCatKitchen = document.getElementById('stepCatKitchen');
@@ -6317,14 +6319,27 @@
                 if (applicantTopupModal) {
                     initialActivation = initialActivation === true;
                     initialApplicantPassActivation = initialActivation;
+                    if (initialActivation && typeof topupPaymentMethod !== 'undefined') {
+                        topupPaymentMethod = 'gcash';
+                        if (appTopupPayTabs) {
+                            appTopupPayTabs.querySelectorAll('.db-pay-method-btn').forEach(btn => {
+                                const active = btn.dataset.method === 'gcash';
+                                btn.classList.toggle('active', active);
+                                btn.setAttribute('aria-checked', active ? 'true' : 'false');
+                            });
+                        }
+                        if (appTopupGcashWrap) appTopupGcashWrap.style.display = 'block';
+                        if (appTopupMayaWrap) appTopupMayaWrap.style.display = 'none';
+                        if (appTopupCardWrap) appTopupCardWrap.style.display = 'none';
+                    }
                     const title = document.getElementById('appTopupModalTitle');
                     const subtitle = applicantTopupModal.querySelector('.db-payment-header .db-modal-sub');
                     const confirmText = appConfirmTopupBtn?.querySelector('span');
                     if (title) title.textContent = initialActivation ? 'Activate Your First 5 Hires' : 'Add ₱10 for 5 Hires';
                     if (subtitle) subtitle.textContent = initialActivation
-                        ? 'Submit your ₱10 payment receipt. Accounting will verify it before your 5 hiring opportunities are activated.'
+                        ? 'Pay ₱10 using the QR code and upload your receipt. Continue to create your account and submit it for verification.'
                         : 'Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift opportunities.';
-                    if (confirmText) confirmText.textContent = initialActivation ? 'Submit ₱10 Payment for 5 Hires' : 'Confirm ₱10.00 (+5 Hires)';
+                    if (confirmText) confirmText.textContent = initialActivation ? 'Continue to Create Account' : 'Confirm ₱10.00 (+5 Hires)';
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -7148,6 +7163,10 @@
                 if (appToStep4) {
                     appToStep4.addEventListener('click', () => {
                         goToAppStep(4);
+                        if (!hasWorkerSession() && !initialStep4PaymentPromptShown) {
+                            initialStep4PaymentPromptShown = true;
+                            openApplicantTopupModal(true);
+                        }
                     });
                 }
 
@@ -7361,8 +7380,7 @@
                     appPayAndProceedBtn.addEventListener('click', async () => {
                         // Applicant signup opens the payment modal before any hires are activated.
                         if (!hasWorkerSession()) {
-                            showToast('Create your account, then submit ₱10 to activate your first 5 hires.');
-                            openApplicantAuthModal();
+                            openApplicantTopupModal(true);
                             return;
                         }
                         try { await refreshHiringPass(); } catch (e) { /* dashboard refresh will retry */ }
@@ -7461,6 +7479,11 @@
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
+                        const awaitingSignup = initialApplicantPassActivation && !hasWorkerSession();
+                        if (awaitingSignup && topupPaymentMethod === 'card') {
+                            showToast('Choose GCash or Maya and upload the payment receipt to continue.', true);
+                            return;
+                        }
                         let proofUrl = topupProofDataUrl;
 
                         if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
@@ -7469,16 +7492,24 @@
                                 showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
                                 return;
                             }
-                            proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
+                            if (!awaitingSignup) proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
                         } else if (topupPaymentMethod === 'card') {
                             const num = document.getElementById('appTopupCardNum')?.value.trim();
                             if (!num || num.replace(/\s/g, '').length < 12) { showToast('Please enter a valid card number.', true); return; }
                         }
 
                         appConfirmTopupBtn.disabled = true;
-                        appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
+                        appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> ' + (awaitingSignup ? 'Continuing…' : 'Adding ₱10 (+5 Hires)…');
 
                         try {
+                            if (awaitingSignup) {
+                                pendingInitialApplicantProof = true;
+                                closeApplicantTopupModal();
+                                openApplicantAuthModal();
+                                if (tabApplicantSignup) tabApplicantSignup.click();
+                                showToast('Create your account to submit the receipt. Your 5 hires activate after verification.');
+                                return;
+                            }
                             const response = await fetch('/api/applicant/hiring-pass/pay', {
                                 method: 'POST',
                                 credentials: 'same-origin',
@@ -7498,7 +7529,10 @@
                                 : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
                             initialApplicantPassActivation = false;
                         } catch (err) { showToast(err.message, true); }
-                        finally { appConfirmTopupBtn.disabled = false; appConfirmTopupBtn.innerHTML = '<span>Confirm &amp; Add ₱10.00 (+5 Hires)</span>'; }
+                        finally {
+                            appConfirmTopupBtn.disabled = false;
+                            appConfirmTopupBtn.innerHTML = '<span>' + (initialApplicantPassActivation ? 'Continue to Create Account' : 'Confirm ₱10.00 (+5 Hires)') + '</span>';
+                        }
                     });
                 }
 
@@ -7617,6 +7651,25 @@
                 });
 
                 // Modal Login Form Submission
+                async function submitPendingInitialApplicantPayment(targetSession) {
+                    if (!pendingInitialApplicantProof) return null;
+                    const proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
+                    const response = await fetch('/api/applicant/hiring-pass/pay', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ method: topupPaymentMethod, proof_image: proofUrl })
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(data.error || 'Your account is ready, but the payment receipt could not be submitted. Please try again.');
+                    targetSession.hiringQuota = data.hiring_pass;
+                    pendingInitialApplicantProof = false;
+                    initialApplicantPassActivation = false;
+                    topupProofFile = null;
+                    topupProofDataUrl = '';
+                    return data;
+                }
+
                 async function handleApplicantModalLogin(e) {
                     if (e) e.preventDefault();
                     const emailInput = document.getElementById('appModalLoginEmail');
@@ -7651,6 +7704,7 @@
                             if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                         }
                         await loadApplicantAvailability(newSession);
+                        const initialPayment = await submitPendingInitialApplicantPayment(newSession);
 
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
@@ -7684,7 +7738,9 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast('Welcome back!');
+                        showToast(initialPayment?.pending
+                            ? 'Receipt submitted. Your first 5 hires will activate after accounting verifies it.'
+                            : 'Welcome back!');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
@@ -7696,6 +7752,7 @@
                 // Modal Sign Up Form Submission
                 async function handleApplicantModalSignup(e) {
                     if (e) e.preventDefault();
+                    const signupStartedWithInitialPayment = pendingInitialApplicantProof;
                     const nameInput = document.getElementById('appModalSignupName');
                     const emailInput = document.getElementById('appModalSignupEmail');
                     const passInput = document.getElementById('appModalSignupPass');
@@ -7759,6 +7816,8 @@
                         };
                         session = newSession;
 
+                        const initialPayment = await submitPendingInitialApplicantPayment(newSession);
+
                         if (pendingPassQuota) {
                             const paid = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: pendingPassQuota.paymentMethod }) });
                             if (!paid.ok) throw new Error('Account created, but Hiring Pass payment could not be completed.');
@@ -7782,7 +7841,13 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        openApplicantTopupModal(true);
+                        if (signupStartedWithInitialPayment) {
+                            showToast(initialPayment?.pending
+                                ? 'Receipt submitted. Your first 5 hires will activate after accounting verifies it.'
+                                : 'Payment submitted for your first 5 hires.');
+                        } else {
+                            openApplicantTopupModal(true);
+                        }
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
