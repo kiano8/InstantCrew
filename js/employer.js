@@ -3765,7 +3765,7 @@ function renderEmployerNotifications() {
   }
   // Employer notifications are crew activity on their bookings. Shift offers
   // belong in the applicant inbox and should never appear in this panel.
-  const crewActivityTypes = new Set(['accept', 'transit', 'arrived', 'end']);
+  const crewActivityTypes = new Set(['accept', 'transit', 'arrived', 'end', 'payment']);
   const notifs = (employerNotifications || []).filter(n => crewActivityTypes.has(n.type));
   const unread = notifs.filter(n => !n.read).length;
 
