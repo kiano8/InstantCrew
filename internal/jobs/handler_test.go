@@ -315,13 +315,13 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("expected applicant payment to be pending")
 	}
 
-	// 10. Applicant accepts job before admin verification -> 402 Payment Required
+	// 10. Applicant accepts with a free starter hire -> 200 OK, no payment needed
 	req = httptest.NewRequest("POST", "/api/applicant/jobs/"+jsonNumber(jobID)+"/accept", nil)
 	req.AddCookie(appCookie)
 	rec = httptest.NewRecorder()
 	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusPaymentRequired {
-		t.Fatalf("applicant accept before verify expected 402, got %d: %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK {
+		t.Fatalf("applicant accept with free hires expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
 	// 11. Admin verifies applicant payment
@@ -356,13 +356,62 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("admin verify applicant payment expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	// 12. Applicant accepts job after verification -> 200 OK!
-	req = httptest.NewRequest("POST", "/api/applicant/jobs/"+jsonNumber(jobID)+"/accept", nil)
-	req.AddCookie(appCookie)
-	rec = httptest.NewRecorder()
-	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("applicant accept after verify expected 200, got %d: %s", rec.Code, rec.Body.String())
+	// 12. The verified top-up adds 5 hires on top of what is left of the 5 free ones (5 - 1 used + 5).
+	do := func(method, path string, c *http.Cookie, payload any) *httptest.ResponseRecorder {
+		var rdr io.Reader
+		if payload != nil {
+			b, _ := json.Marshal(payload)
+			rdr = bytes.NewReader(b)
+		}
+		r := httptest.NewRequest(method, path, rdr)
+		r.Header.Set("Content-Type", "application/json")
+		r.AddCookie(c)
+		w := httptest.NewRecorder()
+		env.mux.ServeHTTP(w, r)
+		return w
+	}
+	rec = do("GET", "/api/applicant/hiring-pass", appCookie, nil)
+	var passRes struct {
+		HiringPass struct {
+			RemainingHires int `json:"remainingHires"`
+			BatchesPaid    int `json:"batchesPaid"`
+		} `json:"hiring_pass"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &passRes)
+	if passRes.HiringPass.RemainingHires != 9 || passRes.HiringPass.BatchesPaid != 1 {
+		t.Fatalf("expected 9 remaining hires and 1 paid batch, got %+v", passRes.HiringPass)
+	}
+
+	// 13. Transit is blocked until the employer confirms the booking, and must go in order.
+	transit := "/api/applicant/assignments/" + jsonNumber(jobID) + "/transit"
+	if rec = do("POST", transit, appCookie, map[string]string{"status": "en_route"}); rec.Code != http.StatusConflict {
+		t.Fatalf("en_route before employer confirmation expected 409, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec = do("POST", "/api/jobs/"+jsonNumber(jobID)+"/confirm", empCookie, nil); rec.Code != http.StatusOK {
+		t.Fatalf("employer confirm expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec = do("POST", transit, appCookie, map[string]string{"status": "arrived"}); rec.Code != http.StatusConflict {
+		t.Fatalf("arrived before en_route expected 409, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec = do("POST", transit, appCookie, map[string]string{"status": "en_route"}); rec.Code != http.StatusOK {
+		t.Fatalf("en_route after confirmation expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec = do("POST", transit, appCookie, map[string]string{"status": "arrived"}); rec.Code != http.StatusOK {
+		t.Fatalf("arrived after en_route expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	// 14. Payment history endpoints
+	rec = do("GET", "/api/employer/payments", empCookie, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "search_fee") {
+		t.Fatalf("employer history expected 200 with a search_fee entry, got %d: %s", rec.Code, rec.Body.String())
+	}
+	rec = do("GET", "/api/applicant/payments", appCookie, nil)
+	bodyStr := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(bodyStr, "free_hires") || !strings.Contains(bodyStr, "hiring_pass") || !strings.Contains(bodyStr, "hire_used") {
+		t.Fatalf("applicant history expected free_hires, hiring_pass and hire_used entries, got %d: %s", rec.Code, bodyStr)
+	}
+	if rec = do("GET", "/api/employer/payments", appCookie, nil); rec.Code != http.StatusForbidden {
+		t.Fatalf("applicant must not read employer history, got %d", rec.Code)
 	}
 }
 

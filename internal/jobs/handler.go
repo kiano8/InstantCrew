@@ -66,6 +66,8 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("DELETE /api/notifications", a.RequireAuth(http.HandlerFunc(h.ClearNotifications)))
 
 	mux.Handle("POST /api/upload-proof", a.RequireAuth(http.HandlerFunc(h.UploadProof)))
+	mux.Handle("GET /api/employer/payments", emp(h.EmployerPaymentHistory))
+	mux.Handle("GET /api/applicant/payments", app(h.ApplicantPaymentHistory))
 	mux.Handle("GET /api/admin/payments", adm(h.AdminPayments))
 	mux.Handle("POST /api/admin/payments/verify", adm(h.AdminVerifyPayment))
 }
@@ -516,6 +518,8 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusNotFound, "job not found")
 	case errors.Is(err, store.ErrBadState):
 		httpx.Error(w, http.StatusConflict, "this action isn't allowed in the job's current status")
+	case errors.Is(err, store.ErrNotConfirmed):
+		httpx.Error(w, http.StatusConflict, err.Error())
 	case errors.Is(err, store.ErrAlreadyAccepted):
 		httpx.Error(w, http.StatusConflict, "already accepted")
 	case errors.Is(err, store.ErrHiringPassPending):

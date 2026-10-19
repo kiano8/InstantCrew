@@ -1,0 +1,231 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"sort"
+	"time"
+)
+
+// InitialFreeHires is how many hires a new applicant gets without paying.
+const InitialFreeHires = 5
+
+// grantInitialHires creates the applicant's hiring pass with the free hires.
+// INSERT OR IGNORE keeps it idempotent: an existing pass is never reset.
+func (s *Store) grantInitialHires(ctx context.Context, applicantID int64) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT OR IGNORE INTO applicant_hiring_passes
+			(applicant_id, total_hires, remaining_hires, used_hires, amount_centavos, batches_paid, updated_at)
+		VALUES (?, ?, ?, 0, 0, 0, ?)`,
+		applicantID, InitialFreeHires, InitialFreeHires, time.Now().Unix())
+	return err
+}
+
+// afterUserCreated runs for every signup path (quick wizard and the full
+// login/signup page both hit the same endpoint). If the free hires cannot be
+// granted, the half-created account is removed so nobody is left locked out.
+func (s *Store) afterUserCreated(ctx context.Context, u *User) error {
+	if u.Role != "applicant" {
+		return nil
+	}
+	if err := s.grantInitialHires(ctx, u.ID); err != nil {
+		_, _ = s.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, u.ID)
+		return err
+	}
+	return nil
+}
+
+// CreateUser creates a user. Applicants start with InitialFreeHires hires.
+func (s *Store) CreateUser(ctx context.Context, u *User) error {
+	if err := s.createUserRow(ctx, u); err != nil {
+		return err
+	}
+	return s.afterUserCreated(ctx, u)
+}
+
+// CreateUserCapped is CreateUser with the beta cap on distinct emails.
+func (s *Store) CreateUserCapped(ctx context.Context, u *User, max int) error {
+	if err := s.createUserCappedRow(ctx, u, max); err != nil {
+		return err
+	}
+	return s.afterUserCreated(ctx, u)
+}
+
+// PaymentLogEntry is one line of a user's payment history / activity log.
+type PaymentLogEntry struct {
+	ID              string `json:"id"`
+	Kind            string `json:"kind"` // search_fee | hiring_pass | free_hires | hire_used
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	AmountCentavos  int64  `json:"amount_centavos"`
+	AmountPesos     string `json:"amount_pesos"`
+	Method          string `json:"method,omitempty"`
+	Status          string `json:"status"` // pending | verified | rejected | granted | used
+	ProofImage      string `json:"proof_image,omitempty"`
+	RejectionReason string `json:"rejection_reason,omitempty"`
+	Ref             string `json:"ref,omitempty"`
+	JobID           *int64 `json:"job_id,omitempty"`
+	CreatedAt       int64  `json:"created_at"`
+	VerifiedAt      *int64 `json:"verified_at,omitempty"`
+}
+
+func pesos(centavos int64) string { return fmt.Sprintf("₱%.2f", float64(centavos)/100) }
+
+// EmployerPaymentHistory lists every search fee the employer has paid or submitted, newest first.
+func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([]PaymentLogEntry, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT p.id, p.job_id, p.amount_centavos, p.method, COALESCE(p.details,''),
+			COALESCE(p.proof_image,''), COALESCE(p.status,''), p.verified_at,
+			COALESCE(p.rejection_reason,''), p.provider_ref, p.created_at,
+			COALESCE(j.role_label,''), p.search_attempt
+		FROM payments p LEFT JOIN jobs j ON j.id = p.job_id
+		WHERE p.user_id = ?
+		ORDER BY p.created_at DESC, p.id DESC`, employerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]PaymentLogEntry, 0)
+	for rows.Next() {
+		var (
+			id, jobID, amount, created                      int64
+			attempt                                         int
+			method, details, proof, status, reason, ref, rl string
+			verifiedAt                                      sql.NullInt64
+		)
+		if err := rows.Scan(&id, &jobID, &amount, &method, &details, &proof, &status, &verifiedAt,
+			&reason, &ref, &created, &rl, &attempt); err != nil {
+			return nil, err
+		}
+		e := PaymentLogEntry{
+			ID: fmt.Sprintf("emp_%d", id), Kind: "search_fee",
+			Title:          "Crew search fee",
+			AmountCentavos: amount, AmountPesos: pesos(amount),
+			Method: method, ProofImage: proof, RejectionReason: reason, Ref: ref,
+			CreatedAt: created,
+		}
+		jid := jobID
+		e.JobID = &jid
+		e.Description = "Job #" + fmt.Sprint(jobID)
+		if rl != "" {
+			e.Description = rl + " (job #" + fmt.Sprint(jobID) + ")"
+		}
+		if attempt > 1 {
+			e.Description += fmt.Sprintf(", search %d", attempt)
+		}
+		if details != "" {
+			e.Description += " · " + details
+		}
+		switch {
+		case verifiedAt.Valid && verifiedAt.Int64 > 0:
+			v := verifiedAt.Int64
+			e.VerifiedAt = &v
+			e.Status = "verified"
+		case status == "rejected":
+			e.Status = "rejected"
+		default:
+			e.Status = "pending"
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+// ApplicantPaymentHistory is the applicant's log: the free starter hires,
+// every hiring-pass top-up, and each hire that was used on a shift. Newest first.
+func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) ([]PaymentLogEntry, error) {
+	out := make([]PaymentLogEntry, 0)
+
+	// Free starter hires, dated at account creation.
+	var created int64
+	var hasPass int
+	err := s.db.QueryRowContext(ctx, `SELECT u.created_at, (SELECT COUNT(*) FROM applicant_hiring_passes WHERE applicant_id = u.id)
+		FROM users u WHERE u.id = ?`, applicantID).Scan(&created, &hasPass)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if err == nil && hasPass > 0 {
+		out = append(out, PaymentLogEntry{
+			ID: "free_start", Kind: "free_hires", Title: "Starter hires",
+			Description: fmt.Sprintf("%d free hires included with your account", InitialFreeHires),
+			AmountPesos: pesos(0), Status: "granted", CreatedAt: created,
+		})
+	}
+
+	// Paid top-ups.
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, amount_centavos, method, COALESCE(proof_image,''), COALESCE(status,''),
+			verified_at, COALESCE(rejection_reason,''), COALESCE(credits_granted,0), created_at
+		FROM applicant_hiring_pass_payments WHERE applicant_id = ?`, applicantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, amount, createdAt int64
+		var credits int
+		var method, proof, status, reason string
+		var verifiedAt sql.NullInt64
+		if err := rows.Scan(&id, &amount, &method, &proof, &status, &verifiedAt, &reason, &credits, &createdAt); err != nil {
+			return nil, err
+		}
+		e := PaymentLogEntry{
+			ID: fmt.Sprintf("app_%d", id), Kind: "hiring_pass", Title: "Hiring pass top-up",
+			Description:    "5 more hires",
+			AmountCentavos: amount, AmountPesos: pesos(amount),
+			Method: method, ProofImage: proof, RejectionReason: reason,
+			Ref: fmt.Sprintf("PASS-%d", id), CreatedAt: createdAt,
+		}
+		switch {
+		case verifiedAt.Valid && verifiedAt.Int64 > 0:
+			v := verifiedAt.Int64
+			e.VerifiedAt = &v
+			e.Status = "verified"
+		case status == "rejected":
+			e.Status = "rejected"
+		case credits > 0: // legacy rows that credited hires before verification existed
+			e.Status = "verified"
+		default:
+			e.Status = "pending"
+		}
+		out = append(out, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	// Hires used (one per accepted shift).
+	used, err := s.db.QueryContext(ctx, `
+		SELECT a.job_id, a.accepted_at, COALESCE(j.role_label,'')
+		FROM job_assignments a JOIN jobs j ON j.id = a.job_id
+		WHERE a.applicant_id = ?`, applicantID)
+	if err != nil {
+		return nil, err
+	}
+	defer used.Close()
+	for used.Next() {
+		var jobID, at int64
+		var role string
+		if err := used.Scan(&jobID, &at, &role); err != nil {
+			return nil, err
+		}
+		jid := jobID
+		desc := fmt.Sprintf("Accepted job #%d", jobID)
+		if role != "" {
+			desc = fmt.Sprintf("Accepted %s (job #%d)", role, jobID)
+		}
+		out = append(out, PaymentLogEntry{
+			ID: fmt.Sprintf("use_%d", jobID), Kind: "hire_used", Title: "1 hire used",
+			Description: desc, AmountPesos: pesos(0), Status: "used", JobID: &jid, CreatedAt: at,
+		})
+	}
+	if err := used.Err(); err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(out, func(i, j int) bool { return out[i].CreatedAt > out[j].CreatedAt })
+	return out, nil
+}

@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"io"
 	"os"
@@ -232,9 +233,23 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ApplicantHiringPass failed: %v", err)
 	}
-	if pass.RemainingHires != 0 {
-		t.Fatalf("expected 0 remaining hires, got %d", pass.RemainingHires)
+	if pass.RemainingHires != store.InitialFreeHires {
+		t.Fatalf("expected %d free starter hires, got %d", store.InitialFreeHires, pass.RemainingHires)
 	}
+	if pass.PaidAmount != 0 || pass.BatchesPaid != 0 {
+		t.Fatalf("free hires must not count as a paid batch: %+v", pass)
+	}
+
+	// Simulate the free hires being used up so the paid top-up flow below applies.
+	raw, err := sql.Open("sqlite", "file:"+dbPath+"?_pragma=busy_timeout(5000)")
+	if err != nil {
+		t.Fatalf("open raw db: %v", err)
+	}
+	if _, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=0, remaining_hires=0, used_hires=0 WHERE applicant_id=?`, applicant.ID); err != nil {
+		raw.Close()
+		t.Fatalf("exhaust free hires: %v", err)
+	}
+	raw.Close()
 
 	// Attempting AcceptJob fails with ErrHiringPassEmpty
 	err = st.AcceptJob(ctx, job.ID, applicant.ID)

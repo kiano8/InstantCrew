@@ -1035,16 +1035,16 @@
                     <!-- Selected Package Showcase -->
                     <div class="app-pass-package-card">
                         <div class="app-pass-package-header">
-                            <span class="app-pass-per-hire-tag">₱2.00 / Hire</span>
+                            <span class="app-pass-per-hire-tag">FREE to start</span>
                         </div>
                         <div class="app-pass-package-main">
                             <div>
                                 <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">5 Hiring Opportunities for Instant Shifts</p>
+                                <p class="app-pass-package-desc">5 free Hiring Opportunities — no payment needed</p>
                             </div>
                             <div class="app-pass-package-price">
                                 <span class="app-pass-currency">₱</span>
-                                <span class="app-pass-amount">10</span>
+                                <span class="app-pass-amount">0</span>
                                 <span class="app-pass-decimal">.00</span>
                             </div>
                         </div>
@@ -1054,7 +1054,7 @@
                                     stroke-width="2.5">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
-                                <span>Includes <strong>5 Hires</strong> (₱2.00 per hire)</span>
+                                <span>Includes <strong>5 free hires</strong> — you pay nothing upfront</span>
                             </div>
                             <div class="app-pass-feature-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
@@ -1075,7 +1075,7 @@
 
 
                     <!-- Payment Method Selector -->
-                    <div class="db-payment-methods-section" style="margin-top: 16px;">
+                    <div class="db-payment-methods-section" style="margin-top: 16px; display: none;">
                         <label class="db-payment-section-label">Select Payment Method</label>
                         <div class="db-pay-method-tabs" role="radiogroup" id="appStepPayTabs">
                             <button type="button" class="db-pay-method-btn active" data-method="gcash"
@@ -2498,11 +2498,12 @@
                 }
                 if (!session.hiringQuota) {
                     session.hiringQuota = {
-                        totalHires: 5,
-                        remainingHires: 5,
+                        // Placeholder only; the real numbers come from /api/applicant/hiring-pass.
+                        totalHires: 0,
+                        remainingHires: 0,
                         usedHires: 0,
-                        paidAmount: 10,
-                        batchesPaid: 1
+                        paidAmount: 0,
+                        batchesPaid: 0
                     };
                     saveWorkerSession(session);
                 }
@@ -7302,10 +7303,10 @@
                     if (!appPayAndProceedBtn) return;
                     if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
                         const hasProof = !!(step4ProofFile || step4ProofDataUrl);
-                        appPayAndProceedBtn.disabled = !hasProof;
-                        appPayAndProceedBtn.style.opacity = hasProof ? '1' : '0.5';
-                        appPayAndProceedBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
-                        appPayAndProceedBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
+                        appPayAndProceedBtn.disabled = false; // free starter hires: no proof needed
+                        appPayAndProceedBtn.style.opacity = '1';
+                        appPayAndProceedBtn.style.cursor = 'pointer';
+                        appPayAndProceedBtn.title = '';
                     } else {
                         appPayAndProceedBtn.disabled = false;
                         appPayAndProceedBtn.style.opacity = '1';
@@ -7347,6 +7348,30 @@
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
                     appPayAndProceedBtn.addEventListener('click', async () => {
+                        // New crew members start with 5 free hires granted by the server at signup.
+                        // No upfront payment: just continue to sign up / log in, or straight to the dashboard.
+                        if (!hasWorkerSession()) {
+                            showToast('Create your free account to start with 5 hires.');
+                            openApplicantAuthModal();
+                            return;
+                        }
+                        try { await refreshHiringPass(); } catch (e) { /* dashboard refresh will retry */ }
+                        applySessionToDashboard({
+                            ...session,
+                            services: [appState.role],
+                            role: appState.role,
+                            offeredRate: appState.rate,
+                            ratePeriod: appState.ratePeriod,
+                            employmentPreference: appState.workType,
+                            location: appState.location,
+                            ...getAppMapFields(),
+                            timingPreference: appState.timing
+                        });
+                        saveWorkerSession(session);
+                        updateViewMode();
+                        showToast('You have 5 free hires. Start accepting shifts!');
+                        return;
+                        // eslint-disable-next-line no-unreachable -- legacy upfront-payment path below is intentionally disabled
                         let proofUrl = step4ProofDataUrl;
 
                         if (step4PaymentMethod === 'gcash' || step4PaymentMethod === 'maya') {
@@ -7798,7 +7823,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast(pendingPassQuota ? 'Account created! Your ₱10 Hiring Pass with 5 hires is active.' : 'Account created. Add ₱10 to activate 5 hiring opportunities.');
+                        showToast(pendingPassQuota ? 'Account created! Your ₱10 Hiring Pass with 5 hires is active.' : 'Account created. You start with 5 free hires!');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -7877,6 +7902,7 @@
         })();
     </script>
     <script src="/js/session.js"></script>
+<script src="js/payment-history.js?v=1"></script>
 </body>
 
 </html>

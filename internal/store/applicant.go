@@ -163,14 +163,35 @@ func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID i
 		return err
 	}
 	defer tx.Rollback()
+	// Order is enforced here, not just in the UI: none -> en_route -> arrived,
+	// and only after the employer confirmed the booking (job status 'active').
+	prev := "none"
+	if status == "arrived" {
+		prev = "en_route"
+	}
 	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status=? WHERE job_id=? AND applicant_id=? AND ended_at IS NULL
-		AND EXISTS (SELECT 1 FROM jobs WHERE id=? AND status='active')`, status, jobID, applicantID, jobID)
+		AND transit_status=?
+		AND EXISTS (SELECT 1 FROM jobs WHERE id=? AND status='active')`, status, jobID, applicantID, prev, jobID)
 	if err != nil {
 		return err
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return ErrNotFound
+		// Explain why nothing changed instead of a generic "not found".
+		var jobStatus string
+		var ended sql.NullInt64
+		qerr := tx.QueryRowContext(ctx, `SELECT j.status, a.ended_at FROM job_assignments a
+			JOIN jobs j ON j.id=a.job_id WHERE a.job_id=? AND a.applicant_id=?`, jobID, applicantID).Scan(&jobStatus, &ended)
+		if qerr == sql.ErrNoRows || (qerr == nil && ended.Valid) {
+			return ErrNotFound
+		}
+		if qerr != nil {
+			return qerr
+		}
+		if jobStatus == "accepted" {
+			return ErrNotConfirmed // employer has not confirmed the booking yet
+		}
+		return ErrBadState // wrong order, or the job is not active
 	}
 	res, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
 		SELECT employer_id,?,?,?,json_object('job_id',?),? FROM jobs WHERE id=?`,

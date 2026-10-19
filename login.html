@@ -876,7 +876,8 @@
 
                 sessionStorage.setItem(SESSION_KEY_WORKER, JSON.stringify({
                     ...user, services: [], rating: null, completedShifts: 0, active: false,
-                    hiringQuota: user.hiringQuota || initialQuota,
+                    // Real hire counts come from the server (/api/applicant/hiring-pass); never invent a paid quota here.
+                    hiringQuota: user.hiringQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 },
                     expiresAt: Date.now() + SESSION_TTL_MS
                 }));
             }
