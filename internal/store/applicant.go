@@ -93,6 +93,7 @@ func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, m
 
 	var existingID int64
 	var existingStatus string
+	var paymentID int64
 	scanErr := tx.QueryRowContext(ctx, `
 		SELECT id, COALESCE(status,'') FROM applicant_hiring_pass_payments
 		WHERE applicant_id=? ORDER BY id DESC LIMIT 1`, applicantID).Scan(&existingID, &existingStatus)
@@ -106,10 +107,18 @@ func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, m
 			WHERE id=? AND applicant_id=?`, method, proofImage, now, existingID, applicantID); err != nil {
 			return HiringPass{}, err
 		}
+		paymentID = existingID
 	} else {
-		if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,credits_granted,created_at) VALUES(?,1000,?,?,'pending',0,?)`, applicantID, method, proofImage, now); err != nil {
+		var result sql.Result
+		if result, err = tx.ExecContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,credits_granted,created_at) VALUES(?,1000,?,?,'pending',0,?)`, applicantID, method, proofImage, now); err != nil {
 			return HiringPass{}, err
 		}
+		if paymentID, err = result.LastInsertId(); err != nil {
+			return HiringPass{}, err
+		}
+	}
+	if err := addPaymentSubmittedNotification(ctx, tx, applicantID, paymentID, "applicant", nil, now); err != nil {
+		return HiringPass{}, err
 	}
 	if err = tx.Commit(); err != nil {
 		return HiringPass{}, err
