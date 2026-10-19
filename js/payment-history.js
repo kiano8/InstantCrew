@@ -8,9 +8,11 @@
     var TITLE = isEmployer ? 'Payment history' : 'Payments & hires log';
 
     var CSS = '\
-.ph-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #E2E8F0;border-radius:999px;background:#fff;color:#1E293B;font:600 .8rem inherit;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}\
-.ph-btn:hover{background:#F8FAFC}\
-.ph-btn.ph-float{position:fixed;right:16px;bottom:16px;z-index:900;box-shadow:0 4px 14px rgba(0,0,0,.18)}\
+.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 16px;border:1px solid rgba(255,255,255,.12);border-radius:9999px;background:#0F172A;color:#F8FAFC;font:600 .8rem inherit;cursor:pointer;white-space:nowrap;line-height:1.25;text-decoration:none;transition:background .18s ease,transform .18s ease,box-shadow .18s ease;box-shadow:0 1px 3px rgba(0,0,0,.18)}\
+.ph-btn:hover{background:#1E293B;color:#fff;transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.25)}\
+.ph-btn:active{transform:translateY(0)}\
+@media (max-width:520px){.ph-btn{padding:6px 12px;font-size:.75rem}}\
+@media (max-width:380px){.ph-btn{padding:5px 9px;font-size:.7rem}}\
 .ph-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}\
 .ph-overlay.open{display:flex}\
 .ph-card{background:#fff;color:#0F172A;width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.3);overflow:hidden;font-family:inherit}\
@@ -37,7 +39,7 @@
 .ph-link{color:#2563EB;font-size:.72rem;text-decoration:underline;margin-left:8px}\
 .ph-empty,.ph-err{padding:28px 0;text-align:center;color:#64748B;font-size:.85rem}\
 .ph-err{color:#B91C1C}\
-@media (prefers-color-scheme:dark){.ph-card{background:#0F172A;color:#E2E8F0}.ph-head,.ph-filters,.ph-row{border-color:#1E293B}.ph-btn,.ph-chip-btn{background:#1E293B;color:#E2E8F0;border-color:#334155}.ph-chip-btn.active{background:#E2E8F0;color:#0F172A}.ph-desc{color:#94A3B8}}';
+@media (prefers-color-scheme:dark){.ph-card{background:#0F172A;color:#E2E8F0}.ph-head,.ph-filters,.ph-row{border-color:#1E293B}.ph-chip-btn{background:#1E293B;color:#E2E8F0;border-color:#334155}.ph-chip-btn.active{background:#E2E8F0;color:#0F172A}.ph-desc{color:#94A3B8}}';
 
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -56,12 +58,13 @@
 
     function filtersFor() {
         return isEmployer
-            ? [['all', 'All'], ['pending', 'Pending'], ['verified', 'Verified'], ['rejected', 'Rejected']]
+            ? [['all', 'All'], ['verified', 'Verified'], ['rejected', 'Rejected']]
             : [['all', 'All'], ['payments', 'Payments'], ['hires', 'Hires']];
     }
 
     function matches(e) {
-        if (filter === 'all') return true;
+        if (e.status === 'pending') return false;
+        if (filter === 'all' || filter === 'pending') return true;
         if (isEmployer) return e.status === filter;
         if (filter === 'payments') return e.kind === 'hiring_pass';
         if (filter === 'hires') return e.kind === 'hire_used' || e.kind === 'free_hires';
@@ -134,17 +137,37 @@
         });
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'ph-btn';
-        btn.textContent = TITLE;
+        var btn = document.getElementById('phHeaderBtn');
+        var notifWrap = document.querySelector('.db-notif-wrap, #headerNotifWrap');
+
+        if (!btn) {
+            btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ph-btn';
+            btn.id = 'phHeaderBtn';
+            btn.textContent = TITLE;
+            if (notifWrap && notifWrap.parentNode) {
+                notifWrap.parentNode.insertBefore(btn, notifWrap);
+            } else {
+                var headerRight = document.querySelector('.db-header-inner > div:last-child, .app-header-inner > div:last-child');
+                if (headerRight) headerRight.insertBefore(btn, headerRight.firstChild);
+                else document.body.appendChild(btn);
+            }
+        } else {
+            if (!btn.textContent.trim()) {
+                btn.textContent = TITLE;
+            }
+        }
+
+        // Synchronize initial visibility with notifWrap (hidden if user is logged out)
+        if (notifWrap) {
+            var isHidden = notifWrap.style.display === 'none' || window.getComputedStyle(notifWrap).display === 'none';
+            if (isHidden) {
+                btn.style.display = 'none';
+            }
+        }
+
         btn.addEventListener('click', open);
-
-        // Applicants: sit next to the hiring-pass widget. Everyone else: floating button.
-        var host = document.getElementById('appHiringPassWidget');
-        if (host) { btn.style.margin = '10px 0 0'; host.appendChild(btn); }
-        else { btn.classList.add('ph-float'); document.body.appendChild(btn); }
-
         window.openPaymentHistory = open;
     }
 

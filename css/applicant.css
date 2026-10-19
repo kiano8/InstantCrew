@@ -4281,7 +4281,7 @@ body.app-sheet-open {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: #FEF9C3;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;

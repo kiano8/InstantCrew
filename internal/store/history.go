@@ -80,7 +80,7 @@ func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([
 			COALESCE(p.rejection_reason,''), p.provider_ref, p.created_at,
 			COALESCE(j.role_label,''), p.search_attempt
 		FROM payments p LEFT JOIN jobs j ON j.id = p.job_id
-		WHERE (? <= 0 OR p.user_id = ?)
+		WHERE (? <= 0 OR p.user_id = ?) AND COALESCE(p.status, '') != 'pending'
 		ORDER BY p.created_at DESC, p.id DESC`, employerID, employerID)
 	if err != nil {
 		return nil, err

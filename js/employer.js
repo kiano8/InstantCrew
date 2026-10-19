@@ -2650,6 +2650,7 @@ function populateProfile() {
   const headerLoginBtn = document.getElementById('headerLoginBtn');
   const headerNotifWrap = document.getElementById('headerNotifWrap');
   const openProfilePanelBtn = document.getElementById('openProfilePanel');
+  const phHeaderBtn = document.getElementById('phHeaderBtn');
 
   if (!s) {
     if (headerLogoEl) {
@@ -2665,6 +2666,9 @@ function populateProfile() {
     }
     if (headerNotifWrap) {
       headerNotifWrap.style.display = 'none';
+    }
+    if (phHeaderBtn) {
+      phHeaderBtn.style.display = 'none';
     }
     if (openProfilePanelBtn) {
       openProfilePanelBtn.style.display = 'none';
@@ -2690,6 +2694,9 @@ function populateProfile() {
   }
   if (headerNotifWrap) {
     headerNotifWrap.style.display = '';
+  }
+  if (phHeaderBtn) {
+    phHeaderBtn.style.display = 'inline-flex';
   }
   if (openProfilePanelBtn) {
     openProfilePanelBtn.style.display = 'inline-flex';
