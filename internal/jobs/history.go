@@ -10,7 +10,11 @@ import (
 // GET /api/employer/payments: the employer's own search-fee history.
 func (h *Handler) EmployerPaymentHistory(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	list, err := h.Store.EmployerPaymentHistory(r.Context(), u.ID)
+	empID := u.ID
+	if u.Role == "admin" {
+		empID = 0
+	}
+	list, err := h.Store.EmployerPaymentHistory(r.Context(), empID)
 	if err != nil {
 		h.fail(w, err)
 		return

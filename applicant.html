@@ -1675,6 +1675,14 @@
                     </div>
                 </div>
 
+                <!-- ── Feed Active Work Contracts Section ── -->
+                <div class="app-feed-active-contracts-wrap" id="feedActiveContractsSection" style="display:none; margin-top: 26px; margin-bottom: 24px;">
+                    <div class="services-picker-header" style="margin-bottom: 14px;">
+                        <h2 class="services-picker-title" style="font-size: 1.25rem; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -0.015em;">Active Work Contracts</h2>
+                    </div>
+                    <div class="app-jobs-list" id="feedActiveJobsListContainer"></div>
+                </div>
+
                 <!-- ── Live Shift Opportunities Feed ── -->
                 <div class="db-step-header" style="margin-top: 26px; margin-bottom: 16px;">
                     <div class="app-feed-header-flex">
@@ -5065,7 +5073,7 @@
             function updateWorkerContractTransit(contractId, transitStatus) {
                 const status = transitStatus === 'on_the_way' ? 'en_route' : transitStatus;
                 fetch(`/api/applicant/assignments/${contractId}/transit`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
-                    .then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not update transit status.'); serverAssignments = null; assignmentFetchedAt = 0; refreshApplicantAssignments(true); })
+                    .then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not update transit status.'); serverAssignments = null; assignmentFetchedAt = 0; refreshApplicantAssignments(true); renderAcceptedShiftsList(true); })
                     .catch(err => showToast(err.message, true));
             }
 
@@ -5073,7 +5081,7 @@
                 try {
                     const r = await fetch(`/api/applicant/assignments/${contractId}/end`, { method: 'POST', credentials: 'same-origin' });
                     const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not end this contract.');
-                    serverAssignments = null; assignmentFetchedAt = 0; await refreshApplicantAssignments(true); renderShiftsFeed(true); showToast('Contract ended.');
+                    serverAssignments = null; assignmentFetchedAt = 0; await refreshApplicantAssignments(true); renderShiftsFeed(true); renderAcceptedShiftsList(true); showToast('Contract ended.');
                 } catch (err) { showToast(err.message, true); }
             }
 
@@ -5702,7 +5710,7 @@
                 }
                 lastAcceptedShiftsSig = currentSig;
 
-                // Render Active Jobs
+                // Render Active Jobs in Profile Drawer
                 if (activeJobsListContainer && activeJobsEmpty) {
                     activeJobsListContainer.innerHTML = '';
                     if (activeContracts.length === 0) {
@@ -5711,6 +5719,21 @@
                         activeJobsEmpty.style.display = 'none';
                         activeContracts.forEach(contract => {
                             activeJobsListContainer.appendChild(createJobCard(contract, false));
+                        });
+                    }
+                }
+
+                // Render Active Jobs in Main Applicant Feed
+                const feedActiveSection = document.getElementById('feedActiveContractsSection');
+                const feedActiveContainer = document.getElementById('feedActiveJobsListContainer');
+                if (feedActiveSection && feedActiveContainer) {
+                    feedActiveContainer.innerHTML = '';
+                    if (activeContracts.length === 0) {
+                        feedActiveSection.style.display = 'none';
+                    } else {
+                        feedActiveSection.style.display = 'block';
+                        activeContracts.forEach(contract => {
+                            feedActiveContainer.appendChild(createJobCard(contract, false));
                         });
                     }
                 }
@@ -7851,7 +7874,7 @@
                 renderAppLocationDropdown('');
                 updateStepSummary();
                 updateViewMode();
-                fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(data => {
+                fetch('/api/auth/me?role=applicant', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(data => {
                     if (!data || !data.user || data.user.role !== 'applicant') return;
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
                     session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };

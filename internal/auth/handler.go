@@ -79,6 +79,17 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, u *store.
 		Secure:   h.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 	})
+	if u.Role != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     CookieName + "_" + u.Role,
+			Value:    token,
+			Path:     "/",
+			Expires:  expires,
+			HttpOnly: true,
+			Secure:   h.CookieSecure,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 	return nil
 }
 
@@ -205,13 +216,27 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/auth/logout
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(CookieName); err == nil {
-		_ = h.Store.DeleteSession(r.Context(), hashToken(c.Value))
+	role := r.URL.Query().Get("role")
+	if role != "" {
+		roleCookieName := CookieName + "_" + role
+		if c, err := r.Cookie(roleCookieName); err == nil {
+			_ = h.Store.DeleteSession(r.Context(), hashToken(c.Value))
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name: roleCookieName, Value: "", Path: "/", MaxAge: -1,
+			HttpOnly: true, Secure: h.CookieSecure, SameSite: http.SameSiteLaxMode,
+		})
+	} else {
+		if c, err := r.Cookie(CookieName); err == nil {
+			_ = h.Store.DeleteSession(r.Context(), hashToken(c.Value))
+		}
+		for _, name := range []string{CookieName, CookieName + "_employer", CookieName + "_applicant", CookieName + "_admin"} {
+			http.SetCookie(w, &http.Cookie{
+				Name: name, Value: "", Path: "/", MaxAge: -1,
+				HttpOnly: true, Secure: h.CookieSecure, SameSite: http.SameSiteLaxMode,
+			})
+		}
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: CookieName, Value: "", Path: "/", MaxAge: -1,
-		HttpOnly: true, Secure: h.CookieSecure, SameSite: http.SameSiteLaxMode,
-	})
 	w.WriteHeader(http.StatusNoContent)
 }
 

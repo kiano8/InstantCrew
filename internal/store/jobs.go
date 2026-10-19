@@ -183,7 +183,18 @@ func (s *Store) UpdateJob(ctx context.Context, j *Job) error {
 }
 
 // GetJob is scoped to the employer, so one employer can never read another's job.
+// JobOwnerID returns the employer ID of a job, or an error if not found.
+func (s *Store) JobOwnerID(ctx context.Context, jobID int64) (int64, error) {
+	var empID int64
+	err := s.db.QueryRowContext(ctx, `SELECT employer_id FROM jobs WHERE id = ?`, jobID).Scan(&empID)
+	return empID, err
+}
+
 func (s *Store) GetJob(ctx context.Context, employerID, id int64) (*Job, error) {
+	if employerID <= 0 {
+		return scanJob(s.db.QueryRowContext(ctx,
+			`SELECT `+jobCols+` FROM jobs WHERE id = ?`, id))
+	}
 	return scanJob(s.db.QueryRowContext(ctx,
 		`SELECT `+jobCols+` FROM jobs WHERE id = ? AND employer_id = ?`, id, employerID))
 }

@@ -15,3 +15,5 @@ instantcrew
 *.db-wal
 *.db-shm
 deploy_key*
+server.exe
+*.exe

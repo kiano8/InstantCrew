@@ -266,7 +266,7 @@
             // the same rule; this keeps non-admins from seeing an empty console.
             async function ensureAdminAccess() {
                 try {
-                    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+                    const res = await fetch('/api/auth/me?role=admin', { credentials: 'same-origin' });
                     if (res.status === 401 || res.status === 403) {
                         window.location.replace('login.html?role=admin');
                         return false;
@@ -890,7 +890,7 @@
             if (adminLogoutBtn) {
                 adminLogoutBtn.addEventListener('click', async () => {
                     try {
-                        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+                        await fetch('/api/auth/logout?role=admin', { method: 'POST', credentials: 'same-origin' });
                     } catch (e) { }
                     sessionStorage.removeItem('ic_admin_session');
                     window.location.href = 'login.html';

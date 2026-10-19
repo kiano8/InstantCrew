@@ -536,15 +536,22 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 	}
 }
 
-// ids returns the logged-in employer and the {id} path value.
-func (h *Handler) ids(w http.ResponseWriter, r *http.Request) (*store.User, int64, bool) {
+// ids returns the logged-in user, the {id} path value, and the effective employer ID.
+// For admin users acting on an employer's job, empID is adopted from the job's creator.
+func (h *Handler) ids(w http.ResponseWriter, r *http.Request) (*store.User, int64, int64, bool) {
 	u, _ := auth.UserFrom(r.Context())
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
 		httpx.Error(w, http.StatusNotFound, "job not found")
-		return nil, 0, false
+		return nil, 0, 0, false
 	}
-	return u, id, true
+	empID := u.ID
+	if u.Role == "admin" {
+		if ownerID, err := h.Store.JobOwnerID(r.Context(), id); err == nil && ownerID > 0 {
+			empID = ownerID
+		}
+	}
+	return u, id, empID, true
 }
 
 // writeJob reloads the job (with crew) and sends it. Expired searches are flipped first.
@@ -712,7 +719,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 // PUT /api/jobs/{id}  → "Edit Shift Details" (draft or unfulfilled only)
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
@@ -720,12 +727,12 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	j.ID, j.EmployerID = id, u.ID
+	j.ID, j.EmployerID = id, empID
 	if err := h.Store.UpdateJob(r.Context(), j); err != nil {
 		h.fail(w, err)
 		return
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // GET /api/jobs?status=active,completed&limit=20&offset=0
@@ -757,7 +764,11 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, _ = h.Store.ExpireSearches(r.Context())
-	jobs, err := h.Store.ListJobs(r.Context(), u.ID, statuses, limit, offset)
+	empID := u.ID
+	if u.Role == "admin" {
+		empID = 0
+	}
+	jobs, err := h.Store.ListJobs(r.Context(), empID, statuses, limit, offset)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -786,21 +797,21 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 // GET /api/jobs/{id}  → the endpoint the matching screen polls
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // GET /api/jobs/{id}/matches returns limited profile data for active crew who
 // match this employer's currently open search. The job lookup enforces ownership.
 func (h *Handler) Matches(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	if _, err := h.Store.GetJob(r.Context(), u.ID, id); err != nil {
+	if _, err := h.Store.GetJob(r.Context(), empID, id); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -814,20 +825,20 @@ func (h *Handler) Matches(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/jobs/{id}/search opens a crew search after its fee has been recorded.
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	if err := h.Store.StartSearch(r.Context(), u.ID, id, h.SearchWindow); err != nil {
+	if err := h.Store.StartSearch(r.Context(), empID, id, h.SearchWindow); err != nil {
 		h.fail(w, err)
 		return
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // POST /api/jobs/{id}/pay body: {"method":"gcash", "proof_image":"..."} records the search fee before crew are notified.
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
@@ -859,16 +870,16 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	_, _ = rand.Read(b)
 	ref := "pay_" + hex.EncodeToString(b)
 
-	if err := h.Store.RecordMatchFee(r.Context(), u.ID, id, req.Method, req.Details, req.ProofImage, h.MatchFeeCentavos, ref); err != nil {
+	if err := h.Store.RecordMatchFee(r.Context(), empID, id, req.Method, req.Details, req.ProofImage, h.MatchFeeCentavos, ref); err != nil {
 		h.fail(w, err)
 		return
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // POST /api/jobs/{id}/confirm  → "Confirm Booking" after a crew member accepted
 func (h *Handler) Confirm(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
@@ -877,7 +888,7 @@ func (h *Handler) Confirm(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	if err := h.Store.ConfirmJob(r.Context(), u.ID, id); err != nil {
+	if err := h.Store.ConfirmJob(r.Context(), empID, id); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -886,12 +897,12 @@ func (h *Handler) Confirm(w http.ResponseWriter, r *http.Request) {
 			log.Printf("notification: %v", err)
 		}
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // POST /api/jobs/{id}/end  → "End Contract"
 func (h *Handler) End(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
@@ -900,7 +911,7 @@ func (h *Handler) End(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	if err := h.Store.EndJob(r.Context(), u.ID, id); err != nil {
+	if err := h.Store.EndJob(r.Context(), empID, id); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -909,29 +920,29 @@ func (h *Handler) End(w http.ResponseWriter, r *http.Request) {
 			log.Printf("notification: %v", err)
 		}
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // POST /api/jobs/{id}/cancel
 func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	if err := h.Store.CancelJob(r.Context(), u.ID, id); err != nil {
+	if err := h.Store.CancelJob(r.Context(), empID, id); err != nil {
 		h.fail(w, err)
 		return
 	}
-	h.writeJob(w, r, http.StatusOK, u.ID, id)
+	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
 // POST /api/jobs/{id}/decline-match
 func (h *Handler) DeclineMatch(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	job, err := h.Store.DeclineMatch(r.Context(), u.ID, id, h.SearchWindow)
+	job, err := h.Store.DeclineMatch(r.Context(), empID, id, h.SearchWindow)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -941,11 +952,11 @@ func (h *Handler) DeclineMatch(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/jobs/{id}/next-attempt
 func (h *Handler) NextAttempt(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.ids(w, r)
+	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	job, err := h.Store.AdvanceSearchAttempt(r.Context(), u.ID, id, h.SearchWindow)
+	job, err := h.Store.AdvanceSearchAttempt(r.Context(), empID, id, h.SearchWindow)
 	if err != nil {
 		h.fail(w, err)
 		return

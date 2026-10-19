@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"instantcrew/internal/httpx"
 	"instantcrew/internal/store"
@@ -15,15 +16,68 @@ func UserFrom(ctx context.Context) (*store.User, bool) {
 	return u, ok
 }
 
+func (h *Handler) resolveUser(r *http.Request, preferredRole string) *store.User {
+	// 1. If preferredRole is specified, try that role's cookie first
+	if preferredRole != "" {
+		if c, err := r.Cookie(CookieName + "_" + preferredRole); err == nil && c.Value != "" {
+			if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
+				if u.Role == preferredRole || u.Role == "admin" {
+					return u
+				}
+			}
+		}
+	}
+
+	// 2. Try inferring role from request query, header, or referer
+	targetRole := preferredRole
+	if targetRole == "" {
+		if qRole := r.URL.Query().Get("role"); qRole != "" {
+			targetRole = qRole
+		} else if hRole := r.Header.Get("X-Auth-Role"); hRole != "" {
+			targetRole = hRole
+		} else if ref := r.Referer(); ref != "" {
+			switch {
+			case strings.Contains(ref, "admin.html") || strings.Contains(ref, "accounting.html"):
+				targetRole = "admin"
+			case strings.Contains(ref, "employer.html"):
+				targetRole = "employer"
+			case strings.Contains(ref, "applicant.html"):
+				targetRole = "applicant"
+			}
+		}
+	}
+
+	if targetRole != "" {
+		if c, err := r.Cookie(CookieName + "_" + targetRole); err == nil && c.Value != "" {
+			if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
+				return u
+			}
+		}
+	}
+
+	// 3. Fallback to standard shared session cookie
+	if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
+		if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
+			return u
+		}
+	}
+
+	// 4. Fallback: check any role-scoped cookies if standard cookie was missing
+	for _, role := range []string{"employer", "admin", "applicant"} {
+		if c, err := r.Cookie(CookieName + "_" + role); err == nil && c.Value != "" {
+			if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
+				return u
+			}
+		}
+	}
+
+	return nil
+}
+
 func (h *Handler) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := r.Cookie(CookieName)
-		if err != nil {
-			httpx.Error(w, http.StatusUnauthorized, "not logged in")
-			return
-		}
-		u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value))
-		if err != nil {
+		u := h.resolveUser(r, "")
+		if u == nil {
 			httpx.Error(w, http.StatusUnauthorized, "not logged in")
 			return
 		}
@@ -31,13 +85,20 @@ func (h *Handler) RequireAuth(next http.Handler) http.Handler {
 	})
 }
 
-// RequireRole is for later: protect employer-only or applicant-only endpoints.
+// RequireRole protects employer-only, applicant-only, or admin-only endpoints.
+// Note: system administrators ('admin') are granted access across employer endpoints to allow auditing,
+// verification, and smooth administration.
 func (h *Handler) RequireRole(role string, next http.Handler) http.Handler {
-	return h.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if u, _ := UserFrom(r.Context()); u.Role != role {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u := h.resolveUser(r, role)
+		if u == nil {
+			httpx.Error(w, http.StatusUnauthorized, "not logged in")
+			return
+		}
+		if u.Role != role && !(role == "employer" && u.Role == "admin") {
 			httpx.Error(w, http.StatusForbidden, "forbidden")
 			return
 		}
-		next.ServeHTTP(w, r)
-	}))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, u)))
+	})
 }

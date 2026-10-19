@@ -1513,6 +1513,13 @@ function startFeeVerificationPolling(jobId) {
         if (searchResponse.ok) {
           closePaymentModal();
           activateMatchingScreen(jobId, searchData);
+        } else {
+          if (paymentError) {
+            paymentError.textContent = searchData.error || 'Could not start crew search.';
+            paymentError.style.display = 'block';
+          }
+          if (payNowBtn) payNowBtn.disabled = false;
+          if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
         }
       } else if (p.status === 'rejected') {
         stopFeeVerificationPolling();
@@ -1554,7 +1561,7 @@ async function checkCurrentJobPaymentStatus(jobId) {
         paymentPendingNotice.style.color = '#1E40AF';
         paymentPendingNotice.textContent = '⏳ Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
       }
-      if (payNowBtnText) payNowBtnText.textContent = 'Check Verification & Start Search';
+      if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
       updateEmployerPayBtn();
       startFeeVerificationPolling(jobId);
     } else if (p.status === 'rejected') {
@@ -1882,19 +1889,21 @@ if (payNowBtn) {
               paymentPendingNotice.style.color = '#1E40AF';
               paymentPendingNotice.textContent = '⏳ Still awaiting verification by accounting. As soon as it is approved, your search starts automatically.';
             }
-            if (payNowBtnText) payNowBtnText.textContent = 'Check Verification & Start Search';
+            if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
           }
         } else {
           if (paymentError) {
             paymentError.textContent = searchData.error || 'Could not verify payment.';
             paymentError.style.display = 'block';
           }
+          if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
         }
       } catch (e) {
         if (paymentError) {
           paymentError.textContent = e.message || 'Network error checking payment.';
           paymentError.style.display = 'block';
         }
+        if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
       } finally {
         if (payNowBtn) payNowBtn.disabled = false;
       }
@@ -2046,10 +2055,10 @@ async function startCrewSearch() {
         paymentPendingNotice.style.background = '#EFF6FF';
         paymentPendingNotice.style.borderColor = '#BFDBFE';
         paymentPendingNotice.style.color = '#1E40AF';
-        paymentPendingNotice.textContent = '⏳ Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
+        paymentPendingNotice.textContent = 'Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
       }
       if (paymentError) paymentError.style.display = 'none';
-      if (payNowBtnText) payNowBtnText.textContent = 'Check Verification & Start Search';
+      if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
       updateEmployerPayBtn();
       startFeeVerificationPolling(jobId);
       return;
@@ -4099,10 +4108,10 @@ signupForm.addEventListener('submit', (e) => {
 /* ── Who am I? Ask the server on every page load (the cookie is the truth) ── */
 (async function checkAuth() {
   try {
-    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    const res = await fetch('/api/auth/me?role=employer', { credentials: 'same-origin' });
     if (res.ok) {
       const { user } = await res.json();
-      if (user.role === 'employer') {
+      if (user.role === 'employer' || user.role === 'admin') {
         authUser = user;
         saveEmployerSessionFromUser(user);
       }

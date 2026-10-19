@@ -315,13 +315,13 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("expected applicant payment to be pending")
 	}
 
-	// 10. Applicant accepts with a free starter hire -> 200 OK, no payment needed
+	// 10. Attempting to accept before admin verifies returns 402 ErrHiringPassPending
 	req = httptest.NewRequest("POST", "/api/applicant/jobs/"+jsonNumber(jobID)+"/accept", nil)
 	req.AddCookie(appCookie)
 	rec = httptest.NewRecorder()
 	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("applicant accept with free hires expected 200, got %d: %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusPaymentRequired {
+		t.Fatalf("applicant accept before verify expected 402, got %d: %s", rec.Code, rec.Body.String())
 	}
 
 	// 11. Admin verifies applicant payment
@@ -356,7 +356,16 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("admin verify applicant payment expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	// 12. Accepting spent nothing: 5 free + 5 top-up = 10 until the employer confirms.
+	// 11b. Applicant accepts after payment verified -> 200 OK
+	req = httptest.NewRequest("POST", "/api/applicant/jobs/"+jsonNumber(jobID)+"/accept", nil)
+	req.AddCookie(appCookie)
+	rec = httptest.NewRecorder()
+	env.mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("applicant accept after verify expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	// 12. Accepting spent nothing: 5 top-up = 5 until the employer confirms.
 	do := func(method, path string, c *http.Cookie, payload any) *httptest.ResponseRecorder {
 		var rdr io.Reader
 		if payload != nil {
@@ -378,8 +387,8 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		} `json:"hiring_pass"`
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &passRes)
-	if passRes.HiringPass.RemainingHires != 10 || passRes.HiringPass.BatchesPaid != 1 {
-		t.Fatalf("expected 10 remaining hires (none spent before confirmation) and 1 paid batch, got %+v", passRes.HiringPass)
+	if passRes.HiringPass.RemainingHires != 5 || passRes.HiringPass.BatchesPaid != 1 {
+		t.Fatalf("expected 5 remaining hires (none spent before confirmation) and 1 paid batch, got %+v", passRes.HiringPass)
 	}
 
 	// 13. Transit is blocked until the employer confirms the booking, and must go in order.
@@ -392,8 +401,8 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	}
 	rec = do("GET", "/api/applicant/hiring-pass", appCookie, nil)
 	_ = json.Unmarshal(rec.Body.Bytes(), &passRes)
-	if passRes.HiringPass.RemainingHires != 9 {
-		t.Fatalf("expected the hire to be spent on employer confirmation (9 left), got %d", passRes.HiringPass.RemainingHires)
+	if passRes.HiringPass.RemainingHires != 4 {
+		t.Fatalf("expected the hire to be spent on employer confirmation (4 left), got %d", passRes.HiringPass.RemainingHires)
 	}
 	if rec = do("POST", transit, appCookie, map[string]string{"status": "arrived"}); rec.Code != http.StatusConflict {
 		t.Fatalf("arrived before en_route expected 409, got %d: %s", rec.Code, rec.Body.String())
@@ -412,8 +421,8 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	}
 	rec = do("GET", "/api/applicant/payments", appCookie, nil)
 	bodyStr := rec.Body.String()
-	if rec.Code != http.StatusOK || !strings.Contains(bodyStr, "free_hires") || !strings.Contains(bodyStr, "hiring_pass") || !strings.Contains(bodyStr, "hire_used") {
-		t.Fatalf("applicant history expected free_hires, hiring_pass and hire_used entries, got %d: %s", rec.Code, bodyStr)
+	if rec.Code != http.StatusOK || !strings.Contains(bodyStr, "hiring_pass") || !strings.Contains(bodyStr, "hire_used") {
+		t.Fatalf("applicant history expected hiring_pass and hire_used entries, got %d: %s", rec.Code, bodyStr)
 	}
 	if rec = do("GET", "/api/employer/payments", appCookie, nil); rec.Code != http.StatusForbidden {
 		t.Fatalf("applicant must not read employer history, got %d", rec.Code)
