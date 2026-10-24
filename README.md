@@ -6,11 +6,9 @@
 
 Connect employers with people ready to work, from job posting and matching through booking and payment review.
 
-![Go](https://img.shields.io/badge/Go-backend-00ADD8?style=for-the-badge&logo=go&logoColor=white)
-![HTML5](https://img.shields.io/badge/HTML5-frontend-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-styling-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?style=for-the-badge&logo=javascript&logoColor=111111)
-![SQLite](https://img.shields.io/badge/SQLite-database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+<p>
+  <img src="https://skillicons.dev/icons?i=go,html,css,js,sqlite&theme=light" alt="Go, HTML, CSS, JavaScript, and SQLite" />
+</p>
 
 </div>
 
