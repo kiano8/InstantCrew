@@ -673,6 +673,9 @@
             } else if (initialRole === 'admin' || initialRole === 'accounting' || initialRole === 'staff') {
                 revealAdminTab();
             }
+            if (urlParams.get('mode') === 'signup' && currentRole !== 'admin') {
+                currentMode = 'signup';
+            }
 
             function updateUI() {
                 // Clear notices

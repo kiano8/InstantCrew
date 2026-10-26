@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign-in Problem - Instant Crew</title>
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css?v=20261026-sso-error">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <meta name="theme-color" content="#F5A623">
+
+    <style>
+        .sso-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+
+        .sso-header {
+            padding: 14px 24px;
+            background: var(--card);
+            border-bottom: 1px solid var(--line-subtle);
+        }
+
+        .sso-header img {
+            height: 38px;
+            width: auto;
+            display: block;
+        }
+
+        .sso-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 16px;
+        }
+
+        .sso-card {
+            width: min(460px, 100%);
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-l);
+            box-shadow: var(--shadow-md);
+            padding: 32px 28px;
+            text-align: center;
+        }
+
+        .sso-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 18px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--amber-light);
+            color: var(--amber-deep);
+            border: 1px solid var(--amber-border);
+        }
+
+        .sso-icon.is-error {
+            background: #FEF2F2;
+            color: #DC2626;
+            border-color: #FECACA;
+        }
+
+        .sso-card h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            margin-bottom: 10px;
+        }
+
+        .sso-card p {
+            color: var(--ink-60);
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        .sso-code {
+            display: inline-block;
+            margin-top: 14px;
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            background: var(--ink-10);
+            color: var(--ink-60);
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .sso-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .sso-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 46px;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: background 0.14s ease;
+        }
+
+        .sso-btn-primary {
+            background: var(--amber);
+            color: var(--ink);
+        }
+
+        .sso-btn-primary:hover {
+            background: var(--amber-deep);
+        }
+
+        .sso-btn-secondary {
+            background: transparent;
+            color: var(--ink-80);
+            border: 1.5px solid var(--line);
+        }
+
+        .sso-btn-secondary:hover {
+            background: var(--line-subtle);
+        }
+    </style>
+</head>
+
+<body class="sso-page">
+    <header class="sso-header">
+        <a href="index.html" aria-label="Instant Crew Home"><img src="images/logo.png" alt="Instant Crew"></a>
+    </header>
+
+    <main class="sso-main">
+        <section class="sso-card" aria-live="polite">
+            <div class="sso-icon" id="ssoIcon" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+            </div>
+            <h1 id="ssoTitle">Google sign-in didn't work</h1>
+            <p id="ssoMessage">Something went wrong while signing you in with Google. Please try again.</p>
+            <span class="sso-code" id="ssoCode" hidden></span>
+            <div class="sso-actions">
+                <a class="sso-btn sso-btn-primary" id="ssoPrimary" href="login.html">Back to Log In</a>
+                <a class="sso-btn sso-btn-secondary" id="ssoSecondary" href="index.html">Go to Home</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var params = new URLSearchParams(window.location.search);
+            var reason = params.get('reason') || 'failed';
+            var role = params.get('role') === 'employer' ? 'hirer' : params.get('role');
+            var mode = params.get('mode') === 'signup' ? 'signup' : 'login';
+
+            function loginUrl(targetMode) {
+                var q = new URLSearchParams();
+                if (role === 'hirer' || role === 'applicant') q.set('role', role);
+                if (targetMode === 'signup') q.set('mode', 'signup');
+                var s = q.toString();
+                return 'login.html' + (s ? '?' + s : '');
+            }
+
+            // tone 'notice' is a setup/availability state; 'error' is a failed attempt.
+            var STATES = {
+                not_configured: {
+                    tone: 'notice',
+                    title: 'Google sign-in isn’t available yet',
+                    message: 'Google sign-in is still being set up for Instant Crew. Please log in with your email and password for now.',
+                    primary: ['Log in with email', loginUrl(mode)]
+                },
+                invalid_role: {
+                    tone: 'error',
+                    title: 'Choose an account type first',
+                    message: 'Pick whether you’re hiring or looking for shifts, then continue with Google.',
+                    primary: ['Choose account type', 'login.html']
+                },
+                invalid_state: {
+                    tone: 'error',
+                    title: 'Your sign-in session expired',
+                    message: 'The sign-in link expired or was opened in a different browser. Start again from the login page.',
+                    primary: ['Try again', loginUrl(mode)]
+                },
+                cancelled: {
+                    tone: 'notice',
+                    title: 'Sign-in was cancelled',
+                    message: 'You closed the Google window before finishing. You can try again whenever you’re ready.',
+                    primary: ['Try again', loginUrl(mode)]
+                },
+                failed: {
+                    tone: 'error',
+                    title: 'Google sign-in didn’t work',
+                    message: 'We couldn’t confirm your Google account. Please try again in a moment.',
+                    primary: ['Try again', loginUrl(mode)]
+                },
+                email_unverified: {
+                    tone: 'error',
+                    title: 'Google email isn’t verified',
+                    message: 'Your Google account email needs to be verified before you can use it here. Verify it with Google, or log in with email and password.',
+                    primary: ['Back to log in', loginUrl('login')]
+                },
+                no_account: {
+                    tone: 'notice',
+                    title: 'No account found',
+                    message: 'There’s no Instant Crew account for this Google email and account type yet. Create one to get started.',
+                    primary: ['Create account', loginUrl('signup')],
+                    secondary: ['Back to log in', loginUrl('login')]
+                },
+                email_taken: {
+                    tone: 'notice',
+                    title: 'Account already exists',
+                    message: 'An Instant Crew account already uses this email. Log in instead.',
+                    primary: ['Log in', loginUrl('login')]
+                },
+                beta_full: {
+                    tone: 'notice',
+                    title: 'The beta is full',
+                    message: 'We’ve reached the limit for beta accounts. Please check back soon.',
+                    primary: ['Go to Home', 'index.html'],
+                    secondary: ['Back to log in', loginUrl('login')]
+                },
+                server_error: {
+                    tone: 'error',
+                    title: 'Something went wrong on our side',
+                    message: 'We couldn’t finish signing you in. Please try again in a few minutes.',
+                    primary: ['Try again', loginUrl(mode)]
+                }
+            };
+
+            var st = STATES[reason] || STATES.failed;
+            document.title = st.title + ' - Instant Crew';
+            document.getElementById('ssoTitle').textContent = st.title;
+            document.getElementById('ssoMessage').textContent = st.message;
+            document.getElementById('ssoIcon').classList.toggle('is-error', st.tone === 'error');
+
+            var code = document.getElementById('ssoCode');
+            code.textContent = 'Code: ' + (STATES[reason] ? reason : 'failed');
+            code.hidden = false;
+
+            var primary = document.getElementById('ssoPrimary');
+            primary.textContent = st.primary[0];
+            primary.href = st.primary[1];
+            if (st.secondary) {
+                var secondary = document.getElementById('ssoSecondary');
+                secondary.textContent = st.secondary[0];
+                secondary.href = st.secondary[1];
+            }
+        })();
+    </script>
+</body>
+
+</html>

@@ -1442,14 +1442,9 @@ function openPaymentModal(step = 'payment') {
   });
   if (selectedMethodButton) selectedMethodButton.click();
   if (payCancelBtn) payCancelBtn.textContent = 'Back to Details';
-  if (paymentError) {
-    paymentError.textContent = '';
-    paymentError.style.display = 'none';
-  }
-  if (paymentPendingNotice) {
-    paymentPendingNotice.textContent = '';
-    paymentPendingNotice.style.display = 'none';
-  }
+  clearPaymentNotices();
+  // Verification state is re-derived from the job's next search fee below.
+  state.feePendingVerification = false;
   if (payNowBtn) {
     updateEmployerPayBtn();
   }
@@ -1533,10 +1528,8 @@ function startFeeVerificationPolling(jobId) {
           paymentPendingNotice.style.color = '#B91C1C';
           paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${reason}. Please upload a new proof of payment.`;
         }
-        if (payNowBtn) {
-          payNowBtn.disabled = false;
-          if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
-        }
+        if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
+        clearEmployerPaymentProof();
       }
     } catch (err) {
       console.warn('Fee verification polling error:', err);
@@ -1550,8 +1543,14 @@ async function checkCurrentJobPaymentStatus(jobId) {
     const res = await fetch(`/api/jobs/${jobId}`, { credentials: 'same-origin', cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
-    const p = data.job?.payment;
-    if (!p) return;
+    // A fee already spent on an earlier search is history, not this panel's state.
+    const p = data.job ? nextSearchFee(data.job) : null;
+    if (!p) {
+      state.feePendingVerification = false;
+      clearPaymentNotices();
+      updateEmployerPayBtn();
+      return;
+    }
 
     if (p.status === 'pending') {
       state.feePendingVerification = true;
@@ -1576,7 +1575,7 @@ async function checkCurrentJobPaymentStatus(jobId) {
         paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${reason}. Please upload a new proof of payment.`;
       }
       if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
-      updateEmployerPayBtn();
+      clearEmployerPaymentProof();
     } else if (p.status === 'verified') {
       // The receipt is already on file, so the button only needs to start the search.
       state.feePendingVerification = true;
@@ -1606,6 +1605,7 @@ function closePaymentModal() {
 // State for employer proof of payment
 state.selectedPaymentProof = '';
 state.selectedPaymentProofFile = null;
+const proofUploadResets = [];
 
 function setupEmployerProofUpload(fileInputId, dropzoneId, attachedBoxId, thumbId, filenameId, removeBtnId) {
   const fileInput = document.getElementById(fileInputId);
@@ -1670,18 +1670,44 @@ function setupEmployerProofUpload(fileInputId, dropzoneId, attachedBoxId, thumbI
     }
   });
 
+  const resetUpload = () => {
+    fileInput.value = '';
+    if (thumb) thumb.removeAttribute('src');
+    if (filename) filename.textContent = '';
+    attachedBox.style.display = 'none';
+    dropzone.style.display = 'flex';
+  };
+  proofUploadResets.push(resetUpload);
+
   if (removeBtn) {
     removeBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       state.selectedPaymentProofFile = null;
       state.selectedPaymentProof = '';
-      fileInput.value = '';
-      if (thumb) thumb.src = '';
-      attachedBox.style.display = 'none';
-      dropzone.style.display = 'flex';
+      resetUpload();
       updateEmployerPayBtn();
     });
+  }
+}
+
+// clearEmployerPaymentProof empties every receipt uploader so a used or
+// rejected receipt is never resubmitted for the next search.
+function clearEmployerPaymentProof() {
+  state.selectedPaymentProofFile = null;
+  state.selectedPaymentProof = '';
+  proofUploadResets.forEach(reset => reset());
+  updateEmployerPayBtn();
+}
+
+function clearPaymentNotices() {
+  if (paymentError) {
+    paymentError.textContent = '';
+    paymentError.style.display = 'none';
+  }
+  if (paymentPendingNotice) {
+    paymentPendingNotice.textContent = '';
+    paymentPendingNotice.style.display = 'none';
   }
 }
 
@@ -1883,6 +1909,7 @@ if (payNowBtn) {
               paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${p.rejection_reason || 'Please upload a new proof of payment.'}`;
             }
             if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
+            clearEmployerPaymentProof();
           } else {
             if (paymentPendingNotice) {
               paymentPendingNotice.style.display = 'block';
@@ -1999,6 +2026,9 @@ function activateMatchingScreen(jobId, searchData, customMapLoc, customMapsUrl, 
   state.acceptanceHandled = false;
   saveBookingToSession(bookingData);
   state.currentJobId = jobId;
+  state.feePendingVerification = false;
+  clearEmployerPaymentProof();
+  clearPaymentNotices();
 
   if (matchEscrowPill) {
     matchEscrowPill.style.display = 'inline-flex';

@@ -75,26 +75,39 @@ func randomState() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-func (h *Handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
-	if h.google == nil {
-		http.Error(w, "Google sign-in is not configured", http.StatusServiceUnavailable)
-		return
+// ssoFail sends the browser to a friendly error page instead of a bare text
+// response, keeping the role and mode so the page can offer the right retry.
+func ssoFail(w http.ResponseWriter, r *http.Request, reason, role, mode string) {
+	q := url.Values{"reason": {reason}}
+	if role != "" {
+		q.Set("role", role)
 	}
+	if mode != "" {
+		q.Set("mode", mode)
+	}
+	http.Redirect(w, r, "/sso-error.html?"+q.Encode(), http.StatusSeeOther)
+}
+
+func (h *Handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 	role := r.URL.Query().Get("role")
 	if role == "hirer" {
 		role = "employer"
-	}
-	if role != "employer" && role != "applicant" {
-		http.Error(w, "invalid account type", http.StatusBadRequest)
-		return
 	}
 	mode := r.URL.Query().Get("mode")
 	if mode != "signup" {
 		mode = "login"
 	}
+	if h.google == nil {
+		ssoFail(w, r, "not_configured", role, mode)
+		return
+	}
+	if role != "employer" && role != "applicant" {
+		ssoFail(w, r, "invalid_role", "", mode)
+		return
+	}
 	state, err := randomState()
 	if err != nil {
-		http.Error(w, "could not start Google sign-in", http.StatusInternalServerError)
+		ssoFail(w, r, "server_error", role, mode)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: googleStateCookie, Value: state + "|" + role + "|" + mode, Path: "/api/auth/google/callback", MaxAge: 600, HttpOnly: true, Secure: h.CookieSecure, SameSite: http.SameSiteLaxMode})
@@ -104,7 +117,7 @@ func (h *Handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	if h.google == nil {
-		http.Error(w, "Google sign-in is not configured", http.StatusServiceUnavailable)
+		ssoFail(w, r, "not_configured", "", "")
 		return
 	}
 	cookie, err := r.Cookie(googleStateCookie)
@@ -115,55 +128,56 @@ func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		parts = strings.Split(cookie.Value, "|")
 	}
 	if len(parts) != 3 || r.URL.Query().Get("state") == "" || r.URL.Query().Get("state") != parts[0] {
-		http.Error(w, "invalid sign-in state", http.StatusBadRequest)
+		ssoFail(w, r, "invalid_state", "", "")
 		return
 	}
+	role, mode := parts[1], parts[2]
 	if e := r.URL.Query().Get("error"); e != "" {
-		http.Error(w, "Google sign-in was cancelled", http.StatusUnauthorized)
+		ssoFail(w, r, "cancelled", role, mode)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	token, err := h.googleToken(ctx, r.URL.Query().Get("code"))
 	if err != nil {
-		http.Error(w, "Google sign-in failed", http.StatusUnauthorized)
+		ssoFail(w, r, "failed", role, mode)
 		return
 	}
 	profile, err := h.googleProfile(ctx, token)
 	if err != nil || !profile.EmailVerified || profile.Email == "" {
-		http.Error(w, "Google account email could not be verified", http.StatusUnauthorized)
+		ssoFail(w, r, "email_unverified", role, mode)
 		return
 	}
 	email := normalizeEmail(profile.Email)
-	u, err := h.Store.UserByEmailRole(ctx, email, parts[1])
+	u, err := h.Store.UserByEmailRole(ctx, email, role)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
-		http.Error(w, "could not load account", http.StatusInternalServerError)
+		ssoFail(w, r, "server_error", role, mode)
 		return
 	}
 	if errors.Is(err, store.ErrNotFound) {
-		if parts[2] != "signup" {
-			http.Error(w, "No account found for this Google email. Choose Create Account to register.", http.StatusForbidden)
+		if mode != "signup" {
+			ssoFail(w, r, "no_account", role, mode)
 			return
 		}
-		u = &store.User{Email: email, Role: parts[1], Name: strings.TrimSpace(profile.Name)}
+		u = &store.User{Email: email, Role: role, Name: strings.TrimSpace(profile.Name)}
 		if u.Name == "" {
 			u.Name = email
 		}
 		if err = h.Store.CreateUserCapped(ctx, u, h.MaxUsers); err != nil {
 			if errors.Is(err, store.ErrBetaFull) {
-				http.Error(w, "the beta is full right now. Please check back soon.", http.StatusForbidden)
+				ssoFail(w, r, "beta_full", role, mode)
 				return
 			}
 			if errors.Is(err, store.ErrEmailTaken) {
-				http.Error(w, "an account with this email already exists", http.StatusConflict)
+				ssoFail(w, r, "email_taken", role, mode)
 				return
 			}
-			http.Error(w, "could not create account", http.StatusInternalServerError)
+			ssoFail(w, r, "server_error", role, mode)
 			return
 		}
 	}
 	if err := h.startSession(w, r, u); err != nil {
-		http.Error(w, "could not start session", http.StatusInternalServerError)
+		ssoFail(w, r, "server_error", role, mode)
 		return
 	}
 	if u.Role == "employer" {

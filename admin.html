@@ -825,6 +825,8 @@
 
             function closeReceiptModal() {
                 receiptModal.classList.remove('open');
+                // Empty the viewer so a reviewed receipt doesn't linger behind the next one.
+                modalReceiptImg.removeAttribute('src');
                 currentViewingPayment = null;
             }
 
