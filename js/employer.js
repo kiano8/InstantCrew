@@ -2499,6 +2499,7 @@ confirmBooking.addEventListener('click', async () => {
   }
   renderBookings();
   state.bookingConfirmed = true;
+  confirmBooking.disabled = false;
   updateStep4BackButton();
 
   goStep(5);
@@ -2536,6 +2537,8 @@ bookAnother.addEventListener('click', () => {
   state.paid = false;
   state.pendingPayment = null;
   state.paymentMethod = 'GCash';
+  state.bookingConfirmed = false;
+  confirmBooking.disabled = false;
   stopSearchTimer();
   if (matchFailed) matchFailed.style.display = 'none';
   if (state.matchCheckInterval) {
