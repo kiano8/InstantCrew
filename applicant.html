@@ -7766,8 +7766,8 @@
                     const pass = passInput ? passInput.value : '';
                     const btn = document.getElementById('btnSubmitAppModalLogin');
 
-                    if (!email || pass.length < 8) {
-                        showApplicantAuthError('Please enter a valid email and password (minimum 8 characters).');
+                    if (!email || !pass) {
+                        showApplicantAuthError('Please enter your email and password.');
                         return;
                     }
 

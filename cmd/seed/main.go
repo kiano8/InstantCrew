@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -46,6 +47,48 @@ var crew = []seedCrew{
 	{"picker@seed.instantcrew.test", "Joy Mendoza", "full-time", 90, []string{"warehouse-picker-packer", "kargador-loader-unloader"}},
 	{"electrician@seed.instantcrew.test", "Paolo Garcia", "full-time", 120, []string{"electrician"}},
 	{"builder@seed.instantcrew.test", "Ben Aquino", "full-time", 100, []string{"construction-worker", "carpenter-painter"}},
+}
+
+// extraPerRole crew are generated for every catalog role so searches can rotate
+// through more than one batch of matches.
+const extraPerRole = 5
+
+var (
+	firstNames = []string{"Andres", "Bea", "Carlos", "Diana", "Emil", "Faith", "Gino", "Hazel", "Ivan", "Jasmine", "Kevin", "Lorna", "Miguel", "Nina", "Oscar", "Pia", "Rico", "Sheila", "Tomas", "Vina"}
+	lastNames  = []string{"Bautista", "Castillo", "Domingo", "Escobar", "Flores", "Gonzales", "Hernandez", "Ignacio", "Jimenez", "Lim", "Morales", "Navarro", "Ocampo", "Pascual", "Quijano", "Ramos", "Santiago", "Torres", "Uy", "Velasco"}
+)
+
+// generatedCrew returns extraPerRole single-role crew for each catalog role. Each
+// uses the employment type of that role's hand-written crew (full-time otherwise),
+// since matching only pairs crew with jobs of the same employment type.
+func generatedCrew() []seedCrew {
+	empType := map[string]string{}
+	for _, c := range crew {
+		for _, role := range c.roles {
+			empType[role] = c.employmentType
+		}
+	}
+	var out []seedCrew
+	i := 0
+	for _, cat := range jobs.Catalog {
+		for _, role := range cat.Roles {
+			t := empType[role.ID]
+			if t == "" {
+				t = "full-time"
+			}
+			for n := 1; n <= extraPerRole; n++ {
+				out = append(out, seedCrew{
+					email:          fmt.Sprintf("%s-%d@seed.instantcrew.test", role.ID, n),
+					name:           firstNames[i%len(firstNames)] + " " + lastNames[(i*7+n)%len(lastNames)],
+					employmentType: t,
+					rate:           int64(80 + (i*13)%50),
+					roles:          []string{role.ID},
+				})
+				i++
+			}
+		}
+	}
+	return out
 }
 
 // admin is the one seeded admin; it reviews and verifies payment records in admin.html.
@@ -108,7 +151,7 @@ func main() {
 	}
 
 	active := true
-	for _, c := range crew {
+	for _, c := range append(crew, generatedCrew()...) {
 		for _, role := range c.roles {
 			if _, ok := jobs.RoleByID(role); !ok {
 				log.Fatalf("crew %s: role %q is not in the catalog", c.email, role)
