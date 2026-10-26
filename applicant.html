@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261017-peeking-crew">
-    <link rel="stylesheet" href="css/applicant.css?v=20261017-peeking-crew">
+    <link rel="stylesheet" href="css/employer.css?v=20261026-arrival-limit">
+    <link rel="stylesheet" href="css/applicant.css?v=20261026-arrival-limit">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
     <link rel="manifest" href="manifest.json">
@@ -114,6 +114,8 @@
 
             <!-- Panel Scrollable Body -->
             <div class="db-profile-body">
+
+                <div class="app-quota-warning-banner app-standing-banner" id="appStandingBannerDrawer" style="display:none;" role="alert"></div>
 
                 <!-- Hidden legacy preferences & location elements for 100% script compatibility -->
                 <div style="display:none;" aria-hidden="true" id="profileLocSection">
@@ -603,7 +605,7 @@
                                 <button type="button" class="db-custom-dropdown-trigger" id="appRoleDropdownTrigger"
                                     aria-haspopup="listbox" aria-expanded="false" aria-label="Choose a role">
                                     <div class="db-custom-trigger-content">
-                                        <span class="db-custom-trigger-text" id="appRoleTriggerText">Line Cook</span>
+                                        <span class="db-custom-trigger-text" id="appRoleTriggerText">Cook</span>
                                     </div>
                                     <div class="db-custom-trigger-end">
                                         <svg class="db-custom-chevron" width="18" height="18" viewBox="0 0 24 24"
@@ -998,7 +1000,7 @@
                         <div class="app-summary-grid">
                             <div class="app-summary-item">
                                 <span>Desired Job</span>
-                                <strong id="summaryRoleText">Line Cook</strong>
+                                <strong id="summaryRoleText">Cook</strong>
                             </div>
                             <div class="app-summary-item">
                                 <span>Expected Rate</span>
@@ -1887,6 +1889,9 @@
                             style="background:#DC2626;">Re-upload Proof</button>
                     </div>
 
+                    <!-- No-show penalty (suspension / permanent deactivation) -->
+                    <div class="app-quota-warning-banner app-standing-banner" id="appStandingBanner" style="display:none;" role="alert"></div>
+
                     <div class="app-shifts-list" id="shiftsListContainer"></div>
 
                 </div>
@@ -2469,7 +2474,7 @@
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js"></script>
+    <script src="js/shared-data.js?v=20261026-arrival-limit"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -2947,6 +2952,7 @@
                 }
                 if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs ?? session.completedShifts ?? '0';
 
+                renderStandingBanners();
                 updateStatusUI();
                 checkAndRenderDeactivationBanner();
             }
@@ -2957,15 +2963,55 @@
                     const data = await response.json();
                     if (!response.ok) return;
                     session.rating = Number(data.rating ?? 4.9);
-                    session.noShowCount = Number(data.no_show_count || 0);
-                    session.isDeactivated = Boolean(data.is_deactivated);
-                    session.deactivatedUntil = data.deactivated_until || null;
-                    session.servedTemporaryDeactivation = Boolean(data.served_temporary_deactivation);
-                    session.isPermanentlyDeactivated = Boolean(data.is_permanently_deactivated);
+                    session.standing = data.standing || null;
+                    session.noShowCount = Number(data.no_show_count ?? data.standing?.no_show_count ?? 0);
+                    session.isDeactivated = Boolean(data.is_deactivated ?? data.standing?.suspended);
+                    session.deactivatedUntil = data.deactivated_until ?? (data.standing?.deactivated_until ? new Date(Number(data.standing.deactivated_until) * 1000).toISOString() : null);
+                    session.servedTemporaryDeactivation = Boolean(data.served_temporary_deactivation ?? data.standing?.served_temporary_deactivation);
+                    session.isPermanentlyDeactivated = Boolean(data.is_permanently_deactivated ?? data.standing?.is_permanently_deactivated);
                     saveWorkerSession(session);
                     renderProfileInfo();
+                    renderShiftsFeed();
+                    renderStandingBanners();
                     checkAndRenderDeactivationBanner();
                 } catch { }
+            }
+
+            // Lock label when no-show penalties block accepting shifts, or '' when none apply.
+            function standingLockReason() {
+                const st = session.standing;
+                if (session.isPermanentlyDeactivated || st?.is_permanently_deactivated) return 'Locked (Permanently Deactivated)';
+                const untilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : (st?.deactivated_until ? Number(st.deactivated_until) * 1000 : 0);
+                if ((session.isDeactivated || st?.suspended) && untilMs > Date.now()) return 'Locked (5-Day Suspension)';
+                return '';
+            }
+
+            function renderStandingBanners() {
+                const st = session.standing;
+                const lock = standingLockReason();
+                let html = '';
+                if (lock && (session.isPermanentlyDeactivated || st?.is_permanently_deactivated)) {
+                    html = `
+                        <div class="app-quota-warning-content">
+                            <h4 style="color:#B91C1C;">Account Permanently Deactivated</h4>
+                            <p style="color:#991B1B;">You missed a shift's 1-hour arrival limit after serving a 5-day suspension, so your account has been permanently deactivated. All shift opportunities are locked. Contact support if you believe this is a mistake.</p>
+                        </div>`;
+                } else if (lock) {
+                    const untilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : (st?.deactivated_until ? Number(st.deactivated_until) * 1000 : 0);
+                    const unlock = new Date(untilMs).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
+                    const strikes = Number(session.noShowCount || st?.no_show_count || 0);
+                    html = `
+                        <div class="app-quota-warning-content">
+                            <h4 style="color:#B91C1C;">Account Suspended for 5 Days</h4>
+                            <p style="color:#991B1B;">You have ${strikes} no-shows. You cannot accept shifts until <strong>${unlock}</strong>. Another no-show after the suspension permanently deactivates your account.</p>
+                        </div>`;
+                }
+                ['appStandingBanner', 'appStandingBannerDrawer'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.innerHTML = html;
+                    el.style.display = html ? 'flex' : 'none';
+                });
             }
 
             function checkAndRenderDeactivationBanner() {
@@ -2973,10 +3019,10 @@
                 const profileNotice = document.getElementById('profileDeactivationNotice');
                 if (!mainBanner && !profileNotice) return;
 
-                const isPerm = Boolean(session.isPermanentlyDeactivated);
-                const deactivatedUntilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : 0;
-                const isTempSuspended = !isPerm && (Boolean(session.isDeactivated) || (deactivatedUntilMs > Date.now()));
-                const strikes = Number(session.noShowCount || 0);
+                const isPerm = Boolean(session.isPermanentlyDeactivated || session.standing?.is_permanently_deactivated);
+                const deactivatedUntilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : (session.standing?.deactivated_until ? Number(session.standing.deactivated_until) * 1000 : 0);
+                const isTempSuspended = !isPerm && (Boolean(session.isDeactivated || session.standing?.suspended) || (deactivatedUntilMs > Date.now()));
+                const strikes = Number(session.noShowCount ?? session.standing?.no_show_count ?? 0);
 
                 let html = '';
                 let profileHtml = '';
@@ -3003,25 +3049,25 @@
                                 <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#DC2626;"></span>
                                 Permanently Deactivated
                             </div>
-                            Account suspended indefinitely due to repeated no-show penalties.
+                            <div>Failing to arrive for accepted shifts after suspension. Contact support if you need assistance.</div>
                         </div>
                     `;
                 } else if (isTempSuspended) {
-                    const untilDate = new Date(deactivatedUntilMs).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const unlockTimeStr = deactivatedUntilMs ? new Date(deactivatedUntilMs).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '5 days';
                     html = `
                         <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #F59E0B; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(245,158,11,0.12);">
                             <div style="display:flex; align-items:flex-start; gap:12px;">
                                 <div style="width:36px; height:36px; border-radius:50%; background:#D97706; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                                 </div>
                                 <div style="flex:1;">
-                                    <h4 style="margin:0 0 4px 0; font-size:0.95rem; font-weight:800; color:#92400E;">5-Day Temporary Deactivation in Effect</h4>
-                                    <p style="margin:0 0 6px 0; font-size:0.84rem; color:#78350F; line-height:1.45;">
-                                        You have accumulated more than 3 no-show penalties. Your account is temporarily suspended until <strong>${untilDate}</strong>.
+                                    <h4 style="margin:0 0 4px 0; font-size:0.95rem; font-weight:800; color:#92400E;">Temporary 5-Day Account Deactivation</h4>
+                                    <p style="margin:0; font-size:0.84rem; color:#78350F; line-height:1.45;">
+                                        You accumulated more than 3 no-show strikes after accepting shifts. Your account is temporarily suspended until <strong>${unlockTimeStr}</strong>.
                                     </p>
-                                    <p style="margin:0; font-size:0.80rem; font-weight:700; color:#B45309;">
-                                        ⚠️ Critical Notice: If you fail to show up after accepting another shift once this suspension expires, your account will be permanently deactivated.
-                                    </p>
+                                    <div style="margin-top:6px; font-size:0.80rem; font-weight:700; color:#B45309;">
+                                        ⚠️ WARNING: Missing another shift after this suspension will result in PERMANENT account deactivation.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3029,16 +3075,16 @@
                     profileHtml = `
                         <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:10px; padding:12px 14px; color:#92400E; font-size:0.82rem; line-height:1.4;">
                             <div style="font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#D97706;"></span>
-                                Temporary 5-Day Deactivation
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#F59E0B;"></span>
+                                Account Suspended until ${unlockTimeStr}
                             </div>
-                            Active suspension until <strong>${untilDate}</strong>. Next no-show will lead to permanent deactivation.
+                            <div>More than 3 no-shows. One more no-show after suspension ends will permanently deactivate your account.</div>
                         </div>
                     `;
                 } else if (strikes > 0) {
                     html = `
-                        <div style="background: #FFF7ED; border: 1px solid #FDBA74; border-radius: 10px; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA580C" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <div style="background: #FFF7ED; border: 1px solid #F97316; border-radius: 10px; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                             <div style="font-size:0.84rem; color:#9A3412; line-height:1.45;">
                                 <strong>No-Show Warning:</strong> You have <strong>${strikes} / 3</strong> no-show strikes (rating deducted). More than 3 no-shows after accepting shifts will trigger a mandatory 5-day temporary account deactivation.
                             </div>
@@ -3072,6 +3118,9 @@
                 }
             }
 
+            setInterval(() => {
+                if (hasWorkerSession() && document.visibilityState === 'visible') refreshCrewRating();
+            }, 15000);
             // Status Switch UI (Active / Offline)
             function updateStatusUI() {
                 const isPerm = Boolean(session.isPermanentlyDeactivated);
@@ -5078,8 +5127,20 @@
                     rate: `₱${j.rate}`, timing: j.timing, employmentType: j.employment_type,
                     status: a.ended_at ? 'ended' : (a.confirmed ? 'active' : 'pending'), confirmed: !!a.confirmed, endedAt: a.ended_at,
                     transitStatus: a.transit_status === 'en_route' ? 'on_the_way' : a.transit_status,
-                    acceptedAt: a.accepted_at
+                    acceptedAt: a.accepted_at,
+                    arrivalDeadline: window.InstantCrewShared ? InstantCrewShared.arrivalDeadlineFromSeconds(a.arrival_seconds_remaining) : 0,
+                    noShow: !!a.no_show
                 };
+            }
+
+            // Reminder with a live countdown while a confirmed contract awaits arrival.
+            function arrivalReminderHtml(contract) {
+                if (!contract.confirmed || contract.transitStatus === 'arrived' || contract.transitStatus === 'on_the_way' || !contract.arrivalDeadline || !window.InstantCrewShared) return '';
+                return `
+                    <div class="app-arrival-reminder">
+                        <span>Arrive on site and tap <strong>Mark Arrived</strong> within 60 minutes, or the shift is auto-cancelled with a no-show penalty.</span>
+                        <span class="app-card-arrival-countdown" data-arrival-deadline="${contract.arrivalDeadline}">${InstantCrewShared.formatArrivalCountdown(contract.arrivalDeadline)}</span>
+                    </div>`;
             }
             function refreshApplicantAssignments(force = false) {
                 if (assignmentFetchPending || (!force && serverAssignments !== null && Date.now() - assignmentFetchedAt < 2500)) return;
@@ -5131,7 +5192,7 @@
             function renderActiveContractsBanner(activeContracts) {
                 if (!activeContractsBox || !activeContractsContainer) return;
 
-                const bannerSig = (activeContracts || []).map(c => `${c.id}_${c.status}_${c.transitStatus || ''}_${c.departedAt || ''}_${c.arrivedAt || ''}_${c.venue}_${c.rate}`).join('|');
+                const bannerSig = (activeContracts || []).map(c => `${c.id}_${c.status}_${c.transitStatus || ''}_${c.departedAt || ''}_${c.arrivedAt || ''}_${c.venue}_${c.rate}_${c.arrivalDeadline ? 'deadline' : ''}`).join('|');
                 if (bannerSig === lastActiveContractsBannerSig) return;
                 lastActiveContractsBannerSig = bannerSig;
 
@@ -5234,6 +5295,7 @@
                                 ${empBadge}
                             </div>
                             <p class="app-contract-meta">${contract.venue} &bull; Rate: ${contract.rate}/hr &bull; Started: ${contract.startedAt || 'Today'}</p>
+                            ${arrivalReminderHtml(contract)}
                             ${transitHtml}
                         </div>
                         <div class="app-contract-action-side">
@@ -5419,6 +5481,7 @@
                     isMaxCapacity,
                     hasFullTime,
                     partTimeCount,
+                    standingLock: standingLockReason(),
                     jobs: visibleJobs.map(j => `${j.id}_${j.role}_${j.neededCrew}_${j.acceptedCount}_${j.contractStatus}`)
                 });
 
@@ -5518,7 +5581,11 @@
                     const quota = session.hiringQuota || { remainingHires: 0 };
                     const remainingHires = quota.remainingHires !== undefined ? quota.remainingHires : 0;
 
-                    if (session.isPermanentlyDeactivated) {
+                    const standingLock = standingLockReason();
+                    if (standingLock) {
+                        canAccept = false;
+                        lockedReason = standingLock;
+                    } else if (session.isPermanentlyDeactivated) {
                         canAccept = false;
                         lockedReason = 'Locked (Permanently Deactivated)';
                     } else if (session.isDeactivated || (session.deactivatedUntil && new Date(session.deactivatedUntil).getTime() > Date.now())) {
@@ -5648,7 +5715,7 @@
                         acceptBtn.addEventListener('click', () => {
                             acceptWorkerShift(shift, card);
                         });
-                    } else if (remainingHires <= 0) {
+                    } else if (!standingLock && remainingHires <= 0) {
                         acceptBtn.disabled = false;
                         acceptBtn.style.cursor = 'pointer';
                         acceptBtn.style.background = '#DC2626';
@@ -5705,7 +5772,10 @@
                 try {
                     const response = await fetch(`/api/applicant/jobs/${shift.id}/accept`, { method: 'POST', credentials: 'same-origin' });
                     const data = await response.json().catch(() => ({}));
-                    if (!response.ok) throw new Error(data.error || 'Could not accept this shift.');
+                    if (!response.ok) {
+                        if (response.status === 403) refreshCrewRating();
+                        throw new Error(data.error || 'Could not accept this shift.');
+                    }
                 } catch (err) {
                     if (button) button.disabled = false;
                     showToast(err.message, true);
@@ -5760,7 +5830,7 @@
                 const isNoShowExpired = (remainingMs <= 0 && item.transitStatus !== 'arrived' && item.transitStatus !== 'on_the_way') || item.transitStatus === 'no_show';
 
                 const statusBadgeHtml = isEnded
-                    ? `<span class="app-job-status-badge ended">Ended</span>`
+                    ? `<span class="app-job-status-badge ended">${(item.noShow || isNoShowExpired) ? 'Auto-Cancelled' : 'Ended'}</span>`
                     : (isNoShowExpired ? `<span class="app-job-status-badge cancelled" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA;">Cancelled</span>` : `<span class="app-job-status-badge active"><span class="dot"></span>Active</span>`);
 
                 const cardRoleIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(item, 20) : (item.emoji || '');
@@ -5820,6 +5890,7 @@
                         </div>` : ''}
                     </div>
 
+                    ${!isEnded ? arrivalReminderHtml(item) : ''}
                     ${!isEnded ? `
                     <div class="app-job-card-footer active-contract-footer">
                         ${isNoShowExpired ? `
@@ -5887,7 +5958,7 @@
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
-                            <span>${item.endedAt ? `Concluded ${item.endedAt}` : 'Concluded contract'}</span>
+                            <span>${item.noShow ? 'Auto-Cancelled: 1-Hr Arrival Limit Expired (No-Show Penalty)' : (item.endedAt ? `Concluded ${item.endedAt}` : 'Concluded contract')}</span>
                         </span>
                         <span class="app-job-archived-tag">Archived</span>
                         `}
@@ -5946,7 +6017,7 @@
                 if (activeJobsCountBadge) activeJobsCountBadge.textContent = activeContracts.length;
                 if (endedJobsCountBadge) endedJobsCountBadge.textContent = endedContracts.length;
 
-                const currentSig = JSON.stringify(contracts.map(c => `${c.id}_${c.status}_${c.transitStatus || ''}_${c.departedAt || ''}_${c.arrivedAt || ''}_${c.endedAt || ''}`));
+                const currentSig = JSON.stringify(contracts.map(c => `${c.id}_${c.status}_${c.transitStatus || ''}_${c.departedAt || ''}_${c.arrivedAt || ''}_${c.endedAt || ''}_${c.noShow ? 'noshow' : ''}_${c.arrivalDeadline ? 'deadline' : ''}`));
                 if (!force && currentSig === lastAcceptedShiftsSig) {
                     return;
                 }
@@ -6415,7 +6486,7 @@
             const appState = {
                 step: 1,
                 category: 'kitchen',
-                role: 'Line Cook',
+                role: 'Cook',
                 workType: 'full-time',
                 rate: '95',
                 ratePeriod: 'per hour',
@@ -7936,8 +8007,8 @@
                     const pass = passInput ? passInput.value : '';
                     const btn = document.getElementById('btnSubmitAppModalLogin');
 
-                    if (!email || pass.length < 8) {
-                        showApplicantAuthError('Please enter a valid email and password (minimum 8 characters).');
+                    if (!email || !pass) {
+                        showApplicantAuthError('Please enter your email and password.');
                         return;
                     }
 
@@ -7959,7 +8030,7 @@
                         const profileResponse = await fetch('/api/applicant/profile', { credentials: 'same-origin' });
                         if (profileResponse.ok) {
                             const profileData = await profileResponse.json();
-                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                         }
                         await loadApplicantAvailability(newSession);
                         const initialPayment = await submitPendingInitialApplicantPayment(newSession);
@@ -8124,7 +8195,7 @@
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
                     session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };
                     return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
-                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                     }).then(() => loadApplicantAvailability(session));
                 }).then(() => {
                     if (!hasWorkerSession()) return;
@@ -8212,7 +8283,7 @@
         })();
     </script>
     <script src="/js/session.js"></script>
-    <script src="js/payment-history.js"></script>
+    <script src="js/payment-history.js?v=20261026-brand-btn"></script>
 </body>
 
 </html>

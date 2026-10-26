@@ -1,9 +1,9 @@
 
 CREATE TABLE IF NOT EXISTS job_applications (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_id       INTEGER NOT NULL
+    id           BIGSERIAL PRIMARY KEY,
+    job_id       BIGINT NOT NULL
                  REFERENCES jobs(id) ON DELETE CASCADE,
-    applicant_id INTEGER NOT NULL
+    applicant_id BIGINT NOT NULL
                  REFERENCES applicant_profiles(user_id)
                  ON DELETE CASCADE,
     status       TEXT NOT NULL DEFAULT 'pending'
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS job_applications (
                      'rejected',
                      'withdrawn'
                  )),
-    applied_at   INTEGER NOT NULL DEFAULT (unixepoch()),
-    updated_at   INTEGER NOT NULL DEFAULT (unixepoch()),
+    applied_at   BIGINT NOT NULL DEFAULT extract(epoch from now())::BIGINT,
+    updated_at   BIGINT NOT NULL DEFAULT extract(epoch from now())::BIGINT,
 
     UNIQUE (job_id, applicant_id)
 );

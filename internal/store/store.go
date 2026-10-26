@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 var (
@@ -47,13 +47,16 @@ type RoleRow struct{ ID, Category, Label string }
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-func Open(path string) (*Store, error) {
-	dsn := "file:" + path + "?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
-	db, err := sql.Open("sqlite", dsn)
+func Open(dsn string) (*Store, error) {
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(1) // simplest way to avoid SQLITE_BUSY with one writer
+	// Configure connection pool for PostgreSQL
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(1 * time.Minute)
 	if err := migrate(db); err != nil {
 		db.Close()
 		return nil, err
@@ -69,8 +72,13 @@ func (s *Store) SyncRoles(ctx context.Context, roles []RoleRow) error {
 		return err
 	}
 	defer tx.Rollback()
+	// Roles dropped from the catalog are deactivated, not deleted: jobs and
+	// applicant_roles still reference their IDs.
+	if _, err := tx.ExecContext(ctx, `UPDATE job_roles SET is_active=false`); err != nil {
+		return err
+	}
 	for _, role := range roles {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO job_roles(id,category,label,is_active) VALUES(?,?,?,1) ON CONFLICT(id) DO UPDATE SET category=excluded.category,label=excluded.label,is_active=1`, role.ID, role.Category, role.Label); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO job_roles(id,category,label,is_active) VALUES($1,$2,$3,true) ON CONFLICT(id) DO UPDATE SET category=excluded.category,label=excluded.label,is_active=true`, role.ID, role.Category, role.Label); err != nil {
 			return err
 		}
 	}
@@ -78,7 +86,7 @@ func (s *Store) SyncRoles(ctx context.Context, roles []RoleRow) error {
 }
 
 func (s *Store) ListRoles(ctx context.Context) ([]RoleRow, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id,category,label FROM job_roles WHERE is_active=1 ORDER BY category,label`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id,category,label FROM job_roles WHERE is_active=true ORDER BY category,label`)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +105,7 @@ func (s *Store) ListRoles(ctx context.Context) ([]RoleRow, error) {
 // migrate applies each migrations/*.sql file once, in filename order.
 func migrate(db *sql.DB) error {
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
-		version TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)`); err != nil {
+		version TEXT PRIMARY KEY, applied_at BIGINT NOT NULL)`); err != nil {
 		return err
 	}
 	files, err := fs.ReadDir(migrationsFS, "migrations") // sorted by filename
@@ -106,7 +114,7 @@ func migrate(db *sql.DB) error {
 	}
 	for _, f := range files {
 		var done int
-		if err := db.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = ?`, f.Name()).Scan(&done); err != nil {
+		if err := db.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE version = $1`, f.Name()).Scan(&done); err != nil {
 			return err
 		}
 		if done > 0 {
@@ -124,7 +132,7 @@ func migrate(db *sql.DB) error {
 			tx.Rollback()
 			return fmt.Errorf("migration %s: %w", f.Name(), err)
 		}
-		if _, err := tx.Exec(`INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`,
+		if _, err := tx.Exec(`INSERT INTO schema_migrations (version, applied_at) VALUES ($1, $2)`,
 			f.Name(), time.Now().Unix()); err != nil {
 			tx.Rollback()
 			return err
@@ -137,17 +145,17 @@ func migrate(db *sql.DB) error {
 }
 
 func (s *Store) createUserRow(ctx context.Context, u *User) error {
-	res, err := s.db.ExecContext(ctx,
+	err := s.db.QueryRowContext(ctx,
 		`INSERT INTO users (email, password_hash, role, name, company, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?)`,
-		u.Email, u.PasswordHash, u.Role, u.Name, u.Company, time.Now().Unix())
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id`,
+		u.Email, u.PasswordHash, u.Role, u.Name, u.Company, time.Now().Unix()).Scan(&u.ID)
 	if err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		if strings.Contains(err.Error(), "duplicate key") {
 			return ErrEmailTaken
 		}
 		return err
 	}
-	u.ID, _ = res.LastInsertId()
 	return nil
 }
 
@@ -166,13 +174,13 @@ func scanUser(row *sql.Row) (*User, error) {
 func (s *Store) UserByEmailRole(ctx context.Context, email, role string) (*User, error) {
 	return scanUser(s.db.QueryRowContext(ctx,
 		`SELECT id, email, password_hash, role, name, company
-		 FROM users WHERE email = ? AND role = ?`, email, role))
+		 FROM users WHERE email = $1 AND role = $2`, email, role))
 }
 
 func (s *Store) CreateSession(ctx context.Context, tokenHash string, userID int64, expires time.Time) error {
 	now := time.Now().Unix()
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO sessions (token_hash, user_id, expires_at, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO sessions (token_hash, user_id, expires_at, created_at, last_seen_at) VALUES ($1, $2, $3, $4, $5)`,
 		tokenHash, userID, expires.Unix(), now, now)
 	return err
 }
@@ -190,8 +198,8 @@ func (s *Store) idleCutoff(now time.Time) int64 {
 func (s *Store) TouchSession(ctx context.Context, tokenHash string) error {
 	now := time.Now()
 	_, err := s.db.ExecContext(ctx,
-		`UPDATE sessions SET last_seen_at = ?
-		 WHERE token_hash = ? AND expires_at > ? AND last_seen_at > ? AND last_seen_at < ?`,
+		`UPDATE sessions SET last_seen_at = $1
+		 WHERE token_hash = $2 AND expires_at > $3 AND last_seen_at > $4 AND last_seen_at < $5`,
 		now.Unix(), tokenHash, now.Unix(), s.idleCutoff(now), now.Unix()-20)
 	return err
 }
@@ -205,23 +213,23 @@ func (s *Store) createUserCappedRow(ctx context.Context, u *User, max int) error
 	if max <= 0 {
 		return s.createUserRow(ctx, u)
 	}
-	res, err := s.db.ExecContext(ctx,
+	err := s.db.QueryRowContext(ctx,
 		`INSERT INTO users (email, password_hash, role, name, company, created_at)
-		 SELECT ?, ?, ?, ?, ?, ?
-		 WHERE EXISTS (SELECT 1 FROM users WHERE email = ?)
-		    OR (SELECT COUNT(DISTINCT email) FROM users) < ?`,
+		 SELECT $1, $2, $3, $4, $5, $6
+		 WHERE EXISTS (SELECT 1 FROM users WHERE email = $7)
+		    OR (SELECT COUNT(DISTINCT email) FROM users) < $8
+		 RETURNING id`,
 		u.Email, u.PasswordHash, u.Role, u.Name, u.Company, time.Now().Unix(),
-		u.Email, max)
+		u.Email, max).Scan(&u.ID)
 	if err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		if strings.Contains(err.Error(), "duplicate key") {
 			return ErrEmailTaken
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrBetaFull
 		}
 		return err
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return ErrBetaFull
-	}
-	u.ID, _ = res.LastInsertId()
 	return nil
 }
 
@@ -230,19 +238,19 @@ func (s *Store) UserBySession(ctx context.Context, tokenHash string) (*User, err
 	return scanUser(s.db.QueryRowContext(ctx,
 		`SELECT u.id, u.email, u.password_hash, u.role, u.name, u.company
 		 FROM sessions s JOIN users u ON u.id = s.user_id
-		 WHERE s.token_hash = ? AND s.expires_at > ? AND s.last_seen_at > ?`,
+		 WHERE s.token_hash = $1 AND s.expires_at > $2 AND s.last_seen_at > $3`,
 		tokenHash, now.Unix(), s.idleCutoff(now)))
 }
 
 func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE token_hash = ?`, tokenHash)
+	_, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE token_hash = $1`, tokenHash)
 	return err
 }
 
 func (s *Store) DeleteExpiredSessions(ctx context.Context) error {
 	now := time.Now()
 	_, err := s.db.ExecContext(ctx,
-		`DELETE FROM sessions WHERE expires_at <= ? OR last_seen_at <= ?`,
+		`DELETE FROM sessions WHERE expires_at <= $1 OR last_seen_at <= $2`,
 		now.Unix(), s.idleCutoff(now))
 	return err
 }

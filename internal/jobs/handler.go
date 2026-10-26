@@ -213,6 +213,7 @@ func (h *Handler) ApplicantRating(w http.ResponseWriter, r *http.Request) {
 	isDeactivated := p.IsPermanentlyDeactivated || (p.DeactivatedUntil > time.Now().Unix())
 	httpx.JSON(w, http.StatusOK, map[string]any{
 		"rating":                        p.Rating,
+		"standing":                      p.Standing,
 		"no_show_count":                 p.NoShowCount,
 		"is_deactivated":                isDeactivated,
 		"deactivated_until":             p.DeactivatedUntil,
@@ -332,7 +333,7 @@ func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	_, _ = h.Store.CheckAndExpireTransitAssignments(r.Context())
+	h.expireOverdue(r)
 	jobs, err := h.Store.ApplicantJobs(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -351,7 +352,7 @@ func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, c := range crew {
-			d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
 		out = append(out, d)
 	}
@@ -426,7 +427,7 @@ func (h *Handler) ApplicantReject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	_, _ = h.Store.CheckAndExpireTransitAssignments(r.Context())
+	h.expireOverdue(r)
 	jobs, err := h.Store.ApplicantAssignments(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -439,7 +440,13 @@ func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 			h.fail(w, err)
 			return
 		}
-		out = append(out, map[string]any{"job": h.toDTO(j), "accepted_at": assignment.AcceptedAt, "ended_at": assignment.EndedAt, "transit_status": assignment.Transit, "confirmed": j.Status == "active" || j.Status == "completed"})
+		out = append(out, map[string]any{
+			"job": h.toDTO(j), "accepted_at": assignment.AcceptedAt, "ended_at": assignment.EndedAt,
+			"transit_status": assignment.Transit, "confirmed": j.Status == "active" || j.Status == "completed",
+			"arrival_deadline_at":       assignment.ArrivalDeadlineAt,
+			"arrival_seconds_remaining": arrivalSecondsRemaining(assignment),
+			"no_show":                   assignment.Transit == "no_show",
+		})
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"assignments": out})
 }
@@ -447,11 +454,29 @@ func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 // ── DTOs ──
 
 type crewDTO struct {
-	ApplicantID int64      `json:"applicant_id"`
-	Name        string     `json:"name"`
-	AcceptedAt  time.Time  `json:"accepted_at"`
-	EndedAt     *time.Time `json:"ended_at,omitempty"`
-	Transit     string     `json:"transit_status"`
+	ApplicantID       int64      `json:"applicant_id"`
+	Name              string     `json:"name"`
+	AcceptedAt        time.Time  `json:"accepted_at"`
+	EndedAt           *time.Time `json:"ended_at,omitempty"`
+	Transit           string     `json:"transit_status"`
+	ArrivalDeadlineAt *time.Time `json:"arrival_deadline_at,omitempty"`
+	// ArrivalSecondsRemaining uses the server clock, like seconds_remaining.
+	ArrivalSecondsRemaining int64 `json:"arrival_seconds_remaining"`
+}
+
+func toCrewDTO(c store.Assignment) crewDTO {
+	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c)}
+}
+
+// arrivalSecondsRemaining is the time left to mark arrival, or 0 when no limit applies.
+func arrivalSecondsRemaining(a store.Assignment) int64 {
+	if a.ArrivalDeadlineAt == nil || a.EndedAt != nil || a.Transit == "arrived" || a.Transit == "no_show" {
+		return 0
+	}
+	if rem := time.Until(*a.ArrivalDeadlineAt); rem > 0 {
+		return int64(rem.Seconds())
+	}
+	return 0
 }
 
 type jobDTO struct {
@@ -551,6 +576,10 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
 	case errors.Is(err, store.ErrPaymentPendingExists):
 		httpx.Error(w, http.StatusConflict, err.Error())
+	case errors.Is(err, store.ErrAccountSuspended), errors.Is(err, store.ErrAccountDeactivated):
+		httpx.Error(w, http.StatusForbidden, err.Error())
+	case errors.Is(err, store.ErrArrivalExpired):
+		httpx.Error(w, http.StatusConflict, err.Error())
 	default:
 		log.Printf("jobs: %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
@@ -575,10 +604,19 @@ func (h *Handler) ids(w http.ResponseWriter, r *http.Request) (*store.User, int6
 	return u, id, empID, true
 }
 
+// expireOverdue flips expired searches and missed arrival limits before a read,
+// so responses never lag the background sweep.
+func (h *Handler) expireOverdue(r *http.Request) {
+	_, _ = h.Store.ExpireSearches(r.Context())
+	if _, err := h.Store.ExpireArrivals(r.Context()); err != nil {
+		log.Printf("expire arrivals: %v", err)
+	}
+}
+
 // writeJob reloads the job (with crew) and sends it. Expired searches are flipped first.
 func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, employerID, id int64) {
 	ctx := r.Context()
-	_, _ = h.Store.ExpireSearches(ctx)
+	h.expireOverdue(r)
 	j, err := h.Store.GetJob(ctx, employerID, id)
 	if err != nil {
 		h.fail(w, err)
@@ -591,7 +629,7 @@ func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, e
 		return
 	}
 	for _, c := range crew {
-		d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+		d.Crew = append(d.Crew, toCrewDTO(c))
 	}
 	if pay, err := h.Store.LatestJobPayment(ctx, j.ID); err != nil {
 		h.fail(w, err)
@@ -705,20 +743,22 @@ func (h *Handler) Catalog(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	labels := map[string]string{}
-	for _, c := range Catalog {
-		labels[c.ID] = c.Label
-	}
-	groups := map[string]*Category{}
-	ordered := []*Category{}
+	active := map[string]bool{}
 	for _, row := range rows {
-		c := groups[row.Category]
-		if c == nil {
-			c = &Category{ID: row.Category, Label: labels[row.Category], Roles: []Role{}}
-			groups[row.Category] = c
-			ordered = append(ordered, c)
+		active[row.Category+"/"+row.ID] = true
+	}
+	// Serve in catalog order, not the DB's alphabetical order.
+	ordered := []*Category{}
+	for _, c := range Catalog {
+		out := &Category{ID: c.ID, Label: c.Label, Roles: []Role{}}
+		for _, role := range c.Roles {
+			if active[c.ID+"/"+role.ID] {
+				out.Roles = append(out.Roles, role)
+			}
 		}
-		c.Roles = append(c.Roles, Role{ID: row.ID, Label: row.Label})
+		if len(out.Roles) > 0 {
+			ordered = append(ordered, out)
+		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"categories": ordered})
 }
@@ -759,7 +799,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // GET /api/jobs?status=active,completed&limit=20&offset=0
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	_, _ = h.Store.CheckAndExpireTransitAssignments(r.Context())
+	h.expireOverdue(r)
 	valid := map[string]bool{
 		"draft": true, "matching": true, "accepted": true, "active": true,
 		"completed": true, "unfulfilled": true, "cancelled": true,
@@ -785,7 +825,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	_, _ = h.Store.ExpireSearches(r.Context())
+	h.expireOverdue(r)
 	empID := u.ID
 	if u.Role == "admin" {
 		empID = 0
@@ -804,7 +844,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, c := range crew {
-			d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
 		if pay, payErr := h.Store.LatestJobPayment(r.Context(), j.ID); payErr != nil {
 			h.fail(w, payErr)
@@ -1115,50 +1155,13 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/jobs/{id}/check-noshow
 func (h *Handler) CheckJobNoShow(w http.ResponseWriter, r *http.Request) {
-	_, id, empID, ok := h.ids(w, r)
-	if !ok {
-		return
-	}
-	_ = empID
-	crew, err := h.Store.Assignments(r.Context(), id)
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	now := time.Now().Unix()
-	var cancelledCrew []int64
-	for _, c := range crew {
-		if c.EndedAt == nil && c.Transit == "none" {
-			if now-c.AcceptedAt.Unix() >= 3600 {
-				if _, _, _, err := h.Store.RecordNoShow(r.Context(), id, c.ApplicantID); err == nil {
-					cancelledCrew = append(cancelledCrew, c.ApplicantID)
-				}
-			}
-		}
-	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"cancelled_crew": cancelledCrew})
+	h.expireOverdue(r)
+	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 // POST /api/applicant/assignments/{id}/check-noshow
 func (h *Handler) CheckApplicantNoShow(w http.ResponseWriter, r *http.Request) {
-	u, id, ok := h.assignmentID(w, r)
-	if !ok {
-		return
-	}
-	state, err := h.Store.ApplicantAssignmentState(r.Context(), u.ID, id)
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	now := time.Now().Unix()
-	cancelled := false
-	if state.EndedAt == nil && state.Transit == "none" {
-		if now-state.AcceptedAt.Unix() >= 3600 {
-			if _, _, _, err := h.Store.RecordNoShow(r.Context(), id, u.ID); err == nil {
-				cancelled = true
-			}
-		}
-	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"cancelled": cancelled})
+	h.expireOverdue(r)
+	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 

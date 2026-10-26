@@ -1578,7 +1578,8 @@ async function checkCurrentJobPaymentStatus(jobId) {
       if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
       updateEmployerPayBtn();
     } else if (p.status === 'verified') {
-      state.feePendingVerification = false;
+      // The receipt is already on file, so the button only needs to start the search.
+      state.feePendingVerification = true;
       if (paymentPendingNotice) {
         paymentPendingNotice.style.display = 'block';
         paymentPendingNotice.style.background = '#ECFDF5';
@@ -2884,6 +2885,23 @@ let employerBookingsOwnerId = null;
 
 /* ── Render Bookings List ──────────────────────────────── */
 
+// Arrival-limit fields for a job's crew. The deadline is derived from the
+// server's seconds remaining so the countdown follows the server clock.
+function employerCrewArrival(crew) {
+  const list = crew || [];
+  const assigned = list.find(c => !c.ended_at);
+  const shared = window.InstantCrewShared;
+  return {
+    arrivalDeadline: assigned && shared ? shared.arrivalDeadlineFromSeconds(assigned.arrival_seconds_remaining) : 0,
+    noShow: list.some(c => c.transit_status === 'no_show')
+  };
+}
+
+function arrivalCountdownHtml(deadline) {
+  if (!deadline || !window.InstantCrewShared) return '';
+  return `<span class="app-card-arrival-countdown" data-arrival-deadline="${deadline}">${window.InstantCrewShared.formatArrivalCountdown(deadline)}</span>`;
+}
+
 let lastEmployerBookingsSig = null;
 let employerBookingsFetchedAt = 0;
 let employerBookingsFetchPending = false;
@@ -2913,9 +2931,8 @@ function refreshEmployerBookings(force = false) {
       timing: j.scheduled_at || j.timing, count: j.crew_needed,
       acceptedCrew: (j.crew || []).map(c => c.name),
       workerName: (j.crew || []).find(c => !c.ended_at)?.name || '',
-      transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived', no_show: 'no_show' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || ((j.crew || []).some(c => c.transit_status === 'no_show') ? 'no_show' : ''),
-      acceptedAt: (j.crew || []).find(c => !c.ended_at)?.accepted_at || j.created_at,
-      crew: j.crew || [],
+      transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || '',
+      ...employerCrewArrival(j.crew),
       crewRate: `₱${j.rate}`, status: j.status, bookedAt: j.created_at
     }));
     // Keep session mirrors fresh for the booking summary, but never use them to
@@ -2937,7 +2954,7 @@ function renderBookings(force = false) {
   const bookings = employerBookingsFromServer;
 
   const active = bookings.filter(b => b.status === 'active' || b.status === 'matching' || b.status === 'accepted');
-  const previous = bookings.filter(b => b.status === 'completed' || b.status === 'ended');
+  const previous = bookings.filter(b => b.status === 'completed' || b.status === 'ended' || (b.status === 'cancelled' && b.noShow));
 
   // Stats
   const statActiveEl = document.getElementById('statActive');
@@ -2945,7 +2962,7 @@ function renderBookings(force = false) {
   if (statActiveEl) statActiveEl.textContent = active.length;
   if (statPreviousEl) statPreviousEl.textContent = previous.length;
 
-  const currentSig = JSON.stringify(bookings.map(b => `${b.id}_${b.status}_${b.transitStatus || ''}_${b.departedAt || ''}_${b.arrivedAt || ''}_${(b.acceptedCrew || []).join(',')}_${b.neededCrew || b.count}`));
+  const currentSig = JSON.stringify(bookings.map(b => `${b.id}_${b.status}_${b.transitStatus || ''}_${b.departedAt || ''}_${b.arrivedAt || ''}_${(b.acceptedCrew || []).join(',')}_${b.neededCrew || b.count}_${b.noShow ? 'noshow' : ''}_${b.arrivalDeadline ? 'deadline' : ''}`));
   if (!force && currentSig === lastEmployerBookingsSig) {
     return;
   }
@@ -3017,7 +3034,8 @@ if (jobActionConfirmModal) {
 function buildBookingItem(b) {
   const item = document.createElement('div');
   item.id = `employerBooking-${b.id}`;
-  const isEnded = b.status === 'completed' || b.status === 'ended';
+  const isAutoCancelled = b.status === 'cancelled' && b.noShow;
+  const isEnded = b.status === 'completed' || b.status === 'ended' || isAutoCancelled;
   const isBookingActive = b.status === 'active' || b.status === 'matching' || b.status === 'accepted';
   item.className = `db-booking-item app-job-card ${isEnded ? 'ended' : ''}`;
 
@@ -3030,7 +3048,9 @@ function buildBookingItem(b) {
   const crewName = (b.acceptedCrew && b.acceptedCrew.length > 0) ? b.acceptedCrew[0] : (b.workerName || '');
 
   let statusBadgeHtml = '';
-  if (isEnded) {
+  if (isAutoCancelled) {
+    statusBadgeHtml = `<span class="app-job-status-badge ended">Auto-Cancelled</span>`;
+  } else if (isEnded) {
     statusBadgeHtml = `<span class="app-job-status-badge ended">Ended</span>`;
   } else if (b.status === 'accepted') {
     statusBadgeHtml = `<span class="app-job-status-badge active"><span class="dot"></span>CREW ACCEPTED</span>`;
@@ -3071,13 +3091,6 @@ function buildBookingItem(b) {
 
   const rawRate = b.crewRate || (b.offeredRate ? `₱${b.offeredRate}` : '₱85');
   const displayRate = String(rawRate).replace(/\/hr.*$/i, '').trim();
-
-  const acceptedTime = new Date(b.acceptedAt || b.bookedAt).getTime() || Date.now();
-  const elapsedTransitMs = Math.max(0, Date.now() - acceptedTime);
-  const remainingTransitMs = Math.max(0, 3600000 - elapsedTransitMs);
-  const remainingTransitMins = Math.floor(remainingTransitMs / 60000);
-  const remainingTransitSecs = Math.floor((remainingTransitMs % 60000) / 1000);
-  const isTransitExpired = (remainingTransitMs <= 0 && b.status !== 'matching' && b.transitStatus !== 'arrived' && b.transitStatus !== 'on_the_way') || b.transitStatus === 'no_show';
 
   item.innerHTML = `
         <div class="app-job-card-header">
@@ -3128,19 +3141,13 @@ function buildBookingItem(b) {
 
         ${!isEnded ? `
         <div class="app-job-card-footer active-contract-footer">
-            ${isTransitExpired ? `
-            <div class="app-card-transit-box">
-                <span class="app-card-transit-status cancelled" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; display:inline-flex; align-items:center; gap:5px;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    <span>Auto-Cancelled: Crew No-Show (1-Hr Limit Expired)</span>
-                </span>
-                <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
-            </div>` : (b.transitStatus === 'on_the_way' ? `
+            ${b.transitStatus === 'on_the_way' ? `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status on-the-way">
                     <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
                     <span>En Route (${b.departedAt || 'Just now'})</span>
                 </span>
+                ${arrivalCountdownHtml(b.arrivalDeadline)}
             </div>` : (b.transitStatus === 'arrived' ? `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status arrived">
@@ -3154,17 +3161,19 @@ function buildBookingItem(b) {
                 <span class="app-card-transit-status pending">
                     <span>Looking for Nearby Crew</span>
                 </span>
-            </div>` : `
+            </div>` : (b.status === 'active' ? `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status pending">
                     <span>Waiting for transit of crew</span>
                 </span>
-                <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${acceptedTime + 3600000}" data-job-id="${jobId}">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    <span>1-Hr Arrival Limit: <strong class="app-transit-timer-val">${remainingTransitMins}m ${remainingTransitSecs}s left</strong></span>
-                </div>
+                ${arrivalCountdownHtml(b.arrivalDeadline)}
+            </div>` : `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status pending">
+                    <span>Crew Preparing &bull; Awaiting Transit</span>
+                </span>
             </div>`)))}
-            ${canEndJob && !isTransitExpired ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
+            ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
             ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
         </div>` : `
         <div class="app-job-card-footer ended-footer">
@@ -3173,7 +3182,7 @@ function buildBookingItem(b) {
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>${b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract')}</span>
+                <span>${isAutoCancelled ? 'Auto-Cancelled: 1-Hr Arrival Limit Expired (No-Show Penalty)' : (b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract'))}</span>
             </span>
             <span class="app-job-archived-tag">Archived</span>
         </div>`}
@@ -3207,7 +3216,7 @@ function buildBookingItem(b) {
   });
   item.tabIndex = 0;
   item.setAttribute('role', 'button');
-  item.setAttribute('aria-label', `${roleTitle}, ${isEnded ? 'completed' : b.status || 'active'}. Open shift details.`);
+  item.setAttribute('aria-label', `${roleTitle}, ${isAutoCancelled ? 'auto-cancelled' : (isEnded ? 'completed' : b.status || 'active')}. Open shift details.`);
   const openCard = () => openEmployerJobNotification(jobId);
   item.addEventListener('click', e => { if (!e.target.closest('button, a')) openCard(); });
   item.addEventListener('keydown', e => {
@@ -3631,6 +3640,7 @@ function employerJobToBooking(job) {
     acceptedCrew: crew,
     workerName: assignedCrew?.name || '',
     transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[assignedCrew?.transit_status] || '',
+    ...employerCrewArrival(job.crew),
     status: job.status,
     seconds_remaining: Number(job.seconds_remaining || 0),
     paid: Number(job.search_attempts || 0) > 0,
@@ -3669,9 +3679,51 @@ function loadEmployerJobIntoSearch(job) {
   renderBookings(true);
 }
 
-function showEmployerJob(job, { notifySearchResume = false } = {}) {
+// nextSearchFee returns the receipt submitted for the job's next search, which
+// survives logout until it is used to start that search.
+function nextSearchFee(job) {
+  if (job.status !== 'draft' && job.status !== 'unfulfilled') return null;
+  const fee = job.payment;
+  return fee && Number(fee.search_attempt) === Number(job.search_attempts || 0) + 1 ? fee : null;
+}
+
+async function startVerifiedJobSearch(jobId) {
+  try {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/search`, { method: 'POST', credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not start the crew search.');
+    state.feePendingVerification = false;
+    closePaymentModal();
+    activateMatchingScreen(jobId, data);
+  } catch (error) {
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not start crew search', error.message, 'alert');
+  }
+}
+
+function showEmployerJob(job, { notifySearchResume = false, startVerifiedSearch = false } = {}) {
   loadEmployerJobIntoSearch(job);
   if (notifDropdown) notifDropdown.hidden = true;
+
+  const fee = nextSearchFee(job);
+  if (fee) {
+    if (fee.status === 'verified' && startVerifiedSearch) {
+      startVerifiedJobSearch(job.id);
+      return;
+    }
+    // Pending receipts resume verification polling; verified and rejected ones
+    // show their status and the next action in the payment modal.
+    goStep(3);
+    openPaymentModal('search');
+    if (fee.status === 'verified' && window.InstantCrewShared) {
+      window.InstantCrewShared.showPushToast(
+        'Search fee verified',
+        `Tap to start your ${job.role_label || 'crew'} search.`,
+        'payment',
+        () => openEmployerJobNotification(job.id)
+      );
+    }
+    return;
+  }
 
   if (job.status === 'matching') {
     if (matchFailed) matchFailed.style.display = 'none';
@@ -3741,7 +3793,7 @@ async function openEmployerJobNotification(jobId) {
     const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.job) throw new Error(data.error || 'This shift is no longer available.');
-    showEmployerJob(data.job);
+    showEmployerJob(data.job, { startVerifiedSearch: true });
   } catch (error) {
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not open shift', error.message || 'Try refreshing your bookings.', 'alert');
   }
@@ -3751,7 +3803,7 @@ async function restoreEmployerSearchOnLogin() {
   if (!authUser || employerSearchRestorePending) return;
   employerSearchRestorePending = true;
   try {
-    const response = await fetch('/api/jobs?status=matching,accepted&limit=100', { credentials: 'same-origin' });
+    const response = await fetch('/api/jobs?status=matching,accepted,draft,unfulfilled&limit=100', { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not restore your crew search.');
     const jobs = data.jobs || [];
@@ -3763,7 +3815,13 @@ async function restoreEmployerSearchOnLogin() {
       return;
     }
     const activeSearch = jobs.find(job => job.status === 'matching');
-    if (activeSearch) showEmployerJob(activeSearch, { notifySearchResume: true });
+    if (activeSearch) {
+      showEmployerJob(activeSearch, { notifySearchResume: true });
+      return;
+    }
+    // A receipt awaiting or already past verification resumes its search flow.
+    const paidJob = jobs.find(job => ['pending', 'verified'].includes(nextSearchFee(job)?.status));
+    if (paidJob) showEmployerJob(paidJob);
   } catch (error) {
     console.warn(error.message);
   } finally {
@@ -3919,11 +3977,15 @@ function updateStep5TransitLiveStatus() {
     dTimeEl.textContent = 'Immediate Shift (Accepted)';
   }
 
+  const arrivalDeadline = currentB && currentB.status === 'active' && transitStatus !== 'arrived' ? currentB.arrivalDeadline : 0;
+  if (arrivalDeadline) timeEl.dataset.arrivalDeadline = arrivalDeadline;
+  else delete timeEl.dataset.arrivalDeadline;
+
   if (transitStatus === 'on_the_way') {
     box.className = 'db-live-transit-box on-the-way';
     badgeEl.className = 'db-live-transit-badge on-the-way';
     badgeEl.innerHTML = `<span class="db-transit-beacon"><span class="db-transit-ping"></span><span class="db-transit-dot"></span></span><span>Crew is On the Way!</span>`;
-    timeEl.textContent = departedAt ? `Departed: ${departedAt}` : 'Departed: Just now';
+    timeEl.textContent = arrivalDeadline ? window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline) : (departedAt ? ` ${departedAt}` : 'Departed: Just now');
     bodyEl.innerHTML = `<strong>${crewName}</strong> has notified you that they have departed and are en route to <strong>${venueName}</strong>.`;
   } else if (transitStatus === 'arrived') {
     box.className = 'db-live-transit-box arrived';
@@ -3934,33 +3996,17 @@ function updateStep5TransitLiveStatus() {
   } else {
     box.className = 'db-live-transit-box pending';
     badgeEl.className = 'db-live-transit-badge pending';
-    badgeEl.innerHTML = `<span>Waiting for Transit of Crew</span>`;
-    timeEl.textContent = '1-Hr Arrival Limit Active';
-    bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and has a strict 1-hour time limit to arrive at <strong>${venueName}</strong>. If they fail to arrive within 1 hour, this booking will automatically cancel and their rating will be deducted.`;
+    if (arrivalDeadline) {
+      badgeEl.innerHTML = `<span>Waiting for transit of crew</span>`;
+      timeEl.textContent = window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline);
+      bodyEl.innerHTML = `<strong>${crewName}</strong> must arrive at <strong>${venueName}</strong> and mark arrival within 1 hour, or the shift is auto-cancelled.`;
+    } else {
+      badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
+      timeEl.textContent = 'Awaiting Departure';
+      bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and will notify you when heading to <strong>${venueName}</strong>.`;
+    }
   }
 }
-
-// Live 1-hour arrival countdown ticker
-setInterval(() => {
-  document.querySelectorAll('.app-transit-countdown-box').forEach(el => {
-    const deadline = parseInt(el.getAttribute('data-deadline'), 10);
-    const jobId = el.getAttribute('data-job-id');
-    if (!deadline) return;
-    const remaining = Math.max(0, deadline - Date.now());
-    const m = Math.floor(remaining / 60000);
-    const s = Math.floor((remaining % 60000) / 1000);
-    const valEl = el.querySelector('.app-transit-timer-val');
-    if (valEl) valEl.textContent = `${m}m ${s}s left`;
-    if (remaining <= 0 && !el.dataset.expiredTriggered) {
-      el.dataset.expiredTriggered = 'true';
-      if (jobId) {
-        fetch(`/api/jobs/${jobId}/check-noshow`, { method: 'POST', credentials: 'same-origin' })
-          .then(() => renderBookings(true))
-          .catch(() => {});
-      }
-    }
-  });
-}, 1000);
 
 function syncEmployerState() {
   renderEmployerNotifications();

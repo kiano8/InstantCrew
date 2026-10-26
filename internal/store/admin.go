@@ -243,11 +243,12 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	defer tx.Rollback()
 
 	var userID int64
+	var jobID sql.NullInt64
 	var prevStatus string
 	var creditsGranted int
 	switch strings.ToLower(pType) {
 	case "employer":
-		err = tx.QueryRowContext(ctx, `SELECT user_id, COALESCE(status,'') FROM payments WHERE id=?`, id).Scan(&userID, &prevStatus)
+		err = tx.QueryRowContext(ctx, `SELECT user_id, job_id, COALESCE(status,'') FROM payments WHERE id=$1`, id).Scan(&userID, &jobID, &prevStatus)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}
@@ -255,7 +256,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			return err
 		}
 		if normStatus == "verified" {
-			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=?, verified_at=?, verified_by=?, rejection_reason='' WHERE id=?`, normStatus, now, vBy, id)
+			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=$1, verified_at=$2, verified_by=$3, rejection_reason='' WHERE id=$4`, normStatus, now, vBy, id)
 			if err != nil {
 				return err
 			}
@@ -263,7 +264,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 				return ErrNotFound
 			}
 		} else {
-			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=?, verified_at=NULL, verified_by=?, rejection_reason=? WHERE id=?`, normStatus, vBy, reason, id)
+			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=$1, verified_at=NULL, verified_by=$2, rejection_reason=$3 WHERE id=$4`, normStatus, vBy, reason, id)
 			if err != nil {
 				return err
 			}
@@ -272,7 +273,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			}
 		}
 	case "applicant":
-		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0) FROM applicant_hiring_pass_payments WHERE id=?`, id).Scan(&userID, &prevStatus, &creditsGranted)
+		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0) FROM applicant_hiring_pass_payments WHERE id=$1`, id).Scan(&userID, &prevStatus, &creditsGranted)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}
@@ -280,7 +281,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			return err
 		}
 		if normStatus == "verified" {
-			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=?, verified_at=?, verified_by=?, rejection_reason='' WHERE id=?`, normStatus, now, vBy, id)
+			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=$1, verified_at=$2, verified_by=$3, rejection_reason='' WHERE id=$4`, normStatus, now, vBy, id)
 			if err != nil {
 				return err
 			}
@@ -290,19 +291,19 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			if creditsGranted == 0 && prevStatus != "verified" {
 				if _, err = tx.ExecContext(ctx, `
 					INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at)
-					VALUES(?,5,5,0,1000,1,?)
+					VALUES($1,5,5,0,1000,1,$2)
 					ON CONFLICT(applicant_id) DO UPDATE SET
-						total_hires=total_hires+5, remaining_hires=remaining_hires+5,
-						amount_centavos=amount_centavos+1000, batches_paid=batches_paid+1, updated_at=excluded.updated_at`,
+						total_hires=applicant_hiring_passes.total_hires+5, remaining_hires=applicant_hiring_passes.remaining_hires+5,
+						amount_centavos=applicant_hiring_passes.amount_centavos+1000, batches_paid=applicant_hiring_passes.batches_paid+1, updated_at=excluded.updated_at`,
 					userID, now); err != nil {
 					return err
 				}
-				if _, err = tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET credits_granted=1 WHERE id=?`, id); err != nil {
+				if _, err = tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET credits_granted=1 WHERE id=$1`, id); err != nil {
 					return err
 				}
 			}
 		} else {
-			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=?, verified_at=NULL, verified_by=?, rejection_reason=? WHERE id=?`, normStatus, vBy, reason, id)
+			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=$1, verified_at=NULL, verified_by=$2, rejection_reason=$3 WHERE id=$4`, normStatus, vBy, reason, id)
 			if err != nil {
 				return err
 			}
@@ -318,7 +319,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	switch normStatus {
 	case "verified":
 		if strings.ToLower(pType) == "employer" {
-			title, message = "Search fee verified", "Accounting verified your receipt. You can now start crew search."
+			title, message = "Search fee verified", "Accounting verified your receipt. Tap to start your crew search."
 		} else {
 			title, message = "Hiring pass verified", "Accounting verified your ₱10 receipt. Five hiring opportunities are now active."
 		}
@@ -333,8 +334,10 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 		}
 	}
 	if title != "" && prevStatus != normStatus {
-		if _, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES(?,?,?,?,?,?)`,
-			userID, title, message, kind, "{}", now); err != nil {
+		// The job_id lets the employer's notification open that job's search.
+		if _, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+			VALUES($1,$2,$3,$4,json_build_object('payment_type',$5::text,'payment_id',$6::bigint,'job_id',$7::bigint)::text,$8)`,
+			userID, title, message, kind, strings.ToLower(pType), id, jobID, now); err != nil {
 			return err
 		}
 	}
@@ -363,7 +366,7 @@ func (s *Store) EnsureAdminUser(ctx context.Context, email, password, name strin
 	now := time.Now().Unix()
 
 	var id int64
-	err = s.db.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND role = 'admin'`, normEmail).Scan(&id)
+	err = s.db.QueryRowContext(ctx, `SELECT id FROM users WHERE email = $1 AND role = 'admin'`, normEmail).Scan(&id)
 	if err == nil {
 		return nil
 	}
@@ -372,7 +375,7 @@ func (s *Store) EnsureAdminUser(ctx context.Context, email, password, name strin
 	}
 	_, insertErr := s.db.ExecContext(ctx, `
 		INSERT INTO users (email, password_hash, role, name, company, created_at)
-		VALUES (?, ?, 'admin', ?, 'Instant Crew Accounting', ?)
+		VALUES ($1, $2, 'admin', $3, 'Instant Crew Accounting', $4)
 	`, normEmail, string(hash), name, now)
 	return insertErr
 }

@@ -13,12 +13,13 @@ const InitialFreeHires = 0
 
 // grantInitialHires creates the applicant's empty hiring pass. Paid hires are
 // added only after accounting verifies the signup payment.
-// INSERT OR IGNORE keeps it idempotent: an existing pass is never reset.
+// ON CONFLICT DO NOTHING keeps it idempotent: an existing pass is never reset.
 func (s *Store) grantInitialHires(ctx context.Context, applicantID int64) error {
 	_, err := s.db.ExecContext(ctx, `
-		INSERT OR IGNORE INTO applicant_hiring_passes
+		INSERT INTO applicant_hiring_passes
 			(applicant_id, total_hires, remaining_hires, used_hires, amount_centavos, batches_paid, updated_at)
-		VALUES (?, ?, ?, 0, 0, 0, ?)`,
+		VALUES ($1, $2, $3, 0, 0, 0, $4)
+		ON CONFLICT (applicant_id) DO NOTHING`,
 		applicantID, InitialFreeHires, InitialFreeHires, time.Now().Unix())
 	return err
 }
@@ -30,7 +31,7 @@ func (s *Store) afterUserCreated(ctx context.Context, u *User) error {
 		return nil
 	}
 	if err := s.grantInitialHires(ctx, u.ID); err != nil {
-		_, _ = s.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, u.ID)
+		_, _ = s.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, u.ID)
 		return err
 	}
 	return nil
@@ -80,7 +81,7 @@ func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([
 			COALESCE(p.rejection_reason,''), p.provider_ref, p.created_at,
 			COALESCE(j.role_label,''), p.search_attempt
 		FROM payments p LEFT JOIN jobs j ON j.id = p.job_id
-		WHERE (? <= 0 OR p.user_id = ?) AND COALESCE(p.status, '') != 'pending'
+		WHERE ($1 <= 0 OR p.user_id = $2) AND COALESCE(p.status, '') != 'pending'
 		ORDER BY p.created_at DESC, p.id DESC`, employerID, employerID)
 	if err != nil {
 		return nil, err
@@ -142,7 +143,7 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 	var created int64
 	var hasPass int
 	err := s.db.QueryRowContext(ctx, `SELECT u.created_at, (SELECT COUNT(*) FROM applicant_hiring_passes WHERE applicant_id = u.id)
-		FROM users u WHERE u.id = ?`, applicantID).Scan(&created, &hasPass)
+		FROM users u WHERE u.id = $1`, applicantID).Scan(&created, &hasPass)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -158,7 +159,7 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, amount_centavos, method, COALESCE(proof_image,''), COALESCE(status,''),
 			verified_at, COALESCE(rejection_reason,''), COALESCE(credits_granted,0), created_at
-		FROM applicant_hiring_pass_payments WHERE applicant_id = ?`, applicantID)
+		FROM applicant_hiring_pass_payments WHERE applicant_id = $1`, applicantID)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +202,7 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 	used, err := s.db.QueryContext(ctx, `
 		SELECT a.job_id, a.accepted_at, COALESCE(j.role_label,'')
 		FROM job_assignments a JOIN jobs j ON j.id = a.job_id
-		WHERE a.applicant_id = ? AND j.status IN ('active','completed')`, applicantID)
+		WHERE a.applicant_id = $1 AND j.status IN ('active','completed')`, applicantID)
 	if err != nil {
 		return nil, err
 	}

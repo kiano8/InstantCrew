@@ -8,11 +8,13 @@
     var TITLE = isEmployer ? 'Payment history' : 'Payments & hires log';
 
     var CSS = '\
-.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 16px;border:1px solid rgba(255,255,255,.12);border-radius:9999px;background:#0F172A;color:#F8FAFC;font:600 .8rem inherit;cursor:pointer;white-space:nowrap;line-height:1.25;text-decoration:none;transition:background .18s ease,transform .18s ease,box-shadow .18s ease;box-shadow:0 1px 3px rgba(0,0,0,.18)}\
-.ph-btn:hover{background:#1E293B;color:#fff;transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.25)}\
-.ph-btn:active{transform:translateY(0)}\
-@media (max-width:520px){.ph-btn{padding:6px 12px;font-size:.75rem}}\
-@media (max-width:380px){.ph-btn{padding:5px 9px;font-size:.7rem}}\
+.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 16px 0 13px;border:1.5px solid #E6B800;border-radius:9999px;background:#FFCC00;color:#1C1C1E;font-family:inherit;font-size:.8rem;font-weight:700;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;line-height:1;text-decoration:none;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 2px rgba(28,28,30,.08),0 2px 8px rgba(255,204,0,.28);transition:background .14s ease,transform .14s ease,box-shadow .14s ease}\
+.ph-btn:hover{background:#FFD633;transform:translateY(-1px);box-shadow:0 2px 4px rgba(28,28,30,.1),0 6px 14px rgba(255,204,0,.38)}\
+.ph-btn:active{background:#E6B800;transform:translateY(0);box-shadow:0 1px 2px rgba(28,28,30,.1)}\
+.ph-btn:focus-visible{outline:2px solid #1C1C1E;outline-offset:2px}\
+.ph-btn-icon{display:inline-flex;flex-shrink:0}\
+@media (max-width:520px){.ph-btn{height:34px;padding:0 12px 0 10px;font-size:.74rem;gap:5px}}\
+@media (max-width:420px){.ph-btn{width:38px;height:38px;padding:0;gap:0}.ph-btn-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}\
 .ph-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}\
 .ph-overlay.open{display:flex}\
 .ph-card{background:#fff;color:#0F172A;width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.3);overflow:hidden;font-family:inherit}\
@@ -157,6 +159,13 @@
             if (!btn.textContent.trim()) {
                 btn.textContent = TITLE;
             }
+        }
+        // Receipt icon + label; the label is visually hidden on narrow phones.
+        if (!btn.querySelector('.ph-btn-label')) {
+            var label = btn.textContent.trim() || TITLE;
+            btn.innerHTML = '<span class="ph-btn-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span><span class="ph-btn-label"></span>';
+            btn.querySelector('.ph-btn-label').textContent = label;
+            btn.title = label;
         }
 
         // Synchronize initial visibility with notifWrap (hidden if user is logged out)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -77,15 +78,27 @@ var pages = map[string]bool{
 func main() {
 	port := getenv("PORT", "3000")
 	env := getenv("ENV", "dev")
-	dbPath := getenv("DB_PATH", "data/instantcrew.db")
 
-	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-		log.Fatal(err)
-	}
+	// Build PostgreSQL DSN
+	host := getenv("DB_HOST", "localhost")
+	dbPort := getenv("DB_PORT", "5432")
+	user := getenv("DB_USER", os.Getenv("USER"))
+	password := getenv("DB_PASSWORD", "")
+	dbname := getenv("DB_NAME", "instantcrew_dev")
+	sslmode := getenv("DB_SSLMODE", "disable")
+
+	dsn := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(user, password),
+		Host:     host + ":" + dbPort,
+		Path:     dbname,
+		RawQuery: "sslmode=" + url.QueryEscape(sslmode),
+	}).String()
+
 	if err := os.MkdirAll("uploads", 0o755); err != nil {
 		log.Fatal(err)
 	}
-	st, err := store.Open(dbPath)
+	st, err := store.Open(dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -232,6 +245,9 @@ func main() {
 			select {
 			case <-t.C:
 				_, _ = st.ExpireSearches(context.Background())
+				if _, err := st.ExpireArrivals(context.Background()); err != nil {
+					log.Printf("expire arrivals: %v", err)
+				}
 			case <-ctx.Done():
 				return
 			}

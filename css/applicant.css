@@ -5749,6 +5749,23 @@ body.app-sheet-open {
     flex-wrap: wrap;
 }
 
+/* 1-hour arrival limit reminder on confirmed contracts */
+.app-arrival-reminder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: #92400E;
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
 .app-card-transit-status {
     display: inline-flex;
     align-items: center;

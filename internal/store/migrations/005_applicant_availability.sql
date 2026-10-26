@@ -1,15 +1,15 @@
 
 CREATE TABLE IF NOT EXISTS applicant_availability (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    applicant_id INTEGER NOT NULL
+    id           BIGSERIAL PRIMARY KEY,
+    applicant_id BIGINT NOT NULL
                  REFERENCES applicant_profiles(user_id)
                  ON DELETE CASCADE,
-    starts_at    INTEGER NOT NULL,
-    ends_at      INTEGER NOT NULL,
+    starts_at    BIGINT NOT NULL,
+    ends_at      BIGINT NOT NULL,
     status       TEXT NOT NULL DEFAULT 'available'
                  CHECK (status IN ('available', 'unavailable')),
-    created_at   INTEGER NOT NULL DEFAULT (unixepoch()),
-    updated_at   INTEGER NOT NULL DEFAULT (unixepoch()),
+    created_at   BIGINT NOT NULL DEFAULT extract(epoch from now())::BIGINT,
+    updated_at   BIGINT NOT NULL DEFAULT extract(epoch from now())::BIGINT,
 
     CHECK (ends_at > starts_at)
 );
