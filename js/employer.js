@@ -1577,7 +1577,8 @@ async function checkCurrentJobPaymentStatus(jobId) {
       if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
       updateEmployerPayBtn();
     } else if (p.status === 'verified') {
-      state.feePendingVerification = false;
+      // The receipt is already on file, so the button only needs to start the search.
+      state.feePendingVerification = true;
       if (paymentPendingNotice) {
         paymentPendingNotice.style.display = 'block';
         paymentPendingNotice.style.background = '#ECFDF5';
@@ -3679,9 +3680,51 @@ function loadEmployerJobIntoSearch(job) {
   renderBookings(true);
 }
 
-function showEmployerJob(job, { notifySearchResume = false } = {}) {
+// nextSearchFee returns the receipt submitted for the job's next search, which
+// survives logout until it is used to start that search.
+function nextSearchFee(job) {
+  if (job.status !== 'draft' && job.status !== 'unfulfilled') return null;
+  const fee = job.payment;
+  return fee && Number(fee.search_attempt) === Number(job.search_attempts || 0) + 1 ? fee : null;
+}
+
+async function startVerifiedJobSearch(jobId) {
+  try {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/search`, { method: 'POST', credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not start the crew search.');
+    state.feePendingVerification = false;
+    closePaymentModal();
+    activateMatchingScreen(jobId, data);
+  } catch (error) {
+    if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not start crew search', error.message, 'alert');
+  }
+}
+
+function showEmployerJob(job, { notifySearchResume = false, startVerifiedSearch = false } = {}) {
   loadEmployerJobIntoSearch(job);
   if (notifDropdown) notifDropdown.hidden = true;
+
+  const fee = nextSearchFee(job);
+  if (fee) {
+    if (fee.status === 'verified' && startVerifiedSearch) {
+      startVerifiedJobSearch(job.id);
+      return;
+    }
+    // Pending receipts resume verification polling; verified and rejected ones
+    // show their status and the next action in the payment modal.
+    goStep(3);
+    openPaymentModal('search');
+    if (fee.status === 'verified' && window.InstantCrewShared) {
+      window.InstantCrewShared.showPushToast(
+        'Search fee verified',
+        `Tap to start your ${job.role_label || 'crew'} search.`,
+        'payment',
+        () => openEmployerJobNotification(job.id)
+      );
+    }
+    return;
+  }
 
   if (job.status === 'matching') {
     if (matchFailed) matchFailed.style.display = 'none';
@@ -3751,7 +3794,7 @@ async function openEmployerJobNotification(jobId) {
     const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.job) throw new Error(data.error || 'This shift is no longer available.');
-    showEmployerJob(data.job);
+    showEmployerJob(data.job, { startVerifiedSearch: true });
   } catch (error) {
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not open shift', error.message || 'Try refreshing your bookings.', 'alert');
   }
@@ -3761,7 +3804,7 @@ async function restoreEmployerSearchOnLogin() {
   if (!authUser || employerSearchRestorePending) return;
   employerSearchRestorePending = true;
   try {
-    const response = await fetch('/api/jobs?status=matching,accepted&limit=100', { credentials: 'same-origin' });
+    const response = await fetch('/api/jobs?status=matching,accepted,draft,unfulfilled&limit=100', { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not restore your crew search.');
     const jobs = data.jobs || [];
@@ -3773,7 +3816,13 @@ async function restoreEmployerSearchOnLogin() {
       return;
     }
     const activeSearch = jobs.find(job => job.status === 'matching');
-    if (activeSearch) showEmployerJob(activeSearch, { notifySearchResume: true });
+    if (activeSearch) {
+      showEmployerJob(activeSearch, { notifySearchResume: true });
+      return;
+    }
+    // A receipt awaiting or already past verification resumes its search flow.
+    const paidJob = jobs.find(job => ['pending', 'verified'].includes(nextSearchFee(job)?.status));
+    if (paidJob) showEmployerJob(paidJob);
   } catch (error) {
     console.warn(error.message);
   } finally {

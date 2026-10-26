@@ -243,11 +243,12 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	defer tx.Rollback()
 
 	var userID int64
+	var jobID sql.NullInt64
 	var prevStatus string
 	var creditsGranted int
 	switch strings.ToLower(pType) {
 	case "employer":
-		err = tx.QueryRowContext(ctx, `SELECT user_id, COALESCE(status,'') FROM payments WHERE id=$1`, id).Scan(&userID, &prevStatus)
+		err = tx.QueryRowContext(ctx, `SELECT user_id, job_id, COALESCE(status,'') FROM payments WHERE id=$1`, id).Scan(&userID, &jobID, &prevStatus)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}
@@ -318,7 +319,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	switch normStatus {
 	case "verified":
 		if strings.ToLower(pType) == "employer" {
-			title, message = "Search fee verified", "Accounting verified your receipt. You can now start crew search."
+			title, message = "Search fee verified", "Accounting verified your receipt. Tap to start your crew search."
 		} else {
 			title, message = "Hiring pass verified", "Accounting verified your ₱10 receipt. Five hiring opportunities are now active."
 		}
@@ -333,8 +334,10 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 		}
 	}
 	if title != "" && prevStatus != normStatus {
-		if _, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES($1,$2,$3,$4,$5,$6)`,
-			userID, title, message, kind, "{}", now); err != nil {
+		// The job_id lets the employer's notification open that job's search.
+		if _, err = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+			VALUES($1,$2,$3,$4,json_build_object('payment_type',$5::text,'payment_id',$6::bigint,'job_id',$7::bigint)::text,$8)`,
+			userID, title, message, kind, strings.ToLower(pType), id, jobID, now); err != nil {
 			return err
 		}
 	}

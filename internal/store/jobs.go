@@ -456,6 +456,7 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 		JOIN applicant_profiles p ON p.user_id=b.applicant_id
 		JOIN users u ON u.id=p.user_id
 		WHERE b.job_id=$1 AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>$2)
+		AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=b.job_id AND a.applicant_id=b.applicant_id AND a.status='rejected')
 		ORDER BY b.slot`, jobID, time.Now().Unix())
 	if err != nil {
 		return nil, err
