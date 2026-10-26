@@ -1,5 +1,5 @@
 // Command seed creates a minimal set of demo employers and crew members with
-// specific roles. It is safe to re-run: existing accounts are reused, profiles
+// specific roles, plus a single admin account for tracking payment records. It is safe to re-run: existing accounts are reused, profiles
 // are re-saved, and hires are granted only to crew who have none yet.
 //
 //	go run ./cmd/seed            # uses the same DB_* env vars as the server
@@ -48,6 +48,9 @@ var crew = []seedCrew{
 	{"builder@seed.instantcrew.test", "Ben Aquino", "full-time", 100, []string{"construction-worker", "carpenter-painter"}},
 }
 
+// admin is the one seeded admin; it reviews and verifies payment records in admin.html.
+var admin = seedEmployer{"admin@seed.instantcrew.test", "Seed Administrator", "Instant Crew Accounting"}
+
 const city = "Cebu City"
 
 func getenv(k, def string) string {
@@ -89,6 +92,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	a, created, err := ensureUser(ctx, st, &store.User{Email: admin.email, PasswordHash: string(hash), Role: "admin", Name: admin.name, Company: admin.company})
+	if err != nil {
+		log.Fatalf("admin %s: %v", admin.email, err)
+	}
+	log.Printf("admin     %-42s %-24s %s", a.Email, "payment records", status(created))
 
 	for _, e := range employers {
 		u, created, err := ensureUser(ctx, st, &store.User{Email: e.email, PasswordHash: string(hash), Role: "employer", Name: e.name, Company: e.company})
