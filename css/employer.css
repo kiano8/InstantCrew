@@ -6569,6 +6569,46 @@ body {
     box-shadow: 0 2px 6px rgba(18, 17, 14, 0.08);
 }
 
+/* ── Quick-modal social login row (mirrors .social-btn on login.html) ── */
+.db-auth-social {
+    text-align: center;
+    margin-top: 18px;
+}
+
+.db-auth-social-title {
+    font-size: 0.78rem;
+    color: #8C857B;
+    font-weight: 500;
+    margin: 0 0 12px;
+}
+
+.db-auth-social-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.db-auth-social-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    border: 1px solid #E8E3DA;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(18, 17, 14, 0.03);
+    transition: all 0.18s var(--ease-out);
+}
+
+.db-auth-social-btn:hover {
+    border-color: #D97706;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(18, 17, 14, 0.08);
+}
+
 .db-auth-field {
     margin-bottom: 14px;
     text-align: left;

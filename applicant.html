@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261026-arrival-limit">
+    <link rel="stylesheet" href="css/employer.css?v=20261026-modal-sso">
     <link rel="stylesheet" href="css/applicant.css?v=20261026-arrival-limit">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
@@ -1050,8 +1050,8 @@
                         <div class="app-pass-package-main">
                             <div>
                                 <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">Submit ₱10 and upload your receipt to activate 5 hiring
-                                    opportunities</p>
+                                <p class="app-pass-package-desc">Create your account now and pay ₱10 anytime from your portal to
+                                    activate 5 hiring opportunities</p>
                             </div>
                             <div class="app-pass-package-price">
                                 <span class="app-pass-currency">₱</span>
@@ -1119,7 +1119,7 @@
                                     <div class="db-proof-upload-section">
                                         <div class="db-proof-upload-label">
                                             <span>Proof of Payment Screenshot</span>
-                                            <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                            <span style="color:#6B7280; font-size:0.7rem;">Optional — or pay later in your portal</span>
                                         </div>
                                         <div class="db-proof-dropzone" id="appStepGcashDropzone">
                                             <input type="file" id="appStepGcashProofFile" class="db-proof-file-input"
@@ -1180,7 +1180,7 @@
                                     <div class="db-proof-upload-section">
                                         <div class="db-proof-upload-label">
                                             <span>Proof of Payment Screenshot</span>
-                                            <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                            <span style="color:#6B7280; font-size:0.7rem;">Optional — or pay later in your portal</span>
                                         </div>
                                         <div class="db-proof-dropzone" id="appStepMayaDropzone">
                                             <input type="file" id="appStepMayaProofFile" class="db-proof-file-input"
@@ -1286,7 +1286,7 @@
                                 <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                                 <line x1="2" y1="10" x2="22" y2="10"></line>
                             </svg>
-                            <span>Continue &amp; Submit Payment</span>
+                            <span>Continue to Sign Up</span>
                         </button>
                     </div>
                 </section>
@@ -2202,6 +2202,43 @@
                         </svg>
                     </button>
                 </form>
+
+                <!-- Social Login Row (same as full login page) -->
+                <div class="db-auth-social">
+                    <p class="db-auth-social-title">or continue with social platforms</p>
+                    <div class="db-auth-social-row">
+                        <button type="button" class="db-auth-social-btn google-sso-btn" aria-label="Continue with Google" data-sso="google">
+                            <svg width="18" height="18" viewBox="0 0 24 24">
+                                <path fill="#EA4335"
+                                    d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
+                                <path fill="#4285F4"
+                                    d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
+                                <path fill="#FBBC05"
+                                    d="M5.6 14.8c-.3-.8-.4-1.8-.4-2.8s.2-2 .4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z" />
+                                <path fill="#34A853"
+                                    d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.4 7.5 23 12 23z" />
+                            </svg>
+                        </button>
+                        <button type="button" class="db-auth-social-btn" aria-label="Continue with Facebook">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
+                                <path
+                                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                            </svg>
+                        </button>
+                        <button type="button" class="db-auth-social-btn" aria-label="Continue with GitHub">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#24292F">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                            </svg>
+                        </button>
+                        <button type="button" class="db-auth-social-btn" aria-label="Continue with LinkedIn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#0A66C2">
+                                <path
+                                    d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
                 <a href="login.html?role=applicant" id="applicantFullLoginLink"
                     style="display:block;text-align:center;margin-top:14px;font-size:0.85rem;font-weight:600;color:#6B7280;text-decoration:underline;">View
@@ -7706,6 +7743,14 @@
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
                     appPayAndProceedBtn.addEventListener('click', async () => {
+                        const hasStep4Proof = step4PaymentMethod !== 'card' && !!(step4ProofFile || step4ProofDataUrl);
+                        // New applicants can sign up without paying; the ₱10 pass is paid later from the portal.
+                        if (!hasWorkerSession() && !hasStep4Proof) {
+                            pendingInitialApplicantProof = false;
+                            openApplicantAuthModal();
+                            if (tabApplicantSignup) tabApplicantSignup.click();
+                            return;
+                        }
                         if (step4PaymentMethod === 'card') {
                             showToast('Please pay by GCash or Maya and upload your receipt.', true);
                             return;
@@ -7804,15 +7849,13 @@
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
-                        let proofUrl = topupProofDataUrl;
-
-                        if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
+                        const needsProof = topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya';
+                        if (needsProof) {
                             if (!topupProofFile && !topupProofDataUrl) {
                                 const walletName = topupPaymentMethod === 'gcash' ? 'GCash' : 'Maya';
                                 showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
                                 return;
                             }
-                            if (!awaitingSignup) proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
                         } else if (topupPaymentMethod === 'card') {
                             const num = document.getElementById('appTopupCardNum')?.value.trim();
                             if (!num || num.replace(/\s/g, '').length < 12) { showToast('Please enter a valid card number.', true); return; }
@@ -7822,6 +7865,8 @@
                         appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
 
                         try {
+                            // Upload after disabling the button so a double-click cannot submit twice.
+                            const proofUrl = needsProof ? await uploadProofImage(topupProofFile, topupProofDataUrl) : '';
                             const response = await fetch('/api/applicant/hiring-pass/pay', {
                                 method: 'POST',
                                 credentials: 'same-origin',
@@ -7929,6 +7974,16 @@
                         if (applicantAuthError) applicantAuthError.style.display = 'none';
                     });
                 }
+
+                // Google SSO from the quick modal: same endpoint as login.html, mode follows the active tab.
+                // The server redirects back to applicant.html once the session cookie is set.
+                document.querySelectorAll('#applicantAuthModal .google-sso-btn').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const mode = tabApplicantSignup && tabApplicantSignup.classList.contains('active') ? 'signup' : 'login';
+                        const params = new URLSearchParams({ role: 'applicant', mode });
+                        window.location.assign('/api/auth/google?' + params.toString());
+                    });
+                });
 
                 // Password eye visibility toggles in modal
                 document.querySelectorAll('#applicantAuthModal .db-auth-toggle-pass').forEach(btn => {
