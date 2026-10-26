@@ -2236,6 +2236,9 @@ async function handleAttemptTimeout() {
 
 function handleSearchTimeout() {
   stopSearchTimer();
+  // The receipt paid for this search is spent; the next search needs a new one.
+  state.feePendingVerification = false;
+  clearEmployerPaymentProof();
   if (state.matchCheckInterval) {
     clearInterval(state.matchCheckInterval);
     state.matchCheckInterval = null;
@@ -2260,6 +2263,7 @@ function handleSearchTimeout() {
 // Repay match fee button handler (when 3-minute search expires)
 if (repayMatchFeeBtn) {
   repayMatchFeeBtn.addEventListener('click', () => {
+    clearEmployerPaymentProof();
     openPaymentModal('search');
   });
 }
@@ -3756,6 +3760,8 @@ function showEmployerJob(job, { notifySearchResume = false, startVerifiedSearch 
   }
 
   if (job.status === 'matching') {
+    // A resumed search has already consumed its receipt.
+    clearEmployerPaymentProof();
     if (matchFailed) matchFailed.style.display = 'none';
     if (matchResults) matchResults.style.display = 'none';
     if (matchLoading) matchLoading.style.display = 'flex';
@@ -3788,6 +3794,7 @@ function showEmployerJob(job, { notifySearchResume = false, startVerifiedSearch 
   }
 
   if (job.status === 'unfulfilled') {
+    clearEmployerPaymentProof();
     goStep(4);
     if (matchLoading) matchLoading.style.display = 'none';
     if (matchResults) matchResults.style.display = 'none';

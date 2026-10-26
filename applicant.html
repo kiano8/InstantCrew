@@ -2502,7 +2502,10 @@
             const SERVICES_CATALOG = { kitchen: [], delivery: [], helpers: [] };
             fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
                 for (const category of categories || []) SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
-                if (typeof renderAppRolesDropdown === 'function') renderAppRolesDropdown(appRoleSearchInput?.value || '');
+                // The onboarding step initializes before the catalog arrives, which can leave a
+                // placeholder role selected. Re-run category setup so a real catalog role is chosen.
+                if (typeof setAppCategory === 'function' && typeof appState !== 'undefined') setAppCategory(appState.category);
+                else if (typeof renderAppRolesDropdown === 'function') renderAppRolesDropdown(appRoleSearchInput?.value || '');
                 if (typeof renderAllServicePickers === 'function') renderAllServicePickers();
             }).catch(err => console.error(err.message));
 
@@ -8138,7 +8141,8 @@
                         const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
-                        const roleId = appState.role;
+                        const categoryRoles = SERVICES_CATALOG[appState.category] || [];
+                        const roleId = categoryRoles.includes(appState.role) ? appState.role : (categoryRoles[0] || '');
                         const period = String(appState.ratePeriod || 'per hour').replace(/^per\s+/, '').replace(/s$/, '');
                         const profileResponse = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: appState.workType || 'full-time', expected_rate: Number(appState.rate) || 95, rate_period: period, city: appState.location || 'Cebu City', location_address: (getAppMapFields().mapLocation || ''), maps_url: (getAppMapFields().googleMapsUrl || ''), lat: (getAppMapFields().geo || {}).lat || null, lng: (getAppMapFields().geo || {}).lng || null, availability_mode: (appState.timing === 'later' || appState.timing === 'scheduled') ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
                         if (!profileResponse.ok) { const profileErr = await profileResponse.json().catch(() => ({})); throw new Error(profileErr.error || 'Account created, but the applicant profile could not be saved. Please log in and try again.'); }
