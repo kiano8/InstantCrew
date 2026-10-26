@@ -44,7 +44,8 @@
                     In</button>
 
                 <!-- Payment & Hires Log Button -->
-                <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payments &amp; hires log</button>
+                <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payments &amp; hires
+                    log</button>
 
                 <!-- Notification Bell -->
                 <div class="db-notif-wrap">
@@ -173,6 +174,9 @@
                         <span class="app-stat-title">Crew Rating</span>
                     </div>
                 </div>
+
+                <!-- Profile Deactivation / Strike Notice -->
+                <div id="profileDeactivationNotice" style="display:none; margin: 12px 0 16px 0;"></div>
 
                 <!-- Navigation Tabs inside Profile -->
                 <div class="db-bookings-tabs three-tabs" role="tablist" aria-label="Profile navigation tabs">
@@ -1043,7 +1047,8 @@
                         <div class="app-pass-package-main">
                             <div>
                                 <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">Submit ₱10 and upload your receipt to activate 5 hiring opportunities</p>
+                                <p class="app-pass-package-desc">Submit ₱10 and upload your receipt to activate 5 hiring
+                                    opportunities</p>
                             </div>
                             <div class="app-pass-package-price">
                                 <span class="app-pass-currency">₱</span>
@@ -1074,179 +1079,158 @@
                                 <span>Add ₱10 again after achieving 5 hires to keep receiving opportunities</span>
                             </div>
                         </div>
-                    <!-- Payment Method Selector -->
-                    <div class="db-payment-methods-section" style="margin-top: 16px;">
-                        <label class="db-payment-section-label">Select Payment Method</label>
-                        <div class="db-pay-method-tabs" role="radiogroup" id="appStepPayTabs"
-                            style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                            <button type="button" class="db-pay-method-btn active" data-method="gcash"
-                                aria-checked="true">
-                                <span class="db-pay-dot"></span>
-                                <span class="db-pay-method-name">GCash</span>
-                            </button>
-                            <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
-                                <span class="db-pay-dot"></span>
-                                <span class="db-pay-method-name">Maya</span>
-                            </button>
-                        </div>
+                        <!-- Payment Method Selector -->
+                        <div class="db-payment-methods-section" style="margin-top: 16px;">
+                            <label class="db-payment-section-label">Select Payment Method</label>
+                            <div class="db-pay-method-tabs" role="radiogroup" id="appStepPayTabs"
+                                style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                                <button type="button" class="db-pay-method-btn active" data-method="gcash"
+                                    aria-checked="true">
+                                    <span class="db-pay-dot"></span>
+                                    <span class="db-pay-method-name">GCash</span>
+                                </button>
+                                <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
+                                    <span class="db-pay-dot"></span>
+                                    <span class="db-pay-method-name">Maya</span>
+                                </button>
+                            </div>
 
-                        <!-- Step 4 GCash QR Code & Proof of Payment -->
-                        <div class="db-pay-method-details" id="appStepGcashWrap">
-                            <div class="db-qr-container">
-                                <div class="db-qr-card">
-                                    <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code" class="db-qr-image">
-                                    <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
-                                </div>
-                                <div class="db-qr-instructions">
-                                    <ol>
-                                        <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.
-                                        </li>
-                                        <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
-                                        <li>Take a screenshot of the completed payment receipt.</li>
-                                        <li>Upload the screenshot below as Proof of Payment.</li>
-                                    </ol>
-                                </div>
-                                <div class="db-proof-upload-section">
-                                    <div class="db-proof-upload-label">
-                                        <span>Proof of Payment Screenshot</span>
-                                        <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                            <!-- Step 4 GCash QR Code & Proof of Payment -->
+                            <div class="db-pay-method-details" id="appStepGcashWrap">
+                                <div class="db-qr-container">
+                                    <div class="db-qr-card">
+                                        <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code"
+                                            class="db-qr-image">
+                                        <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
                                     </div>
-                                    <div class="db-proof-dropzone" id="appStepGcashDropzone">
-                                        <input type="file" id="appStepGcashProofFile" class="db-proof-file-input"
-                                            accept="image/*">
-                                        <div class="db-proof-icon-wrap">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                <polyline points="17 8 12 3 7 8"></polyline>
-                                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                                            </svg>
+                                    <div class="db-qr-instructions">
+                                        <ol>
+                                            <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.
+                                            </li>
+                                            <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.
+                                            </li>
+                                            <li>Take a screenshot of the completed payment receipt.</li>
+                                            <li>Upload the screenshot below as Proof of Payment.</li>
+                                        </ol>
+                                    </div>
+                                    <div class="db-proof-upload-section">
+                                        <div class="db-proof-upload-label">
+                                            <span>Proof of Payment Screenshot</span>
+                                            <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
                                         </div>
-                                        <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                        <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
-                                    </div>
-                                    <div class="db-proof-attached-box" id="appStepGcashAttachedBox">
-                                        <img src="" alt="Proof Preview" class="db-proof-thumb" id="appStepGcashThumb">
-                                        <div class="db-proof-info">
-                                            <span class="db-proof-filename" id="appStepGcashFilename">receipt.jpg</span>
-                                            <span class="db-proof-status-tag">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                        <div class="db-proof-dropzone" id="appStepGcashDropzone">
+                                            <input type="file" id="appStepGcashProofFile" class="db-proof-file-input"
+                                                accept="image/*">
+                                            <div class="db-proof-icon-wrap">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                                     stroke-linejoin="round">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                                    <line x1="12" y1="3" x2="12" y2="15"></line>
                                                 </svg>
-                                                Receipt attached &amp; ready
-                                            </span>
+                                            </div>
+                                            <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                            <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
                                         </div>
-                                        <button type="button" class="db-proof-remove-btn"
-                                            id="appStepGcashRemoveBtn">Change</button>
+                                        <div class="db-proof-attached-box" id="appStepGcashAttachedBox">
+                                            <img src="" alt="Proof Preview" class="db-proof-thumb"
+                                                id="appStepGcashThumb">
+                                            <div class="db-proof-info">
+                                                <span class="db-proof-filename"
+                                                    id="appStepGcashFilename">receipt.jpg</span>
+                                                <span class="db-proof-status-tag">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                                        stroke-linejoin="round">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                    Receipt attached &amp; ready
+                                                </span>
+                                            </div>
+                                            <button type="button" class="db-proof-remove-btn"
+                                                id="appStepGcashRemoveBtn">Change</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Step 4 Maya QR Code & Proof of Payment -->
-                        <div class="db-pay-method-details" id="appStepMayaWrap" style="display:none;">
-                            <div class="db-qr-container">
-                                <div class="db-qr-card">
-                                    <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code" class="db-qr-image">
-                                    <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
-                                </div>
-                                <div class="db-qr-instructions">
-                                    <ol>
-                                        <li>Open your <strong>Maya</strong> app and tap <strong>Scan to Pay</strong>.
-                                        </li>
-                                        <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
-                                        <li>Take a screenshot of the completed payment receipt.</li>
-                                        <li>Upload the screenshot below as Proof of Payment.</li>
-                                    </ol>
-                                </div>
-                                <div class="db-proof-upload-section">
-                                    <div class="db-proof-upload-label">
-                                        <span>Proof of Payment Screenshot</span>
-                                        <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                            <!-- Step 4 Maya QR Code & Proof of Payment -->
+                            <div class="db-pay-method-details" id="appStepMayaWrap" style="display:none;">
+                                <div class="db-qr-container">
+                                    <div class="db-qr-card">
+                                        <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code"
+                                            class="db-qr-image">
+                                        <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
                                     </div>
-                                    <div class="db-proof-dropzone" id="appStepMayaDropzone">
-                                        <input type="file" id="appStepMayaProofFile" class="db-proof-file-input"
-                                            accept="image/*">
-                                        <div class="db-proof-icon-wrap">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                <polyline points="17 8 12 3 7 8"></polyline>
-                                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                                            </svg>
+                                    <div class="db-qr-instructions">
+                                        <ol>
+                                            <li>Open your <strong>Maya</strong> app and tap <strong>Scan to
+                                                    Pay</strong>.
+                                            </li>
+                                            <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.
+                                            </li>
+                                            <li>Take a screenshot of the completed payment receipt.</li>
+                                            <li>Upload the screenshot below as Proof of Payment.</li>
+                                        </ol>
+                                    </div>
+                                    <div class="db-proof-upload-section">
+                                        <div class="db-proof-upload-label">
+                                            <span>Proof of Payment Screenshot</span>
+                                            <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
                                         </div>
-                                        <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                        <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
-                                    </div>
-                                    <div class="db-proof-attached-box" id="appStepMayaAttachedBox">
-                                        <img src="" alt="Proof Preview" class="db-proof-thumb" id="appStepMayaThumb">
-                                        <div class="db-proof-info">
-                                            <span class="db-proof-filename" id="appStepMayaFilename">receipt.jpg</span>
-                                            <span class="db-proof-status-tag">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                        <div class="db-proof-dropzone" id="appStepMayaDropzone">
+                                            <input type="file" id="appStepMayaProofFile" class="db-proof-file-input"
+                                                accept="image/*">
+                                            <div class="db-proof-icon-wrap">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                                     stroke-linejoin="round">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                                    <line x1="12" y1="3" x2="12" y2="15"></line>
                                                 </svg>
-                                                Receipt attached &amp; ready
-                                            </span>
+                                            </div>
+                                            <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
+                                            <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
                                         </div>
-                                        <button type="button" class="db-proof-remove-btn"
-                                            id="appStepMayaRemoveBtn">Change</button>
+                                        <div class="db-proof-attached-box" id="appStepMayaAttachedBox">
+                                            <img src="" alt="Proof Preview" class="db-proof-thumb"
+                                                id="appStepMayaThumb">
+                                            <div class="db-proof-info">
+                                                <span class="db-proof-filename"
+                                                    id="appStepMayaFilename">receipt.jpg</span>
+                                                <span class="db-proof-status-tag">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                                        stroke-linejoin="round">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                    Receipt attached &amp; ready
+                                                </span>
+                                            </div>
+                                            <button type="button" class="db-proof-remove-btn"
+                                                id="appStepMayaRemoveBtn">Change</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="db-pay-method-details" id="appStepCardWrap" style="display:none;">
-                            <div class="db-pay-field">
-                                <label for="appStepCardNum">Card Number</label>
-                                <div class="db-pay-input-wrap db-pay-card-num-wrap">
-                                    <input type="password" id="appStepCardNum" class="db-pay-input"
-                                        placeholder="4242 •••• •••• 4242" maxlength="19">
-                                    <button type="button" class="db-cvv-toggle-btn" id="toggleAppStepCardNumBtn"
-                                        aria-label="Show card number" title="Show card number">
-                                        <svg class="db-cvv-eye-icon db-card-eye-open" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                        <svg class="db-cvv-eye-icon db-card-eye-closed" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                            <path
-                                                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
-                                            </path>
-                                            <line x1="1" y1="1" x2="23" y2="23"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="db-pay-card-row">
+                            <div class="db-pay-method-details" id="appStepCardWrap" style="display:none;">
                                 <div class="db-pay-field">
-                                    <label for="appStepCardExp">Expiry</label>
-                                    <input type="text" id="appStepCardExp" class="db-pay-input db-pay-input-full"
-                                        placeholder="12/28" maxlength="5">
-                                </div>
-                                <div class="db-pay-field">
-                                    <label for="appStepCardCvc">CVV</label>
-                                    <div class="db-pay-input-wrap db-pay-cvv-wrap">
-                                        <input type="password" id="appStepCardCvc" class="db-pay-input"
-                                            placeholder="123" maxlength="4">
-                                        <button type="button" class="db-cvv-toggle-btn" id="toggleAppStepCardCvcBtn"
-                                            aria-label="Show CVV" title="Show CVV">
-                                            <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
+                                    <label for="appStepCardNum">Card Number</label>
+                                    <div class="db-pay-input-wrap db-pay-card-num-wrap">
+                                        <input type="password" id="appStepCardNum" class="db-pay-input"
+                                            placeholder="4242 •••• •••• 4242" maxlength="19">
+                                        <button type="button" class="db-cvv-toggle-btn" id="toggleAppStepCardNumBtn"
+                                            aria-label="Show card number" title="Show card number">
+                                            <svg class="db-cvv-eye-icon db-card-eye-open" width="16" height="16"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                                 <circle cx="12" cy="12" r="3"></circle>
                                             </svg>
-                                            <svg class="db-cvv-eye-icon db-cvv-eye-closed" width="16" height="16"
+                                            <svg class="db-cvv-eye-icon db-card-eye-closed" width="16" height="16"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                                                 <path
@@ -1257,20 +1241,50 @@
                                         </button>
                                     </div>
                                 </div>
+                                <div class="db-pay-card-row">
+                                    <div class="db-pay-field">
+                                        <label for="appStepCardExp">Expiry</label>
+                                        <input type="text" id="appStepCardExp" class="db-pay-input db-pay-input-full"
+                                            placeholder="12/28" maxlength="5">
+                                    </div>
+                                    <div class="db-pay-field">
+                                        <label for="appStepCardCvc">CVV</label>
+                                        <div class="db-pay-input-wrap db-pay-cvv-wrap">
+                                            <input type="password" id="appStepCardCvc" class="db-pay-input"
+                                                placeholder="123" maxlength="4">
+                                            <button type="button" class="db-cvv-toggle-btn" id="toggleAppStepCardCvcBtn"
+                                                aria-label="Show CVV" title="Show CVV">
+                                                <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                                <svg class="db-cvv-eye-icon db-cvv-eye-closed" width="16" height="16"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                    style="display: none;">
+                                                    <path
+                                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                                    </path>
+                                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Payment & Proceed Button -->
-                    <button type="button" class="db-btn-primary" id="appPayAndProceedBtn"
-                        style="margin-top: 24px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5">
-                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                            <line x1="2" y1="10" x2="22" y2="10"></line>
-                        </svg>
-                        <span>Continue &amp; Submit Payment</span>
-                    </button>
+                        <!-- Payment & Proceed Button -->
+                        <button type="button" class="db-btn-primary" id="appPayAndProceedBtn" style="margin-top: 24px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                <line x1="2" y1="10" x2="22" y2="10"></line>
+                            </svg>
+                            <span>Continue &amp; Submit Payment</span>
+                        </button>
                     </div>
                 </section>
             </div>
@@ -1293,6 +1307,9 @@
 
             <!-- Main Dashboard Card -->
             <div class="db-card app-main-card" id="appMainCard">
+
+                <!-- Crew Deactivation / Suspension / Strike Alert Banner -->
+                <div id="crewDeactivationBanner" style="display:none; margin-bottom: 20px;"></div>
 
                 <!-- Step Header (identical to Employer Step 1 Header) -->
                 <div class="db-step-header" style="margin-bottom: 20px;">
@@ -1679,9 +1696,12 @@
                 </div>
 
                 <!-- ── Feed Active Work Contracts Section ── -->
-                <div class="app-feed-active-contracts-wrap" id="feedActiveContractsSection" style="display:none; margin-top: 26px; margin-bottom: 24px;">
+                <div class="app-feed-active-contracts-wrap" id="feedActiveContractsSection"
+                    style="display:none; margin-top: 26px; margin-bottom: 24px;">
                     <div class="services-picker-header" style="margin-bottom: 14px;">
-                        <h2 class="services-picker-title" style="font-size: 1.25rem; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -0.015em;">Active Work Contracts</h2>
+                        <h2 class="services-picker-title"
+                            style="font-size: 1.25rem; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -0.015em;">
+                            Active Work Contracts</h2>
                     </div>
                     <div class="app-jobs-list" id="feedActiveJobsListContainer"></div>
                 </div>
@@ -1829,7 +1849,8 @@
                     </div>
 
                     <!-- Quota Pending Verification Alert -->
-                    <div class="app-quota-warning-banner" id="appQuotaPendingBanner" style="display:none; background:#EFF6FF; border-color:#BFDBFE;">
+                    <div class="app-quota-warning-banner" id="appQuotaPendingBanner"
+                        style="display:none; background:#EFF6FF; border-color:#BFDBFE;">
                         <div class="app-quota-warning-icon">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
                                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1839,13 +1860,16 @@
                         </div>
                         <div class="app-quota-warning-content">
                             <h4 style="color:#1E40AF;">₱10 Receipt Awaiting Admin Verification</h4>
-                            <p style="color:#1E3A8A;">Your proof of payment has been uploaded. Instant Crew accounting will verify your receipt shortly to activate your 5 new hiring opportunities.</p>
+                            <p style="color:#1E3A8A;">Your proof of payment has been uploaded. Instant Crew accounting
+                                will verify your receipt shortly to activate your 5 new hiring opportunities.</p>
                         </div>
-                        <button type="button" class="app-btn-topup-now" id="appQuotaPendingRefreshBtn" style="background:#2563EB;">Check Status</button>
+                        <button type="button" class="app-btn-topup-now" id="appQuotaPendingRefreshBtn"
+                            style="background:#2563EB;">Check Status</button>
                     </div>
 
                     <!-- Quota Rejected Alert -->
-                    <div class="app-quota-warning-banner" id="appQuotaRejectedBanner" style="display:none; background:#FEF2F2; border-color:#FECACA;">
+                    <div class="app-quota-warning-banner" id="appQuotaRejectedBanner"
+                        style="display:none; background:#FEF2F2; border-color:#FECACA;">
                         <div class="app-quota-warning-icon">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
                                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1856,9 +1880,11 @@
                         </div>
                         <div class="app-quota-warning-content">
                             <h4 style="color:#B91C1C;">Receipt Rejected by Accounting</h4>
-                            <p style="color:#991B1B;" id="appQuotaRejectedReason">Accounting could not verify your receipt. Please re-upload a clear proof of payment.</p>
+                            <p style="color:#991B1B;" id="appQuotaRejectedReason">Accounting could not verify your
+                                receipt. Please re-upload a clear proof of payment.</p>
                         </div>
-                        <button type="button" class="app-btn-topup-now" id="appQuotaReuploadBtn" style="background:#DC2626;">Re-upload Proof</button>
+                        <button type="button" class="app-btn-topup-now" id="appQuotaReuploadBtn"
+                            style="background:#DC2626;">Re-upload Proof</button>
                     </div>
 
                     <div class="app-shifts-list" id="shiftsListContainer"></div>
@@ -1886,7 +1912,8 @@
         <div class="db-footer-links">
             <a href="privacy.html" target="_blank" rel="noopener">Privacy</a>
             <a href="terms.html" target="_blank" rel="noopener">Terms</a>
-            <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer">Facebook</a>
+            <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank"
+                rel="noopener noreferrer">Facebook</a>
         </div>
     </footer>
 
@@ -2921,6 +2948,7 @@
                 if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = session.acceptedJobs ?? session.completedShifts ?? '0';
 
                 updateStatusUI();
+                checkAndRenderDeactivationBanner();
             }
 
             async function refreshCrewRating() {
@@ -2929,16 +2957,141 @@
                     const data = await response.json();
                     if (!response.ok) return;
                     session.rating = Number(data.rating ?? 4.9);
+                    session.noShowCount = Number(data.no_show_count || 0);
+                    session.isDeactivated = Boolean(data.is_deactivated);
+                    session.deactivatedUntil = data.deactivated_until || null;
+                    session.servedTemporaryDeactivation = Boolean(data.served_temporary_deactivation);
+                    session.isPermanentlyDeactivated = Boolean(data.is_permanently_deactivated);
                     saveWorkerSession(session);
                     renderProfileInfo();
+                    checkAndRenderDeactivationBanner();
                 } catch { }
+            }
+
+            function checkAndRenderDeactivationBanner() {
+                const mainBanner = document.getElementById('crewDeactivationBanner');
+                const profileNotice = document.getElementById('profileDeactivationNotice');
+                if (!mainBanner && !profileNotice) return;
+
+                const isPerm = Boolean(session.isPermanentlyDeactivated);
+                const deactivatedUntilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : 0;
+                const isTempSuspended = !isPerm && (Boolean(session.isDeactivated) || (deactivatedUntilMs > Date.now()));
+                const strikes = Number(session.noShowCount || 0);
+
+                let html = '';
+                let profileHtml = '';
+
+                if (isPerm) {
+                    html = `
+                        <div style="background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); border: 1.5px solid #EF4444; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(239,68,68,0.12);">
+                            <div style="display:flex; align-items:flex-start; gap:12px;">
+                                <div style="width:36px; height:36px; border-radius:50%; background:#DC2626; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                                </div>
+                                <div style="flex:1;">
+                                    <h4 style="margin:0 0 4px 0; font-size:0.95rem; font-weight:800; color:#991B1B;">Account Permanently Deactivated</h4>
+                                    <p style="margin:0; font-size:0.84rem; color:#7F1D1D; line-height:1.45;">
+                                        Your crew account has been permanently deactivated due to failing to arrive for accepted shifts after a previous suspension. You are no longer eligible to accept shifts on InstantCrew.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    profileHtml = `
+                        <div style="background:#FEF2F2; border:1px solid #F87171; border-radius:10px; padding:12px 14px; color:#991B1B; font-size:0.82rem; line-height:1.4;">
+                            <div style="font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#DC2626;"></span>
+                                Permanently Deactivated
+                            </div>
+                            Account suspended indefinitely due to repeated no-show penalties.
+                        </div>
+                    `;
+                } else if (isTempSuspended) {
+                    const untilDate = new Date(deactivatedUntilMs).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    html = `
+                        <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #F59E0B; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(245,158,11,0.12);">
+                            <div style="display:flex; align-items:flex-start; gap:12px;">
+                                <div style="width:36px; height:36px; border-radius:50%; background:#D97706; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                </div>
+                                <div style="flex:1;">
+                                    <h4 style="margin:0 0 4px 0; font-size:0.95rem; font-weight:800; color:#92400E;">5-Day Temporary Deactivation in Effect</h4>
+                                    <p style="margin:0 0 6px 0; font-size:0.84rem; color:#78350F; line-height:1.45;">
+                                        You have accumulated more than 3 no-show penalties. Your account is temporarily suspended until <strong>${untilDate}</strong>.
+                                    </p>
+                                    <p style="margin:0; font-size:0.80rem; font-weight:700; color:#B45309;">
+                                        ⚠️ Critical Notice: If you fail to show up after accepting another shift once this suspension expires, your account will be permanently deactivated.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    profileHtml = `
+                        <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:10px; padding:12px 14px; color:#92400E; font-size:0.82rem; line-height:1.4;">
+                            <div style="font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#D97706;"></span>
+                                Temporary 5-Day Deactivation
+                            </div>
+                            Active suspension until <strong>${untilDate}</strong>. Next no-show will lead to permanent deactivation.
+                        </div>
+                    `;
+                } else if (strikes > 0) {
+                    html = `
+                        <div style="background: #FFF7ED; border: 1px solid #FDBA74; border-radius: 10px; padding: 12px 16px; display:flex; align-items:center; gap:10px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EA580C" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <div style="font-size:0.84rem; color:#9A3412; line-height:1.45;">
+                                <strong>No-Show Warning:</strong> You have <strong>${strikes} / 3</strong> no-show strikes (rating deducted). More than 3 no-shows after accepting shifts will trigger a mandatory 5-day temporary account deactivation.
+                            </div>
+                        </div>
+                    `;
+                    profileHtml = `
+                        <div style="background:#FFF7ED; border:1px solid #FDBA74; border-radius:8px; padding:10px 12px; font-size:0.80rem; color:#9A3412; line-height:1.4;">
+                            <strong>No-Show Strikes: ${strikes}/3</strong> &bull; Arrive within 1 hour of accepting shifts to prevent 5-day deactivation.
+                        </div>
+                    `;
+                }
+
+                if (mainBanner) {
+                    if (html) {
+                        mainBanner.innerHTML = html;
+                        mainBanner.style.display = 'block';
+                    } else {
+                        mainBanner.style.display = 'none';
+                        mainBanner.innerHTML = '';
+                    }
+                }
+
+                if (profileNotice) {
+                    if (profileHtml) {
+                        profileNotice.innerHTML = profileHtml;
+                        profileNotice.style.display = 'block';
+                    } else {
+                        profileNotice.style.display = 'none';
+                        profileNotice.innerHTML = '';
+                    }
+                }
             }
 
             // Status Switch UI (Active / Offline)
             function updateStatusUI() {
+                const isPerm = Boolean(session.isPermanentlyDeactivated);
+                const deactivatedUntilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : 0;
+                const isTempSuspended = !isPerm && (Boolean(session.isDeactivated) || (deactivatedUntilMs > Date.now()));
+                const isBlocked = isPerm || isTempSuspended;
+
+                if (isBlocked) {
+                    isOnline = false;
+                }
+
                 if (workerStatusSwitch) {
-                    if (workerStatusSwitch.checked !== isOnline) {
-                        workerStatusSwitch.checked = isOnline;
+                    if (isBlocked) {
+                        workerStatusSwitch.checked = false;
+                        workerStatusSwitch.disabled = true;
+                    } else {
+                        workerStatusSwitch.disabled = false;
+                        if (workerStatusSwitch.checked !== isOnline) {
+                            workerStatusSwitch.checked = isOnline;
+                        }
                     }
                     workerStatusSwitch.setAttribute('aria-checked', isOnline ? 'true' : 'false');
                 }
@@ -2951,15 +3104,31 @@
                     profileCard.classList.toggle('offline', !isOnline);
                 }
                 if (profileStatusTitle) {
-                    profileStatusTitle.textContent = isOnline ? 'Active' : 'Offline';
+                    if (isPerm) {
+                        profileStatusTitle.textContent = 'Deactivated';
+                    } else if (isTempSuspended) {
+                        profileStatusTitle.textContent = 'Suspended';
+                    } else {
+                        profileStatusTitle.textContent = isOnline ? 'Active' : 'Offline';
+                    }
                 }
                 if (headerProfileDot) {
-                    headerProfileDot.style.background = isOnline ? '#10B981' : '#9CA3AF';
+                    headerProfileDot.style.background = isBlocked ? '#EF4444' : (isOnline ? '#10B981' : '#9CA3AF');
                 }
             }
 
             if (workerStatusSwitch) {
                 workerStatusSwitch.addEventListener('change', async () => {
+                    if (session.isPermanentlyDeactivated) {
+                        workerStatusSwitch.checked = false;
+                        showToast('Your account is permanently deactivated due to repeated no-shows.', true);
+                        return;
+                    }
+                    if (session.isDeactivated || (session.deactivatedUntil && new Date(session.deactivatedUntil).getTime() > Date.now())) {
+                        workerStatusSwitch.checked = false;
+                        showToast('Your account is temporarily suspended (5-day deactivation) due to no-shows.', true);
+                        return;
+                    }
                     isOnline = workerStatusSwitch.checked;
                     session.active = isOnline;
                     try { await persistApplicantProfile(); saveWorkerSession(session); }
@@ -4925,6 +5094,7 @@
                     if (statAcceptedJobsEl) statAcceptedJobsEl.textContent = String(session.acceptedJobs);
                     updateCapacityUI();
                     renderAcceptedShiftsList(true);
+                    refreshCrewRating();
                 }).catch(err => showToast(err.message, true)).finally(() => { assignmentFetchPending = false; });
             }
             function getActiveContractsList() {
@@ -4984,9 +5154,33 @@
                     const contractIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(contract, 18) : '';
                     const cleanContractTitle = (contract.title || contract.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
 
+                    const acceptedMs = contract.acceptedAt ? new Date(contract.acceptedAt).getTime() : Date.now();
+                    const deadlineMs = acceptedMs + 3600000;
+                    const remainingMs = Math.max(0, deadlineMs - Date.now());
+                    const remMins = Math.floor(remainingMs / 60000);
+                    const remSecs = Math.floor((remainingMs % 60000) / 1000);
+                    const isNoShowExpired = remainingMs <= 0 && contract.transitStatus !== 'arrived' && contract.transitStatus !== 'on_the_way';
+
+                    const countdownHtml = (contract.confirmed && contract.transitStatus !== 'arrived' && contract.transitStatus !== 'on_the_way' && !isNoShowExpired) ? `
+                        <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${contract.id}">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>1-Hr Arrival Limit: <strong class="app-transit-timer-val">${remMins}m ${remSecs < 10 ? '0' : ''}${remSecs}s left</strong></span>
+                        </div>
+                    ` : '';
+
                     let transitHtml = '';
                     if (!contract.confirmed) {
                         transitHtml = `<div class="app-contract-transit-group"><span class="app-contract-transit-status">Waiting for the employer to confirm your booking before you start.</span></div>`;
+                    } else if (isNoShowExpired) {
+                        transitHtml = `
+                            <div class="app-contract-transit-group">
+                                <span class="app-contract-transit-status cancelled" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; display:inline-flex; align-items:center; gap:5px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    <span>1-Hr Arrival Limit Expired &bull; Auto-Cancelling</span>
+                                </span>
+                                <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
+                            </div>
+                        `;
                     } else if (contract.transitStatus === 'on_the_way') {
                         transitHtml = `
                             <div class="app-contract-transit-group">
@@ -5027,6 +5221,7 @@
                                     </span>
                                     <span class="app-btn-transit-text">I'm On the Way</span>
                                 </button>
+                                ${countdownHtml}
                             </div>
                         `;
                     }
@@ -5316,14 +5511,20 @@
 
                     const isEmployerShift = (shift.id != null && String(shift.id).startsWith('emp-shift-')) || Boolean(shift.bookingRefId);
 
-                    // Determine if worker can accept this shift based on capacity & hiring quota
+                    // Determine if worker can accept this shift based on capacity, hiring quota & deactivation status
                     let canAccept = true;
                     let lockedReason = '';
 
                     const quota = session.hiringQuota || { remainingHires: 0 };
                     const remainingHires = quota.remainingHires !== undefined ? quota.remainingHires : 0;
 
-                    if (remainingHires <= 0) {
+                    if (session.isPermanentlyDeactivated) {
+                        canAccept = false;
+                        lockedReason = 'Locked (Permanently Deactivated)';
+                    } else if (session.isDeactivated || (session.deactivatedUntil && new Date(session.deactivatedUntil).getTime() > Date.now())) {
+                        canAccept = false;
+                        lockedReason = 'Locked (5-Day Suspension)';
+                    } else if (remainingHires <= 0) {
                         canAccept = false;
                         lockedReason = 'Locked (5/5 Hires - Add ₱10)';
                     } else if (hasFullTime) {
@@ -5491,6 +5692,14 @@
 
             // Accept Shift Action
             async function acceptWorkerShift(shift, cardEl) {
+                if (session.isPermanentlyDeactivated) {
+                    showToast('Your account has been permanently deactivated due to repeated no-shows.', true);
+                    return;
+                }
+                if (session.isDeactivated || (session.deactivatedUntil && new Date(session.deactivatedUntil).getTime() > Date.now())) {
+                    showToast('Your account is temporarily suspended (5-day deactivation) due to no-shows.', true);
+                    return;
+                }
                 const button = cardEl.querySelector('.app-btn-accept');
                 if (button) button.disabled = true;
                 try {
@@ -5543,9 +5752,16 @@
                 const empClass = empType === 'full-time' ? 'full-time' : 'part-time';
                 const empLabel = empType === 'full-time' ? 'Full-Time' : 'Part-Time';
 
+                const acceptedMs = item.acceptedAt ? new Date(item.acceptedAt).getTime() : Date.now();
+                const deadlineMs = acceptedMs + 3600000;
+                const remainingMs = Math.max(0, deadlineMs - Date.now());
+                const remMins = Math.floor(remainingMs / 60000);
+                const remSecs = Math.floor((remainingMs % 60000) / 1000);
+                const isNoShowExpired = (remainingMs <= 0 && item.transitStatus !== 'arrived' && item.transitStatus !== 'on_the_way') || item.transitStatus === 'no_show';
+
                 const statusBadgeHtml = isEnded
                     ? `<span class="app-job-status-badge ended">Ended</span>`
-                    : `<span class="app-job-status-badge active"><span class="dot"></span>Active</span>`;
+                    : (isNoShowExpired ? `<span class="app-job-status-badge cancelled" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA;">Cancelled</span>` : `<span class="app-job-status-badge active"><span class="dot"></span>Active</span>`);
 
                 const cardRoleIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(item, 20) : (item.emoji || '');
                 const venueName = (item.venue || 'On-site Location').trim();
@@ -5606,7 +5822,14 @@
 
                     ${!isEnded ? `
                     <div class="app-job-card-footer active-contract-footer">
-                        ${!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">Waiting for employer confirmation before starting.</span></div>` : item.transitStatus === 'on_the_way' ? `
+                        ${isNoShowExpired ? `
+                        <div class="app-card-transit-box">
+                            <span class="app-card-transit-status cancelled" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; display:inline-flex; align-items:center; gap:5px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <span>1-Hr Arrival Limit Expired &bull; Auto-Cancelling</span>
+                            </span>
+                            <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
+                        </div>` : (!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">Waiting for employer confirmation before starting.</span></div>` : item.transitStatus === 'on_the_way' ? `
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status on-the-way">
                                 <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
@@ -5638,12 +5861,27 @@
                                 </span>
                                 <span class="app-btn-transit-sm-text">I'm On the Way</span>
                             </button>
-                        </div>`)}
-                        <button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">
+                            <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${item.id}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                <span>Time for transit: <strong class="app-transit-timer-val">${remMins}m ${remSecs < 10 ? '0' : ''}${remSecs}s left</strong></span>
+                            </div>
+                        </div>`))}
+                        ${!isNoShowExpired ? `<button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">
                             End Job
-                        </button>
+                        </button>` : ''}
                     </div>` : `
                     <div class="app-job-card-footer ended-footer">
+                        ${item.transitStatus === 'no_show' ? `
+                        <span class="app-ended-note" style="color:#DC2626; font-weight:600;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg>
+                            <span>Auto-Cancelled: 1-Hr Limit Expired (No-Show)</span>
+                        </span>
+                        <span class="app-job-archived-tag" style="background:#FEE2E2; color:#DC2626; border-color:#FECACA;">Rating Deducted</span>
+                        ` : `
                         <span class="app-ended-note">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
@@ -5652,6 +5890,7 @@
                             <span>${item.endedAt ? `Concluded ${item.endedAt}` : 'Concluded contract'}</span>
                         </span>
                         <span class="app-job-archived-tag">Archived</span>
+                        `}
                     </div>`}
                 `;
 
@@ -6323,7 +6562,7 @@
                                 showToast('✕ Your ₱10 payment receipt was rejected by accounting.', true);
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }, 4000);
             }
 
@@ -7927,6 +8166,7 @@
 
             // Init on page load
             renderProfileInfo();
+            refreshCrewRating();
             updateEmploymentPreferenceUI();
             updateLocationDisplayElements();
             renderWorkerLocationOptions();
@@ -7939,6 +8179,33 @@
             renderShiftsFeed();
             renderAcceptedShiftsList();
             renderWorkerNotifications();
+
+            // Live 1-hour arrival countdown ticker for active contracts
+            setInterval(() => {
+                document.querySelectorAll('.app-transit-countdown-box').forEach(el => {
+                    const deadline = parseInt(el.getAttribute('data-deadline'), 10);
+                    const assignmentId = el.getAttribute('data-assignment-id');
+                    if (!deadline) return;
+                    const remaining = Math.max(0, deadline - Date.now());
+                    const m = Math.floor(remaining / 60000);
+                    const s = Math.floor((remaining % 60000) / 1000);
+                    const valEl = el.querySelector('.app-transit-timer-val');
+                    if (valEl) valEl.textContent = `${m}m ${s < 10 ? '0' : ''}${s}s left`;
+                    if (remaining <= 0 && !el.dataset.expiredTriggered) {
+                        el.dataset.expiredTriggered = 'true';
+                        if (valEl) valEl.textContent = 'Expired';
+                        if (assignmentId) {
+                            fetch(`/api/applicant/assignments/${assignmentId}/check-noshow`, { method: 'POST', credentials: 'same-origin' })
+                                .then(() => {
+                                    serverAssignments = null;
+                                    refreshApplicantAssignments(true);
+                                    refreshCrewRating();
+                                })
+                                .catch(() => { });
+                        }
+                    }
+                });
+            }, 1000);
 
             // Initialize Applicant Onboarding Steps
             initApplicantStepsListeners();

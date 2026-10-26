@@ -46,6 +46,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/jobs/{id}/cancel", emp(h.Cancel))
 	mux.Handle("POST /api/jobs/{id}/decline-match", emp(h.DeclineMatch))
 	mux.Handle("POST /api/jobs/{id}/next-attempt", emp(h.NextAttempt))
+	mux.Handle("POST /api/jobs/{id}/check-noshow", emp(h.CheckJobNoShow))
 
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
 	mux.Handle("GET /api/applicant/rating", app(h.ApplicantRating))
@@ -61,6 +62,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("PUT /api/applicant/availability", app(h.SaveApplicantAvailability))
 	mux.Handle("POST /api/applicant/assignments/{id}/transit", app(h.ApplicantTransit))
 	mux.Handle("POST /api/applicant/assignments/{id}/end", app(h.ApplicantEndAssignment))
+	mux.Handle("POST /api/applicant/assignments/{id}/check-noshow", app(h.CheckApplicantNoShow))
 	mux.Handle("GET /api/notifications", a.RequireAuth(http.HandlerFunc(h.Notifications)))
 	mux.Handle("POST /api/notifications/read", a.RequireAuth(http.HandlerFunc(h.ReadNotifications)))
 	mux.Handle("DELETE /api/notifications", a.RequireAuth(http.HandlerFunc(h.ClearNotifications)))
@@ -208,7 +210,15 @@ func (h *Handler) ApplicantRating(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]float64{"rating": p.Rating})
+	isDeactivated := p.IsPermanentlyDeactivated || (p.DeactivatedUntil > time.Now().Unix())
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"rating":                        p.Rating,
+		"no_show_count":                 p.NoShowCount,
+		"is_deactivated":                isDeactivated,
+		"deactivated_until":             p.DeactivatedUntil,
+		"served_temporary_deactivation": p.ServedTemporaryDeactivation,
+		"is_permanently_deactivated":    p.IsPermanentlyDeactivated,
+	})
 }
 
 func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
@@ -322,6 +332,7 @@ func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
+	_, _ = h.Store.CheckAndExpireTransitAssignments(r.Context())
 	jobs, err := h.Store.ApplicantJobs(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -369,11 +380,20 @@ func (h *Handler) ApplicantAccept(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusNotFound, "job not found")
 		return
 	}
-	if _, err = h.Store.ApplicantProfile(r.Context(), u.ID); errors.Is(err, store.ErrNotFound) {
+	p, err := h.Store.ApplicantProfile(r.Context(), u.ID)
+	if errors.Is(err, store.ErrNotFound) {
 		httpx.Error(w, http.StatusConflict, "complete your applicant profile first")
 		return
 	} else if err != nil {
 		h.fail(w, err)
+		return
+	}
+	if p.IsPermanentlyDeactivated {
+		httpx.Error(w, http.StatusForbidden, "your account has been permanently deactivated due to shift no-shows")
+		return
+	}
+	if p.DeactivatedUntil > time.Now().Unix() {
+		httpx.Error(w, http.StatusForbidden, fmt.Sprintf("your account is temporarily deactivated for 5 days (until %s)", time.Unix(p.DeactivatedUntil, 0).Format(time.RFC1123)))
 		return
 	}
 	if err = h.Store.AcceptJob(r.Context(), id, u.ID); err != nil {
@@ -406,6 +426,7 @@ func (h *Handler) ApplicantReject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
+	_, _ = h.Store.CheckAndExpireTransitAssignments(r.Context())
 	jobs, err := h.Store.ApplicantAssignments(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -738,6 +759,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // GET /api/jobs?status=active,completed&limit=20&offset=0
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
+	_, _ = h.Store.CheckAndExpireTransitAssignments(r.Context())
 	valid := map[string]bool{
 		"draft": true, "matching": true, "accepted": true, "active": true,
 		"completed": true, "unfulfilled": true, "cancelled": true,
@@ -1090,3 +1112,53 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		"reason":   reason,
 	})
 }
+
+// POST /api/jobs/{id}/check-noshow
+func (h *Handler) CheckJobNoShow(w http.ResponseWriter, r *http.Request) {
+	_, id, empID, ok := h.ids(w, r)
+	if !ok {
+		return
+	}
+	_ = empID
+	crew, err := h.Store.Assignments(r.Context(), id)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	now := time.Now().Unix()
+	var cancelledCrew []int64
+	for _, c := range crew {
+		if c.EndedAt == nil && c.Transit == "none" {
+			if now-c.AcceptedAt.Unix() >= 3600 {
+				if _, _, _, err := h.Store.RecordNoShow(r.Context(), id, c.ApplicantID); err == nil {
+					cancelledCrew = append(cancelledCrew, c.ApplicantID)
+				}
+			}
+		}
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"cancelled_crew": cancelledCrew})
+}
+
+// POST /api/applicant/assignments/{id}/check-noshow
+func (h *Handler) CheckApplicantNoShow(w http.ResponseWriter, r *http.Request) {
+	u, id, ok := h.assignmentID(w, r)
+	if !ok {
+		return
+	}
+	state, err := h.Store.ApplicantAssignmentState(r.Context(), u.ID, id)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	now := time.Now().Unix()
+	cancelled := false
+	if state.EndedAt == nil && state.Transit == "none" {
+		if now-state.AcceptedAt.Unix() >= 3600 {
+			if _, _, _, err := h.Store.RecordNoShow(r.Context(), id, u.ID); err == nil {
+				cancelled = true
+			}
+		}
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"cancelled": cancelled})
+}
+

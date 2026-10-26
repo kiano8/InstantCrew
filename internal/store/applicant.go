@@ -3,22 +3,27 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
 type ApplicantProfile struct {
-	EmploymentType string   `json:"employment_type"`
-	ExpectedRate   int64    `json:"expected_rate"`
-	RatePeriod     string   `json:"rate_period"`
-	City           string   `json:"city"`
-	Location       string   `json:"location_address"`
-	MapsURL        string   `json:"maps_url"`
-	Lat            *float64 `json:"lat"`
-	Lng            *float64 `json:"lng"`
-	Availability   string   `json:"availability_mode"`
-	Active         *bool    `json:"is_active"`
-	Roles          []string `json:"roles"`
-	Rating         float64  `json:"rating"`
+	EmploymentType              string   `json:"employment_type"`
+	ExpectedRate                int64    `json:"expected_rate"`
+	RatePeriod                  string   `json:"rate_period"`
+	City                        string   `json:"city"`
+	Location                    string   `json:"location_address"`
+	MapsURL                     string   `json:"maps_url"`
+	Lat                         *float64 `json:"lat"`
+	Lng                         *float64 `json:"lng"`
+	Availability                string   `json:"availability_mode"`
+	Active                      *bool    `json:"is_active"`
+	Roles                       []string `json:"roles"`
+	Rating                      float64  `json:"rating"`
+	NoShowCount                 int      `json:"no_show_count"`
+	DeactivatedUntil            int64    `json:"deactivated_until"`
+	ServedTemporaryDeactivation bool     `json:"served_temporary_deactivation"`
+	IsPermanentlyDeactivated    bool     `json:"is_permanently_deactivated"`
 }
 
 type Availability struct {
@@ -281,18 +286,46 @@ func (s *Store) ApplicantProfile(ctx context.Context, id int64) (*ApplicantProfi
 	p := &ApplicantProfile{}
 	var active int
 	var rating int
+	var noShowCount int
+	var deactivatedUntil int64
+	var servedDeact int
+	var permDeact int
 	err := s.db.QueryRowContext(ctx, `SELECT employment_type, expected_rate, rate_period, city,
-		COALESCE(location_address,''), COALESCE(maps_url,''), lat, lng, availability_mode,is_active,rating_hundredths
+		COALESCE(location_address,''), COALESCE(maps_url,''), lat, lng, availability_mode,is_active,rating_hundredths,
+		COALESCE(no_show_count, 0), COALESCE(deactivated_until, 0),
+		COALESCE(served_temporary_deactivation, 0), COALESCE(is_permanently_deactivated, 0)
 		FROM applicant_profiles WHERE user_id=?`, id).Scan(&p.EmploymentType, &p.ExpectedRate,
-		&p.RatePeriod, &p.City, &p.Location, &p.MapsURL, &p.Lat, &p.Lng, &p.Availability, &active, &rating)
+		&p.RatePeriod, &p.City, &p.Location, &p.MapsURL, &p.Lat, &p.Lng, &p.Availability, &active, &rating,
+		&noShowCount, &deactivatedUntil, &servedDeact, &permDeact)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	b := active != 0
-	p.Active = &b
+	now := time.Now().Unix()
+	if permDeact == 1 {
+		p.IsPermanentlyDeactivated = true
+		b := false
+		p.Active = &b
+	} else if deactivatedUntil > now {
+		p.DeactivatedUntil = deactivatedUntil
+		p.ServedTemporaryDeactivation = true
+		b := false
+		p.Active = &b
+	} else if deactivatedUntil > 0 && deactivatedUntil <= now {
+		_, _ = s.db.ExecContext(ctx, `UPDATE applicant_profiles SET is_active=1, deactivated_until=0 WHERE user_id=?`, id)
+		active = 1
+		p.DeactivatedUntil = 0
+		p.ServedTemporaryDeactivation = true
+		b := true
+		p.Active = &b
+	} else {
+		p.ServedTemporaryDeactivation = servedDeact != 0
+		b := active != 0
+		p.Active = &b
+	}
+	p.NoShowCount = noShowCount
 	p.Rating = float64(rating) / 100
 	rows, err := s.db.QueryContext(ctx, `SELECT role_id FROM applicant_roles WHERE applicant_id=? ORDER BY is_primary DESC, role_id`, id)
 	if err != nil {
@@ -509,3 +542,157 @@ func (s *Store) ApplicantAssignmentState(ctx context.Context, applicantID, jobID
 	}
 	return a, nil
 }
+
+func (s *Store) RecordNoShow(ctx context.Context, jobID, applicantID int64) (int, bool, bool, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, false, false, err
+	}
+	defer tx.Rollback()
+
+	now := time.Now().Unix()
+
+	// 1. Mark assignment as ended with transit_status 'no_show'
+	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at=?, transit_status='no_show' WHERE job_id=? AND applicant_id=? AND ended_at IS NULL`, now, jobID, applicantID)
+	if err != nil {
+		return 0, false, false, err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return 0, false, false, ErrNotFound
+	}
+
+	// 2. If no remaining active crew on this job, update job status to 'cancelled'
+	var left int
+	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM job_assignments WHERE job_id=? AND ended_at IS NULL`, jobID).Scan(&left); err == nil && left == 0 {
+		_, _ = tx.ExecContext(ctx, `UPDATE jobs SET status='cancelled', updated_at=? WHERE id=? AND status IN ('active','accepted')`, now, jobID)
+	}
+
+	// 3. Deduct rating by 20 hundredths (0.20 stars) for the no-show
+	_, _ = tx.ExecContext(ctx, `INSERT OR IGNORE INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES(?,?,'declined')`, jobID, applicantID)
+	_, _ = tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=MAX(100,rating_hundredths-20), updated_at=? WHERE user_id=?`, now, applicantID)
+
+	// 4. Fetch current no_show status
+	var currentNoShows int
+	var servedDeact int
+	var permDeact int
+	err = tx.QueryRowContext(ctx, `SELECT COALESCE(no_show_count,0), COALESCE(served_temporary_deactivation,0), COALESCE(is_permanently_deactivated,0)
+		FROM applicant_profiles WHERE user_id=?`, applicantID).Scan(&currentNoShows, &servedDeact, &permDeact)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, false, false, err
+	}
+
+	newCount := currentNoShows + 1
+	isTemp := false
+	isPerm := false
+
+	// Fetch worker name and job details for notifications
+	var workerName string
+	var employerID int64
+	var roleLabel string
+	_ = tx.QueryRowContext(ctx, `SELECT name FROM users WHERE id=?`, applicantID).Scan(&workerName)
+	_ = tx.QueryRowContext(ctx, `SELECT employer_id, role_label FROM jobs WHERE id=?`, jobID).Scan(&employerID, &roleLabel)
+	if workerName == "" {
+		workerName = "Crew member"
+	}
+
+	// Escalation Rule 1: If previously served 5-day deactivation and has another no-show -> PERMANENT DEACTIVATION
+	if servedDeact == 1 || permDeact == 1 {
+		isPerm = true
+		_, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET no_show_count=?, is_permanently_deactivated=1, is_active=0, updated_at=? WHERE user_id=?`,
+			newCount, now, applicantID)
+		if err != nil {
+			return 0, false, false, err
+		}
+
+		// Notify applicant
+		_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES(?,?,?,?,json_object('job_id',?, 'penalty', 'permanent_deactivation'),?)`,
+			applicantID,
+			"Account Permanently Deactivated",
+			"Your account has been permanently deactivated due to failing to arrive for an accepted shift following a temporary deactivation penalty.",
+			"alert", jobID, now)
+
+	// Escalation Rule 2: If no-shows > 3 times -> 5-DAY TEMPORARY DEACTIVATION
+	} else if newCount > 3 {
+		isTemp = true
+		deactUntil := now + 5*86400 // 5 days from now
+		_, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET no_show_count=?, deactivated_until=?, served_temporary_deactivation=1, is_active=0, updated_at=? WHERE user_id=?`,
+			newCount, deactUntil, now, applicantID)
+		if err != nil {
+			return 0, false, false, err
+		}
+
+		// Notify applicant
+		_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES(?,?,?,?,json_object('job_id',?, 'penalty', 'temporary_deactivation', 'deactivated_until', ?),?)`,
+			applicantID,
+			"5-Day Temporary Deactivation Penalty",
+			"You have exceeded 3 shift no-shows. Your account is temporarily deactivated for 5 days. You cannot accept or work shifts during this period.",
+			"alert", jobID, deactUntil, now)
+
+	// Escalation Rule 3: 1, 2, or 3 strikes -> Rating deduction + Warning
+	} else {
+		_, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET no_show_count=?, updated_at=? WHERE user_id=?`,
+			newCount, now, applicantID)
+		if err != nil {
+			return 0, false, false, err
+		}
+
+		warningMsg := fmt.Sprintf("You did not arrive within the 1-hour transit time limit for %s. The shift was auto-cancelled and your rating was deducted. Strike %d of 3. (More than 3 no-shows incurs a 5-day deactivation).", roleLabel, newCount)
+		_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES(?,?,?,?,json_object('job_id',?, 'penalty', 'strike', 'strikes', ?),?)`,
+			applicantID,
+			"Shift Auto-Cancelled (No-Show Warning)",
+			warningMsg,
+			"alert", jobID, newCount, now)
+	}
+
+	// Notify employer that the shift was auto-cancelled due to crew no-show
+	if employerID > 0 {
+		_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at) VALUES(?,?,?,?,json_object('job_id',?, 'transit_status', 'cancelled'),?)`,
+			employerID,
+			"Shift Auto-Cancelled: Crew No-Show",
+			fmt.Sprintf("%s did not arrive within the 1-hour time limit. The booking has been automatically cancelled and the crew's rating was penalized.", workerName),
+			"alert", jobID, now)
+	}
+
+	return newCount, isTemp, isPerm, tx.Commit()
+}
+
+func (s *Store) CheckAndExpireTransitAssignments(ctx context.Context) ([]int64, error) {
+	now := time.Now().Unix()
+	// Find assignments where accepted_at is older than 1 hour (3600s), transit_status != 'arrived', and ended_at IS NULL
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT a.job_id, a.applicant_id
+		FROM job_assignments a
+		JOIN jobs j ON j.id = a.job_id
+		WHERE a.ended_at IS NULL
+		  AND a.transit_status = 'none'
+		  AND a.accepted_at <= ?
+		  AND j.status IN ('active', 'accepted')
+	`, now-3600)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	type item struct {
+		jobID       int64
+		applicantID int64
+	}
+	var expired []item
+	for rows.Next() {
+		var it item
+		if err := rows.Scan(&it.jobID, &it.applicantID); err == nil {
+			expired = append(expired, it)
+		}
+	}
+	rows.Close()
+
+	var cancelledJobIDs []int64
+	for _, it := range expired {
+		if _, _, _, err := s.RecordNoShow(ctx, it.jobID, it.applicantID); err == nil {
+			cancelledJobIDs = append(cancelledJobIDs, it.jobID)
+		}
+	}
+	return cancelledJobIDs, nil
+}
+

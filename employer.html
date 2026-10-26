@@ -822,14 +822,17 @@
                         <p class="db-step-sub">Your crew is on the way.</p>
 
                         <button type="button" class="db-details-toggle" id="detailsToggle" aria-expanded="false">
-                            View Booking Details
+                            <span>View Booking Details</span>
                             <svg class="db-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
                                     stroke-linejoin="round" />
                             </svg>
                         </button>
 
-                        <div class="db-details-box" id="detailsBox" hidden>
+                        <div class="db-details-box" id="detailsBox">
+                            <div class="db-details-header" id="detailsHeader">
+                                Booking Details
+                            </div>
                             <div class="db-detail-row"><span class="db-detail-key">Category</span><span
                                     class="db-detail-val" id="dCat"></span></div>
                             <div class="db-detail-row"><span class="db-detail-key">Role</span><span

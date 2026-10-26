@@ -137,6 +137,7 @@ const resultsAcceptedNote = document.getElementById('resultsAcceptedNote');
 
 // Step 5 refs
 const detailsToggle = document.getElementById('detailsToggle');
+const detailsHeader = document.getElementById('detailsHeader');
 const detailsBox = document.getElementById('detailsBox');
 const bookAnother = document.getElementById('bookAnother');
 
@@ -2468,19 +2469,13 @@ confirmBooking.addEventListener('click', async () => {
 });
 
 /* ─── Step 5: Booking Details Accordion & Reset ──────────── */
-
-detailsToggle.addEventListener('click', () => {
-  const isOpen = detailsToggle.getAttribute('aria-expanded') === 'true';
-  detailsToggle.setAttribute('aria-expanded', String(!isOpen));
-
-  if (!isOpen) {
-    detailsBox.removeAttribute('hidden');
-    detailsToggle.style.borderRadius = '18px 18px 0 0';
-  } else {
-    detailsBox.setAttribute('hidden', '');
-    detailsToggle.style.borderRadius = '';
-  }
-});
+// In mobile view (<= 768px), detailsToggle expands/collapses the booking details accordion
+if (detailsToggle) {
+  detailsToggle.addEventListener('click', () => {
+    const isOpen = detailsToggle.getAttribute('aria-expanded') === 'true';
+    detailsToggle.setAttribute('aria-expanded', String(!isOpen));
+  });
+}
 
 bookAnother.addEventListener('click', () => {
   // Reset state
@@ -2543,9 +2538,13 @@ bookAnother.addEventListener('click', () => {
   scheduleDisplayTime.textContent = `${format12Hour(state.scheduledTime)} · Scheduled Shift`;
 
   // Reset Step 5 UI
-  detailsToggle.setAttribute('aria-expanded', 'false');
-  detailsBox.setAttribute('hidden', '');
-  detailsToggle.style.borderRadius = '';
+  if (detailsToggle) {
+    detailsToggle.setAttribute('aria-expanded', 'false');
+    detailsToggle.style.borderRadius = '';
+  }
+  if (detailsBox) {
+    detailsBox.removeAttribute('hidden');
+  }
 
   // Show progress bar
   progress.style.display = 'flex';
@@ -2914,7 +2913,9 @@ function refreshEmployerBookings(force = false) {
       timing: j.scheduled_at || j.timing, count: j.crew_needed,
       acceptedCrew: (j.crew || []).map(c => c.name),
       workerName: (j.crew || []).find(c => !c.ended_at)?.name || '',
-      transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || '',
+      transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived', no_show: 'no_show' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || ((j.crew || []).some(c => c.transit_status === 'no_show') ? 'no_show' : ''),
+      acceptedAt: (j.crew || []).find(c => !c.ended_at)?.accepted_at || j.created_at,
+      crew: j.crew || [],
       crewRate: `₱${j.rate}`, status: j.status, bookedAt: j.created_at
     }));
     // Keep session mirrors fresh for the booking summary, but never use them to
@@ -3071,6 +3072,13 @@ function buildBookingItem(b) {
   const rawRate = b.crewRate || (b.offeredRate ? `₱${b.offeredRate}` : '₱85');
   const displayRate = String(rawRate).replace(/\/hr.*$/i, '').trim();
 
+  const acceptedTime = new Date(b.acceptedAt || b.bookedAt).getTime() || Date.now();
+  const elapsedTransitMs = Math.max(0, Date.now() - acceptedTime);
+  const remainingTransitMs = Math.max(0, 3600000 - elapsedTransitMs);
+  const remainingTransitMins = Math.floor(remainingTransitMs / 60000);
+  const remainingTransitSecs = Math.floor((remainingTransitMs % 60000) / 1000);
+  const isTransitExpired = (remainingTransitMs <= 0 && b.status !== 'matching' && b.transitStatus !== 'arrived' && b.transitStatus !== 'on_the_way') || b.transitStatus === 'no_show';
+
   item.innerHTML = `
         <div class="app-job-card-header">
             <div class="app-job-card-left">
@@ -3120,7 +3128,14 @@ function buildBookingItem(b) {
 
         ${!isEnded ? `
         <div class="app-job-card-footer active-contract-footer">
-            ${b.transitStatus === 'on_the_way' ? `
+            ${isTransitExpired ? `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status cancelled" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; display:inline-flex; align-items:center; gap:5px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <span>Auto-Cancelled: Crew No-Show (1-Hr Limit Expired)</span>
+                </span>
+                <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
+            </div>` : (b.transitStatus === 'on_the_way' ? `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status on-the-way">
                     <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
@@ -3142,10 +3157,14 @@ function buildBookingItem(b) {
             </div>` : `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status pending">
-                    <span>Crew Preparing &bull; Awaiting Transit</span>
+                    <span>Waiting for transit of crew</span>
                 </span>
-            </div>`))}
-            ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
+                <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${acceptedTime + 3600000}" data-job-id="${jobId}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>1-Hr Arrival Limit: <strong class="app-transit-timer-val">${remainingTransitMins}m ${remainingTransitSecs}s left</strong></span>
+                </div>
+            </div>`)))}
+            ${canEndJob && !isTransitExpired ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
             ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
         </div>` : `
         <div class="app-job-card-footer ended-footer">
@@ -3904,7 +3923,7 @@ function updateStep5TransitLiveStatus() {
     box.className = 'db-live-transit-box on-the-way';
     badgeEl.className = 'db-live-transit-badge on-the-way';
     badgeEl.innerHTML = `<span class="db-transit-beacon"><span class="db-transit-ping"></span><span class="db-transit-dot"></span></span><span>Crew is On the Way!</span>`;
-    timeEl.textContent = departedAt ? ` ${departedAt}` : 'Departed: Just now';
+    timeEl.textContent = departedAt ? `Departed: ${departedAt}` : 'Departed: Just now';
     bodyEl.innerHTML = `<strong>${crewName}</strong> has notified you that they have departed and are en route to <strong>${venueName}</strong>.`;
   } else if (transitStatus === 'arrived') {
     box.className = 'db-live-transit-box arrived';
@@ -3915,11 +3934,33 @@ function updateStep5TransitLiveStatus() {
   } else {
     box.className = 'db-live-transit-box pending';
     badgeEl.className = 'db-live-transit-badge pending';
-    badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
-    timeEl.textContent = 'Awaiting Departure';
-    bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and will notify you when heading to <strong>${venueName}</strong>.`;
+    badgeEl.innerHTML = `<span>Waiting for Transit of Crew</span>`;
+    timeEl.textContent = '1-Hr Arrival Limit Active';
+    bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and has a strict 1-hour time limit to arrive at <strong>${venueName}</strong>. If they fail to arrive within 1 hour, this booking will automatically cancel and their rating will be deducted.`;
   }
 }
+
+// Live 1-hour arrival countdown ticker
+setInterval(() => {
+  document.querySelectorAll('.app-transit-countdown-box').forEach(el => {
+    const deadline = parseInt(el.getAttribute('data-deadline'), 10);
+    const jobId = el.getAttribute('data-job-id');
+    if (!deadline) return;
+    const remaining = Math.max(0, deadline - Date.now());
+    const m = Math.floor(remaining / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    const valEl = el.querySelector('.app-transit-timer-val');
+    if (valEl) valEl.textContent = `${m}m ${s}s left`;
+    if (remaining <= 0 && !el.dataset.expiredTriggered) {
+      el.dataset.expiredTriggered = 'true';
+      if (jobId) {
+        fetch(`/api/jobs/${jobId}/check-noshow`, { method: 'POST', credentials: 'same-origin' })
+          .then(() => renderBookings(true))
+          .catch(() => {});
+      }
+    }
+  });
+}, 1000);
 
 function syncEmployerState() {
   renderEmployerNotifications();

@@ -1653,9 +1653,9 @@ h2 {
     }
 }
 
-/* Booking details toggle */
+/* Booking details toggle button (Hidden on desktop — full details shown directly) */
 .db-details-toggle {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 6px;
     margin: 20px 0 0;
@@ -1688,14 +1688,29 @@ h2 {
     transform: rotate(180deg);
 }
 
+/* Booking details card (Directly visible on desktop) */
 .db-details-box {
+    display: block;
     width: 100%;
-    margin-top: 0;
+    margin-top: 20px;
+    margin-bottom: 24px;
+    background: var(--card, #FFFFFF);
     border: 1.6px solid var(--border);
-    border-top: none;
-    border-radius: 0 0 var(--radius-m) var(--radius-m);
+    border-radius: var(--radius-m);
     overflow: hidden;
-    animation: fadeSlideDown var(--dur-base) var(--ease-spring) both;
+    box-shadow: var(--shadow-sm);
+    text-align: left;
+}
+
+.db-details-header {
+    display: flex;
+    align-items: center;
+    padding: 13px 20px;
+    background: var(--surface-2);
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
 }
 
 .db-detail-row {
@@ -1706,6 +1721,7 @@ h2 {
     border-top: 1px solid var(--border);
 }
 
+.db-details-header + .db-detail-row,
 .db-detail-row:first-child {
     border-top: none;
 }
@@ -1722,6 +1738,46 @@ h2 {
     color: var(--ink);
     text-align: right;
     max-width: 55%;
+}
+
+/* Mobile & Tablet Portrait View (<= 768px): Retain Booking Details Dropdown */
+@media (max-width: 768px) {
+    .db-details-toggle {
+        display: flex;
+        width: 100%;
+        margin-top: 16px;
+        margin-bottom: 20px;
+        padding: 12px 16px;
+        font-size: 0.88rem;
+    }
+
+    .db-details-toggle[aria-expanded="true"] {
+        border-radius: var(--radius-m) var(--radius-m) 0 0;
+        margin-bottom: 0;
+    }
+
+    .db-details-header {
+        display: none !important;
+    }
+
+    .db-details-box {
+        width: 100%;
+        margin-top: 0;
+        margin-bottom: 20px;
+        border-top: none;
+        border-radius: 0 0 var(--radius-m) var(--radius-m);
+        animation: fadeSlideDown var(--dur-base) var(--ease-spring) both;
+    }
+
+    /* When toggle is collapsed on mobile, hide the details box */
+    .db-details-toggle[aria-expanded="false"] + .db-details-box {
+        display: none !important;
+    }
+
+    /* When toggle is expanded on mobile, show the details box */
+    .db-details-toggle[aria-expanded="true"] + .db-details-box {
+        display: block !important;
+    }
 }
 
 
@@ -4481,19 +4537,29 @@ h2 {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: inset 0 0 0 1px rgba(234, 179, 8, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(217, 130, 0, 0.25);
+    color: #D98200;
 }
 
 .app-job-card-icon svg {
     display: block;
     width: 20px;
     height: 20px;
+    stroke: #D98200;
+    color: #D98200;
 }
 
 .db-booking-item.ended .app-job-card-icon,
 .app-job-card.ended .app-job-card-icon {
     background: #F1F5F9;
     box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+    color: #94A3B8;
+}
+
+.db-booking-item.ended .app-job-card-icon svg,
+.app-job-card.ended .app-job-card-icon svg {
+    stroke: #94A3B8;
+    color: #94A3B8;
 }
 
 .app-job-card-title-col {
@@ -5701,16 +5767,6 @@ body {
     }
 
     /* Step 5 Success Details */
-    .db-details-toggle {
-        width: 100%;
-        padding: 12px 16px;
-        font-size: 0.88rem;
-    }
-
-    .db-details-box {
-        width: 100%;
-    }
-
     .db-detail-row {
         padding: 10px 14px;
         font-size: 0.84rem;
