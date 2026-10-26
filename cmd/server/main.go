@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -77,15 +78,22 @@ var pages = map[string]bool{
 func main() {
 	port := getenv("PORT", "3000")
 	env := getenv("ENV", "dev")
-	dbPath := getenv("DB_PATH", "data/instantcrew.db")
 
-	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
-		log.Fatal(err)
-	}
+	// Build PostgreSQL DSN
+	host := getenv("DB_HOST", "localhost")
+	dbPort := getenv("DB_PORT", "5432")
+	user := getenv("DB_USER", os.Getenv("USER"))
+	password := getenv("DB_PASSWORD", "")
+	dbname := getenv("DB_NAME", "instantcrew_dev")
+	sslmode := getenv("DB_SSLMODE", "disable")
+
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		user, password, host, dbPort, dbname, sslmode)
+
 	if err := os.MkdirAll("uploads", 0o755); err != nil {
 		log.Fatal(err)
 	}
-	st, err := store.Open(dbPath)
+	st, err := store.Open(dsn)
 	if err != nil {
 		log.Fatal(err)
 	}

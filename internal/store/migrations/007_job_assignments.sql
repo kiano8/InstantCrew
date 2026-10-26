@@ -1,11 +1,11 @@
 
 CREATE TABLE IF NOT EXISTS job_assignments (
-    job_id         INTEGER NOT NULL
+    job_id         BIGINT NOT NULL
                    REFERENCES jobs(id) ON DELETE CASCADE,
-    applicant_id   INTEGER NOT NULL
+    applicant_id   BIGINT NOT NULL
                    REFERENCES users(id) ON DELETE CASCADE,
-    accepted_at    INTEGER NOT NULL DEFAULT (unixepoch()),
-    ended_at       INTEGER,
+    accepted_at    BIGINT NOT NULL DEFAULT extract(epoch from now())::BIGINT,
+    ended_at       BIGINT,
     transit_status TEXT NOT NULL DEFAULT 'none'
                    CHECK (transit_status IN (
                        'none',
