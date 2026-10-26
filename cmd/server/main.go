@@ -126,8 +126,15 @@ func main() {
 		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
 	}
-	if err := authH.ConfigureGoogleFromFile(googleCredentialsPath(), getenv("GOOGLE_REDIRECT_URL", "")); err != nil {
-		log.Printf("Google SSO disabled: %v", err)
+	googleID, googleSecret := os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET")
+	var googleErr error
+	if googleID != "" || googleSecret != "" {
+		googleErr = authH.ConfigureGoogle(googleID, googleSecret, "", "", getenv("GOOGLE_REDIRECT_URL", ""), nil)
+	} else {
+		googleErr = authH.ConfigureGoogleFromFile(googleCredentialsPath(), getenv("GOOGLE_REDIRECT_URL", ""))
+	}
+	if googleErr != nil {
+		log.Printf("Google SSO disabled: %v", googleErr)
 	}
 	// Development mode must not create implicit accounts. Authentication always
 	// uses credentials explicitly written through the signup endpoint.

@@ -42,22 +42,28 @@ func (h *Handler) ConfigureGoogleFromFile(path, redirectURL string) error {
 	if err := json.Unmarshal(b, &c); err != nil {
 		return fmt.Errorf("parse credentials file: %w", err)
 	}
-	if c.Web.ClientID == "" || c.Web.ClientSecret == "" {
-		return errors.New("credentials file must contain web client_id and client_secret")
+	return h.ConfigureGoogle(c.Web.ClientID, c.Web.ClientSecret, c.Web.AuthURI, c.Web.TokenURI, redirectURL, c.Web.RedirectURIs)
+}
+
+// ConfigureGoogle enables OAuth using credentials supplied by the deployment environment.
+// This is useful when the credential JSON is intentionally excluded from source control.
+func (h *Handler) ConfigureGoogle(clientID, clientSecret, authURI, tokenURI, redirectURL string, redirectURIs []string) error {
+	if clientID == "" || clientSecret == "" {
+		return errors.New("Google OAuth requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET")
 	}
-	if c.Web.AuthURI == "" {
-		c.Web.AuthURI = "https://accounts.google.com/o/oauth2/v2/auth"
+	if authURI == "" {
+		authURI = "https://accounts.google.com/o/oauth2/v2/auth"
 	}
-	if c.Web.TokenURI == "" {
-		c.Web.TokenURI = "https://oauth2.googleapis.com/token"
+	if tokenURI == "" {
+		tokenURI = "https://oauth2.googleapis.com/token"
 	}
-	if redirectURL == "" && len(c.Web.RedirectURIs) > 0 {
-		redirectURL = c.Web.RedirectURIs[0]
+	if redirectURL == "" && len(redirectURIs) > 0 {
+		redirectURL = redirectURIs[0]
 	}
 	if redirectURL == "" {
 		return errors.New("set GOOGLE_REDIRECT_URL or add a redirect URI to the credentials file")
 	}
-	h.google = &googleOAuth{c.Web.ClientID, c.Web.ClientSecret, c.Web.AuthURI, c.Web.TokenURI, redirectURL}
+	h.google = &googleOAuth{clientID, clientSecret, authURI, tokenURI, redirectURL}
 	return nil
 }
 
