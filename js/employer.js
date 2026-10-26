@@ -2176,6 +2176,7 @@ function updateSearchTimerUI() {
 
 function startSearchTimer() {
   stopSearchTimer();
+  if (cancelCrewSearchBtn) { cancelCrewSearchBtn.disabled = false; cancelCrewSearchBtn.textContent = 'Cancel Search'; }
   state.searchCountdown = Number(state.currentBooking?.seconds_remaining ?? SEARCH_MAX_SECONDS);
   updateSearchTimerUI();
   state.searchTimerInterval = setInterval(() => {
@@ -3505,11 +3506,13 @@ if (cancelCrewSearchBtn) cancelCrewSearchBtn.addEventListener('click', () => {
           window.InstantCrewShared.showPushToast('Next Try Started', `Started Try ${job.current_try} of 3 (${job.tries_remaining} left).`, 'info');
         }
       } catch (err) {
-        cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
-      } finally {
         cancelCrewSearchBtn.disabled = false;
         cancelCrewSearchBtn.textContent = 'Cancel Search';
+        cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
+        return;
       }
+      cancelCrewSearchBtn.disabled = false;
+      cancelCrewSearchBtn.textContent = 'Cancel Search';
     } else {
       cancelEmployerSearch(state.currentJobId, cancelCrewSearchBtn, true);
     }
@@ -3543,9 +3546,10 @@ async function cancelEmployerSearch(jobId, button, returnToStart = false) {
     employerBookingsFetchedAt = 0;
     refreshEmployerBookings(true);
   } catch (err) {
-    if (button) { button.disabled = false; button.textContent = 'Cancel Search'; }
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not cancel search', err.message, 'alert');
     else console.error('Could not cancel search:', err);
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Cancel Search'; }
   }
 }
 
