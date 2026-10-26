@@ -684,20 +684,22 @@ func (h *Handler) Catalog(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	labels := map[string]string{}
-	for _, c := range Catalog {
-		labels[c.ID] = c.Label
-	}
-	groups := map[string]*Category{}
-	ordered := []*Category{}
+	active := map[string]bool{}
 	for _, row := range rows {
-		c := groups[row.Category]
-		if c == nil {
-			c = &Category{ID: row.Category, Label: labels[row.Category], Roles: []Role{}}
-			groups[row.Category] = c
-			ordered = append(ordered, c)
+		active[row.Category+"/"+row.ID] = true
+	}
+	// Serve in catalog order, not the DB's alphabetical order.
+	ordered := []*Category{}
+	for _, c := range Catalog {
+		out := &Category{ID: c.ID, Label: c.Label, Roles: []Role{}}
+		for _, role := range c.Roles {
+			if active[c.ID+"/"+role.ID] {
+				out.Roles = append(out.Roles, role)
+			}
 		}
-		c.Roles = append(c.Roles, Role{ID: row.ID, Label: row.Label})
+		if len(out.Roles) > 0 {
+			ordered = append(ordered, out)
+		}
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"categories": ordered})
 }

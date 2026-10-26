@@ -72,6 +72,11 @@ func (s *Store) SyncRoles(ctx context.Context, roles []RoleRow) error {
 		return err
 	}
 	defer tx.Rollback()
+	// Roles dropped from the catalog are deactivated, not deleted: jobs and
+	// applicant_roles still reference their IDs.
+	if _, err := tx.ExecContext(ctx, `UPDATE job_roles SET is_active=false`); err != nil {
+		return err
+	}
 	for _, role := range roles {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO job_roles(id,category,label,is_active) VALUES($1,$2,$3,true) ON CONFLICT(id) DO UPDATE SET category=excluded.category,label=excluded.label,is_active=true`, role.ID, role.Category, role.Label); err != nil {
 			return err
