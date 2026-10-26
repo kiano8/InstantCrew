@@ -176,19 +176,19 @@ func main() {
 		mux.Handle("GET "+p, static)
 	}
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "index.html")
+		servePage(w, r, "index.html")
 	})
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "admin.html")
+		servePage(w, r, "admin.html")
 	})
 	mux.HandleFunc("GET /accounting", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "admin.html")
+		servePage(w, r, "admin.html")
 	})
 	mux.HandleFunc("GET /privacy", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "privacy.html")
+		servePage(w, r, "privacy.html")
 	})
 	mux.HandleFunc("GET /terms", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "terms.html")
+		servePage(w, r, "terms.html")
 	})
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {
 		p := filepath.Clean(r.PathValue("page"))
@@ -197,20 +197,20 @@ func main() {
 			return
 		}
 		if p == "accounting.html" {
-			http.ServeFile(w, r, "admin.html")
+			servePage(w, r, "admin.html")
 			return
 		}
 		if !pages[p] {
 			if strings.HasSuffix(strings.ToLower(p), ".html") {
 				if info, err := os.Stat(p); err == nil && !info.IsDir() {
-					http.ServeFile(w, r, p)
+					servePage(w, r, p)
 					return
 				}
 			}
 			http.NotFound(w, r)
 			return
 		}
-		http.ServeFile(w, r, p)
+		servePage(w, r, p)
 	})
 
 	srv := &http.Server{
@@ -273,4 +273,12 @@ func logRequests(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start).Round(time.Millisecond))
 	})
+}
+
+// servePage serves an HTML page that the browser must revalidate on every
+// visit, so an updated page (e.g. a new <script> tag) is never hidden behind
+// a heuristically cached copy. Unchanged pages still come back as 304s.
+func servePage(w http.ResponseWriter, r *http.Request, name string) {
+	w.Header().Set("Cache-Control", "no-cache")
+	http.ServeFile(w, r, name)
 }
