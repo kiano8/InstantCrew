@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -70,6 +71,7 @@ var pages = map[string]bool{
 	"index.html": true, "login.html": true,
 	"employer.html": true, "applicant.html": true,
 	"admin.html": true, "accounting.html": true,
+	"privacy.html": true, "terms.html": true,
 }
 
 func main() {
@@ -162,14 +164,30 @@ func main() {
 	mux.HandleFunc("GET /accounting", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "admin.html")
 	})
+	mux.HandleFunc("GET /privacy", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "privacy.html")
+	})
+	mux.HandleFunc("GET /terms", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "terms.html")
+	})
 	mux.HandleFunc("GET /{page}", func(w http.ResponseWriter, r *http.Request) {
-		p := r.PathValue("page")
-		if !pages[p] {
+		p := filepath.Clean(r.PathValue("page"))
+		if filepath.Dir(p) != "." || strings.HasPrefix(p, ".") {
 			http.NotFound(w, r)
 			return
 		}
 		if p == "accounting.html" {
 			http.ServeFile(w, r, "admin.html")
+			return
+		}
+		if !pages[p] {
+			if strings.HasSuffix(strings.ToLower(p), ".html") {
+				if info, err := os.Stat(p); err == nil && !info.IsDir() {
+					http.ServeFile(w, r, p)
+					return
+				}
+			}
+			http.NotFound(w, r)
 			return
 		}
 		http.ServeFile(w, r, p)

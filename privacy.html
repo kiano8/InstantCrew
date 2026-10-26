@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy - Instant Crew</title>
+    <meta name="description"
+        content="Read the Instant Crew Privacy Policy. Learn how we collect, use, and protect your personal, location, and payment data in compliance with the Philippine Data Privacy Act of 2012." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css?v=20261026-privacy">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
+    <meta name="theme-color" content="#F5A623">
+
+    <style>
+        /* ── Dedicated Privacy Policy Page Styling ── */
+        .privacy-page {
+            background: var(--paper);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .privacy-header-nav {
+            background: #FFFFFF;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .privacy-header-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .privacy-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .privacy-brand-logo {
+            height: 38px;
+            width: auto;
+            display: block;
+        }
+
+        .privacy-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-privacy-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            background: var(--paper);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-privacy-back:hover {
+            background: #FFFFFF;
+            border-color: var(--ink-40);
+            transform: translateX(-2px);
+        }
+
+        .btn-privacy-print {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: var(--radius-full);
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--ink-60);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .btn-privacy-print:hover {
+            color: var(--ink);
+            background: #FFFFFF;
+            border-color: var(--ink-40);
+        }
+
+        /* ── Hero Banner ── */
+        .privacy-hero {
+            background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%);
+            padding: 48px 24px 40px;
+        }
+
+        .privacy-hero-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .privacy-pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            background: var(--amber-light);
+            border: 1px solid var(--amber-border);
+            color: var(--ink);
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 16px;
+        }
+
+        .privacy-title {
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            color: var(--ink);
+            margin-bottom: 14px;
+        }
+
+        .privacy-subtitle {
+            font-size: 1.05rem;
+            color: var(--ink-60);
+            max-width: 640px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+
+        .privacy-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.84rem;
+            color: var(--ink-40);
+        }
+
+        .privacy-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ── Highlights Grid ── */
+        .privacy-highlights-wrap {
+            max-width: 1180px;
+            margin: -24px auto 0;
+            padding: 0 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .privacy-highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .highlight-card {
+            background: #FFFFFF;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-m);
+            padding: 20px;
+            box-shadow: 0 10px 24px -10px rgba(18, 17, 14, 0.08);
+            display: flex;
+            gap: 14px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .highlight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px -10px rgba(18, 17, 14, 0.12);
+        }
+
+        .highlight-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--amber-light);
+            border: 1px solid var(--amber-border);
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .highlight-card h4 {
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .highlight-card p {
+            font-size: 0.8rem;
+            color: var(--ink-60);
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        /* ── Main Layout: Sidebar & Content ── */
+        .privacy-main-container {
+            max-width: 1180px;
+            margin: 40px auto 60px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 36px;
+            align-items: start;
+        }
+
+        /* Sticky Navigation Sidebar */
+        .privacy-sidebar {
+            background: #FFFFFF;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-l);
+            padding: 24px 20px;
+            position: sticky;
+            top: 80px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink-40);
+            margin-bottom: 12px;
+            padding-left: 8px;
+        }
+
+        .sidebar-nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: var(--ink-60);
+            text-decoration: none;
+            font-size: 0.86rem;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+
+        .sidebar-nav-link:hover {
+            color: var(--ink);
+            background: var(--paper);
+        }
+
+        .sidebar-nav-link.active {
+            color: var(--ink);
+            background: var(--amber-light);
+            font-weight: 700;
+        }
+
+        .sidebar-support-card {
+            margin-top: 24px;
+            padding: 16px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-m);
+        }
+
+        .sidebar-support-card h5 {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .sidebar-support-card p {
+            font-size: 0.78rem;
+            color: var(--ink-60);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-support-btn {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--amber-deep);
+            text-decoration: none;
+        }
+
+        .sidebar-support-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Content Area ── */
+        .privacy-content-card {
+            background: #FFFFFF;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-l);
+            padding: 40px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .policy-section {
+            padding-bottom: 36px;
+            margin-bottom: 36px;
+            border-bottom: 1px solid var(--line-subtle);
+            scroll-margin-top: 100px;
+        }
+
+        .policy-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .section-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--amber-light);
+            color: var(--ink);
+            font-size: 0.82rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .policy-section h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.02em;
+        }
+
+        .policy-section p {
+            font-size: 0.94rem;
+            color: var(--ink-80);
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .policy-section ul,
+        .policy-section ol {
+            margin: 0 0 16px 20px;
+            color: var(--ink-80);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        .policy-section li {
+            margin-bottom: 8px;
+        }
+
+        .policy-callout {
+            background: var(--paper);
+            border-left: 4px solid var(--amber);
+            border-radius: 0 var(--radius-s) var(--radius-s) 0;
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+
+        .policy-callout.alert-blue {
+            border-left-color: #0284C7;
+            background: #F0F9FF;
+        }
+
+        .policy-callout h4 {
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .policy-callout p {
+            font-size: 0.88rem;
+            color: var(--ink-80);
+            line-height: 1.55;
+            margin: 0;
+        }
+
+        .data-table-wrap {
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-m);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        .data-table th {
+            background: var(--paper);
+            padding: 12px 16px;
+            font-weight: 700;
+            color: var(--ink);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line-subtle);
+            color: var(--ink-80);
+            vertical-align: top;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            background: var(--ink-10);
+            color: var(--ink);
+        }
+
+        /* ── Responsive adjustments ── */
+        @media (max-width: 900px) {
+            .privacy-main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .privacy-sidebar {
+                display: none;
+            }
+
+            .privacy-content-card {
+                padding: 26px 20px;
+            }
+        }
+
+        @media print {
+
+            .privacy-header-nav,
+            .privacy-sidebar,
+            .btn-privacy-print,
+            .site-footer {
+                display: none !important;
+            }
+
+            .privacy-main-container {
+                display: block;
+                padding: 0;
+                margin: 0;
+            }
+
+            .privacy-content-card {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="privacy-page">
+
+    <!-- ── Sticky Nav Header ── -->
+    <header class="privacy-header-nav">
+        <div class="privacy-header-inner">
+            <a href="index.html" class="privacy-brand" aria-label="Instant Crew Home">
+                <img src="images/logo.png" alt="Instant Crew" class="privacy-brand-logo">
+            </a>
+            <div class="privacy-nav-actions">
+                <button type="button" class="btn-privacy-print" onclick="window.print()" title="Print this policy">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    <span>Print</span>
+                </button>
+                <a href="index.html" class="btn-privacy-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Home</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Hero Section ── -->
+    <section class="privacy-hero">
+        <div class="privacy-hero-inner">
+            <h1 class="privacy-title">Instant Crew Privacy Policy</h1>
+            <p class="privacy-subtitle">
+                We are committed to protecting your personal information, providing complete transparency on how we
+                dispatch shifts, verify attendance with geolocation, and disburse instant earnings.
+            </p>
+            <div class="privacy-meta-row">
+                <span class="privacy-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <strong>Effective:</strong> October 2026
+                </span>
+                <span>•</span>
+                <span class="privacy-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <strong>Jurisdiction:</strong> Republic Act No. 10173 (Data Privacy Act of 2012)
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Quick Highlights Row ── -->
+    <div class="privacy-highlights-wrap">
+        <div class="privacy-highlights-grid">
+            <div class="highlight-card">
+                <div class="highlight-icon-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4>No Data Selling</h4>
+                    <p>We never sell your personal information or work history to advertisers or third-party brokers.
+                    </p>
+                </div>
+            </div>
+
+            <div class="highlight-card">
+                <div class="highlight-icon-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2">
+                        <circle cx="12" cy="10" r="3"></circle>
+                        <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Shift-Only GPS</h4>
+                    <p>Geolocation is strictly activated for check-in verification and shift navigation during scheduled
+                        hours.</p>
+                </div>
+            </div>
+
+            <div class="highlight-card">
+                <div class="highlight-icon-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Safe GCash Payouts</h4>
+                    <p>Financial details & reference IDs are encrypted and used solely for instant earnings and
+                        deposits.</p>
+                </div>
+            </div>
+
+            <div class="highlight-card">
+                <div class="highlight-icon-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Full Data Rights</h4>
+                    <p>You can inspect, rectify, download, or request deletion of your Instant Crew account at any time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Policy Content Container ── -->
+    <main class="privacy-main-container">
+        <!-- Sticky Sidebar Navigation -->
+        <aside class="privacy-sidebar" aria-label="Table of Contents">
+            <div class="sidebar-title">Contents</div>
+            <ul class="sidebar-nav-list" id="sidebarNavList">
+                <li><a href="#section-1" class="sidebar-nav-link active">1. About Instant Crew</a></li>
+                <li><a href="#section-2" class="sidebar-nav-link">2. Information We Collect</a></li>
+                <li><a href="#section-3" class="sidebar-nav-link">3. How We Use Data</a></li>
+                <li><a href="#section-4" class="sidebar-nav-link">4. Location & GPS Tracking</a></li>
+                <li><a href="#section-5" class="sidebar-nav-link">5. Payments & GCash Security</a></li>
+                <li><a href="#section-6" class="sidebar-nav-link">6. Data Sharing Between Users</a></li>
+                <li><a href="#section-7" class="sidebar-nav-link">7. Storage & Security</a></li>
+                <li><a href="#section-8" class="sidebar-nav-link">8. Your Rights (RA 10173)</a></li>
+                <li><a href="#section-9" class="sidebar-nav-link">9. Cookies & Sessions</a></li>
+                <li><a href="#section-10" class="sidebar-nav-link">10. Data Retention & Deletion</a></li>
+                <li><a href="#section-11" class="sidebar-nav-link">11. Contact & DPO</a></li>
+            </ul>
+
+            <div class="sidebar-support-card">
+                <h5>Need privacy help?</h5>
+                <p>Have questions about your records or wish to submit a data erasure request?</p>
+                <a href="mailto:privacy@instantcrew.ph" class="sidebar-support-btn">Contact Data Officer →</a>
+            </div>
+        </aside>
+
+        <!-- Structured Policy Sections -->
+        <article class="privacy-content-card">
+
+            <!-- Section 1 -->
+            <section class="policy-section" id="section-1">
+                <div class="section-header">
+                    <span class="section-num">1</span>
+                    <h2>About Instant Crew & This Policy</h2>
+                </div>
+                <p>
+                    Instant Crew ("we", "us", or "our") operates an on-demand workforce matching platform that enables
+                    businesses ("Employers") to quickly fill urgent shifts with verified, flexible talent
+                    ("Applicants" or "Crew Members").
+                </p>
+                <p>
+                    This Privacy Policy governs our web platform, Progressive Web Application (PWA), and all associated
+                    dispatch, verification, and payout services. It explains what information we collect from you, how
+                    it
+                    is processed, with whom it may be shared, and your legal rights under the
+                    <strong>Republic Act No. 10173</strong>, also known as the <em>Philippine Data Privacy Act of 2012
+                        (DPA)</em>.
+                </p>
+                <div class="policy-callout">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        Consent Notice
+                    </h4>
+                    <p>
+                        By creating an account, browsing shifts, posting requirements, or checking in to a scheduled
+                        shift, you acknowledge that you have read and consented to the practices described in this
+                        policy.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 2 -->
+            <section class="policy-section" id="section-2">
+                <div class="section-header">
+                    <span class="section-num">2</span>
+                    <h2>Information We Collect</h2>
+                </div>
+                <p>
+                    To provide dependable dispatch and shift matching, we collect information depending on whether you
+                    use Instant Crew as an Applicant, an Employer, or a visitor.
+                </p>
+
+                <div class="data-table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Specific Data Fields</th>
+                                <th>Applicable Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Profile & Identity</strong></td>
+                                <td>Full name, contact email, mobile number, government-issued identification (for ID
+                                    verification), selfie photo for check-in verification.</td>
+                                <td><span class="badge-tag">Applicants & Employers</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Worker Qualifications</strong></td>
+                                <td>Skill badges (kitchen, barista, warehouse, event staffing), past shift history,
+                                    attendance records, ratings, and performance feedback.</td>
+                                <td><span class="badge-tag">Applicants</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Business Information</strong></td>
+                                <td>Company or brand trade name, registered business address, store/branch locations,
+                                    shift supervisor contact details, BIR / business permits.</td>
+                                <td><span class="badge-tag">Employers</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Shift Geolocation</strong></td>
+                                <td>Real-time GPS latitude and longitude collected during active shift check-ins and
+                                    job-site geofencing.</td>
+                                <td><span class="badge-tag">Applicants</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Financial & Payout Data</strong></td>
+                                <td>GCash account name, registered mobile number, GCash reference numbers, shift payment
+                                    amounts, platform commission records, and invoices.</td>
+                                <td><span class="badge-tag">Both</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Device & Log Data</strong></td>
+                                <td>IP address, browser type, device brand/OS, PWA push subscription tokens, time zones,
+                                    and application crash diagnostics.</td>
+                                <td><span class="badge-tag">All Users</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Section 3 -->
+            <section class="policy-section" id="section-3">
+                <div class="section-header">
+                    <span class="section-num">3</span>
+                    <h2>How We Use Your Information</h2>
+                </div>
+                <p>We process your data strictly for legitimate operational purposes:</p>
+                <ul>
+                    <li><strong>Real-Time Crew Matching:</strong> Calculating distance between available workers and
+                        urgent shift venues to ensure speedy arrival.</li>
+                    <li><strong>Attendance & Geofence Verification:</strong> Validating that confirmed crew members have
+                        physically arrived at the designated venue on time.</li>
+                    <li><strong>Instant Earnings & Payments:</strong> Initiating payouts to crew members upon shift
+                        completion and processing employer billing via GCash.</li>
+                    <li><strong>Trust & Safety:</strong> Verifying identities, detecting fraudulent accounts or
+                        duplicate registrations, preventing shift no-shows, and maintaining community standards.</li>
+                    <li><strong>Dispute Resolution:</strong> Using shift check-in logs and employer confirmations to
+                        quickly resolve payment or attendance disagreements.</li>
+                    <li><strong>Essential Communications:</strong> Sending urgent shift notifications, check-in
+                        reminders, schedule updates, and security verifications.</li>
+                </ul>
+            </section>
+
+            <!-- Section 4 -->
+            <section class="policy-section" id="section-4">
+                <div class="section-header">
+                    <span class="section-num">4</span>
+                    <h2>Location & GPS Tracking Transparency</h2>
+                </div>
+                <p>
+                    Because Instant Crew specializes in rapid staffing, location data is crucial for workplace safety,
+                    attendance validation, and accurate dispatch. We prioritize your privacy with strict controls:
+                </p>
+                <div class="policy-callout alert-blue">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        Our Shift-Only Location Commitment
+                    </h4>
+                    <p>
+                        <strong>We never track your location 24/7.</strong> Geolocation is requested only when:
+                        (1) you search for nearby shifts, (2) you are en-route to an accepted shift, or
+                        (3) you tap "Check In" at the venue within the employer's geofenced radius.
+                    </p>
+                </div>
+                <p>
+                    Once a shift has been checked out or cancelled, active GPS monitoring ceases immediately. You can
+                    revoke device location permissions at any time through your browser or device operating system
+                    settings, although doing so may prevent you from checking in to scheduled shifts.
+                </p>
+            </section>
+
+            <!-- Section 5 -->
+            <section class="policy-section" id="section-5">
+                <div class="section-header">
+                    <span class="section-num">5</span>
+                    <h2>Payments & GCash Data Processing</h2>
+                </div>
+                <p>
+                    Instant Crew integrates with <strong>GCash</strong> and authorized payment gateways in the
+                    Philippines.
+                </p>
+                <ul>
+                    <li><strong>What we store:</strong> We record GCash account phone numbers and official transaction
+                        reference IDs to link payments with corresponding shifts and maintain historical receipts.</li>
+                    <li><strong>What we NEVER store:</strong> We never have access to, collect, or store your GCash
+                        MPIN, OTP (One-Time Password), biometric credentials, or bank card CVVs.</li>
+                    <li><strong>Disbursement Security:</strong> Payout disbursements are triggered automatically through
+                        verified API handshakes or verified administrator audits to ensure workers receive prompt
+                        compensation.</li>
+                </ul>
+            </section>
+
+            <!-- Section 6 -->
+            <section class="policy-section" id="section-6">
+                <div class="section-header">
+                    <span class="section-num">6</span>
+                    <h2>Data Sharing Between Users & Third Parties</h2>
+                </div>
+                <p>
+                    To fulfill shifts, limited necessary data is shared between matched parties:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Shared with Employers:</strong> When an applicant is assigned or checks in, the employer
+                        can see their first name, profile picture, skill qualifications, arrival status, and rating.
+                        Direct private personal contact information is only shared when necessary for on-site shift
+                        coordination.
+                    </li>
+                    <li>
+                        <strong>Shared with Applicants:</strong> When browsing or working shifts, applicants see the
+                        business name, job site address, map directions, supervisor contact number, attire guidelines,
+                        and pay rate.
+                    </li>
+                    <li>
+                        <strong>Third-Party Service Providers:</strong> We utilize secure cloud infrastructure (hosting,
+                        real-time database sync, map rendering services). All vendors are bound by strict
+                        confidentiality
+                        agreements matching our privacy obligations.
+                    </li>
+                    <li>
+                        <strong>Legal Compliance:</strong> We may disclose data if legally required by valid court
+                        subpoenas,
+                        the National Privacy Commission (NPC), or law enforcement agencies.
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Section 7 -->
+            <section class="policy-section" id="section-7">
+                <div class="section-header">
+                    <span class="section-num">7</span>
+                    <h2>Data Security & Storage Safeguards</h2>
+                </div>
+                <p>
+                    We implement industry-standard physical, organizational, and technical safeguards to shield your
+                    data
+                    from unauthorized access, loss, or alteration:
+                </p>
+                <ul>
+                    <li><strong>Transport Layer Security (TLS/HTTPS):</strong> All communications between your device
+                        and our servers are encrypted in transit using 256-bit encryption.</li>
+                    <li><strong>Authentication Protection:</strong> Sessions are managed via secure, time-limited
+                        cryptographic tokens.</li>
+                    <li><strong>Access Restrictions:</strong> Customer records can only be accessed by authorized
+                        Instant Crew operations personnel under strict role-based permissions and audit logs.</li>
+                </ul>
+            </section>
+
+            <!-- Section 8 -->
+            <section class="policy-section" id="section-8">
+                <div class="section-header">
+                    <span class="section-num">8</span>
+                    <h2>Your Rights Under the Philippine DPA (RA 10173)</h2>
+                </div>
+                <p>
+                    Under the Data Privacy Act of 2012, all registered users are recognized as data subjects and possess
+                    the following enforceable rights:
+                </p>
+                <ul>
+                    <li><strong>Right to be Informed:</strong> You have the right to know how your personal data is
+                        collected, handled, and stored.</li>
+                    <li><strong>Right to Access:</strong> You can request a summary or copy of your personal data held
+                        in our systems.</li>
+                    <li><strong>Right to Rectification:</strong> You may correct or update any inaccurate or outdated
+                        information in your profile.</li>
+                    <li><strong>Right to Erasure or Blocking:</strong> You have the right to suspend, withdraw, or order
+                        the removal of your personal data if it is no longer necessary or has been unlawfully obtained.
+                    </li>
+                    <li><strong>Right to Damages:</strong> You may be indemnified for any damages sustained due to
+                        inaccurate, incomplete, or unlawfully obtained personal data.</li>
+                    <li><strong>Right to Data Portability:</strong> You may obtain an electronic copy of your
+                        information in an accessible format.</li>
+                </ul>
+            </section>
+
+            <!-- Section 9 -->
+            <section class="policy-section" id="section-9">
+                <div class="section-header">
+                    <span class="section-num">9</span>
+                    <h2>Cookies & Local Session Storage</h2>
+                </div>
+                <p>
+                    Instant Crew uses modern browser storage mechanisms (Local Storage and Session Storage) rather than
+                    invasive tracking cookies. These store:
+                </p>
+                <ul>
+                    <li><code>ic_worker_session</code>: Keeps crew members signed in to view shift invitations without
+                        re-entering credentials.</li>
+                    <li><code>ic_employer_session</code>: Maintains employer portal authorization for shift posting.
+                    </li>
+                    <li>Application state preferences, such as selected shift filters and active dashboard tabs.</li>
+                </ul>
+                <p>
+                    We do not use cross-site tracking pixels or third-party behavioral advertising cookies.
+                </p>
+            </section>
+
+            <!-- Section 10 -->
+            <section class="policy-section" id="section-10">
+                <div class="section-header">
+                    <span class="section-num">10</span>
+                    <h2>Data Retention & Account Erasure</h2>
+                </div>
+                <p>
+                    We retain personal records for as long as your account remains active or as needed to provide you
+                    with
+                    staffing services. When an account is closed:
+                </p>
+                <ul>
+                    <li>Profile details and credentials are deleted or permanently anonymized within 30 days.</li>
+                    <li>Shift financial records, invoices, and GCash reference numbers may be retained for up to 5 years
+                        solely to comply with statutory taxation, accounting, and legal audit requirements in the
+                        Philippines.</li>
+                </ul>
+            </section>
+
+            <!-- Section 11 -->
+            <section class="policy-section" id="section-11">
+                <div class="section-header">
+                    <span class="section-num">11</span>
+                    <h2>Contact Our Data Protection Officer</h2>
+                </div>
+                <p>
+                    If you have questions, inquiries, concerns, or complaints regarding this Privacy Policy or how your
+                    personal data is managed, please contact our designated Data Protection Officer:
+                </p>
+                <div class="policy-callout">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                            </path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        Instant Crew Privacy Office
+                    </h4>
+                    <p style="margin-bottom: 6px;"><strong>Email:</strong> <a href="mailto:privacy@instantcrew.ph"
+                            style="color:var(--amber-deep);">privacy@instantcrew.ph</a> / <a
+                            href="mailto:support@instantcrew.com"
+                            style="color:var(--amber-deep);">support@instantcrew.com</a></p>
+                    <p style="margin-bottom: 6px;"><strong>Facebook:</strong> <a
+                            href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank"
+                            rel="noopener noreferrer" style="color:var(--amber-deep); font-weight:700;">Instant Crew on
+                            Facebook</a></p>
+                    <p style="margin-bottom: 6px;"><strong>Compliance:</strong> Data Protection Office, Instant Crew
+                        Operations</p>
+                    <p style="margin-bottom: 0;"><strong>Office Hours:</strong> Monday – Friday, 8:00 AM – 6:00 PM (PHT)
+                    </p>
+                </div>
+                <p>
+                    You also have the right to file a complaint directly with the
+                    <strong>National Privacy Commission (NPC)</strong> of the Philippines via
+                    <a href="https://privacy.gov.ph" target="_blank" rel="noopener"
+                        style="color:var(--amber-deep);">privacy.gov.ph</a>
+                    if you believe your privacy rights have been violated.
+                </p>
+            </section>
+
+        </article>
+    </main>
+
+    <!-- ── Site Footer ── -->
+    <footer class="site-footer">
+        <div class="wrap">
+            <span>© 2026 Instant Crew. All rights reserved.</span>
+            <div class="footer-links">
+                <a href="privacy.html" style="color: #FFFFFF; font-weight:700;">Privacy Policy</a>
+                <a href="terms.html">Terms</a>
+                <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer">Facebook</a>
+                <a href="index.html">Home</a>
+                <a href="login.html">Log In</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ── Smooth Scrolling & Active Sidebar Observer ── -->
+    <script>
+        (function () {
+            'use strict';
+            const links = document.querySelectorAll('.sidebar-nav-link');
+            const sections = document.querySelectorAll('.policy-section');
+
+            function updateActiveLink() {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 140;
+                    if (window.pageYOffset >= sectionTop) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                links.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveLink, { passive: true });
+        })();
+    </script>
+</body>
+
+</html>

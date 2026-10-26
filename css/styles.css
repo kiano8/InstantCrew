@@ -1735,3 +1735,285 @@ button {
         font-size: 0.84rem;
     }
 }
+
+/* ---------- Privacy & Terms Policy Modals ---------- */
+.privacy-modal-overlay,
+.terms-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s var(--ease-out), visibility 0.25s;
+}
+
+.privacy-modal-overlay.open,
+.terms-modal-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.privacy-modal-backdrop,
+.terms-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 17, 14, 0.62);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.privacy-modal-dialog,
+.terms-modal-dialog {
+    position: relative;
+    z-index: 2;
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    box-shadow: 0 25px 60px -15px rgba(18, 17, 14, 0.3), 0 0 0 1px rgba(18, 17, 14, 0.05);
+    width: 100%;
+    max-width: 680px;
+    max-height: calc(90vh - 40px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95) translateY(14px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s;
+}
+
+.privacy-modal-overlay.open .privacy-modal-dialog,
+.terms-modal-overlay.open .terms-modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+.privacy-modal-header,
+.terms-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--line);
+    background: #FFFFFF;
+    flex-shrink: 0;
+}
+
+.privacy-modal-header-left,
+.terms-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.privacy-icon-box,
+.terms-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--amber-light);
+    border: 1px solid var(--amber-border);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.privacy-modal-title,
+.terms-modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.25;
+    margin: 0;
+}
+
+.privacy-modal-subtitle,
+.terms-modal-subtitle {
+    font-size: 0.78rem;
+    color: var(--ink-40);
+    margin: 2px 0 0;
+}
+
+.privacy-modal-close,
+.terms-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-40);
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.privacy-modal-close:hover,
+.terms-modal-close:hover {
+    background: var(--ink-10);
+    color: var(--ink);
+    transform: rotate(90deg);
+}
+
+.privacy-modal-body,
+.terms-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    font-size: 0.88rem;
+    color: var(--ink-80);
+    line-height: 1.6;
+}
+
+.privacy-modal-body::-webkit-scrollbar,
+.terms-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.privacy-modal-body::-webkit-scrollbar-track,
+.terms-modal-body::-webkit-scrollbar-track {
+    background: var(--paper);
+}
+
+.privacy-modal-body::-webkit-scrollbar-thumb,
+.terms-modal-body::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 3px;
+}
+
+.privacy-modal-body::-webkit-scrollbar-thumb:hover,
+.terms-modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-40);
+}
+
+.privacy-modal-grid,
+.terms-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.privacy-modal-card,
+.terms-modal-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.privacy-modal-card h4,
+.terms-modal-card h4 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.privacy-modal-card p,
+.terms-modal-card p {
+    font-size: 0.76rem;
+    color: var(--ink-60);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.privacy-modal-section,
+.terms-modal-section {
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line-subtle);
+}
+
+.privacy-modal-section:last-child,
+.terms-modal-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.privacy-modal-section h3,
+.terms-modal-section h3 {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.privacy-modal-section p,
+.terms-modal-section p {
+    margin-bottom: 10px;
+    color: var(--ink-80);
+    font-size: 0.86rem;
+}
+
+.privacy-modal-section ul,
+.terms-modal-section ul {
+    margin: 0 0 10px 18px;
+    font-size: 0.84rem;
+    color: var(--ink-80);
+}
+
+.privacy-modal-section li,
+.terms-modal-section li {
+    margin-bottom: 5px;
+}
+
+.privacy-modal-footer,
+.terms-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    flex-shrink: 0;
+}
+
+.privacy-full-page-link,
+.terms-full-page-link {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--amber-deep);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.privacy-full-page-link:hover,
+.terms-full-page-link:hover {
+    text-decoration: underline;
+}
+
+.btn-privacy-confirm,
+.btn-terms-confirm {
+    padding: 9px 22px;
+    border-radius: var(--radius-full);
+    background: var(--amber);
+    color: var(--ink);
+    font-size: 0.88rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.35);
+    transition: all 0.18s ease;
+}
+
+.btn-privacy-confirm:hover,
+.btn-terms-confirm:hover {
+    background: var(--amber-deep);
+    transform: translateY(-1px);
+}

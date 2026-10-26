@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Terms of Service - Instant Crew</title>
+    <meta name="description"
+        content="Read the simple Terms of Service for Instant Crew. Transparent, fair rules and responsibilities for employers and crew members." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css?v=20261026-terms">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
+    <meta name="theme-color" content="#F5A623">
+
+    <style>
+        /* ── Dedicated Terms Page Styling ── */
+        .terms-page {
+            background: var(--paper);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terms-header-nav {
+            background: #FFFFFF;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .terms-header-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .terms-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .terms-brand-logo {
+            height: 38px;
+            width: auto;
+            display: block;
+        }
+
+        .terms-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-terms-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            background: var(--paper);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-terms-back:hover {
+            background: #FFFFFF;
+            border-color: var(--ink-40);
+            transform: translateX(-2px);
+        }
+
+        .btn-terms-print {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: var(--radius-full);
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--ink-60);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .btn-terms-print:hover {
+            color: var(--ink);
+            background: #FFFFFF;
+            border-color: var(--ink-40);
+        }
+
+        /* ── Hero Banner ── */
+        .terms-hero {
+            background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%);
+            padding: 48px 24px 40px;
+        }
+
+        .terms-hero-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .terms-pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            background: var(--amber-light);
+            border: 1px solid var(--amber-border);
+            color: var(--ink);
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 16px;
+        }
+
+        .terms-title {
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            color: var(--ink);
+            margin-bottom: 14px;
+        }
+
+        .terms-subtitle {
+            font-size: 1.05rem;
+            color: var(--ink-60);
+            max-width: 640px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+
+        .terms-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.84rem;
+            color: var(--ink-40);
+        }
+
+        .terms-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ── Highlights Grid ── */
+        .terms-highlights-wrap {
+            max-width: 1180px;
+            margin: -24px auto 0;
+            padding: 0 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .terms-highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .terms-highlight-card {
+            background: #FFFFFF;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-m);
+            padding: 20px;
+            box-shadow: 0 10px 24px -10px rgba(18, 17, 14, 0.08);
+            display: flex;
+            gap: 14px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .terms-highlight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px -10px rgba(18, 17, 14, 0.12);
+        }
+
+        .terms-highlight-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--amber-light);
+            border: 1px solid var(--amber-border);
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .terms-highlight-card h4 {
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .terms-highlight-card p {
+            font-size: 0.8rem;
+            color: var(--ink-60);
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        /* ── Main Layout: Sidebar & Content ── */
+        .terms-main-container {
+            max-width: 1180px;
+            margin: 40px auto 60px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 36px;
+            align-items: start;
+        }
+
+        /* Sticky Navigation Sidebar */
+        .terms-sidebar {
+            background: #FFFFFF;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-l);
+            padding: 24px 20px;
+            position: sticky;
+            top: 80px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .terms-sidebar-title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink-40);
+            margin-bottom: 12px;
+            padding-left: 8px;
+        }
+
+        .terms-sidebar-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .terms-sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: var(--ink-60);
+            text-decoration: none;
+            font-size: 0.86rem;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+
+        .terms-sidebar-link:hover {
+            color: var(--ink);
+            background: var(--paper);
+        }
+
+        .terms-sidebar-link.active {
+            color: var(--ink);
+            background: var(--amber-light);
+            font-weight: 700;
+        }
+
+        .terms-sidebar-card {
+            margin-top: 24px;
+            padding: 16px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-m);
+        }
+
+        .terms-sidebar-card h5 {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .terms-sidebar-card p {
+            font-size: 0.78rem;
+            color: var(--ink-60);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .terms-sidebar-btn {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--amber-deep);
+            text-decoration: none;
+        }
+
+        .terms-sidebar-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Content Area ── */
+        .terms-content-card {
+            background: #FFFFFF;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-l);
+            padding: 40px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .terms-section {
+            padding-bottom: 36px;
+            margin-bottom: 36px;
+            border-bottom: 1px solid var(--line-subtle);
+            scroll-margin-top: 100px;
+        }
+
+        .terms-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .terms-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .terms-section-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--amber-light);
+            color: var(--ink);
+            font-size: 0.82rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .terms-section h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.02em;
+        }
+
+        .terms-section p {
+            font-size: 0.94rem;
+            color: var(--ink-80);
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .terms-section ul,
+        .terms-section ol {
+            margin: 0 0 16px 20px;
+            color: var(--ink-80);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        .terms-section li {
+            margin-bottom: 8px;
+        }
+
+        .terms-callout {
+            background: var(--paper);
+            border-left: 4px solid var(--amber);
+            border-radius: 0 var(--radius-s) var(--radius-s) 0;
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+
+        .terms-callout.alert-green {
+            border-left-color: #10B981;
+            background: #F0FDF4;
+        }
+
+        .terms-callout.alert-orange {
+            border-left-color: var(--amber);
+            background: var(--amber-light);
+        }
+
+        .terms-callout h4 {
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terms-callout p {
+            font-size: 0.88rem;
+            color: var(--ink-80);
+            line-height: 1.55;
+            margin: 0;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .terms-main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .terms-sidebar {
+                display: none;
+            }
+
+            .terms-content-card {
+                padding: 26px 20px;
+            }
+        }
+
+        @media print {
+            .terms-header-nav,
+            .terms-sidebar,
+            .btn-terms-print,
+            .site-footer {
+                display: none !important;
+            }
+
+            .terms-main-container {
+                display: block;
+                padding: 0;
+                margin: 0;
+            }
+
+            .terms-content-card {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="terms-page">
+
+    <!-- ── Sticky Nav Header ── -->
+    <header class="terms-header-nav">
+        <div class="terms-header-inner">
+            <a href="index.html" class="terms-brand" aria-label="Instant Crew Home">
+                <img src="images/logo.png" alt="Instant Crew" class="terms-brand-logo">
+            </a>
+            <div class="terms-nav-actions">
+                <button type="button" class="btn-terms-print" onclick="window.print()" title="Print terms">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    <span>Print</span>
+                </button>
+                <a href="index.html" class="btn-terms-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Home</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Hero Section ── -->
+    <section class="terms-hero">
+        <div class="terms-hero-inner">
+            <h1 class="terms-title">Terms of Service</h1>
+            <p class="terms-subtitle">
+                Clear, simple, and transparent rules for businesses posting shifts and crew members working flexible hours.
+            </p>
+            <div class="terms-meta-row">
+                <span class="terms-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <strong>Last Updated:</strong> October 2026
+                </span>
+                <span>•</span>
+                <span class="terms-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <strong>Fair Work & Instant Dispatch</strong>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Quick Highlights Row ── -->
+    <div class="terms-highlights-wrap">
+        <div class="terms-highlights-grid">
+            <div class="terms-highlight-card">
+                <div class="terms-highlight-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Fast GCash Payouts</h4>
+                    <p>Crew members receive prompt payments for completed shifts directly via GCash.</p>
+                </div>
+            </div>
+
+            <div class="terms-highlight-card">
+                <div class="terms-highlight-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Punctuality & Check-In</h4>
+                    <p>Workers arrive on time and verify attendance via GPS geofencing at the workplace.</p>
+                </div>
+            </div>
+
+            <div class="terms-highlight-card">
+                <div class="terms-highlight-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Safe Working Conditions</h4>
+                    <p>Employers provide a safe, harassment-free workplace with clear instructions.</p>
+                </div>
+            </div>
+
+            <div class="terms-highlight-card">
+                <div class="terms-highlight-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <h4>Fair Cancellation Rules</h4>
+                    <p>Transparent notice periods protect both businesses and workers from no-shows.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Terms Content ── -->
+    <main class="terms-main-container">
+        <!-- Sticky Sidebar Navigation -->
+        <aside class="terms-sidebar" aria-label="Table of Contents">
+            <div class="terms-sidebar-title">Contents</div>
+            <ul class="terms-sidebar-list" id="termsSidebarList">
+                <li><a href="#term-1" class="terms-sidebar-link active">1. Overview</a></li>
+                <li><a href="#term-2" class="terms-sidebar-link">2. Platform Role</a></li>
+                <li><a href="#term-3" class="terms-sidebar-link">3. Crew Commitments</a></li>
+                <li><a href="#term-4" class="terms-sidebar-link">4. Employer Responsibilities</a></li>
+                <li><a href="#term-5" class="terms-sidebar-link">5. Payments & GCash Payouts</a></li>
+                <li><a href="#term-6" class="terms-sidebar-link">6. Attendance & GPS Check-In</a></li>
+                <li><a href="#term-7" class="terms-sidebar-link">7. Cancellations & No-Shows</a></li>
+                <li><a href="#term-8" class="terms-sidebar-link">8. Workplace Safety & Conduct</a></li>
+                <li><a href="#term-9" class="terms-sidebar-link">9. Account Status & Disputes</a></li>
+                <li><a href="#term-10" class="terms-sidebar-link">10. Contact Us</a></li>
+            </ul>
+
+            <div class="terms-sidebar-card">
+                <h5>Have a question?</h5>
+                <p>Need clarification on a shift policy, cancellation, or payout?</p>
+                <a href="mailto:support@instantcrew.com" class="terms-sidebar-btn">Email Support →</a>
+            </div>
+        </aside>
+
+        <!-- Terms Body -->
+        <article class="terms-content-card">
+
+            <!-- Section 1 -->
+            <section class="terms-section" id="term-1">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">1</span>
+                    <h2>Overview & Agreement</h2>
+                </div>
+                <p>
+                    Welcome to <strong>Instant Crew</strong>. These Terms of Service ("Terms") constitute a simple, binding
+                    agreement between you (as an "Employer" or "Applicant / Crew Member") and Instant Crew.
+                </p>
+                <p>
+                    By registering, logging in, posting shifts, applying for work, or checking in to a scheduled shift,
+                    you agree to these Terms. If you do not agree with any part, please refrain from using our services.
+                </p>
+            </section>
+
+            <!-- Section 2 -->
+            <section class="terms-section" id="term-2">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">2</span>
+                    <h2>What Instant Crew Does</h2>
+                </div>
+                <p>
+                    Instant Crew is an on-demand workforce marketplace. We provide the technology that connects businesses
+                    needing short-notice, hourly staff (kitchen staff, event crew, baristas, logistics, warehouse helpers)
+                    with available, qualified workers.
+                </p>
+                <div class="terms-callout alert-green">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Independent Crew Status
+                    </h4>
+                    <p>
+                        Crew members choose when and where they work on a shift-by-shift basis. Using Instant Crew does
+                        not create an employer-employee relationship with Instant Crew itself.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 3 -->
+            <section class="terms-section" id="term-3">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">3</span>
+                    <h2>Crew Member Commitments</h2>
+                </div>
+                <p>When you accept a shift on Instant Crew, you agree to:</p>
+                <ul>
+                    <li><strong>Punctuality:</strong> Arrive at the job venue at least 10–15 minutes before the shift start time.</li>
+                    <li><strong>Check-In Verification:</strong> Use the Instant Crew app to tap "Check In" once you are physically present at the site.</li>
+                    <li><strong>Dress Code & Presentation:</strong> Follow required workplace attire (e.g. black pants, non-slip shoes, hairnet) as specified by the employer.</li>
+                    <li><strong>Professionalism:</strong> Perform duties honestly and diligently, following the supervisor's instructions.</li>
+                    <li><strong>Honesty:</strong> Never falsely manipulate GPS coordinates or claim unworked hours.</li>
+                </ul>
+            </section>
+
+            <!-- Section 4 -->
+            <section class="terms-section" id="term-4">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">4</span>
+                    <h2>Employer Responsibilities</h2>
+                </div>
+                <p>When posting shifts and hiring crew, employers agree to:</p>
+                <ul>
+                    <li><strong>Accurate Details:</strong> Provide exact venue address, working hours, supervisor contact, and clear role expectations.</li>
+                    <li><strong>Safe Environment:</strong> Provide a hazard-free workplace compliant with Philippine labor safety standards.</li>
+                    <li><strong>Respect & Non-Discrimination:</strong> Treat all crew members fairly and professionally.</li>
+                    <li><strong>Timely Confirmation:</strong> Sign off on completed shift hours promptly so worker payouts can be disbursed without delay.</li>
+                    <li><strong>Pay Rates:</strong> Pay the hourly rate advertised in the shift posting. No unauthorized deductions are allowed.</li>
+                </ul>
+            </section>
+
+            <!-- Section 5 -->
+            <section class="terms-section" id="term-5">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">5</span>
+                    <h2>Rates, Payments & GCash Payouts</h2>
+                </div>
+                <p>
+                    We prioritize fast, transparent earnings:
+                </p>
+                <ul>
+                    <li><strong>Hourly Pay:</strong> Shift compensation is calculated based on verified check-in and check-out times.</li>
+                    <li><strong>GCash Disbursements:</strong> Payouts are transferred directly to the crew member's registered GCash account after shift sign-off.</li>
+                    <li><strong>Fees:</strong> Any service fees or payment processing costs are clearly shown before confirmation.</li>
+                </ul>
+            </section>
+
+            <!-- Section 6 -->
+            <section class="terms-section" id="term-6">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">6</span>
+                    <h2>Attendance & GPS Geofencing</h2>
+                </div>
+                <p>
+                    Instant Crew uses real-time GPS verification during active shift hours to confirm attendance:
+                </p>
+                <div class="terms-callout alert-orange">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="10" r="3"></circle>
+                            <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path>
+                        </svg>
+                        Venue Geofence
+                    </h4>
+                    <p>
+                        Your check-in is verified when your device is within the employer's venue radius. GPS is only active
+                        during shift check-ins and scheduled hours.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Section 7 -->
+            <section class="terms-section" id="term-7">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">7</span>
+                    <h2>Cancellations & No-Shows</h2>
+                </div>
+                <p>
+                    Because businesses rely on urgent staffing, reliability is essential:
+                </p>
+                <ul>
+                    <li><strong>Worker Cancellations:</strong> If an emergency arises, workers must cancel through the app as early as possible so a replacement can be found.</li>
+                    <li><strong>No-Shows:</strong> Failing to report to an accepted shift without notice hurts community trust and may lead to temporary or permanent account deactivation.</li>
+                    <li><strong>Employer Cancellations:</strong> If an employer cancels a shift shortly before the start time, the assigned worker may be eligible for a cancellation stipend.</li>
+                </ul>
+            </section>
+
+            <!-- Section 8 -->
+            <section class="terms-section" id="term-8">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">8</span>
+                    <h2>Workplace Safety & Conduct</h2>
+                </div>
+                <p>
+                    Instant Crew has a zero-tolerance policy for:
+                </p>
+                <ul>
+                    <li>Harassment, bullying, verbal abuse, or physical intimidation.</li>
+                    <li>Theft, property damage, or unauthorized use of employer equipment.</li>
+                    <li>Working while under the influence of alcohol or prohibited substances.</li>
+                </ul>
+            </section>
+
+            <!-- Section 9 -->
+            <section class="terms-section" id="term-9">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">9</span>
+                    <h2>Account Status & Disputes</h2>
+                </div>
+                <p>
+                    If a dispute arises regarding attendance, shift hours, or payment, our support team reviews GPS timestamps,
+                    check-in records, and employer confirmations to ensure fair resolution.
+                </p>
+                <p>
+                    Instant Crew reserves the right to suspend or close accounts that violate these Terms or engage in fraudulent
+                    behavior.
+                </p>
+            </section>
+
+            <!-- Section 10 -->
+            <section class="terms-section" id="term-10">
+                <div class="terms-section-header">
+                    <span class="terms-section-num">10</span>
+                    <h2>Contact & Support</h2>
+                </div>
+                <p>
+                    If you have questions about these Terms, need shift support, or want to report an issue:
+                </p>
+                <div class="terms-callout">
+                    <h4>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        Instant Crew Support Team
+                    </h4>
+                    <p style="margin-bottom: 6px;"><strong>Email:</strong> <a href="mailto:support@instantcrew.com" style="color:var(--amber-deep);">support@instantcrew.com</a></p>
+                    <p style="margin-bottom: 6px;"><strong>Facebook:</strong> <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer" style="color:var(--amber-deep); font-weight:700;">Instant Crew on Facebook</a></p>
+                    <p style="margin-bottom: 0;"><strong>In-App:</strong> Tap "Support" or "Report an Issue" in your dashboard.</p>
+                </div>
+            </section>
+
+        </article>
+    </main>
+
+    <!-- ── Site Footer ── -->
+    <footer class="site-footer">
+        <div class="wrap">
+            <span>© 2026 Instant Crew. All rights reserved.</span>
+            <div class="footer-links">
+                <a href="terms.html" style="color: #FFFFFF; font-weight:700;">Terms</a>
+                <a href="privacy.html">Privacy</a>
+                <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer">Facebook</a>
+                <a href="index.html">Home</a>
+                <a href="login.html">Log In</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ── Smooth Scrolling & Active Sidebar Observer ── -->
+    <script>
+        (function () {
+            'use strict';
+            const links = document.querySelectorAll('.terms-sidebar-link');
+            const sections = document.querySelectorAll('.terms-section');
+
+            function updateActiveLink() {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 140;
+                    if (window.pageYOffset >= sectionTop) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                links.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveLink, { passive: true });
+        })();
+    </script>
+</body>
+
+</html>
