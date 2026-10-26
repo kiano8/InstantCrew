@@ -34,8 +34,32 @@
                 } else {
                     sessionStorage.removeItem('ic_worker_session');
                     sessionStorage.removeItem('ic_employer_session');
+                    checkServerSession();
                 }
             } catch (e) { }
+
+            // A new tab (e.g. Privacy/Terms opened from a portal footer) starts with
+            // empty sessionStorage, so ask the server cookie before showing the
+            // landing page to someone who is still logged in.
+            function checkServerSession() {
+                var PORTALS = { employer: 'employer.html', admin: 'admin.html', applicant: 'applicant.html' };
+                var root = document.documentElement;
+                root.style.visibility = 'hidden';
+                function reveal() { root.style.visibility = ''; }
+                var fallback = setTimeout(reveal, 1500);
+                fetch('/api/auth/me', { credentials: 'same-origin' })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (data) {
+                        var role = data && data.user && data.user.role;
+                        if (PORTALS[role]) {
+                            window.location.replace(PORTALS[role]);
+                            return;
+                        }
+                        clearTimeout(fallback);
+                        reveal();
+                    })
+                    .catch(function () { clearTimeout(fallback); reveal(); });
+            }
         })();
     </script>
 </head>

@@ -2,18 +2,22 @@
    legal-nav.js — "Back to Home" routing for privacy.html / terms.html
 
    Guests keep the plain index.html links. Logged-in users are sent back
-   to Step 1 of their own portal (employer.html or applicant.html).
+   to Step 1 of their own portal (employer.html, applicant.html, admin.html)
+   and the footer "Log In" link is hidden.
    These pages usually open in a new tab, so sessionStorage is empty;
    the server cookie (/api/auth/me) is the source of truth.
+   Clicks made before /api/auth/me answers wait for it instead of falling
+   through to index.html (which would re-check the cookie anyway).
    ───────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
 
-  var PORTALS = { employer: 'employer.html', admin: 'employer.html', applicant: 'applicant.html' };
+  var PORTALS = { employer: 'employer.html', admin: 'admin.html', applicant: 'applicant.html' };
 
   // Prefer the portal the user came from (they may hold both role cookies).
   function referrerRole() {
     var ref = document.referrer || '';
+    if (ref.indexOf('admin.html') !== -1 || ref.indexOf('accounting') !== -1) return 'admin';
     if (ref.indexOf('employer.html') !== -1) return 'employer';
     if (ref.indexOf('applicant.html') !== -1) return 'applicant';
     return '';
@@ -30,21 +34,41 @@
     return '';
   }
 
-  function pointHomeLinksTo(url) {
-    document.querySelectorAll('a[href="index.html"]').forEach(function (link) {
+  function homeLinks() {
+    return document.querySelectorAll('a[href="index.html"]');
+  }
+
+  function applyPortal(url) {
+    homeLinks().forEach(function (link) {
       link.setAttribute('href', url);
       if (link.getAttribute('aria-label') === 'Instant Crew Home') link.setAttribute('aria-label', 'Instant Crew Dashboard');
+    });
+    document.querySelectorAll('a[href="login.html"]').forEach(function (link) {
+      link.style.display = 'none';
     });
   }
 
   var hint = referrerRole() || sessionRole();
   var url = '/api/auth/me' + (hint ? '?role=' + hint : '');
 
-  fetch(url, { credentials: 'same-origin' })
+  var portalReady = fetch(url, { credentials: 'same-origin' })
     .then(function (res) { return res.ok ? res.json() : null; })
     .then(function (data) {
       var role = data && data.user && data.user.role;
-      if (PORTALS[role]) pointHomeLinksTo(PORTALS[role]);
+      var portal = PORTALS[role] || '';
+      if (portal) applyPortal(portal);
+      return portal;
     })
-    .catch(function () { /* offline or not logged in: stay on index.html */ });
+    .catch(function () { return ''; /* offline or not logged in: stay on index.html */ });
+
+  var resolved = false;
+  portalReady.then(function () { resolved = true; });
+
+  homeLinks().forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      if (resolved || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      portalReady.then(function (portal) { window.location.href = portal || 'index.html'; });
+    });
+  });
 })();
