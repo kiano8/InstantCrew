@@ -7862,15 +7862,13 @@
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
-                        let proofUrl = topupProofDataUrl;
-
-                        if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
+                        const needsProof = topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya';
+                        if (needsProof) {
                             if (!topupProofFile && !topupProofDataUrl) {
                                 const walletName = topupPaymentMethod === 'gcash' ? 'GCash' : 'Maya';
                                 showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
                                 return;
                             }
-                            if (!awaitingSignup) proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
                         } else if (topupPaymentMethod === 'card') {
                             const num = document.getElementById('appTopupCardNum')?.value.trim();
                             if (!num || num.replace(/\s/g, '').length < 12) { showToast('Please enter a valid card number.', true); return; }
@@ -7880,6 +7878,8 @@
                         appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
 
                         try {
+                            // Upload after disabling the button so a double-click cannot submit twice.
+                            const proofUrl = needsProof ? await uploadProofImage(topupProofFile, topupProofDataUrl) : '';
                             const response = await fetch('/api/applicant/hiring-pass/pay', {
                                 method: 'POST',
                                 credentials: 'same-origin',
