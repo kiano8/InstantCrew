@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -42,7 +43,13 @@ type Assignment struct {
 	AcceptedAt  time.Time
 	EndedAt     *time.Time
 	Transit     string
+	// ArrivalDeadlineAt is set once the employer confirms; nil before that.
+	ArrivalDeadlineAt *time.Time
 }
+
+// eligibleCrew excludes applicants who are suspended or permanently deactivated.
+const eligibleCrew = `NOT p.is_permanently_deactivated
+	AND (p.deactivated_until IS NULL OR p.deactivated_until <= extract(epoch from now())::bigint)`
 
 // MatchedApplicant contains only the profile details employers need to identify
 // a crew member while a matching search is open. Contact information is omitted.
@@ -125,6 +132,15 @@ func scanJob(r rowScanner) (*Job, error) {
 	return &j, nil
 }
 
+// placeholders returns "$start,$start+1,..." with n numbered parameters.
+func placeholders(start, n int) string {
+	ps := make([]string, n)
+	for i := range ps {
+		ps[i] = fmt.Sprintf("$%d", start+i)
+	}
+	return strings.Join(ps, ",")
+}
+
 func nullF(p *float64) sql.NullFloat64 {
 	if p == nil {
 		return sql.NullFloat64{}
@@ -142,7 +158,7 @@ func nullT(p *time.Time) sql.NullInt64 {
 // missOrBadState explains why a guarded UPDATE touched 0 rows.
 func missOrBadState(ctx context.Context, q queryer, employerID, id int64) error {
 	var one int
-	err := q.QueryRowContext(ctx, `SELECT 1 FROM jobs WHERE id = ? AND employer_id = ?`, id, employerID).Scan(&one)
+	err := q.QueryRowContext(ctx, `SELECT 1 FROM jobs WHERE id = $1 AND employer_id = $2`, id, employerID).Scan(&one)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
 	}
@@ -154,28 +170,24 @@ func missOrBadState(ctx context.Context, q queryer, employerID, id int64) error 
 
 func (s *Store) CreateJob(ctx context.Context, j *Job) error {
 	now := time.Now().Unix()
-	res, err := s.db.ExecContext(ctx, `
+	return s.db.QueryRowContext(ctx, `
 		INSERT INTO jobs (employer_id, category, role_id, role_label, employment_type, rate_centavos,
 			rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
 			status, created_at, updated_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'draft',?,?)`,
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'draft',$16,$17)
+		RETURNING id`,
 		j.EmployerID, j.Category, j.RoleID, j.RoleLabel, j.EmploymentType, j.RateCentavos,
 		j.RatePeriod, j.City, j.MapLocation, j.MapsURL, nullF(j.Lat), nullF(j.Lng), j.Timing,
-		nullT(j.ScheduledAt), j.CrewNeeded, now, now)
-	if err != nil {
-		return err
-	}
-	j.ID, _ = res.LastInsertId()
-	return nil
+		nullT(j.ScheduledAt), j.CrewNeeded, now, now).Scan(&j.ID)
 }
 
 // UpdateJob edits details; only allowed before/after a search (draft, unfulfilled).
 func (s *Store) UpdateJob(ctx context.Context, j *Job) error {
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE jobs SET category=?, role_id=?, role_label=?, employment_type=?, rate_centavos=?,
-			rate_period=?, city=?, map_location=?, maps_url=?, lat=?, lng=?, timing=?, scheduled_at=?,
-			crew_needed=?, updated_at=?
-		WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')`,
+		UPDATE jobs SET category=$1, role_id=$2, role_label=$3, employment_type=$4, rate_centavos=$5,
+			rate_period=$6, city=$7, map_location=$8, maps_url=$9, lat=$10, lng=$11, timing=$12, scheduled_at=$13,
+			crew_needed=$14, updated_at=$15
+		WHERE id=$16 AND employer_id=$17 AND status IN ('draft','unfulfilled')`,
 		j.Category, j.RoleID, j.RoleLabel, j.EmploymentType, j.RateCentavos, j.RatePeriod, j.City,
 		j.MapLocation, j.MapsURL, nullF(j.Lat), nullF(j.Lng), j.Timing, nullT(j.ScheduledAt),
 		j.CrewNeeded, time.Now().Unix(), j.ID, j.EmployerID)
@@ -192,29 +204,29 @@ func (s *Store) UpdateJob(ctx context.Context, j *Job) error {
 // JobOwnerID returns the employer ID of a job, or an error if not found.
 func (s *Store) JobOwnerID(ctx context.Context, jobID int64) (int64, error) {
 	var empID int64
-	err := s.db.QueryRowContext(ctx, `SELECT employer_id FROM jobs WHERE id = ?`, jobID).Scan(&empID)
+	err := s.db.QueryRowContext(ctx, `SELECT employer_id FROM jobs WHERE id = $1`, jobID).Scan(&empID)
 	return empID, err
 }
 
 func (s *Store) GetJob(ctx context.Context, employerID, id int64) (*Job, error) {
 	if employerID <= 0 {
 		return scanJob(s.db.QueryRowContext(ctx,
-			`SELECT `+jobCols+` FROM jobs WHERE id = ?`, id))
+			`SELECT `+jobCols+` FROM jobs WHERE id = $1`, id))
 	}
 	return scanJob(s.db.QueryRowContext(ctx,
-		`SELECT `+jobCols+` FROM jobs WHERE id = ? AND employer_id = ?`, id, employerID))
+		`SELECT `+jobCols+` FROM jobs WHERE id = $1 AND employer_id = $2`, id, employerID))
 }
 
 func (s *Store) ListJobs(ctx context.Context, employerID int64, statuses []string, limit, offset int) ([]*Job, error) {
-	q := `SELECT ` + jobCols + ` FROM jobs WHERE employer_id = ?`
+	q := `SELECT ` + jobCols + ` FROM jobs WHERE employer_id = $1`
 	args := []any{employerID}
 	if len(statuses) > 0 {
-		q += ` AND status IN (` + strings.TrimSuffix(strings.Repeat("?,", len(statuses)), ",") + `)`
+		q += ` AND status IN (` + placeholders(len(args)+1, len(statuses)) + `)`
 		for _, st := range statuses {
 			args = append(args, st)
 		}
 	}
-	q += ` ORDER BY id DESC LIMIT ? OFFSET ?`
+	q += fmt.Sprintf(` ORDER BY id DESC LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2)
 	args = append(args, limit, offset)
 
 	rows, err := s.db.QueryContext(ctx, q, args...)
@@ -246,7 +258,7 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 	err = tx.QueryRowContext(ctx, `
 		SELECT p.status FROM jobs j
 		JOIN payments p ON p.job_id=j.id AND p.search_attempt=j.search_attempts+1
-		WHERE j.id=? AND j.employer_id=? AND j.status IN ('draft','unfulfilled')`,
+		WHERE j.id=$1 AND j.employer_id=$2 AND j.status IN ('draft','unfulfilled')`,
 		id, employerID).Scan(&payStatus)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrPaymentNotVerified
@@ -266,8 +278,8 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 	res, err := tx.ExecContext(ctx, `
 		UPDATE jobs SET status='matching', search_attempts = search_attempts + 1,
 			current_try = 1, max_tries = 3, current_attempt = 1, max_attempts = 3, current_batch = 1,
-			search_expires_at = ?, updated_at = ?
-		WHERE id = ? AND employer_id = ? AND status IN ('draft','unfulfilled')
+			search_expires_at = $1, updated_at = $2
+		WHERE id = $3 AND employer_id = $4 AND status IN ('draft','unfulfilled')
 		AND EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id
 			AND p.search_attempt=jobs.search_attempts+1 AND p.status='verified')`,
 		now.Add(window).Unix(), now.Unix(), id, employerID)
@@ -278,7 +290,7 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 		return missOrBadState(ctx, tx, employerID, id)
 	}
 	var searchAttempt int
-	if err := tx.QueryRowContext(ctx, `SELECT search_attempts FROM jobs WHERE id=?`, id).Scan(&searchAttempt); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT search_attempts FROM jobs WHERE id=$1`, id).Scan(&searchAttempt); err != nil {
 		return err
 	}
 	if err := createMatchBatch(ctx, tx, id, searchAttempt, 1); err != nil {
@@ -293,7 +305,7 @@ func (s *Store) LatestJobPayment(ctx context.Context, jobID int64) (*JobPayment,
 	var verifiedAt sql.NullInt64
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, COALESCE(status,''), COALESCE(method,''), COALESCE(proof_image,''), search_attempt, verified_at, COALESCE(rejection_reason,'')
-		FROM payments WHERE job_id=? ORDER BY search_attempt DESC, id DESC LIMIT 1`, jobID).
+		FROM payments WHERE job_id=$1 ORDER BY search_attempt DESC, id DESC LIMIT 1`, jobID).
 		Scan(&p.ID, &p.Status, &p.Method, &p.ProofImage, &p.SearchAttempt, &verifiedAt, &p.RejectionReason)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -315,11 +327,12 @@ func (s *Store) LatestJobPayment(ctx context.Context, jobID int64) (*JobPayment,
 
 func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
 	_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
-		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_object('job_id', j.id),?
+		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_build_object('job_id', j.id)::text,$1
 		FROM jobs j JOIN job_match_batch_members b ON b.job_id=j.id AND b.search_attempt=j.search_attempts AND b.batch_number=j.current_batch
-		JOIN applicant_profiles p ON p.user_id=b.applicant_id AND p.is_active=1 AND lower(trim(p.city))=lower(trim(j.city))
+		JOIN applicant_profiles p ON p.user_id=b.applicant_id AND p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
+			AND `+eligibleCrew+`
 		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
-		WHERE j.id=? AND p.employment_type=j.employment_type
+		WHERE j.id=$2 AND p.employment_type=j.employment_type
 		AND NOT EXISTS (
 			SELECT 1 FROM job_assignments active_assignment
 			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
@@ -347,20 +360,18 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 	}
 	defer tx.Rollback()
 	now := time.Now().Unix()
-	res, err := tx.ExecContext(ctx, `
+	var paymentID int64
+	err = tx.QueryRowContext(ctx, `
 		INSERT INTO payments (job_id, user_id, amount_centavos, method, details, proof_image, search_attempt, status, provider_ref, created_at)
-		SELECT id, employer_id, ?, ?, ?, ?, search_attempts+1, 'pending', ?, ? FROM jobs
-		WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')
-		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.search_attempt=jobs.search_attempts+1)`,
-		feeCentavos, method, details, proofImage, ref, now, id, employerID)
-	if err != nil {
+		SELECT id, employer_id, $1::bigint, $2::text, $3::text, $4::text, search_attempts+1, 'pending', $5::text, $6::bigint FROM jobs
+		WHERE id=$7 AND employer_id=$8 AND status IN ('draft','unfulfilled')
+		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.search_attempt=jobs.search_attempts+1)
+		RETURNING id`,
+		feeCentavos, method, details, proofImage, ref, now, id, employerID).Scan(&paymentID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n > 0 {
-		paymentID, err := res.LastInsertId()
-		if err != nil {
-			return err
-		}
+	if err == nil {
 		jobID := id
 		if err := addPaymentSubmittedNotification(ctx, tx, employerID, paymentID, "employer", &jobID, now); err != nil {
 			return err
@@ -369,11 +380,11 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 	}
 
 	// Replace a rejected receipt for the same attempt.
-	res, err = tx.ExecContext(ctx, `
-		UPDATE payments SET method=?, details=?, proof_image=?, status='pending',
-			provider_ref=?, created_at=?, verified_at=NULL, verified_by='', rejection_reason=''
-		WHERE job_id=? AND search_attempt=(
-			SELECT search_attempts+1 FROM jobs WHERE id=? AND employer_id=? AND status IN ('draft','unfulfilled')
+	res, err := tx.ExecContext(ctx, `
+		UPDATE payments SET method=$1, details=$2, proof_image=$3, status='pending',
+			provider_ref=$4, created_at=$5, verified_at=NULL, verified_by='', rejection_reason=''
+		WHERE job_id=$6 AND search_attempt=(
+			SELECT search_attempts+1 FROM jobs WHERE id=$7 AND employer_id=$8 AND status IN ('draft','unfulfilled')
 		) AND status='rejected'`,
 		method, details, proofImage, ref, now, id, id, employerID)
 	if err != nil {
@@ -381,7 +392,7 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 	}
 	if n, _ := res.RowsAffected(); n > 0 {
 		var paymentID int64
-		if err := tx.QueryRowContext(ctx, `SELECT id FROM payments WHERE job_id=? AND search_attempt=(SELECT search_attempts+1 FROM jobs WHERE id=?)`, id, id).Scan(&paymentID); err != nil {
+		if err := tx.QueryRowContext(ctx, `SELECT id FROM payments WHERE job_id=$1 AND search_attempt=(SELECT search_attempts+1 FROM jobs WHERE id=$2)`, id, id).Scan(&paymentID); err != nil {
 			return err
 		}
 		jobID := id
@@ -393,10 +404,10 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 
 	var sameAttempt int
 	err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM jobs j JOIN payments p ON p.job_id=j.id
-		WHERE j.id=? AND j.employer_id=?
+		WHERE j.id=$1 AND j.employer_id=$2
 		AND ((j.status IN ('draft','unfulfilled') AND p.search_attempt=j.search_attempts+1)
 			OR (j.status='matching' AND p.search_attempt=j.search_attempts))
-		AND p.status IN ('paid', 'pending', 'verified') AND p.method=?`,
+		AND p.status IN ('paid', 'pending', 'verified') AND p.method=$3`,
 		id, employerID, method).Scan(&sameAttempt)
 	if err != nil {
 		return err
@@ -416,7 +427,7 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 		return nil, err
 	}
 	var attempt, batch int
-	if err := tx.QueryRowContext(ctx, `SELECT search_attempts,current_batch FROM jobs WHERE id=? AND status='matching'`, jobID).Scan(&attempt, &batch); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT search_attempts,current_batch FROM jobs WHERE id=$1 AND status='matching'`, jobID).Scan(&attempt, &batch); err != nil {
 		tx.Rollback()
 		if errors.Is(err, sql.ErrNoRows) {
 			return []MatchedApplicant{}, nil
@@ -424,7 +435,7 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 		return nil, err
 	}
 	var existing int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM job_match_batch_members WHERE job_id=? AND search_attempt=? AND batch_number=?`, jobID, attempt, batch).Scan(&existing); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM job_match_batch_members WHERE job_id=$1 AND search_attempt=$2 AND batch_number=$3`, jobID, attempt, batch).Scan(&existing); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -444,7 +455,7 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 		JOIN jobs j ON j.id=b.job_id AND j.search_attempts=b.search_attempt AND j.current_batch=b.batch_number
 		JOIN applicant_profiles p ON p.user_id=b.applicant_id
 		JOIN users u ON u.id=p.user_id
-		WHERE b.job_id=? AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>?)
+		WHERE b.job_id=$1 AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>$2)
 		ORDER BY b.slot`, jobID, time.Now().Unix())
 	if err != nil {
 		return nil, err
@@ -470,9 +481,9 @@ type matchBatchExecer interface {
 func createMatchBatch(ctx context.Context, q matchBatchExecer, jobID int64, searchAttempt, batch int) error {
 	rows, err := q.QueryContext(ctx, `
 		SELECT p.user_id FROM jobs j
-		JOIN applicant_profiles p ON p.is_active=1
+		JOIN applicant_profiles p ON p.is_active=true AND `+eligibleCrew+`
 		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
-		WHERE j.id=? AND j.status='matching' AND p.employment_type=j.employment_type
+		WHERE j.id=$1 AND j.status='matching' AND p.employment_type=j.employment_type
 		AND lower(trim(p.city))=lower(trim(j.city))
 		AND ((j.timing='now' AND p.availability_mode='now') OR (j.timing='later' AND (p.availability_mode='now' OR EXISTS (
 			SELECT 1 FROM applicant_availability av WHERE av.applicant_id=p.user_id AND av.status='available'
@@ -499,7 +510,7 @@ func createMatchBatch(ctx context.Context, q matchBatchExecer, jobID int64, sear
 	rows.Close()
 
 	seen := map[int64]bool{}
-	rows, err = q.QueryContext(ctx, `SELECT DISTINCT applicant_id FROM job_match_batch_members WHERE job_id=? AND search_attempt=?`, jobID, searchAttempt)
+	rows, err = q.QueryContext(ctx, `SELECT DISTINCT applicant_id FROM job_match_batch_members WHERE job_id=$1 AND search_attempt=$2`, jobID, searchAttempt)
 	if err != nil {
 		return err
 	}
@@ -550,7 +561,7 @@ func createMatchBatch(ctx context.Context, q matchBatchExecer, jobID int64, sear
 		chosen = append(chosen, repeat[:limit-len(chosen)]...)
 	}
 	for slot, id := range chosen {
-		if _, err := q.ExecContext(ctx, `INSERT INTO job_match_batch_members(job_id,search_attempt,batch_number,slot,applicant_id) VALUES(?,?,?,?,?)`, jobID, searchAttempt, batch, slot, id); err != nil {
+		if _, err := q.ExecContext(ctx, `INSERT INTO job_match_batch_members(job_id,search_attempt,batch_number,slot,applicant_id) VALUES($1,$2,$3,$4,$5)`, jobID, searchAttempt, batch, slot, id); err != nil {
 			return err
 		}
 	}
@@ -562,7 +573,7 @@ func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 	now := time.Now().Unix()
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, employer_id FROM jobs
-		WHERE status='matching' AND search_expires_at IS NOT NULL AND search_expires_at <= ?`, now)
+		WHERE status='matching' AND search_expires_at IS NOT NULL AND search_expires_at <= $1`, now)
 	if err != nil {
 		return 0, err
 	}
@@ -597,7 +608,7 @@ func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, 
 	}
 	defer tx.Rollback()
 
-	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=? AND employer_id=?`, id, employerID))
+	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2`, id, employerID))
 	if err != nil {
 		return nil, err
 	}
@@ -611,8 +622,8 @@ func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, 
 		j.CurrentBatch++
 		newExpires := now.Add(window).Unix()
 		if _, err := tx.ExecContext(ctx, `
-			UPDATE jobs SET current_attempt=?, current_batch=?, search_expires_at=?, updated_at=?
-			WHERE id=? AND employer_id=? AND status='matching'`,
+			UPDATE jobs SET current_attempt=$1, current_batch=$2, search_expires_at=$3, updated_at=$4
+			WHERE id=$5 AND employer_id=$6 AND status='matching'`,
 			j.CurrentAttempt, j.CurrentBatch, newExpires, now.Unix(), id, employerID); err != nil {
 			return nil, err
 		}
@@ -633,8 +644,8 @@ func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, 
 		j.CurrentBatch++
 		newExpires := now.Add(window).Unix()
 		if _, err := tx.ExecContext(ctx, `
-			UPDATE jobs SET current_try=?, current_attempt=?, current_batch=?, search_expires_at=?, updated_at=?
-			WHERE id=? AND employer_id=? AND status='matching'`,
+			UPDATE jobs SET current_try=$1, current_attempt=$2, current_batch=$3, search_expires_at=$4, updated_at=$5
+			WHERE id=$6 AND employer_id=$7 AND status='matching'`,
 			j.CurrentTry, j.CurrentAttempt, j.CurrentBatch, newExpires, now.Unix(), id, employerID); err != nil {
 			return nil, err
 		}
@@ -650,8 +661,8 @@ func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, 
 
 	// All 3 tries expired!
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE jobs SET status='unfulfilled', updated_at=?
-		WHERE id=? AND employer_id=? AND status='matching'`,
+		UPDATE jobs SET status='unfulfilled', updated_at=$1
+		WHERE id=$2 AND employer_id=$3 AND status='matching'`,
 		now.Unix(), id, employerID); err != nil {
 		return nil, err
 	}
@@ -670,7 +681,7 @@ func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window t
 	}
 	defer tx.Rollback()
 
-	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=? AND employer_id=?`, id, employerID))
+	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2`, id, employerID))
 	if err != nil {
 		return nil, err
 	}
@@ -681,8 +692,8 @@ func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window t
 	now := time.Now()
 
 	// Clear assignments and mark application as rejected so they aren't immediately re-matched
-	_, _ = tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at = ? WHERE job_id = ? AND ended_at IS NULL`, now.Unix(), id)
-	_, _ = tx.ExecContext(ctx, `UPDATE job_applications SET status = 'rejected', updated_at = ? WHERE job_id = ? AND status = 'accepted'`, now.Unix(), id)
+	_, _ = tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now.Unix(), id)
+	_, _ = tx.ExecContext(ctx, `UPDATE job_applications SET status = 'rejected', updated_at = $1 WHERE job_id = $2 AND status = 'accepted'`, now.Unix(), id)
 
 	// Use up the current try
 	if j.CurrentTry < j.MaxTries {
@@ -691,8 +702,8 @@ func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window t
 		newExpires := now.Add(window).Unix()
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE jobs SET accepted_count = 0, status = 'matching',
-				current_try = ?, current_attempt = 1, current_batch = ?, search_expires_at = ?, updated_at = ?
-			WHERE id = ? AND employer_id = ?`,
+				current_try = $1, current_attempt = 1, current_batch = $2, search_expires_at = $3, updated_at = $4
+			WHERE id = $5 AND employer_id = $6`,
 			nextTry, nextBatch, newExpires, now.Unix(), id, employerID); err != nil {
 			return nil, err
 		}
@@ -708,8 +719,8 @@ func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window t
 
 	// All 3 tries used up!
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE jobs SET accepted_count = 0, status = 'unfulfilled', updated_at = ?
-		WHERE id = ? AND employer_id = ?`,
+		UPDATE jobs SET accepted_count = 0, status = 'unfulfilled', updated_at = $1
+		WHERE id = $2 AND employer_id = $3`,
 		now.Unix(), id, employerID); err != nil {
 		return nil, err
 	}
@@ -727,6 +738,16 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		return err
 	}
 	defer tx.Rollback()
+	standing, err := applicantStanding(ctx, tx, applicantID, time.Now())
+	if err != nil {
+		return err
+	}
+	if standing.PermanentlyDeactivated {
+		return ErrAccountDeactivated
+	}
+	if standing.Suspended {
+		return ErrAccountSuspended
+	}
 	// A hire is only spent when the employer confirms the booking (see ConfirmJob).
 	// Here we only require a hire that is not already reserved by another
 	// accepted-but-unconfirmed shift, so confirmation can always spend one.
@@ -734,7 +755,7 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 	err = tx.QueryRowContext(ctx, `SELECT p.remaining_hires - (
 			SELECT COUNT(*) FROM job_assignments a JOIN jobs j ON j.id=a.job_id
 			WHERE a.applicant_id=p.applicant_id AND a.ended_at IS NULL AND j.status='accepted')
-		FROM applicant_hiring_passes p WHERE p.applicant_id=?`, applicantID).Scan(&available)
+		FROM applicant_hiring_passes p WHERE p.applicant_id=$1`, applicantID).Scan(&available)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -742,7 +763,7 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		// Distinguish "never paid / exhausted" from "receipt waiting on accounting".
 		var payStatus string
 		payErr := tx.QueryRowContext(ctx, `SELECT COALESCE(status,'') FROM applicant_hiring_pass_payments
-			WHERE applicant_id=? ORDER BY id DESC LIMIT 1`, applicantID).Scan(&payStatus)
+			WHERE applicant_id=$1 ORDER BY id DESC LIMIT 1`, applicantID).Scan(&payStatus)
 		if payErr == nil {
 			switch strings.ToLower(payStatus) {
 			case "pending":
@@ -758,12 +779,12 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 	res, err := tx.ExecContext(ctx, `
 		UPDATE jobs SET accepted_count = 1,
 			status = 'accepted',
-			updated_at = ?
-		WHERE id = ? AND status = 'matching' AND (search_expires_at IS NULL OR search_expires_at > ?) AND accepted_count = 0
+			updated_at = $1
+		WHERE id = $2 AND status = 'matching' AND (search_expires_at IS NULL OR search_expires_at > $3) AND accepted_count = 0
 		AND NOT EXISTS (
 			SELECT 1 FROM job_assignments active_assignment
 			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
-			WHERE active_assignment.applicant_id=? AND active_assignment.ended_at IS NULL
+			WHERE active_assignment.applicant_id=$4 AND active_assignment.ended_at IS NULL
 			AND assigned_job.role_id=jobs.role_id
 		)`, now, jobID, now, applicantID)
 	if err != nil {
@@ -773,18 +794,18 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		return ErrBadState // not found, expired, or already full
 	}
 	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO job_assignments (job_id, applicant_id, accepted_at) VALUES (?, ?, ?)`,
+		`INSERT INTO job_assignments (job_id, applicant_id, accepted_at) VALUES ($1, $2, $3)`,
 		jobID, applicantID, now); err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		if strings.Contains(err.Error(), "duplicate key") {
 			return ErrAlreadyAccepted
 		}
 		return err
 	}
-	_, _ = tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES(?,?,'accepted',?,?) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now)
-	if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES(?,?,'accepted')`, jobID, applicantID); err != nil {
+	_, _ = tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES($1,$2,'accepted',$3,$4) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now)
+	if _, err := tx.ExecContext(ctx, `INSERT INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES($1,$2,'accepted') ON CONFLICT DO NOTHING`, jobID, applicantID); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=MIN(500,rating_hundredths+1) WHERE user_id=? AND EXISTS(SELECT 1 FROM applicant_rating_events WHERE job_id=? AND applicant_id=? AND outcome='accepted')`, applicantID, jobID, applicantID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=LEAST(500,rating_hundredths+1) WHERE user_id=$1 AND EXISTS(SELECT 1 FROM applicant_rating_events WHERE job_id=$2 AND applicant_id=$3 AND outcome='accepted')`, applicantID, jobID, applicantID); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -796,8 +817,8 @@ func (s *Store) transition(ctx context.Context, employerID, id int64, to string,
 		args = append(args, f)
 	}
 	res, err := s.db.ExecContext(ctx,
-		`UPDATE jobs SET status = ?, updated_at = ? WHERE id = ? AND employer_id = ? AND status IN (`+
-			strings.TrimSuffix(strings.Repeat("?,", len(from)), ",")+`)`, args...)
+		`UPDATE jobs SET status = $1, updated_at = $2 WHERE id = $3 AND employer_id = $4 AND status IN (`+
+			placeholders(5, len(from))+`)`, args...)
 	if err != nil {
 		return err
 	}
@@ -819,7 +840,7 @@ func (s *Store) ConfirmJob(ctx context.Context, employerID, id int64) error {
 
 	now := time.Now().Unix()
 	res, err := tx.ExecContext(ctx,
-		`UPDATE jobs SET status='active', updated_at=? WHERE id=? AND employer_id=? AND status='accepted'`,
+		`UPDATE jobs SET status='active', updated_at=$1 WHERE id=$2 AND employer_id=$3 AND status='accepted'`,
 		now, id, employerID)
 	if err != nil {
 		return err
@@ -827,10 +848,16 @@ func (s *Store) ConfirmJob(ctx context.Context, employerID, id int64) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
 	}
+	// The arrival clock starts now, or at the scheduled start for later shifts.
+	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments
+		SET arrival_deadline_at = GREATEST($1, COALESCE((SELECT scheduled_at FROM jobs WHERE id=$2), $1)) + $3
+		WHERE job_id=$2 AND ended_at IS NULL`, now, id, int64(ArrivalLimit/time.Second)); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_passes
-		SET remaining_hires=remaining_hires-1, used_hires=used_hires+1, updated_at=?
+		SET remaining_hires=remaining_hires-1, used_hires=used_hires+1, updated_at=$1
 		WHERE remaining_hires>0 AND applicant_id IN (
-			SELECT applicant_id FROM job_assignments WHERE job_id=? AND ended_at IS NULL)`, now, id); err != nil {
+			SELECT applicant_id FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL)`, now, id); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -849,7 +876,7 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 
 	now := time.Now().Unix()
 	res, err := tx.ExecContext(ctx,
-		`UPDATE jobs SET status='completed', updated_at=? WHERE id=? AND employer_id=? AND status='active'`,
+		`UPDATE jobs SET status='completed', updated_at=$1 WHERE id=$2 AND employer_id=$3 AND status='active'`,
 		now, id, employerID)
 	if err != nil {
 		return err
@@ -858,7 +885,7 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 		return missOrBadState(ctx, tx, employerID, id)
 	}
 	if _, err := tx.ExecContext(ctx,
-		`UPDATE job_assignments SET ended_at = ? WHERE job_id = ? AND ended_at IS NULL`, now, id); err != nil {
+		`UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now, id); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -867,9 +894,9 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 // Assignments: call only after the caller has proven they own the job.
 func (s *Store) Assignments(ctx context.Context, jobID int64) ([]Assignment, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status
+		SELECT a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status, a.arrival_deadline_at
 		FROM job_assignments a JOIN users u ON u.id = a.applicant_id
-		WHERE a.job_id = ? ORDER BY a.accepted_at`, jobID)
+		WHERE a.job_id = $1 ORDER BY a.accepted_at`, jobID)
 	if err != nil {
 		return nil, err
 	}
@@ -878,14 +905,18 @@ func (s *Store) Assignments(ctx context.Context, jobID int64) ([]Assignment, err
 	for rows.Next() {
 		var a Assignment
 		var acc int64
-		var ended sql.NullInt64
-		if err := rows.Scan(&a.ApplicantID, &a.Name, &acc, &ended, &a.Transit); err != nil {
+		var ended, deadline sql.NullInt64
+		if err := rows.Scan(&a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline); err != nil {
 			return nil, err
 		}
 		a.AcceptedAt = time.Unix(acc, 0)
 		if ended.Valid {
 			t := time.Unix(ended.Int64, 0)
 			a.EndedAt = &t
+		}
+		if deadline.Valid {
+			t := time.Unix(deadline.Int64, 0)
+			a.ArrivalDeadlineAt = &t
 		}
 		out = append(out, a)
 	}

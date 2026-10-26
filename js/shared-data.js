@@ -461,8 +461,32 @@
         window.dispatchEvent(new CustomEvent('ic_state_change', { detail }));
     }
 
+    // 1-hour arrival limit countdown. Elements with data-arrival-deadline (epoch ms,
+    // derived from the server's seconds remaining) are refreshed every second.
+    function formatArrivalCountdown(deadlineMs) {
+        const left = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
+        if (left === 0) return '1-Hr Arrival Limit: time is up';
+        return `1-Hr Arrival Limit: ${Math.floor(left / 60)}m ${left % 60}s left`;
+    }
+
+    function arrivalDeadlineFromSeconds(seconds) {
+        const secs = Number(seconds || 0);
+        return secs > 0 ? Date.now() + secs * 1000 : 0;
+    }
+
+    function tickArrivalCountdowns() {
+        document.querySelectorAll('[data-arrival-deadline]').forEach(el => {
+            const deadline = Number(el.dataset.arrivalDeadline);
+            if (deadline > 0) el.textContent = formatArrivalCountdown(deadline);
+        });
+    }
+    setInterval(tickArrivalCountdowns, 1000);
+
     // Export to global window object
     window.InstantCrewShared = {
+        formatArrivalCountdown,
+        arrivalDeadlineFromSeconds,
+        tickArrivalCountdowns,
         initJobs,
         getJobs,
         saveJobs,

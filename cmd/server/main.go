@@ -245,6 +245,9 @@ func main() {
 			select {
 			case <-t.C:
 				_, _ = st.ExpireSearches(context.Background())
+				if _, err := st.ExpireArrivals(context.Background()); err != nil {
+					log.Printf("expire arrivals: %v", err)
+				}
 			case <-ctx.Done():
 				return
 			}

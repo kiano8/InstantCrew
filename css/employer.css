@@ -4715,6 +4715,21 @@ h2 {
     flex-wrap: wrap;
 }
 
+/* 1-hour arrival limit countdown (shared by employer and applicant cards) */
+.app-card-arrival-countdown {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: #B45309;
+    font-size: 0.74rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .app-card-transit-status {
     display: inline-flex;
     align-items: center;

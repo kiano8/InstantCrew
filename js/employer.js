@@ -2885,6 +2885,23 @@ let employerBookingsOwnerId = null;
 
 /* ── Render Bookings List ──────────────────────────────── */
 
+// Arrival-limit fields for a job's crew. The deadline is derived from the
+// server's seconds remaining so the countdown follows the server clock.
+function employerCrewArrival(crew) {
+  const list = crew || [];
+  const assigned = list.find(c => !c.ended_at);
+  const shared = window.InstantCrewShared;
+  return {
+    arrivalDeadline: assigned && shared ? shared.arrivalDeadlineFromSeconds(assigned.arrival_seconds_remaining) : 0,
+    noShow: list.some(c => c.transit_status === 'no_show')
+  };
+}
+
+function arrivalCountdownHtml(deadline) {
+  if (!deadline || !window.InstantCrewShared) return '';
+  return `<span class="app-card-arrival-countdown" data-arrival-deadline="${deadline}">${window.InstantCrewShared.formatArrivalCountdown(deadline)}</span>`;
+}
+
 let lastEmployerBookingsSig = null;
 let employerBookingsFetchedAt = 0;
 let employerBookingsFetchPending = false;
@@ -2915,6 +2932,7 @@ function refreshEmployerBookings(force = false) {
       acceptedCrew: (j.crew || []).map(c => c.name),
       workerName: (j.crew || []).find(c => !c.ended_at)?.name || '',
       transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || '',
+      ...employerCrewArrival(j.crew),
       crewRate: `₱${j.rate}`, status: j.status, bookedAt: j.created_at
     }));
     // Keep session mirrors fresh for the booking summary, but never use them to
@@ -2936,7 +2954,7 @@ function renderBookings(force = false) {
   const bookings = employerBookingsFromServer;
 
   const active = bookings.filter(b => b.status === 'active' || b.status === 'matching' || b.status === 'accepted');
-  const previous = bookings.filter(b => b.status === 'completed' || b.status === 'ended');
+  const previous = bookings.filter(b => b.status === 'completed' || b.status === 'ended' || (b.status === 'cancelled' && b.noShow));
 
   // Stats
   const statActiveEl = document.getElementById('statActive');
@@ -2944,7 +2962,7 @@ function renderBookings(force = false) {
   if (statActiveEl) statActiveEl.textContent = active.length;
   if (statPreviousEl) statPreviousEl.textContent = previous.length;
 
-  const currentSig = JSON.stringify(bookings.map(b => `${b.id}_${b.status}_${b.transitStatus || ''}_${b.departedAt || ''}_${b.arrivedAt || ''}_${(b.acceptedCrew || []).join(',')}_${b.neededCrew || b.count}`));
+  const currentSig = JSON.stringify(bookings.map(b => `${b.id}_${b.status}_${b.transitStatus || ''}_${b.departedAt || ''}_${b.arrivedAt || ''}_${(b.acceptedCrew || []).join(',')}_${b.neededCrew || b.count}_${b.noShow ? 'noshow' : ''}_${b.arrivalDeadline ? 'deadline' : ''}`));
   if (!force && currentSig === lastEmployerBookingsSig) {
     return;
   }
@@ -3016,7 +3034,8 @@ if (jobActionConfirmModal) {
 function buildBookingItem(b) {
   const item = document.createElement('div');
   item.id = `employerBooking-${b.id}`;
-  const isEnded = b.status === 'completed' || b.status === 'ended';
+  const isAutoCancelled = b.status === 'cancelled' && b.noShow;
+  const isEnded = b.status === 'completed' || b.status === 'ended' || isAutoCancelled;
   const isBookingActive = b.status === 'active' || b.status === 'matching' || b.status === 'accepted';
   item.className = `db-booking-item app-job-card ${isEnded ? 'ended' : ''}`;
 
@@ -3029,7 +3048,9 @@ function buildBookingItem(b) {
   const crewName = (b.acceptedCrew && b.acceptedCrew.length > 0) ? b.acceptedCrew[0] : (b.workerName || '');
 
   let statusBadgeHtml = '';
-  if (isEnded) {
+  if (isAutoCancelled) {
+    statusBadgeHtml = `<span class="app-job-status-badge ended">Auto-Cancelled</span>`;
+  } else if (isEnded) {
     statusBadgeHtml = `<span class="app-job-status-badge ended">Ended</span>`;
   } else if (b.status === 'accepted') {
     statusBadgeHtml = `<span class="app-job-status-badge active"><span class="dot"></span>CREW ACCEPTED</span>`;
@@ -3126,6 +3147,7 @@ function buildBookingItem(b) {
                     <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
                     <span>En Route (${b.departedAt || 'Just now'})</span>
                 </span>
+                ${arrivalCountdownHtml(b.arrivalDeadline)}
             </div>` : (b.transitStatus === 'arrived' ? `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status arrived">
@@ -3139,12 +3161,18 @@ function buildBookingItem(b) {
                 <span class="app-card-transit-status pending">
                     <span>Looking for Nearby Crew</span>
                 </span>
+            </div>` : (b.status === 'active' ? `
+            <div class="app-card-transit-box">
+                <span class="app-card-transit-status pending">
+                    <span>Waiting for transit of crew</span>
+                </span>
+                ${arrivalCountdownHtml(b.arrivalDeadline)}
             </div>` : `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status pending">
                     <span>Crew Preparing &bull; Awaiting Transit</span>
                 </span>
-            </div>`))}
+            </div>`)))}
             ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
             ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
         </div>` : `
@@ -3154,7 +3182,7 @@ function buildBookingItem(b) {
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>${b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract')}</span>
+                <span>${isAutoCancelled ? 'Auto-Cancelled: 1-Hr Arrival Limit Expired (No-Show Penalty)' : (b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract'))}</span>
             </span>
             <span class="app-job-archived-tag">Archived</span>
         </div>`}
@@ -3188,7 +3216,7 @@ function buildBookingItem(b) {
   });
   item.tabIndex = 0;
   item.setAttribute('role', 'button');
-  item.setAttribute('aria-label', `${roleTitle}, ${isEnded ? 'completed' : b.status || 'active'}. Open shift details.`);
+  item.setAttribute('aria-label', `${roleTitle}, ${isAutoCancelled ? 'auto-cancelled' : (isEnded ? 'completed' : b.status || 'active')}. Open shift details.`);
   const openCard = () => openEmployerJobNotification(jobId);
   item.addEventListener('click', e => { if (!e.target.closest('button, a')) openCard(); });
   item.addEventListener('keydown', e => {
@@ -3612,6 +3640,7 @@ function employerJobToBooking(job) {
     acceptedCrew: crew,
     workerName: assignedCrew?.name || '',
     transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[assignedCrew?.transit_status] || '',
+    ...employerCrewArrival(job.crew),
     status: job.status,
     seconds_remaining: Number(job.seconds_remaining || 0),
     paid: Number(job.search_attempts || 0) > 0,
@@ -3900,11 +3929,15 @@ function updateStep5TransitLiveStatus() {
     dTimeEl.textContent = 'Immediate Shift (Accepted)';
   }
 
+  const arrivalDeadline = currentB && currentB.status === 'active' && transitStatus !== 'arrived' ? currentB.arrivalDeadline : 0;
+  if (arrivalDeadline) timeEl.dataset.arrivalDeadline = arrivalDeadline;
+  else delete timeEl.dataset.arrivalDeadline;
+
   if (transitStatus === 'on_the_way') {
     box.className = 'db-live-transit-box on-the-way';
     badgeEl.className = 'db-live-transit-badge on-the-way';
     badgeEl.innerHTML = `<span class="db-transit-beacon"><span class="db-transit-ping"></span><span class="db-transit-dot"></span></span><span>Crew is On the Way!</span>`;
-    timeEl.textContent = departedAt ? ` ${departedAt}` : 'Departed: Just now';
+    timeEl.textContent = arrivalDeadline ? window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline) : (departedAt ? ` ${departedAt}` : 'Departed: Just now');
     bodyEl.innerHTML = `<strong>${crewName}</strong> has notified you that they have departed and are en route to <strong>${venueName}</strong>.`;
   } else if (transitStatus === 'arrived') {
     box.className = 'db-live-transit-box arrived';
@@ -3915,9 +3948,15 @@ function updateStep5TransitLiveStatus() {
   } else {
     box.className = 'db-live-transit-box pending';
     badgeEl.className = 'db-live-transit-badge pending';
-    badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
-    timeEl.textContent = 'Awaiting Departure';
-    bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and will notify you when heading to <strong>${venueName}</strong>.`;
+    if (arrivalDeadline) {
+      badgeEl.innerHTML = `<span>Waiting for transit of crew</span>`;
+      timeEl.textContent = window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline);
+      bodyEl.innerHTML = `<strong>${crewName}</strong> must arrive at <strong>${venueName}</strong> and mark arrival within 1 hour, or the shift is auto-cancelled.`;
+    } else {
+      badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
+      timeEl.textContent = 'Awaiting Departure';
+      bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and will notify you when heading to <strong>${venueName}</strong>.`;
+    }
   }
 }
 

@@ -208,7 +208,7 @@ func (h *Handler) ApplicantRating(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]float64{"rating": p.Rating})
+	httpx.JSON(w, http.StatusOK, map[string]any{"rating": p.Rating, "standing": p.Standing})
 }
 
 func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
@@ -340,7 +340,7 @@ func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, c := range crew {
-			d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
 		out = append(out, d)
 	}
@@ -406,6 +406,7 @@ func (h *Handler) ApplicantReject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
+	h.expireOverdue(r)
 	jobs, err := h.Store.ApplicantAssignments(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -418,7 +419,13 @@ func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 			h.fail(w, err)
 			return
 		}
-		out = append(out, map[string]any{"job": h.toDTO(j), "accepted_at": assignment.AcceptedAt, "ended_at": assignment.EndedAt, "transit_status": assignment.Transit, "confirmed": j.Status == "active" || j.Status == "completed"})
+		out = append(out, map[string]any{
+			"job": h.toDTO(j), "accepted_at": assignment.AcceptedAt, "ended_at": assignment.EndedAt,
+			"transit_status": assignment.Transit, "confirmed": j.Status == "active" || j.Status == "completed",
+			"arrival_deadline_at":       assignment.ArrivalDeadlineAt,
+			"arrival_seconds_remaining": arrivalSecondsRemaining(assignment),
+			"no_show":                   assignment.Transit == "no_show",
+		})
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"assignments": out})
 }
@@ -426,11 +433,29 @@ func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 // ── DTOs ──
 
 type crewDTO struct {
-	ApplicantID int64      `json:"applicant_id"`
-	Name        string     `json:"name"`
-	AcceptedAt  time.Time  `json:"accepted_at"`
-	EndedAt     *time.Time `json:"ended_at,omitempty"`
-	Transit     string     `json:"transit_status"`
+	ApplicantID       int64      `json:"applicant_id"`
+	Name              string     `json:"name"`
+	AcceptedAt        time.Time  `json:"accepted_at"`
+	EndedAt           *time.Time `json:"ended_at,omitempty"`
+	Transit           string     `json:"transit_status"`
+	ArrivalDeadlineAt *time.Time `json:"arrival_deadline_at,omitempty"`
+	// ArrivalSecondsRemaining uses the server clock, like seconds_remaining.
+	ArrivalSecondsRemaining int64 `json:"arrival_seconds_remaining"`
+}
+
+func toCrewDTO(c store.Assignment) crewDTO {
+	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c)}
+}
+
+// arrivalSecondsRemaining is the time left to mark arrival, or 0 when no limit applies.
+func arrivalSecondsRemaining(a store.Assignment) int64 {
+	if a.ArrivalDeadlineAt == nil || a.EndedAt != nil || a.Transit == "arrived" || a.Transit == "no_show" {
+		return 0
+	}
+	if rem := time.Until(*a.ArrivalDeadlineAt); rem > 0 {
+		return int64(rem.Seconds())
+	}
+	return 0
 }
 
 type jobDTO struct {
@@ -530,6 +555,10 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
 	case errors.Is(err, store.ErrPaymentPendingExists):
 		httpx.Error(w, http.StatusConflict, err.Error())
+	case errors.Is(err, store.ErrAccountSuspended), errors.Is(err, store.ErrAccountDeactivated):
+		httpx.Error(w, http.StatusForbidden, err.Error())
+	case errors.Is(err, store.ErrArrivalExpired):
+		httpx.Error(w, http.StatusConflict, err.Error())
 	default:
 		log.Printf("jobs: %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
@@ -554,10 +583,19 @@ func (h *Handler) ids(w http.ResponseWriter, r *http.Request) (*store.User, int6
 	return u, id, empID, true
 }
 
+// expireOverdue flips expired searches and missed arrival limits before a read,
+// so responses never lag the background sweep.
+func (h *Handler) expireOverdue(r *http.Request) {
+	_, _ = h.Store.ExpireSearches(r.Context())
+	if _, err := h.Store.ExpireArrivals(r.Context()); err != nil {
+		log.Printf("expire arrivals: %v", err)
+	}
+}
+
 // writeJob reloads the job (with crew) and sends it. Expired searches are flipped first.
 func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, employerID, id int64) {
 	ctx := r.Context()
-	_, _ = h.Store.ExpireSearches(ctx)
+	h.expireOverdue(r)
 	j, err := h.Store.GetJob(ctx, employerID, id)
 	if err != nil {
 		h.fail(w, err)
@@ -570,7 +608,7 @@ func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, e
 		return
 	}
 	for _, c := range crew {
-		d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+		d.Crew = append(d.Crew, toCrewDTO(c))
 	}
 	if pay, err := h.Store.LatestJobPayment(ctx, j.ID); err != nil {
 		h.fail(w, err)
@@ -765,7 +803,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	_, _ = h.Store.ExpireSearches(r.Context())
+	h.expireOverdue(r)
 	empID := u.ID
 	if u.Role == "admin" {
 		empID = 0
@@ -784,7 +822,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, c := range crew {
-			d.Crew = append(d.Crew, crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit})
+			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
 		if pay, payErr := h.Store.LatestJobPayment(r.Context(), j.ID); payErr != nil {
 			h.fail(w, payErr)
