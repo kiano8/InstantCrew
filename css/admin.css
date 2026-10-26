@@ -468,6 +468,16 @@ body {
     background: #F8FAFC;
 }
 
+/* Rows that just arrived over the live stream */
+.adm-table tbody tr.adm-row-new {
+    animation: rowArrive 2.4s ease-out;
+}
+
+@keyframes rowArrive {
+    0%, 30% { background: var(--adm-amber-bg); }
+    100% { background: transparent; }
+}
+
 /* ── Table Cell Styles ── */
 .adm-payer-cell {
     display: flex;

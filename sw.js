@@ -39,6 +39,10 @@ self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
         return;
     }
+    // Let long-lived event streams (live admin updates) bypass the worker.
+    if ((event.request.headers.get('Accept') || '').includes('text/event-stream')) {
+        return;
+    }
 
     event.respondWith(
         fetch(event.request)

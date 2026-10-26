@@ -25,6 +25,8 @@ type Handler struct {
 	Store            *store.Store
 	MatchFeeCentavos int64         // e.g. 10000 = ₱100.00
 	SearchWindow     time.Duration // e.g. 3 * time.Minute
+
+	payments paymentHub // live payment updates for the admin console
 }
 
 func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
@@ -70,6 +72,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("GET /api/applicant/payments", app(h.ApplicantPaymentHistory))
 	mux.Handle("GET /api/admin/payments", adm(h.AdminPayments))
 	mux.Handle("POST /api/admin/payments/verify", adm(h.AdminVerifyPayment))
+	mux.Handle("GET /api/admin/payments/stream", adm(h.AdminPaymentStream))
 }
 
 func (h *Handler) assignmentID(w http.ResponseWriter, r *http.Request) (*store.User, int64, bool) {
@@ -245,6 +248,7 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		h.fail(w, err)
 		return
 	}
+	h.payments.publish(paymentEvent{Kind: "submitted", Type: "applicant"})
 	pending := p.PendingPayment != nil && p.PendingPayment.Status == "pending"
 	rejected := p.PendingPayment != nil && p.PendingPayment.Status == "rejected"
 	httpx.JSON(w, http.StatusOK, map[string]any{
@@ -914,6 +918,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
+	h.payments.publish(paymentEvent{Kind: "submitted", Type: "employer"})
 	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
@@ -1121,6 +1126,7 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.payments.publish(paymentEvent{Kind: "status", Type: req.Type, ID: req.ID, Status: status})
 	httpx.JSON(w, http.StatusOK, map[string]any{
 		"success":  true,
 		"status":   status,
