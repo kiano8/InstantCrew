@@ -121,9 +121,9 @@
         <div class="wrap">
             <span>© 2026 Instant Crew</span>
             <div class="footer-links">
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="#">Contact</a>
+                <a href="privacy.html" id="footerPrivacyLink">Privacy</a>
+                <a href="terms.html" id="footerTermsLink">Terms</a>
+                <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer">Facebook</a>
             </div>
         </div>
     </footer>
@@ -554,6 +554,317 @@
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && installModalOverlay && installModalOverlay.classList.contains('open')) {
                     closeInstallModal();
+                }
+            });
+        })();
+    </script>
+
+    <!-- ── Privacy Policy Modal (Triggered by footer "Privacy" link) ── -->
+    <div class="privacy-modal-overlay" id="privacyModalOverlay" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="privacyModalTitle">
+        <div class="privacy-modal-backdrop" id="privacyModalBackdrop"></div>
+        <div class="privacy-modal-dialog">
+            <div class="privacy-modal-header">
+                <div class="privacy-modal-header-left">
+                    <div class="privacy-icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="privacy-modal-title" id="privacyModalTitle">Privacy Policy</h2>
+                        <p class="privacy-modal-subtitle">Instant Crew • Data Protection & Security</p>
+                    </div>
+                </div>
+                <button type="button" class="privacy-modal-close" id="privacyModalCloseBtn" aria-label="Close dialog">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="privacy-modal-body">
+                <div class="privacy-modal-grid">
+                    <div class="privacy-modal-card">
+                        <h4>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            Zero Ad Tracking
+                        </h4>
+                        <p>We never sell your personal data or shift records to advertisers.</p>
+                    </div>
+                    <div class="privacy-modal-card">
+                        <h4>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="10" r="3"></circle><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path></svg>
+                            Shift-Only GPS
+                        </h4>
+                        <p>Location is strictly requested for geofenced shift check-ins.</p>
+                    </div>
+                    <div class="privacy-modal-card">
+                        <h4>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                            Safe GCash Payouts
+                        </h4>
+                        <p>Encrypted reference handling for instant disbursements.</p>
+                    </div>
+                </div>
+
+                <div class="privacy-modal-section">
+                    <h3>1. Information We Collect</h3>
+                    <p>To enable fast, on-demand staffing, Instant Crew collects:</p>
+                    <ul>
+                        <li><strong>Identity & Profile:</strong> Full name, mobile number, email, and ID verification.</li>
+                        <li><strong>For Applicants:</strong> Skill tags, past shift logs, employer feedback, and ratings.</li>
+                        <li><strong>For Employers:</strong> Business trade name, venue branches, and supervisor contacts.</li>
+                        <li><strong>Payment Records:</strong> GCash mobile numbers and official payout transaction references.</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-modal-section">
+                    <h3>2. Location & GPS Verification</h3>
+                    <p>
+                        Real-time GPS is collected solely to match nearby shifts and verify that confirmed crew members have arrived at the job site. <strong>We do not track you outside of active shifts.</strong>
+                    </p>
+                </div>
+
+                <div class="privacy-modal-section">
+                    <h3>3. Philippine Data Privacy Act (RA 10173)</h3>
+                    <p>
+                        You have full rights to inspect, update, or request permanent deletion of your personal records. All data transmission is encrypted via HTTPS/TLS 256-bit encryption.
+                    </p>
+                </div>
+
+                <div class="privacy-modal-section">
+                    <h3>4. Questions & Privacy Requests</h3>
+                    <p>
+                        Contact our Data Protection Officer at <strong>privacy@instantcrew.ph</strong> or message us directly on <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer" style="color:var(--amber-deep); font-weight:700;">Facebook</a>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="privacy-modal-footer">
+                <a href="privacy.html" class="privacy-full-page-link" target="_blank" rel="noopener">
+                    <span>Read Full Policy Page</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                </a>
+                <button type="button" class="btn-privacy-confirm" id="btnPrivacyModalClose">Got It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Privacy Modal Controller Script ── -->
+    <script>
+        (function () {
+            'use strict';
+            const footerPrivacyLink = document.getElementById('footerPrivacyLink');
+            const privacyModalOverlay = document.getElementById('privacyModalOverlay');
+            const privacyModalCloseBtn = document.getElementById('privacyModalCloseBtn');
+            const privacyModalBackdrop = document.getElementById('privacyModalBackdrop');
+            const btnPrivacyModalClose = document.getElementById('btnPrivacyModalClose');
+
+            function openPrivacyModal(e) {
+                if (e) e.preventDefault();
+                if (!privacyModalOverlay) return;
+                privacyModalOverlay.classList.add('open');
+                privacyModalOverlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closePrivacyModal() {
+                if (!privacyModalOverlay) return;
+                privacyModalOverlay.classList.remove('open');
+                privacyModalOverlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            if (footerPrivacyLink) {
+                footerPrivacyLink.addEventListener('click', openPrivacyModal);
+            }
+            if (privacyModalCloseBtn) {
+                privacyModalCloseBtn.addEventListener('click', closePrivacyModal);
+            }
+            if (privacyModalBackdrop) {
+                privacyModalBackdrop.addEventListener('click', closePrivacyModal);
+            }
+            if (btnPrivacyModalClose) {
+                btnPrivacyModalClose.addEventListener('click', closePrivacyModal);
+            }
+
+            if (privacyModalOverlay) {
+                privacyModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === privacyModalOverlay) {
+                        closePrivacyModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && privacyModalOverlay && privacyModalOverlay.classList.contains('open')) {
+                    closePrivacyModal();
+                }
+            });
+        })();
+    </script>
+
+    <!-- ── Terms of Service Modal (Triggered by footer "Terms" link) ── -->
+    <div class="terms-modal-overlay" id="termsModalOverlay" aria-hidden="true" role="dialog" aria-modal="true"
+        aria-labelledby="termsModalTitle">
+        <div class="terms-modal-backdrop" id="termsModalBackdrop"></div>
+        <div class="terms-modal-dialog">
+            <div class="terms-modal-header">
+                <div class="terms-modal-header-left">
+                    <div class="terms-icon-box">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="terms-modal-title" id="termsModalTitle">Terms of Service</h2>
+                        <p class="terms-modal-subtitle">Instant Crew • Simple Shift & Payout Guidelines</p>
+                    </div>
+                </div>
+                <button type="button" class="terms-modal-close" id="termsModalCloseBtn" aria-label="Close dialog">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="terms-modal-body">
+                <div class="terms-modal-grid">
+                    <div class="terms-modal-card">
+                        <h4>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                            Fast Payouts
+                        </h4>
+                        <p>Prompt disbursements directly to your GCash account upon shift completion.</p>
+                    </div>
+                    <div class="terms-modal-card">
+                        <h4>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Punctual Check-In
+                        </h4>
+                        <p>Arrive on time and check in within the employer's GPS venue geofence.</p>
+                    </div>
+                    <div class="terms-modal-card">
+                        <h4>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            Safe & Fair Work
+                        </h4>
+                        <p>Zero tolerance for harassment, discrimination, or unsafe work environments.</p>
+                    </div>
+                </div>
+
+                <div class="terms-modal-section">
+                    <h3>1. Platform Role</h3>
+                    <p>Instant Crew connects businesses with independent flexible workers for short-notice hourly shifts. Workers choose when and where they work on a shift-by-shift basis.</p>
+                </div>
+
+                <div class="terms-modal-section">
+                    <h3>2. Crew Member Commitments</h3>
+                    <ul>
+                        <li>Arrive 10–15 minutes early and check in via GPS at the venue.</li>
+                        <li>Wear the specified work attire (e.g. non-slip shoes, appropriate uniform).</li>
+                        <li>Perform duties diligently and maintain honest, professional workplace conduct.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-modal-section">
+                    <h3>3. Employer Responsibilities</h3>
+                    <ul>
+                        <li>Provide accurate job locations, supervisor contacts, and a safe work environment.</li>
+                        <li>Sign off on verified shift hours promptly to enable instant worker payouts.</li>
+                        <li>Pay the full agreed hourly rate without unauthorized deductions.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-modal-section">
+                    <h3>4. Cancellations & Disputes</h3>
+                    <p>
+                        Reliability is vital. Unnotified no-shows or repeated late cancellations harm community trust and may lead to account penalties. In case of discrepancies, our support team audits GPS timestamps for a fair resolution.
+                    </p>
+                    <p style="margin-top: 8px;">
+                        Need help? Reach out to us on <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer" style="color:var(--amber-deep); font-weight:700;">Facebook</a>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="terms-modal-footer">
+                <a href="terms.html" class="terms-full-page-link" target="_blank" rel="noopener">
+                    <span>Read Full Terms Page</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                </a>
+                <button type="button" class="btn-terms-confirm" id="btnTermsModalClose">Got It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Terms Modal Controller Script ── -->
+    <script>
+        (function () {
+            'use strict';
+            const footerTermsLink = document.getElementById('footerTermsLink');
+            const termsModalOverlay = document.getElementById('termsModalOverlay');
+            const termsModalCloseBtn = document.getElementById('termsModalCloseBtn');
+            const termsModalBackdrop = document.getElementById('termsModalBackdrop');
+            const btnTermsModalClose = document.getElementById('btnTermsModalClose');
+
+            function openTermsModal(e) {
+                if (e) e.preventDefault();
+                if (!termsModalOverlay) return;
+                termsModalOverlay.classList.add('open');
+                termsModalOverlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeTermsModal() {
+                if (!termsModalOverlay) return;
+                termsModalOverlay.classList.remove('open');
+                termsModalOverlay.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            if (footerTermsLink) {
+                footerTermsLink.addEventListener('click', openTermsModal);
+            }
+            if (termsModalCloseBtn) {
+                termsModalCloseBtn.addEventListener('click', closeTermsModal);
+            }
+            if (termsModalBackdrop) {
+                termsModalBackdrop.addEventListener('click', closeTermsModal);
+            }
+            if (btnTermsModalClose) {
+                btnTermsModalClose.addEventListener('click', closeTermsModal);
+            }
+
+            if (termsModalOverlay) {
+                termsModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === termsModalOverlay) {
+                        closeTermsModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && termsModalOverlay && termsModalOverlay.classList.contains('open')) {
+                    closeTermsModal();
                 }
             });
         })();
