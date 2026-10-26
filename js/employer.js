@@ -4108,6 +4108,16 @@ function setAuthTab(which) {
   authErrorBanner.style.display = 'none';
 }
 
+// Google SSO from the quick modal: same endpoint as login.html, mode follows the active tab.
+// The server redirects back to employer.html once the session cookie is set.
+authModal.querySelectorAll('.google-sso-btn').forEach((button) => {
+  button.addEventListener('click', () => {
+    const mode = tabSignup.classList.contains('active') ? 'signup' : 'login';
+    const params = new URLSearchParams({ role: 'hirer', mode });
+    window.location.assign('/api/auth/google?' + params.toString());
+  });
+});
+
 function openAuthModal(tab = 'login') {
   setAuthTab(tab);
   authModal.classList.add('open');
