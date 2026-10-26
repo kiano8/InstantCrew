@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -87,8 +87,13 @@ func main() {
 	dbname := getenv("DB_NAME", "instantcrew_dev")
 	sslmode := getenv("DB_SSLMODE", "disable")
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		user, password, host, dbPort, dbname, sslmode)
+	dsn := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(user, password),
+		Host:     host + ":" + dbPort,
+		Path:     dbname,
+		RawQuery: "sslmode=" + url.QueryEscape(sslmode),
+	}).String()
 
 	if err := os.MkdirAll("uploads", 0o755); err != nil {
 		log.Fatal(err)
