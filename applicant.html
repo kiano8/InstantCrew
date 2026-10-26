@@ -1049,8 +1049,8 @@
                         <div class="app-pass-package-main">
                             <div>
                                 <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">Submit ₱10 and upload your receipt to activate 5 hiring
-                                    opportunities</p>
+                                <p class="app-pass-package-desc">Create your account now and pay ₱10 anytime from your portal to
+                                    activate 5 hiring opportunities</p>
                             </div>
                             <div class="app-pass-package-price">
                                 <span class="app-pass-currency">₱</span>
@@ -1118,7 +1118,7 @@
                                     <div class="db-proof-upload-section">
                                         <div class="db-proof-upload-label">
                                             <span>Proof of Payment Screenshot</span>
-                                            <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                            <span style="color:#6B7280; font-size:0.7rem;">Optional — or pay later in your portal</span>
                                         </div>
                                         <div class="db-proof-dropzone" id="appStepGcashDropzone">
                                             <input type="file" id="appStepGcashProofFile" class="db-proof-file-input"
@@ -1179,7 +1179,7 @@
                                     <div class="db-proof-upload-section">
                                         <div class="db-proof-upload-label">
                                             <span>Proof of Payment Screenshot</span>
-                                            <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
+                                            <span style="color:#6B7280; font-size:0.7rem;">Optional — or pay later in your portal</span>
                                         </div>
                                         <div class="db-proof-dropzone" id="appStepMayaDropzone">
                                             <input type="file" id="appStepMayaProofFile" class="db-proof-file-input"
@@ -1285,7 +1285,7 @@
                                 <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                                 <line x1="2" y1="10" x2="22" y2="10"></line>
                             </svg>
-                            <span>Continue &amp; Submit Payment</span>
+                            <span>Continue to Sign Up</span>
                         </button>
                     </div>
                 </section>
@@ -7764,6 +7764,14 @@
                 // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
                 if (appPayAndProceedBtn) {
                     appPayAndProceedBtn.addEventListener('click', async () => {
+                        const hasStep4Proof = step4PaymentMethod !== 'card' && !!(step4ProofFile || step4ProofDataUrl);
+                        // New applicants can sign up without paying; the ₱10 pass is paid later from the portal.
+                        if (!hasWorkerSession() && !hasStep4Proof) {
+                            pendingInitialApplicantProof = false;
+                            openApplicantAuthModal();
+                            if (tabApplicantSignup) tabApplicantSignup.click();
+                            return;
+                        }
                         if (step4PaymentMethod === 'card') {
                             showToast('Please pay by GCash or Maya and upload your receipt.', true);
                             return;
