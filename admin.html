@@ -349,8 +349,8 @@
             }
 
             // Fetch Payments from Server & LocalStorage
-            async function fetchPayments() {
-                if (refreshBtn) refreshBtn.classList.add('rotating');
+            async function fetchPayments({ silent = false } = {}) {
+                if (refreshBtn && !silent) refreshBtn.classList.add('rotating');
                 try {
                     let serverRecords = [];
                     const res = await fetch('/api/admin/payments', { credentials: 'same-origin' }).catch(() => null);
@@ -364,8 +364,18 @@
 
                     if (serverReachable) {
                         // Live database records are the source of truth in production.
+                        const isFirstLoad = knownPaymentIds === null;
+                        const prevIds = knownPaymentIds || new Set();
+                        knownPaymentIds = new Set(serverRecords.map(p => p.id));
+                        const fresh = isFirstLoad ? [] : serverRecords.filter(p => !prevIds.has(p.id));
                         paymentsData = serverRecords;
                         localStorage.removeItem('ic_local_payments');
+                        if (fresh.length) {
+                            highlightIds = new Set(fresh.map(p => p.id));
+                            showToast(fresh.length === 1
+                                ? `New payment verification request from ${fresh[0].user_name || 'a user'}`
+                                : `${fresh.length} new payment verification requests`, true);
+                        }
                     } else {
                         // Offline fallback: cached records, then demonstration data.
                         paymentsData = JSON.parse(localStorage.getItem('ic_local_payments') || '[]');
@@ -382,7 +392,7 @@
                     }
                 } catch (err) {
                     console.error('Failed to load payments', err);
-                    showToast('Could not reach backend, displaying cached records.', false);
+                    if (!silent) showToast('Could not reach backend, displaying cached records.', false);
                 } finally {
                     setTimeout(() => {
                         if (refreshBtn) refreshBtn.classList.remove('rotating');
@@ -555,6 +565,7 @@
 
                     const tr = document.createElement('tr');
                     tr.id = `row_${p.id}`;
+                    if (highlightIds.has(p.id)) tr.classList.add('adm-row-new');
 
                     tr.innerHTML = `
                         <td>
@@ -626,7 +637,54 @@
             function renderAll() {
                 updateKPIs();
                 renderTable();
+                highlightIds = new Set();
             }
+
+            // Live updates: the server pushes an event whenever a payment is
+            // submitted or its status changes, and we re-sync without a reload.
+            let knownPaymentIds = null; // ids from the last server load; null until the first one
+            let highlightIds = new Set();
+            let liveSyncTimer = null;
+            let pollTimer = null;
+
+            function scheduleLiveSync() {
+                clearTimeout(liveSyncTimer);
+                liveSyncTimer = setTimeout(() => fetchPayments({ silent: true }), 250);
+            }
+
+            function startPolling() {
+                if (!pollTimer) pollTimer = setInterval(() => fetchPayments({ silent: true }), 15000);
+            }
+
+            function stopPolling() {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+
+            function connectPaymentStream() {
+                if (!('EventSource' in window)) {
+                    startPolling();
+                    return;
+                }
+                const es = new EventSource('/api/admin/payments/stream?role=admin', { withCredentials: true });
+                es.addEventListener('payment', scheduleLiveSync);
+                es.onopen = () => {
+                    stopPolling();
+                    scheduleLiveSync(); // catch anything missed while disconnected
+                };
+                es.onerror = () => {
+                    // The browser retries on its own; poll meanwhile, and stop
+                    // for good if the session is gone.
+                    if (es.readyState === EventSource.CLOSED) {
+                        ensureAdminAccess();
+                    }
+                    startPolling();
+                };
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') scheduleLiveSync();
+            });
 
             // Optional rejection-reason prompt. Resolves with the reason, or
             // null when the admin cancels (no status change is sent).
@@ -898,7 +956,11 @@
             }
 
             // Initial load (admin session gate first)
-            ensureAdminAccess().then(ok => { if (ok) fetchPayments(); });
+            ensureAdminAccess().then(ok => {
+                if (!ok) return;
+                fetchPayments();
+                connectPaymentStream();
+            });
         })();
     </script>
 </body>
