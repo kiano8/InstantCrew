@@ -719,14 +719,14 @@
                                 </span>
                                 <span class="db-try-timer" id="dbTryTimer">3m 00s remaining</span>
                             </div>
-                            <div class="db-search-progress-bar">
+                            <div class="db-search-progress-bar" style="display: none;">
                                 <div class="db-search-progress-fill" id="dbSearchProgressFill"></div>
                             </div>
-                            <p class="db-search-timer-note" id="dbSearchTimerNote">Each attempt lasts 3 minutes · Up to
+                            <p class="db-search-timer-note" id="dbSearchTimerNote" style="display: none;">Each attempt lasts 3 minutes · Up to
                                 9 mins per try</p>
                         </div>
 
-                        <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading">
+                        <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading" style="display: none;">
                             <div class="db-matched-crew-heading-row">
                                 <h3 id="matchedCrewHeading">Active crew matching this shift</h3>
                                 <span id="matchedCrewCount" class="db-matched-crew-count">0</span>
@@ -792,19 +792,23 @@
                         <h2 class="db-results-heading" id="resultsHeading">Great news!</h2>
                         <p class="db-results-accepted-note" id="resultsAcceptedNote"></p>
 
-                        <div class="db-crew-list" id="crewList" role="list"></div>
+                        <!-- Combined Match Card: Applicant + Employer Offer in One Card -->
+                        <div class="db-match-combined-card" id="matchCombinedCard">
+                            <div class="db-crew-list" id="crewList" role="list"></div>
+                            <div class="db-match-card-divider"></div>
+                            <div class="db-match-offer-row db-rate-row">
+                                <div>
+                                    <p class="db-rate-amount" id="rateAmount">₱85<span>/hr</span></p>
+                                    <p class="db-rate-note">Employer offered rate</p>
+                                </div>
+                            </div>
+                        </div>
 
-                        <div class="db-rate-row">
-                            <div>
-                                <p class="db-rate-amount" id="rateAmount">₱85<span>/hr</span></p>
-                                <p class="db-rate-note">Employer offered rate</p>
-                            </div>
-                            <div class="db-results-actions-group">
-                                <button type="button" class="db-btn-secondary db-btn-sm"
-                                    id="cancelMatchBtn">Cancel</button>
-                                <button type="button" class="db-btn-primary db-btn-sm"
-                                    id="confirmBooking">Confirm</button>
-                            </div>
+                        <div class="db-results-actions-group">
+                            <button type="button" class="db-btn-primary"
+                                id="confirmBooking">Confirm</button>
+                            <button type="button" class="db-btn-secondary"
+                                id="cancelMatchBtn">Cancel</button>
                         </div>
                     </div>
                 </section>
