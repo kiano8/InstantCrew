@@ -3957,6 +3957,7 @@ function renderEmployerNotifications() {
       if (latest && window.InstantCrewShared) {
         const jobId = notificationJobId(latest);
         window.InstantCrewShared.showPushToast(latest.title, latest.message, latest.type, jobId ? () => openEmployerJobNotification(jobId) : undefined);
+        window.InstantCrewShared.showSystemNotification(latest.title, latest.message, { tag: `employer-${latest.id}` });
       }
     }
     lastEmployerNotificationId = Math.max(lastEmployerNotificationId, newestId);
@@ -4068,6 +4069,7 @@ document.addEventListener('visibilitychange', () => {
 setInterval(syncEmployerState, 800);
 
 /* ── Run on load ────────────────────────────────────────── */
+if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications();
 populateProfile();
 renderEmployerNotifications();
 renderBookings();

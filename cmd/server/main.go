@@ -171,8 +171,13 @@ func main() {
 	mux.Handle("POST /api/auth/activity", authH.RequireAuth(http.HandlerFunc(authH.Activity)))
 
 	// Frontend
-	static := http.FileServer(http.Dir("."))
+	static := noDirListing(http.FileServer(http.Dir(".")))
 	for _, p := range []string{"/css/", "/js/", "/images/", "/uploads/"} {
+		mux.Handle("GET "+p, static)
+	}
+	// The service worker must be served from the root so it can control every
+	// page; mobile browsers only show system notifications through it.
+	for _, p := range []string{"/sw.js", "/manifest.json"} {
 		mux.Handle("GET "+p, static)
 	}
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +219,7 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:              ":" + port,
+		Addr:              getenv("HOST", "") + ":" + port, // HOST=127.0.0.1 behind a reverse proxy
 		Handler:           logRequests(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -265,6 +270,17 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// noDirListing hides directory indexes so /uploads/ cannot enumerate payment proofs.
+func noDirListing(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func logRequests(next http.Handler) http.Handler {

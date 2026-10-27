@@ -456,6 +456,52 @@
         }, 5000);
     }
 
+    // System (OS-level) notifications. Mobile browsers reject `new Notification()`
+    // and only show notifications through a service worker registration, so the
+    // worker is registered here and the constructor is the desktop fallback.
+    let notificationRegistration = null;
+    function getNotificationRegistration() {
+        if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+        if (!notificationRegistration) {
+            notificationRegistration = navigator.serviceWorker.register('/sw.js')
+                .then(() => navigator.serviceWorker.ready)
+                .catch(() => null);
+        }
+        return notificationRegistration;
+    }
+
+    // Registers the worker and asks for permission on the first tap, since
+    // browsers ignore permission prompts that are not tied to a user gesture.
+    function enableSystemNotifications() {
+        if (!('Notification' in window)) return;
+        getNotificationRegistration();
+        if (Notification.permission !== 'default') return;
+        document.addEventListener('click', () => {
+            try { Notification.requestPermission(); } catch { }
+        }, { once: true });
+    }
+
+    async function showSystemNotification(title, body, { tag, url } = {}) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const options = {
+            body,
+            icon: '/images/logo.png',
+            badge: '/images/Instalogo.png',
+            tag: tag || undefined,
+            renotify: Boolean(tag),
+            vibrate: [120, 60, 120],
+            data: { url: url || window.location.href }
+        };
+        try {
+            const registration = await getNotificationRegistration();
+            if (registration && registration.showNotification) {
+                await registration.showNotification(title, options);
+                return;
+            }
+        } catch { }
+        try { new Notification(title, options); } catch { }
+    }
+
     // Broadcast helper
     function notifyStateChange(detail) {
         window.dispatchEvent(new CustomEvent('ic_state_change', { detail }));
@@ -503,6 +549,8 @@
         markAllNotificationsRead,
         clearNotifications,
         showPushToast,
+        enableSystemNotifications,
+        showSystemNotification,
         formatGoogleMapsUrl,
         ICONS,
         getRoleIcon,

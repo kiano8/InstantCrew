@@ -34,6 +34,20 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// Tapping a system notification focuses an open InstantCrew tab, or opens the
+// page that raised it.
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const target = new URL((event.notification.data && event.notification.data.url) || './', self.location.origin);
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+            const samePage = clients.find((client) => new URL(client.url).pathname === target.pathname);
+            if (samePage) return samePage.focus();
+            return self.clients.openWindow(target.href);
+        })
+    );
+});
+
 self.addEventListener('fetch', (event) => {
     // Only handle GET requests and http/https schemes
     if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
