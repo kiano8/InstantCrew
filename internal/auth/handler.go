@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
-	"net/mail"
 	"strings"
 	"time"
 
@@ -25,7 +24,10 @@ type Handler struct {
 	IdleTimeout  time.Duration // sign out after this long without user activity; 0 = off
 	MaxUsers     int           // beta cap on distinct testers; 0 = unlimited
 	CookieSecure bool
+	Mail         Mailer // sends signup and password reset codes
+	DevLogCodes  bool   // dev only: log codes instead of failing when Mail is unset
 	google       *googleOAuth
+	codeMail     mailLimiter
 }
 
 // Compared against when the email doesn't exist, so response time doesn't reveal valid emails.
@@ -94,6 +96,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, u *store.
 }
 
 // POST /api/auth/signup
+// Only Gmail addresses can sign up, and only with the code SignupCode emailed to them.
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Role     string `json:"role"`
@@ -101,6 +104,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		Name     string `json:"name"`    // applicant full name, or employer contact person
 		Company  string `json:"company"` // employers only
+		Code     string `json:"code"`    // from POST /api/auth/signup-code
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
@@ -114,8 +118,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "invalid role")
 		return
 	}
-	if _, err := mail.ParseAddress(email); err != nil {
+	if !validEmail(email) {
 		httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
+		return
+	}
+	if !isGmail(email) {
+		httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
 		return
 	}
 	// bcrypt only uses the first 72 bytes, so reject anything longer.
@@ -133,6 +141,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Role == "applicant" {
 		company = ""
+	}
+	if strings.TrimSpace(req.Code) == "" {
+		httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
+		return
+	}
+	purpose := "signup:" + req.Role
+	if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
+		if errors.Is(err, store.ErrCodeInvalid) {
+			httpx.Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

@@ -472,14 +472,89 @@
 
     // Registers the worker and asks for permission on the first tap, since
     // browsers ignore permission prompts that are not tied to a user gesture.
-    function enableSystemNotifications() {
+    // With `push`, a granted permission also subscribes this device to Web Push.
+    function enableSystemNotifications({ push = false } = {}) {
         if (!('Notification' in window)) return;
         getNotificationRegistration();
+        if (Notification.permission === 'granted') {
+            if (push) syncPushSubscription();
+            return;
+        }
         if (Notification.permission !== 'default') return;
         document.addEventListener('click', () => {
-            try { Notification.requestPermission(); } catch { }
+            try {
+                Promise.resolve(Notification.requestPermission()).then((result) => {
+                    if (push && result === 'granted') syncPushSubscription();
+                });
+            } catch { }
         }, { once: true });
     }
+
+    // Web Push lets the server reach this device while the app is closed (on iOS
+    // only once the site is added to the Home Screen). The subscription belongs
+    // to the logged-in employer, so logout removes it again.
+    let pushActive = false;
+    function base64UrlToBytes(value) {
+        const base64 = (value + '='.repeat((4 - value.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+        return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    }
+
+    function sameKey(buffer, bytes) {
+        const current = new Uint8Array(buffer);
+        return current.length === bytes.length && current.every((b, i) => b === bytes[i]);
+    }
+
+    async function syncPushSubscription() {
+        if (!('PushManager' in window) || !('Notification' in window) || Notification.permission !== 'granted') return false;
+        try {
+            const registration = await getNotificationRegistration();
+            if (!registration || !registration.pushManager) return false;
+            const keyResponse = await fetch('/api/push/key', { credentials: 'same-origin' });
+            if (!keyResponse.ok) return false; // logged out, or push not configured on the server
+            const { public_key: publicKey } = await keyResponse.json();
+            const serverKey = base64UrlToBytes(publicKey);
+            let subscription = await registration.pushManager.getSubscription();
+            // A subscription made with an older server key can no longer receive pushes.
+            const existingKey = subscription && subscription.options && subscription.options.applicationServerKey;
+            if (existingKey && !sameKey(existingKey, serverKey)) {
+                await subscription.unsubscribe();
+                subscription = null;
+            }
+            if (!subscription) {
+                subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: serverKey });
+            }
+            const saved = await fetch('/api/push/subscribe', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subscription.toJSON())
+            });
+            pushActive = saved.ok;
+        } catch (error) {
+            console.warn('[push]', error.message);
+            pushActive = false;
+        }
+        return pushActive;
+    }
+
+    // Call before logging out: the server only accepts this while the session is valid.
+    async function removePushSubscription() {
+        pushActive = false;
+        try {
+            const registration = await getNotificationRegistration();
+            const subscription = registration && registration.pushManager && await registration.pushManager.getSubscription();
+            if (!subscription) return;
+            await fetch('/api/push/unsubscribe', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint: subscription.endpoint })
+            });
+            await subscription.unsubscribe();
+        } catch { }
+    }
+
+    function isPushActive() { return pushActive; }
 
     async function showSystemNotification(title, body, { tag, url } = {}) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -551,6 +626,9 @@
         showPushToast,
         enableSystemNotifications,
         showSystemNotification,
+        syncPushSubscription,
+        removePushSubscription,
+        isPushActive,
         formatGoogleMapsUrl,
         ICONS,
         getRoleIcon,

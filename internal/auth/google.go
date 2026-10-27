@@ -159,6 +159,10 @@ func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 			ssoFail(w, r, "no_account", role, mode)
 			return
 		}
+		if !isGmail(email) {
+			ssoFail(w, r, "gmail_only", role, mode)
+			return
+		}
 		u = &store.User{Email: email, Role: role, Name: strings.TrimSpace(profile.Name)}
 		if u.Name == "" {
 			u.Name = email

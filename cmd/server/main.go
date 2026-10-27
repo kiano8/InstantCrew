@@ -15,6 +15,8 @@ import (
 
 	"instantcrew/internal/auth"
 	"instantcrew/internal/jobs"
+	"instantcrew/internal/mailer"
+	"instantcrew/internal/push"
 	"instantcrew/internal/store"
 )
 
@@ -138,6 +140,18 @@ func main() {
 		IdleTimeout:  idleTimeout,
 		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
+		Mail: &mailer.SMTP{
+			Host:     getenv("SMTP_HOST", "smtp.gmail.com"),
+			Port:     getenv("SMTP_PORT", "587"),
+			Username: os.Getenv("SMTP_USERNAME"),
+			Password: os.Getenv("SMTP_PASSWORD"),
+			From:     os.Getenv("SMTP_FROM"),
+			FromName: getenv("SMTP_FROM_NAME", "Instant Crew"),
+		},
+		DevLogCodes: env == "dev",
+	}
+	if !authH.Mail.Configured() {
+		log.Printf("SMTP not configured (SMTP_USERNAME, SMTP_PASSWORD): signup and password reset emails are disabled")
 	}
 	googleID, googleSecret := os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET")
 	var googleErr error
@@ -161,8 +175,17 @@ func main() {
 	mux := http.NewServeMux()
 
 	jobsH.Register(mux, authH)
+	pushH := push.New(st, push.Config{
+		PublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
+		PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
+		Subject:    getenv("VAPID_SUBJECT", adminEmail),
+	})
+	pushH.Register(mux, authH)
 	// API
+	mux.HandleFunc("POST /api/auth/signup-code", authH.SignupCode)
 	mux.HandleFunc("POST /api/auth/signup", authH.Signup)
+	mux.HandleFunc("POST /api/auth/forgot-password", authH.ForgotPassword)
+	mux.HandleFunc("POST /api/auth/reset-password", authH.ResetPassword)
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/auth/logout", authH.Logout)
 	mux.HandleFunc("GET /api/auth/google", authH.GoogleStart)
@@ -237,6 +260,7 @@ func main() {
 			select {
 			case <-t.C:
 				_ = st.DeleteExpiredSessions(context.Background())
+				_ = st.DeleteExpiredEmailCodes(context.Background())
 			case <-ctx.Done():
 				return
 			}
@@ -258,6 +282,12 @@ func main() {
 			}
 		}
 	}()
+
+	if pushH.Enabled() {
+		go pushH.Run(ctx)
+	} else {
+		log.Printf("Web Push disabled: set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (go run ./cmd/vapid)")
+	}
 
 	go func() {
 		log.Printf("listening on http://localhost:%s (env=%s)", port, env)

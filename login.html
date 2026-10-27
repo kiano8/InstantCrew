@@ -339,7 +339,7 @@
                             <div class="form-group">
                                 <div class="input-wrapper">
                                     <input type="email" id="hirerSignupEmail" class="form-input"
-                                        placeholder="Business Email" required>
+                                        placeholder="Gmail Address (name@gmail.com)" required>
                                     <span class="input-icon-right">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -400,7 +400,7 @@
                             <div class="form-group">
                                 <div class="input-wrapper">
                                     <input type="email" id="appSignupEmail" class="form-input"
-                                        placeholder="Email Address" required>
+                                        placeholder="Gmail Address (name@gmail.com)" required>
                                     <span class="input-icon-right">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -507,8 +507,8 @@
 
                 <div class="auth-modal-header">
                     <h2 class="auth-modal-title" id="forgotModalTitle">Reset your password</h2>
-                    <p class="auth-modal-desc" id="forgotModalDesc">Enter your account email and we'll send you a secure
-                        link to reset your password.</p>
+                    <p class="auth-modal-desc" id="forgotModalDesc">Enter your account email and we'll send you a
+                        6-digit code to reset your password.</p>
                 </div>
 
                 <form id="forgotPassForm" onsubmit="return false;">
@@ -528,11 +528,34 @@
                         </div>
                     </div>
 
+                    <!-- Step 2, shown once the code is sent -->
+                    <div id="forgotResetFields" style="display: none;">
+                        <p class="auth-modal-desc" id="forgotCodeHint" style="margin: 0 0 12px;"></p>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <div class="input-wrapper">
+                                <input type="text" id="forgotCodeInput" class="form-input" inputmode="numeric"
+                                    autocomplete="one-time-code" maxlength="6" placeholder="6-digit code"
+                                    aria-label="Reset code" style="letter-spacing: 6px; text-align: center;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 4px;">
+                            <div class="input-wrapper">
+                                <input type="password" id="forgotNewPassword" class="form-input"
+                                    placeholder="New password (min. 8 chars)" minlength="8" maxlength="72"
+                                    autocomplete="new-password" aria-label="New password">
+                            </div>
+                        </div>
+                        <p class="resend-text">
+                            Didn't receive the email? <button type="button" class="resend-btn"
+                                id="forgotResendBtn">Resend code</button>
+                        </p>
+                    </div>
+
                     <div class="auth-msg auth-msg-error" id="forgotErrorMsg"
                         style="margin-top: 12px; margin-bottom: 4px;"></div>
 
                     <button type="submit" class="btn-auth-submit" id="btnSubmitForgot" style="margin-top: 16px;">Send
-                        Reset Link</button>
+                        Reset Code</button>
                 </form>
             </div>
 
@@ -545,24 +568,21 @@
                     </svg>
                 </div>
                 <div class="auth-modal-header" style="margin-bottom: 8px;">
-                    <h2 class="auth-modal-title">Check your inbox</h2>
+                    <h2 class="auth-modal-title">Password updated</h2>
                 </div>
                 <div class="forgot-success-box">
                     <p class="forgot-success-text">
-                        We've sent a password reset link to <strong id="forgotSentEmailText">your email</strong>. Please
-                        check your inbox and follow the instructions.
+                        The password for <strong id="forgotSentEmailText">your account</strong> has been changed, and
+                        any other devices have been signed out. Log in with your new password.
                     </p>
                     <button type="button" class="btn-auth-submit" id="forgotDoneBtn">Back to Log In</button>
-                    <p class="resend-text">
-                        Didn't receive the email? <button type="button" class="resend-btn" id="forgotResendBtn">Click to
-                            resend</button>
-                    </p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ── Authentication State & Logic Script ── -->
+    <script src="js/email-code.js?v=20261027"></script>
     <script>
         (function () {
             'use strict';
@@ -938,16 +958,34 @@
                 succeed('Login Successful! Redirecting to Employer Dashboard...', 'employer.html', 500);
             });
 
-            // Employer signup 
+            // Signup first emails a code to the Gmail address; '' means we're waiting for it.
+            async function signupCode(form, emailId, role, btn) {
+                authErrorMsg.style.display = 'none';
+                try {
+                    return await window.ICEmailCode.signupCode({
+                        form, role, before: btn, inputClass: 'form-input',
+                        email: document.getElementById(emailId).value,
+                    });
+                } catch (err) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.style.display = 'block';
+                    return '';
+                }
+            }
+
+            // Employer signup
             formHirerSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btnSubmitHirerSignup');
+                const code = await signupCode(formHirerSignup, 'hirerSignupEmail', 'employer', btn);
+                if (!code) return;
                 const user = await authRequest('/api/auth/signup', {
                     role: 'employer',
                     company: document.getElementById('hirerCompanyName').value,
                     name: document.getElementById('hirerContactName').value,
                     email: document.getElementById('hirerSignupEmail').value,
                     password: document.getElementById('hirerSignupPassword').value,
+                    code,
                 }, btn, 'Registering...', 'Register');
                 if (!user) return;
                 saveEmployerSession(user);
@@ -996,11 +1034,14 @@
             formApplicantSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btnSubmitApplicantSignup');
+                const code = await signupCode(formApplicantSignup, 'appSignupEmail', 'applicant', btn);
+                if (!code) return;
                 const user = await authRequest('/api/auth/signup', {
                     role: 'applicant',
                     name: document.getElementById('appFullName').value,
                     email: document.getElementById('appSignupEmail').value,
                     password: document.getElementById('appSignupPassword').value,
+                    code,
                 }, btn, 'Joining Instant Crew...', 'Register');
                 if (!user) return;
                 saveWorkerSession(user);
@@ -1020,13 +1061,32 @@
             const forgotErrorMsg = document.getElementById('forgotErrorMsg');
             const btnSubmitForgot = document.getElementById('btnSubmitForgot');
 
-            function openForgotModal(prefillEmail) {
+            const forgotResetFields = document.getElementById('forgotResetFields');
+            const forgotCodeHint = document.getElementById('forgotCodeHint');
+            const forgotCodeInput = document.getElementById('forgotCodeInput');
+            const forgotNewPassword = document.getElementById('forgotNewPassword');
+            // Accounts are per role, so the dialog resets the one whose form opened it.
+            let forgotRole = 'employer';
+            let forgotSentTo = '';
+
+            function showForgotError(message) {
+                forgotErrorMsg.textContent = message;
+                forgotErrorMsg.style.display = 'block';
+            }
+
+            function openForgotModal(prefillEmail, role) {
+                forgotRole = role;
+                forgotSentTo = '';
                 forgotFormView.style.display = 'block';
                 forgotSuccessView.style.display = 'none';
+                forgotResetFields.style.display = 'none';
+                forgotEmailInput.readOnly = false;
+                forgotCodeInput.value = '';
+                forgotNewPassword.value = '';
                 forgotErrorMsg.style.display = 'none';
                 forgotErrorMsg.textContent = '';
                 btnSubmitForgot.disabled = false;
-                btnSubmitForgot.textContent = 'Send Reset Link';
+                btnSubmitForgot.textContent = 'Send Reset Code';
                 forgotEmailInput.value = prefillEmail || '';
                 forgotPassModal.classList.add('open');
                 forgotPassModal.setAttribute('aria-hidden', 'false');
@@ -1044,7 +1104,7 @@
             if (hirerForgotPassBtn) {
                 hirerForgotPassBtn.addEventListener('click', () => {
                     const email = document.getElementById('hirerLoginEmail').value.trim();
-                    openForgotModal(email || '');
+                    openForgotModal(email || '', 'employer');
                 });
             }
 
@@ -1052,7 +1112,7 @@
             if (appForgotPassBtn) {
                 appForgotPassBtn.addEventListener('click', () => {
                     const email = document.getElementById('appLoginEmail').value.trim();
-                    openForgotModal(email || '');
+                    openForgotModal(email || '', 'applicant');
                 });
             }
 
@@ -1079,39 +1139,78 @@
                 }
             });
 
-            // Form Submit Simulation
+            // Step 1 emails a code (the server answers the same whether or not the
+            // account exists); step 2 sends the code with the new password.
             if (forgotPassForm) {
-                forgotPassForm.addEventListener('submit', () => {
-                    const email = forgotEmailInput.value.trim().toLowerCase();
-                    if (!email || !email.includes('@')) {
-                        forgotErrorMsg.textContent = 'Please enter a valid email address.';
-                        forgotErrorMsg.style.display = 'block';
+                forgotPassForm.addEventListener('submit', async () => {
+                    forgotErrorMsg.style.display = 'none';
+                    if (!forgotSentTo) {
+                        const email = forgotEmailInput.value.trim().toLowerCase();
+                        if (!email || !email.includes('@')) {
+                            showForgotError('Please enter a valid email address.');
+                            return;
+                        }
+                        btnSubmitForgot.disabled = true;
+                        btnSubmitForgot.textContent = 'Sending code…';
+                        try {
+                            await postJSON('/api/auth/forgot-password', { email, role: forgotRole });
+                            forgotSentTo = email;
+                            forgotEmailInput.readOnly = true;
+                            forgotCodeHint.textContent = `If an account exists for ${email}, we've emailed it a 6-digit code. Enter it with your new password.`;
+                            forgotResetFields.style.display = 'block';
+                            btnSubmitForgot.textContent = 'Reset Password';
+                            setTimeout(() => forgotCodeInput.focus(), 50);
+                        } catch (err) {
+                            showForgotError(err.message);
+                            btnSubmitForgot.textContent = 'Send Reset Code';
+                        } finally {
+                            btnSubmitForgot.disabled = false;
+                        }
                         return;
                     }
-                    forgotErrorMsg.style.display = 'none';
-                    btnSubmitForgot.disabled = true;
-                    btnSubmitForgot.textContent = 'Sending reset link…';
 
-                    setTimeout(() => {
-                        forgotSentEmailText.textContent = email;
+                    const code = forgotCodeInput.value.replace(/\D/g, '');
+                    const password = forgotNewPassword.value;
+                    if (code.length !== 6) {
+                        showForgotError('Enter the 6-digit code from the email.');
+                        return;
+                    }
+                    if (password.length < 8 || password.length > 72) {
+                        showForgotError('Your new password must be 8 to 72 characters.');
+                        return;
+                    }
+                    btnSubmitForgot.disabled = true;
+                    btnSubmitForgot.textContent = 'Resetting…';
+                    try {
+                        await postJSON('/api/auth/reset-password', { email: forgotSentTo, role: forgotRole, code, password });
+                        forgotSentEmailText.textContent = forgotSentTo;
                         forgotFormView.style.display = 'none';
                         forgotSuccessView.style.display = 'block';
-                    }, 400);
+                    } catch (err) {
+                        showForgotError(err.message);
+                        btnSubmitForgot.disabled = false;
+                        btnSubmitForgot.textContent = 'Reset Password';
+                    }
                 });
             }
 
-            // Resend link click
             if (forgotResendBtn) {
-                forgotResendBtn.addEventListener('click', () => {
+                forgotResendBtn.addEventListener('click', async () => {
+                    if (!forgotSentTo) return;
                     forgotResendBtn.disabled = true;
                     forgotResendBtn.textContent = 'Resending…';
+                    try {
+                        await postJSON('/api/auth/forgot-password', { email: forgotSentTo, role: forgotRole });
+                        forgotResendBtn.textContent = 'Code resent!';
+                    } catch (err) {
+                        showForgotError(err.message);
+                        forgotResendBtn.textContent = 'Resend code';
+                    }
+                    // The server allows one code per minute.
                     setTimeout(() => {
-                        forgotResendBtn.textContent = 'Link resent!';
-                        setTimeout(() => {
-                            forgotResendBtn.disabled = false;
-                            forgotResendBtn.textContent = 'Click to resend';
-                        }, 2500);
-                    }, 500);
+                        forgotResendBtn.disabled = false;
+                        forgotResendBtn.textContent = 'Resend code';
+                    }, 60000);
                 });
             }
 
