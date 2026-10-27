@@ -531,13 +531,12 @@
                     <span class="db-progress-seg active" data-seg="1"></span>
                     <span class="db-progress-seg" data-seg="2"></span>
                     <span class="db-progress-seg" data-seg="3"></span>
-                    <span class="db-progress-seg" data-seg="4"></span>
                 </div>
 
                 <!-- ════ STEP 1 — Select Job & Category ════ -->
                 <section class="db-step active" id="appStep1" aria-labelledby="appStep1Heading">
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 1 of 4</p>
+                        <p class="db-step-label">Step 1 of 3</p>
                         <h2 id="appStep1Heading">What job are you looking for?</h2>
                         <p class="db-step-sub">Select your industry category and choose your specialty role.</p>
                     </div>
@@ -669,7 +668,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 2 of 4</p>
+                        <p class="db-step-label">Step 2 of 3</p>
                         <h2 id="appStep2Heading">Rate &amp; Work Type</h2>
                         <p class="db-step-sub">Set your expected pay and how you prefer to work.</p>
                     </div>
@@ -843,7 +842,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 3 of 4</p>
+                        <p class="db-step-label">Step 3 of 3</p>
                         <h2 id="appStep3Heading">When are you available?</h2>
                         <p class="db-step-sub">Select your availability so employers can find you.</p>
                     </div>
@@ -1027,72 +1026,6 @@
                     </button>
                 </section>
 
-                <!-- ════ STEP 4 — Hiring Pass & Payment UI ════ -->
-                <section class="db-step" id="appStep4" aria-labelledby="appStep4Heading">
-                    <button type="button" class="db-back-btn" id="appBackToStep3">
-                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
-                            <path d="M6 1L1 6l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                        Back
-                    </button>
-
-                    <div class="db-step-header">
-                        <p class="db-step-label">Step 4 of 4</p>
-                        <h2 id="appStep4Heading">Create Account &amp; Activate</h2>
-                    </div>
-
-                    <!-- Selected Package Showcase -->
-                    <div class="app-pass-package-card">
-                        <div class="app-pass-package-header">
-                            <span class="app-pass-per-hire-tag">₱10 to activate</span>
-                        </div>
-                        <div class="app-pass-package-main">
-                            <div>
-                                <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">Create your account first, then pay ₱10 to activate 5 hiring
-                                    opportunities</p>
-                            </div>
-                            <div class="app-pass-package-price">
-                                <span class="app-pass-currency">₱</span>
-                                <span class="app-pass-amount">10</span>
-                                <span class="app-pass-decimal">.00</span>
-                            </div>
-                        </div>
-                        <div class="app-pass-feature-list">
-                            <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span>₱10 payment activates <strong>5 hires</strong> after receipt verification</span>
-                            </div>
-                            <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span>Unlocked matching with verified employers</span>
-                            </div>
-                            <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span>Add ₱10 again after achieving 5 hires to keep receiving opportunities</span>
-                            </div>
-                        </div>
-                        <!-- Create Account, then Payment -->
-                        <button type="button" class="db-btn-primary" id="appPayAndProceedBtn" style="margin-top: 24px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                                <line x1="2" y1="10" x2="22" y2="10"></line>
-                            </svg>
-                            <span>Create Account &amp; Continue</span>
-                        </button>
-                    </div>
-                </section>
             </div>
         </div>
     </main>
@@ -6197,14 +6130,11 @@
             const appStep1 = document.getElementById('appStep1');
             const appStep2 = document.getElementById('appStep2');
             const appStep3 = document.getElementById('appStep3');
-            const appStep4 = document.getElementById('appStep4');
             const appToStep2 = document.getElementById('appToStep2');
             const appToStep3 = document.getElementById('appToStep3');
             const appToStep4 = document.getElementById('appToStep4');
             const appBackToStep1 = document.getElementById('appBackToStep1');
             const appBackToStep2 = document.getElementById('appBackToStep2');
-            const appBackToStep3 = document.getElementById('appBackToStep3');
-            const appPayAndProceedBtn = document.getElementById('appPayAndProceedBtn');
 
             // Top-Up Payment Modal Elements
             const applicantTopupModal = document.getElementById('applicantTopupModal');
@@ -6212,7 +6142,7 @@
             const appConfirmTopupBtn = document.getElementById('appConfirmTopupBtn');
             const appPassTopupBtn = document.getElementById('appPassTopupBtn');
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
-            // Set when Step 4 opens the auth modal so the Hiring Pass payment follows sign-up.
+            // Set when Step 3 opens the auth modal so the Hiring Pass payment follows sign-up.
             let payAfterApplicantAuth = false;
             const PAY_AFTER_AUTH_KEY = 'ic_applicant_pay_after_auth';
 
@@ -6335,7 +6265,7 @@
                         seg.classList.toggle('active', idx < stepNum);
                     });
                 }
-                [appStep1, appStep2, appStep3, appStep4].forEach((stepEl, idx) => {
+                [appStep1, appStep2, appStep3].forEach((stepEl, idx) => {
                     if (stepEl) stepEl.classList.toggle('active', (idx + 1) === stepNum);
                 });
 
@@ -7283,20 +7213,6 @@
                     });
                 }
 
-                // Step 3 -> Step 4 (Hiring Pass & Activation)
-                if (appToStep4) {
-                    appToStep4.addEventListener('click', () => {
-                        goToAppStep(4);
-                    });
-                }
-
-                // Step 4 -> Step 3
-                if (appBackToStep3) {
-                    appBackToStep3.addEventListener('click', () => {
-                        goToAppStep(3);
-                    });
-                }
-
                 // Eye toggle helper for Card inputs
                 function setupCardInputToggle(btnId, inputId, eyeOpenClass, eyeClosedClass, showTitle, hideTitle) {
                     const btn = document.getElementById(btnId);
@@ -7443,9 +7359,9 @@
                     return true;
                 }
 
-                // Step 4 CTA: create the account first; the ₱10 payment follows once it exists.
-                if (appPayAndProceedBtn) {
-                    appPayAndProceedBtn.addEventListener('click', () => {
+                // Step 3 CTA: create the account first; the ₱10 activation modal opens once it exists.
+                if (appToStep4) {
+                    appToStep4.addEventListener('click', () => {
                         if (hasWorkerSession()) {
                             if (!promptInitialHiringPass()) updateViewMode();
                             return;
