@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css?v=20261026-modal-sso">
-    <link rel="stylesheet" href="css/applicant.css?v=20261027-applicant-step4">
+    <link rel="stylesheet" href="css/applicant.css?v=20261027-applicant-3step">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
     <link rel="manifest" href="manifest.json">
@@ -526,18 +526,17 @@
                     <img src="images/peekingcrew.png" alt="Instant Crew" class="peeking-char-img">
                 </div>
 
-                <!-- Progress Bar: 4 Steps -->
+                <!-- Progress Bar: 3 Steps -->
                 <div class="db-progress" id="appProgress" aria-label="Applicant setup progress">
                     <span class="db-progress-seg active" data-seg="1"></span>
                     <span class="db-progress-seg" data-seg="2"></span>
                     <span class="db-progress-seg" data-seg="3"></span>
-                    <span class="db-progress-seg" data-seg="4"></span>
                 </div>
 
                 <!-- ════ STEP 1 — Select Job & Category ════ -->
                 <section class="db-step active" id="appStep1" aria-labelledby="appStep1Heading">
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 1 of 4</p>
+                        <p class="db-step-label">Step 1 of 3</p>
                         <h2 id="appStep1Heading">What job are you looking for?</h2>
                         <p class="db-step-sub">Select your industry category and choose your specialty role.</p>
                     </div>
@@ -669,7 +668,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 2 of 4</p>
+                        <p class="db-step-label">Step 2 of 3</p>
                         <h2 id="appStep2Heading">Rate &amp; Work Type</h2>
                         <p class="db-step-sub">Set your expected pay and how you prefer to work.</p>
                     </div>
@@ -843,7 +842,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 3 of 4</p>
+                        <p class="db-step-label">Step 3 of 3</p>
                         <h2 id="appStep3Heading">When are you available?</h2>
                         <p class="db-step-sub">Select your availability so employers can find you.</p>
                     </div>
@@ -1018,29 +1017,13 @@
                         </div>
                     </div>
 
-                    <button type="button" class="db-btn-primary" id="appToStep4" style="margin-top: 24px;">
+                    <button type="button" class="db-btn-primary" id="appCompleteApplication" style="margin-top: 24px;">
                         <span>Complete Application</span>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7"
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </button>
-                </section>
-
-                <!-- ════ STEP 4 — Activate Hiring Pass (shown after the account is created) ════ -->
-                <section class="db-step" id="appStep4" aria-labelledby="appStep4Heading">
-                    <div class="db-step-header">
-                        <p class="db-step-label">Step 4 of 4</p>
-                        <h2 id="appStep4Heading">Activate your 5 hires</h2>
-                        <p class="db-step-sub">Your account is ready. Pay ₱10 (₱2 per hire) to start receiving and
-                            accepting shift opportunities.</p>
-                    </div>
-
-                    <!-- The Hiring Pass payment form (#appTopupModalBody) is moved here while Step 4 is shown. -->
-                    <div id="appStep4PaymentSlot"></div>
-
-                    <button type="button" class="db-btn-secondary" id="appStep4SkipBtn">Skip for now — go to my
-                        portal</button>
                 </section>
 
             </div>
@@ -6147,12 +6130,9 @@
             const appStep1 = document.getElementById('appStep1');
             const appStep2 = document.getElementById('appStep2');
             const appStep3 = document.getElementById('appStep3');
-            const appStep4 = document.getElementById('appStep4');
-            const appStep4PaymentSlot = document.getElementById('appStep4PaymentSlot');
-            const appStep4SkipBtn = document.getElementById('appStep4SkipBtn');
             const appToStep2 = document.getElementById('appToStep2');
             const appToStep3 = document.getElementById('appToStep3');
-            const appToStep4 = document.getElementById('appToStep4');
+            const appCompleteApplication = document.getElementById('appCompleteApplication');
             const appBackToStep1 = document.getElementById('appBackToStep1');
             const appBackToStep2 = document.getElementById('appBackToStep2');
 
@@ -6162,9 +6142,6 @@
             const appConfirmTopupBtn = document.getElementById('appConfirmTopupBtn');
             const appPassTopupBtn = document.getElementById('appPassTopupBtn');
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
-            // Set when Step 3 opens the auth modal so the Hiring Pass payment follows sign-up.
-            let payAfterApplicantAuth = false;
-            const PAY_AFTER_AUTH_KEY = 'ic_applicant_pay_after_auth';
 
             // Step 1 category & role elements (using unique stepCat IDs to avoid collisions)
             const stepCatKitchen = document.getElementById('stepCatKitchen');
@@ -6257,12 +6234,8 @@
 
             function updateViewMode() {
                 const isLogged = hasWorkerSession();
-                // Step 4 needs an account; drop back to Step 3 if the session ends there.
-                if (!isLogged && appState.step === 4) goToAppStep(3);
-                // Step 4 (Hiring Pass activation) stays in the onboarding card after sign-up.
-                const showSteps = !isLogged || appState.step === 4;
-                if (appStepsWrap) appStepsWrap.style.display = showSteps ? 'block' : 'none';
-                if (appDashboardWrap) appDashboardWrap.style.display = showSteps ? 'none' : 'block';
+                if (appStepsWrap) appStepsWrap.style.display = isLogged ? 'none' : 'block';
+                if (appDashboardWrap) appDashboardWrap.style.display = isLogged ? 'block' : 'none';
                 const notifWrap = document.querySelector('.db-notif-wrap');
                 const phHeaderBtn = document.getElementById('phHeaderBtn');
                 if (isLogged) {
@@ -6287,15 +6260,13 @@
                         seg.classList.toggle('active', idx < stepNum);
                     });
                 }
-                [appStep1, appStep2, appStep3, appStep4].forEach((stepEl, idx) => {
+                [appStep1, appStep2, appStep3].forEach((stepEl, idx) => {
                     if (stepEl) stepEl.classList.toggle('active', (idx + 1) === stepNum);
                 });
 
                 if (stepNum === 3) {
                     updateStepSummary();
                 }
-                // Step 4 borrows the Hiring Pass payment form from the top-up modal.
-                placeTopupForm(stepNum === 4 ? appStep4PaymentSlot : null);
 
                 const card = document.getElementById('appStepsCard');
                 if (card) {
@@ -6406,16 +6377,8 @@
                 return session?.hiringQuota;
             }
 
-            // Moves the Hiring Pass payment form into `slot`, or back into its modal when slot is null.
-            function placeTopupForm(slot) {
-                const form = document.getElementById('appTopupModalBody');
-                const target = slot || applicantTopupModal?.querySelector('.db-payment-modal-card');
-                if (form && target && form.parentElement !== target) target.appendChild(form);
-            }
-
             function openApplicantTopupModal() {
                 if (applicantTopupModal) {
-                    placeTopupForm(null);
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -6601,7 +6564,6 @@
                 applicantAuthModal.classList.remove('open');
                 applicantAuthModal.setAttribute('aria-hidden', 'true');
                 document.body.style.overflow = '';
-                payAfterApplicantAuth = false;
             }
 
             function showApplicantAuthError(msg) {
@@ -7373,39 +7335,15 @@
                     return fallbackUrl || '';
                 }
 
-                // Shows Step 4 (₱10 Hiring Pass payment) for a new account. Applicants who
-                // already have hires or a receipt awaiting verification are left alone.
-                function promptInitialHiringPass() {
-                    const quota = session?.hiringQuota || {};
-                    if (Number(quota.remainingHires) > 0 || quota.pendingPayment?.status === 'pending') return false;
-                    goToAppStep(4);
-                    updateViewMode();
-                    return true;
-                }
-
-                // Leaves Step 4 for the applicant portal.
-                function finishActivationStep() {
-                    goToAppStep(1);
-                    updateViewMode();
-                }
-
-                if (appStep4SkipBtn) {
-                    appStep4SkipBtn.addEventListener('click', () => {
-                        finishActivationStep();
-                        showToast('You can activate your 5 hires anytime from your portal with Add ₱10 for 5 Hires.');
-                    });
-                }
-
-                // Step 3 CTA: create the account first; Step 4 (₱10 activation) follows once it exists.
-                if (appToStep4) {
-                    appToStep4.addEventListener('click', () => {
+                // Step 3 CTA: the sign-up modal is the last step; the applicant lands in the portal after it.
+                if (appCompleteApplication) {
+                    appCompleteApplication.addEventListener('click', () => {
                         if (hasWorkerSession()) {
-                            if (!promptInitialHiringPass()) updateViewMode();
+                            updateViewMode();
                             return;
                         }
                         openApplicantAuthModal();
                         if (tabApplicantSignup) tabApplicantSignup.click();
-                        payAfterApplicantAuth = true;
                     });
                 }
 
@@ -7512,8 +7450,7 @@
                             if (session) { session.hiringQuota = data.hiring_pass; saveWorkerSession(session); }
                             updateHiringPassUI();
                             renderShiftsFeed();
-                            if (appState.step === 4) finishActivationStep();
-                            else closeApplicantTopupModal();
+                            closeApplicantTopupModal();
                             showToast(data.pending
                                 ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
                                 : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
@@ -7616,9 +7553,6 @@
                     button.addEventListener('click', () => {
                         const mode = tabApplicantSignup && tabApplicantSignup.classList.contains('active') ? 'signup' : 'login';
                         const params = new URLSearchParams({ role: 'applicant', mode });
-                        try {
-                            if (payAfterApplicantAuth) sessionStorage.setItem(PAY_AFTER_AUTH_KEY, '1');
-                        } catch { }
                         window.location.assign('/api/auth/google?' + params.toString());
                     });
                 });
@@ -7655,7 +7589,6 @@
                 // Modal Login Form Submission
                 async function handleApplicantModalLogin(e) {
                     if (e) e.preventDefault();
-                    const payAfterAuth = payAfterApplicantAuth;
                     const emailInput = document.getElementById('appModalLoginEmail');
                     const passInput = document.getElementById('appModalLoginPass');
                     const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
@@ -7722,7 +7655,6 @@
                         applySessionToDashboard(newSession);
                         updateViewMode();
                         showToast('Welcome back!');
-                        if (payAfterAuth) promptInitialHiringPass();
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
@@ -7734,7 +7666,6 @@
                 // Modal Sign Up Form Submission
                 async function handleApplicantModalSignup(e) {
                     if (e) e.preventDefault();
-                    const payAfterAuth = payAfterApplicantAuth;
                     const nameInput = document.getElementById('appModalSignupName');
                     const emailInput = document.getElementById('appModalSignupEmail');
                     const passInput = document.getElementById('appModalSignupPass');
@@ -7822,12 +7753,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        if (payAfterAuth) {
-                            showToast('Account created. Pay ₱10 to activate your first 5 hires.');
-                            promptInitialHiringPass();
-                        } else {
-                            showToast('Account created. Use Add ₱10 for 5 Hires in your hiring pass panel to activate opportunities.');
-                        }
+                        showToast('Account created. Use Add ₱10 for 5 Hires in your hiring pass panel to activate opportunities.');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -7856,12 +7782,6 @@
                     saveWorkerSession(session);
                     applySessionToDashboard(session);
                     updateViewMode();
-                    let payAfterSso = false;
-                    try {
-                        payAfterSso = sessionStorage.getItem(PAY_AFTER_AUTH_KEY) === '1';
-                        sessionStorage.removeItem(PAY_AFTER_AUTH_KEY);
-                    } catch { }
-                    if (payAfterSso) promptInitialHiringPass();
                 }).catch(() => { });
             }
 
