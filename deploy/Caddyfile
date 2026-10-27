@@ -1,0 +1,24 @@
+# /etc/caddy/Caddyfile — HTTPS reverse proxy for InstantCrew.
+# Replace instantcrew.example.com with the real domain (its A record must point at the droplet).
+# Caddy gets and renews the Let's Encrypt certificate and redirects HTTP to HTTPS on its own.
+instantcrew.example.com {
+	# Never serve dotfiles (.env, .git) even if one ends up in the app directory.
+	@hidden path /.* /*/.*
+	respond @hidden 404
+
+	request_body {
+		max_size 16MB # proof uploads are capped at 15MB in the app
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+}

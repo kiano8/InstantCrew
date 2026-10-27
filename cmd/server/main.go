@@ -15,6 +15,8 @@ import (
 
 	"instantcrew/internal/auth"
 	"instantcrew/internal/jobs"
+	"instantcrew/internal/mailer"
+	"instantcrew/internal/push"
 	"instantcrew/internal/store"
 )
 
@@ -138,6 +140,18 @@ func main() {
 		IdleTimeout:  idleTimeout,
 		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
+		Mail: &mailer.SMTP{
+			Host:     getenv("SMTP_HOST", "smtp.gmail.com"),
+			Port:     getenv("SMTP_PORT", "587"),
+			Username: os.Getenv("SMTP_USERNAME"),
+			Password: os.Getenv("SMTP_PASSWORD"),
+			From:     os.Getenv("SMTP_FROM"),
+			FromName: getenv("SMTP_FROM_NAME", "Instant Crew"),
+		},
+		DevLogCodes: env == "dev",
+	}
+	if !authH.Mail.Configured() {
+		log.Printf("SMTP not configured (SMTP_USERNAME, SMTP_PASSWORD): signup and password reset emails are disabled")
 	}
 	googleID, googleSecret := os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET")
 	var googleErr error
@@ -161,8 +175,17 @@ func main() {
 	mux := http.NewServeMux()
 
 	jobsH.Register(mux, authH)
+	pushH := push.New(st, push.Config{
+		PublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
+		PrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
+		Subject:    getenv("VAPID_SUBJECT", adminEmail),
+	})
+	pushH.Register(mux, authH)
 	// API
+	mux.HandleFunc("POST /api/auth/signup-code", authH.SignupCode)
 	mux.HandleFunc("POST /api/auth/signup", authH.Signup)
+	mux.HandleFunc("POST /api/auth/forgot-password", authH.ForgotPassword)
+	mux.HandleFunc("POST /api/auth/reset-password", authH.ResetPassword)
 	mux.HandleFunc("POST /api/auth/login", authH.Login)
 	mux.HandleFunc("POST /api/auth/logout", authH.Logout)
 	mux.HandleFunc("GET /api/auth/google", authH.GoogleStart)
@@ -171,8 +194,13 @@ func main() {
 	mux.Handle("POST /api/auth/activity", authH.RequireAuth(http.HandlerFunc(authH.Activity)))
 
 	// Frontend
-	static := http.FileServer(http.Dir("."))
+	static := noDirListing(http.FileServer(http.Dir(".")))
 	for _, p := range []string{"/css/", "/js/", "/images/", "/uploads/"} {
+		mux.Handle("GET "+p, static)
+	}
+	// The service worker must be served from the root so it can control every
+	// page; mobile browsers only show system notifications through it.
+	for _, p := range []string{"/sw.js", "/manifest.json"} {
 		mux.Handle("GET "+p, static)
 	}
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -214,7 +242,7 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:              ":" + port,
+		Addr:              getenv("HOST", "") + ":" + port, // HOST=127.0.0.1 behind a reverse proxy
 		Handler:           logRequests(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -232,6 +260,7 @@ func main() {
 			select {
 			case <-t.C:
 				_ = st.DeleteExpiredSessions(context.Background())
+				_ = st.DeleteExpiredEmailCodes(context.Background())
 			case <-ctx.Done():
 				return
 			}
@@ -254,6 +283,12 @@ func main() {
 		}
 	}()
 
+	if pushH.Enabled() {
+		go pushH.Run(ctx)
+	} else {
+		log.Printf("Web Push disabled: set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (go run ./cmd/vapid)")
+	}
+
 	go func() {
 		log.Printf("listening on http://localhost:%s (env=%s)", port, env)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -265,6 +300,17 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+}
+
+// noDirListing hides directory indexes so /uploads/ cannot enumerate payment proofs.
+func noDirListing(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func logRequests(next http.Handler) http.Handler {

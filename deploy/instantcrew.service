@@ -1,0 +1,45 @@
+# /etc/systemd/system/instantcrew.service
+# Installed by deploy/install-service.sh. Adjust APP_DIR paths if the app lives elsewhere.
+[Unit]
+Description=InstantCrew web server
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=instantcrew-app
+Group=instantcrew-app
+WorkingDirectory=/opt/instantcrew
+# Read by systemd as root; the instantcrew-app user itself cannot read this file.
+EnvironmentFile=/etc/instantcrew/instantcrew.env
+ExecStart=/opt/instantcrew/instantcrew
+Restart=on-failure
+RestartSec=3
+UMask=0027
+
+# Sandboxing: the app can only write to uploads/.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/instantcrew/uploads
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

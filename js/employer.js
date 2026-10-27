@@ -3705,6 +3705,8 @@ if (headerBackArrow) {
 
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
+    // Stop pushes to this device before the session that owns them ends.
+    if (window.InstantCrewShared) await window.InstantCrewShared.removePushSubscription();
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }); } catch (_) { }
     sessionStorage.removeItem(SESSION_KEY);
     authUser = null;
@@ -4048,6 +4050,10 @@ function renderEmployerNotifications() {
       if (latest && window.InstantCrewShared) {
         const jobId = notificationJobId(latest);
         window.InstantCrewShared.showPushToast(latest.title, latest.message, latest.type, jobId ? () => openEmployerJobNotification(jobId) : undefined);
+        // With Web Push on, the service worker already shows this one.
+        if (!window.InstantCrewShared.isPushActive()) {
+          window.InstantCrewShared.showSystemNotification(latest.title, latest.message, { tag: `employer-${latest.id}` });
+        }
       }
     }
     lastEmployerNotificationId = Math.max(lastEmployerNotificationId, newestId);
@@ -4159,6 +4165,16 @@ document.addEventListener('visibilitychange', () => {
 setInterval(syncEmployerState, 800);
 
 /* ── Run on load ────────────────────────────────────────── */
+if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications({ push: true });
+
+// A tapped push notification for an already-open tab arrives as a message.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (!event.data || event.data.type !== 'notification-click' || !authUser) return;
+    const jobId = new URL(event.data.url, window.location.origin).searchParams.get('job');
+    if (jobId) openEmployerJobNotification(jobId);
+  });
+}
 populateProfile();
 renderEmployerNotifications();
 renderBookings();
@@ -4289,6 +4305,7 @@ function onAuthSuccess(user) {
   }
   authUser = user;
   saveEmployerSessionFromUser(user);
+  if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
   const action = pendingAuthAction;
   closeAuthModal();            // clears pendingAuthAction, so we saved it above
   updateAuthUI();
@@ -4333,14 +4350,25 @@ loginForm.addEventListener('submit', (e) => {
   }, 'Logging in…');
 });
 
-signupForm.addEventListener('submit', (e) => {
+signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  submitAuth(document.getElementById('btnSubmitModalSignup'), '/api/auth/signup', {
+  const btn = document.getElementById('btnSubmitModalSignup');
+  authErrorBanner.style.display = 'none';
+  // The first submit emails a code to the Gmail address; the next one sends it.
+  let code = '';
+  try {
+    code = await window.ICEmailCode.signupCode({ form: signupForm, email: authVal('empModalSignupEmail'), role: 'employer', before: btn, inputClass: 'db-auth-input' });
+  } catch (err) {
+    showAuthError(err.message);
+  }
+  if (!code) return;
+  submitAuth(btn, '/api/auth/signup', {
     role: 'employer',
     company: authVal('empModalSignupCompany'),
     name: authVal('empModalSignupContact'),
     email: authVal('empModalSignupEmail'),
     password: authVal('empModalSignupPass'),
+    code,
   }, 'Creating account…');
 });
 
@@ -4360,9 +4388,18 @@ signupForm.addEventListener('submit', (e) => {
   if (!authUser) {
     // Stale browser session from an expired cookie: fall back to guest.
     sessionStorage.removeItem(SESSION_KEY);
+  } else if (window.InstantCrewShared) {
+    window.InstantCrewShared.syncPushSubscription();
   }
   updateAuthUI();
-  await restoreEmployerSearchOnLogin();
+  // A push notification opens employer.html?job=<id> to show that shift.
+  const linkedJobId = new URLSearchParams(window.location.search).get('job');
+  if (authUser && linkedJobId) {
+    history.replaceState(null, '', window.location.pathname);
+    await openEmployerJobNotification(linkedJobId);
+  } else {
+    await restoreEmployerSearchOnLogin();
+  }
 })();
 
 window.addEventListener('beforeunload', (e) => {

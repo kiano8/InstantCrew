@@ -11,9 +11,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
+<<<<<<< HEAD
     <link rel="stylesheet" href="css/employer.css?v=20261027-terms-btn">
     <link rel="stylesheet" href="css/applicant.css?v=20261027-terms">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261028-homescreen">
+=======
+    <link rel="stylesheet" href="css/employer.css?v=20261026-modal-sso">
+    <link rel="stylesheet" href="css/applicant.css?v=20261027-applicant-3step">
+>>>>>>> 2c7d835118a48ae874f7da74f48e4a4318b42873
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
     <link rel="manifest" href="manifest.json">
@@ -544,18 +549,17 @@
                     <img src="images/peekingcrew.png" alt="Instant Crew" class="peeking-char-img">
                 </div>
 
-                <!-- Progress Bar: 4 Steps -->
+                <!-- Progress Bar: 3 Steps -->
                 <div class="db-progress" id="appProgress" aria-label="Applicant setup progress">
                     <span class="db-progress-seg active" data-seg="1"></span>
                     <span class="db-progress-seg" data-seg="2"></span>
                     <span class="db-progress-seg" data-seg="3"></span>
-                    <span class="db-progress-seg" data-seg="4"></span>
                 </div>
 
                 <!-- ════ STEP 1 — Select Job & Category ════ -->
                 <section class="db-step active" id="appStep1" aria-labelledby="appStep1Heading">
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 1 of 4</p>
+                        <p class="db-step-label">Step 1 of 3</p>
                         <h2 id="appStep1Heading">What job are you looking for?</h2>
                         <p class="db-step-sub">Select your industry category and choose your specialty role.</p>
                     </div>
@@ -687,7 +691,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 2 of 4</p>
+                        <p class="db-step-label">Step 2 of 3</p>
                         <h2 id="appStep2Heading">Rate &amp; Work Type</h2>
                         <p class="db-step-sub">Set your expected pay and how you prefer to work.</p>
                     </div>
@@ -861,7 +865,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 3 of 4</p>
+                        <p class="db-step-label">Step 3 of 3</p>
                         <h2 id="appStep3Heading">When are you available?</h2>
                         <p class="db-step-sub">Select your availability so employers can find you.</p>
                     </div>
@@ -1036,7 +1040,7 @@
                         </div>
                     </div>
 
-                    <button type="button" class="db-btn-primary" id="appToStep4" style="margin-top: 24px;">
+                    <button type="button" class="db-btn-primary" id="appCompleteApplication" style="margin-top: 24px;">
                         <span>Complete Application</span>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7"
@@ -1045,269 +1049,6 @@
                     </button>
                 </section>
 
-                <!-- ════ STEP 4 — Hiring Pass & Payment UI ════ -->
-                <section class="db-step" id="appStep4" aria-labelledby="appStep4Heading">
-                    <button type="button" class="db-back-btn" id="appBackToStep3">
-                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
-                            <path d="M6 1L1 6l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                        Back
-                    </button>
-
-                    <div class="db-step-header">
-                        <p class="db-step-label">Step 4 of 4</p>
-                        <h2 id="appStep4Heading">Hiring Pass &amp; Activation</h2>
-                    </div>
-
-                    <!-- Selected Package Showcase -->
-                    <div class="app-pass-package-card">
-                        <div class="app-pass-package-header">
-                            <span class="app-pass-per-hire-tag">₱10 to activate</span>
-                        </div>
-                        <div class="app-pass-package-main">
-                            <div>
-                                <h3 class="app-pass-package-title">Starter Crew Pass</h3>
-                                <p class="app-pass-package-desc">Create your account now and pay ₱10 anytime from your portal to
-                                    activate 5 hiring opportunities</p>
-                            </div>
-                            <div class="app-pass-package-price">
-                                <span class="app-pass-currency">₱</span>
-                                <span class="app-pass-amount">10</span>
-                                <span class="app-pass-decimal">.00</span>
-                            </div>
-                        </div>
-                        <div class="app-pass-feature-list">
-                            <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span>₱10 payment activates <strong>5 hires</strong> after receipt verification</span>
-                            </div>
-                            <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span>Unlocked matching with verified employers</span>
-                            </div>
-                            <div class="app-pass-feature-item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706"
-                                    stroke-width="2.5">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span>Add ₱10 again after achieving 5 hires to keep receiving opportunities</span>
-                            </div>
-                        </div>
-                        <!-- Payment Method Selector -->
-                        <div class="db-payment-methods-section" style="margin-top: 16px;">
-                            <label class="db-payment-section-label">Select Payment Method</label>
-                            <div class="db-pay-method-tabs" role="radiogroup" id="appStepPayTabs"
-                                style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                                <button type="button" class="db-pay-method-btn active" data-method="gcash"
-                                    aria-checked="true">
-                                    <span class="db-pay-dot"></span>
-                                    <span class="db-pay-method-name">GCash</span>
-                                </button>
-                                <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
-                                    <span class="db-pay-dot"></span>
-                                    <span class="db-pay-method-name">Maya</span>
-                                </button>
-                            </div>
-
-                            <!-- Step 4 GCash QR Code & Proof of Payment -->
-                            <div class="db-pay-method-details" id="appStepGcashWrap">
-                                <div class="db-qr-container">
-                                    <div class="db-qr-card">
-                                        <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code"
-                                            class="db-qr-image">
-                                        <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
-                                    </div>
-                                    <div class="db-qr-instructions">
-                                        <ol>
-                                            <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.
-                                            </li>
-                                            <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.
-                                            </li>
-                                            <li>Take a screenshot of the completed payment receipt.</li>
-                                            <li>Upload the screenshot below as Proof of Payment.</li>
-                                        </ol>
-                                    </div>
-                                    <div class="db-proof-upload-section">
-                                        <div class="db-proof-upload-label">
-                                            <span>Proof of Payment Screenshot</span>
-                                            <span style="color:#6B7280; font-size:0.7rem;">Optional — or pay later in your portal</span>
-                                        </div>
-                                        <div class="db-proof-dropzone" id="appStepGcashDropzone">
-                                            <input type="file" id="appStepGcashProofFile" class="db-proof-file-input"
-                                                accept="image/*">
-                                            <div class="db-proof-icon-wrap">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                                </svg>
-                                            </div>
-                                            <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                            <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
-                                        </div>
-                                        <div class="db-proof-attached-box" id="appStepGcashAttachedBox">
-                                            <img src="" alt="Proof Preview" class="db-proof-thumb"
-                                                id="appStepGcashThumb">
-                                            <div class="db-proof-info">
-                                                <span class="db-proof-filename"
-                                                    id="appStepGcashFilename">receipt.jpg</span>
-                                                <span class="db-proof-status-tag">
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                        stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                                                        stroke-linejoin="round">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                    Receipt attached &amp; ready
-                                                </span>
-                                            </div>
-                                            <button type="button" class="db-proof-remove-btn"
-                                                id="appStepGcashRemoveBtn">Change</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 4 Maya QR Code & Proof of Payment -->
-                            <div class="db-pay-method-details" id="appStepMayaWrap" style="display:none;">
-                                <div class="db-qr-container">
-                                    <div class="db-qr-card">
-                                        <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code"
-                                            class="db-qr-image">
-                                        <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
-                                    </div>
-                                    <div class="db-qr-instructions">
-                                        <ol>
-                                            <li>Open your <strong>Maya</strong> app and tap <strong>Scan to
-                                                    Pay</strong>.
-                                            </li>
-                                            <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.
-                                            </li>
-                                            <li>Take a screenshot of the completed payment receipt.</li>
-                                            <li>Upload the screenshot below as Proof of Payment.</li>
-                                        </ol>
-                                    </div>
-                                    <div class="db-proof-upload-section">
-                                        <div class="db-proof-upload-label">
-                                            <span>Proof of Payment Screenshot</span>
-                                            <span style="color:#6B7280; font-size:0.7rem;">Optional — or pay later in your portal</span>
-                                        </div>
-                                        <div class="db-proof-dropzone" id="appStepMayaDropzone">
-                                            <input type="file" id="appStepMayaProofFile" class="db-proof-file-input"
-                                                accept="image/*">
-                                            <div class="db-proof-icon-wrap">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                                </svg>
-                                            </div>
-                                            <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                            <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
-                                        </div>
-                                        <div class="db-proof-attached-box" id="appStepMayaAttachedBox">
-                                            <img src="" alt="Proof Preview" class="db-proof-thumb"
-                                                id="appStepMayaThumb">
-                                            <div class="db-proof-info">
-                                                <span class="db-proof-filename"
-                                                    id="appStepMayaFilename">receipt.jpg</span>
-                                                <span class="db-proof-status-tag">
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                        stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                                                        stroke-linejoin="round">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                    Receipt attached &amp; ready
-                                                </span>
-                                            </div>
-                                            <button type="button" class="db-proof-remove-btn"
-                                                id="appStepMayaRemoveBtn">Change</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="db-pay-method-details" id="appStepCardWrap" style="display:none;">
-                                <div class="db-pay-field">
-                                    <label for="appStepCardNum">Card Number</label>
-                                    <div class="db-pay-input-wrap db-pay-card-num-wrap">
-                                        <input type="password" id="appStepCardNum" class="db-pay-input"
-                                            placeholder="4242 •••• •••• 4242" maxlength="19">
-                                        <button type="button" class="db-cvv-toggle-btn" id="toggleAppStepCardNumBtn"
-                                            aria-label="Show card number" title="Show card number">
-                                            <svg class="db-cvv-eye-icon db-card-eye-open" width="16" height="16"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                <circle cx="12" cy="12" r="3"></circle>
-                                            </svg>
-                                            <svg class="db-cvv-eye-icon db-card-eye-closed" width="16" height="16"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                                <path
-                                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
-                                                </path>
-                                                <line x1="1" y1="1" x2="23" y2="23"></line>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="db-pay-card-row">
-                                    <div class="db-pay-field">
-                                        <label for="appStepCardExp">Expiry</label>
-                                        <input type="text" id="appStepCardExp" class="db-pay-input db-pay-input-full"
-                                            placeholder="12/28" maxlength="5">
-                                    </div>
-                                    <div class="db-pay-field">
-                                        <label for="appStepCardCvc">CVV</label>
-                                        <div class="db-pay-input-wrap db-pay-cvv-wrap">
-                                            <input type="password" id="appStepCardCvc" class="db-pay-input"
-                                                placeholder="123" maxlength="4">
-                                            <button type="button" class="db-cvv-toggle-btn" id="toggleAppStepCardCvcBtn"
-                                                aria-label="Show CVV" title="Show CVV">
-                                                <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
-                                                </svg>
-                                                <svg class="db-cvv-eye-icon db-cvv-eye-closed" width="16" height="16"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    style="display: none;">
-                                                    <path
-                                                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
-                                                    </path>
-                                                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Payment & Proceed Button -->
-                        <button type="button" class="db-btn-primary" id="appPayAndProceedBtn" style="margin-top: 24px;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                                <line x1="2" y1="10" x2="22" y2="10"></line>
-                            </svg>
-                            <span>Continue to Sign Up</span>
-                        </button>
-                    </div>
-                </section>
             </div>
         </div>
     </main>
@@ -2007,7 +1748,7 @@
                             referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
                     </div>
 
-                    <div class="app-loc-map-art">
+                    <div class="app-loc-map-art" id="locMapArt">
                         <div class="app-map-roads"></div>
                         <div class="app-map-pulse-pin">
                             <div class="app-pin-glow"></div>
@@ -2018,7 +1759,7 @@
                             </svg>
                         </div>
                     </div>
-                    <p class="app-map-preview-hint">Location verified by employer for Google Maps navigation</p>
+                    <p class="app-map-preview-hint" id="locMapHint">Location verified by employer for Google Maps navigation</p>
                 </div>
 
             </div>
@@ -2225,7 +1966,7 @@
                     </div>
 
                     <div class="db-auth-field">
-                        <label for="appModalSignupEmail" class="db-field-label">Email Address</label>
+                        <label for="appModalSignupEmail" class="db-field-label">Gmail Address</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -2234,7 +1975,7 @@
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                             <input type="email" id="appModalSignupEmail" class="db-auth-input"
-                                placeholder="you@example.com" required autocomplete="email">
+                                placeholder="name@gmail.com" required autocomplete="email">
                         </div>
                     </div>
 
@@ -2564,7 +2305,7 @@
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js?v=20261026-arrival-limit"></script>
+    <script src="js/shared-data.js?v=20261027-system-notifs"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -2574,8 +2315,30 @@
 
             // Available services catalog matching employer.js ROLES
             const SERVICES_CATALOG = { kitchen: [], delivery: [], helpers: [] };
+            const ROLE_LABELS_BY_ID = {};
+            // The server stores role IDs (e.g. "cook") but the pickers work with labels ("Cook").
+            // Map saved IDs back to labels so previously selected roles stay checked after a refresh.
+            function normalizeServices(list) {
+                const out = [];
+                for (const role of Array.isArray(list) ? list : []) {
+                    const label = ROLE_LABELS_BY_ID[role] || role;
+                    if (!out.includes(label)) out.push(label);
+                }
+                return out;
+            }
             fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
-                for (const category of categories || []) SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
+                for (const category of categories || []) {
+                    SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
+                    for (const role of category.roles || []) ROLE_LABELS_BY_ID[role.id] = role.label;
+                }
+                if (typeof session !== 'undefined' && session) {
+                    session.services = normalizeServices(session.services);
+                    selectedServices = normalizeServices(selectedServices);
+                    if (hasWorkerSession()) {
+                        saveWorkerSession(session);
+                        renderMainServicesDisplay();
+                    }
+                }
                 // The onboarding step initializes before the catalog arrives, which can leave a
                 // placeholder role selected. Re-run category setup so a real catalog role is chosen.
                 if (typeof setAppCategory === 'function' && typeof appState !== 'undefined') setAppCategory(appState.category);
@@ -2640,7 +2403,7 @@
             }
             let pendingLocation = session.location || 'Cebu City';
             let pendingEmploymentPreference = session.employmentPreference || 'full-time';
-            let selectedServices = Array.isArray(session.services) ? [...session.services] : [];
+            let selectedServices = normalizeServices(session.services);
             let isOnline = session.active !== false;
 
             // DOM Elements
@@ -3063,16 +2826,8 @@
             }
             document.addEventListener('click', unlockAudio, { once: true });
 
-            // Request Desktop Notification Permission on user interaction if supported
-            if ('Notification' in window && Notification.permission === 'default') {
-                const reqNotifPerm = () => {
-                    try {
-                        Notification.requestPermission();
-                    } catch { }
-                    document.removeEventListener('click', reqNotifPerm);
-                };
-                document.addEventListener('click', reqNotifPerm, { once: true });
-            }
+            // Register the service worker and ask for system notification permission on first tap
+            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications();
 
             // Toast helper
             function showToast(msg, isError = false) {
@@ -6296,7 +6051,7 @@
                 profileOverlay.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
 
-                selectedServices = Array.isArray(session.services) ? [...session.services] : [];
+                selectedServices = normalizeServices(session.services);
                 pendingEmploymentPreference = session.employmentPreference || 'full-time';
                 pendingLocation = session.location || 'Cebu City';
                 if (profileEmpNote) {
@@ -6556,15 +6311,8 @@
                         }
                     });
 
-                    // Trigger browser Desktop Notification if allowed
-                    try {
-                        if ('Notification' in window && Notification.permission === 'granted') {
-                            new Notification(pending.title, {
-                                body: cleanToastMsg,
-                                icon: 'images/logo.png'
-                            });
-                        }
-                    } catch { }
+                    // System notification (works on mobile through the service worker)
+                    InstantCrewShared.showSystemNotification(pending.title, cleanToastMsg, { tag: `applicant-${pending.id}` });
                 }
             }
 
@@ -6615,14 +6363,11 @@
             const appStep1 = document.getElementById('appStep1');
             const appStep2 = document.getElementById('appStep2');
             const appStep3 = document.getElementById('appStep3');
-            const appStep4 = document.getElementById('appStep4');
             const appToStep2 = document.getElementById('appToStep2');
             const appToStep3 = document.getElementById('appToStep3');
-            const appToStep4 = document.getElementById('appToStep4');
+            const appCompleteApplication = document.getElementById('appCompleteApplication');
             const appBackToStep1 = document.getElementById('appBackToStep1');
             const appBackToStep2 = document.getElementById('appBackToStep2');
-            const appBackToStep3 = document.getElementById('appBackToStep3');
-            const appPayAndProceedBtn = document.getElementById('appPayAndProceedBtn');
 
             // Top-Up Payment Modal Elements
             const applicantTopupModal = document.getElementById('applicantTopupModal');
@@ -6630,10 +6375,6 @@
             const appConfirmTopupBtn = document.getElementById('appConfirmTopupBtn');
             const appPassTopupBtn = document.getElementById('appPassTopupBtn');
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
-            let pendingInitialApplicantProof = false;
-            let pendingInitialApplicantProofFile = null;
-            let pendingInitialApplicantProofDataUrl = '';
-            let pendingInitialApplicantPaymentMethod = 'gcash';
 
             // Step 1 category & role elements (using unique stepCat IDs to avoid collisions)
             const stepCatKitchen = document.getElementById('stepCatKitchen');
@@ -6726,19 +6467,17 @@
 
             function updateViewMode() {
                 const isLogged = hasWorkerSession();
+                if (appStepsWrap) appStepsWrap.style.display = isLogged ? 'none' : 'block';
+                if (appDashboardWrap) appDashboardWrap.style.display = isLogged ? 'block' : 'none';
                 const notifWrap = document.querySelector('.db-notif-wrap');
                 const phHeaderBtn = document.getElementById('phHeaderBtn');
                 if (isLogged) {
-                    if (appStepsWrap) appStepsWrap.style.display = 'none';
-                    if (appDashboardWrap) appDashboardWrap.style.display = 'block';
                     if (headerBackArrow) headerBackArrow.style.display = 'none';
                     if (headerLoginBtn) headerLoginBtn.style.display = 'none';
                     if (openProfilePanelBtn) openProfilePanelBtn.style.display = 'flex';
                     if (notifWrap) notifWrap.style.display = 'inline-block';
                     if (phHeaderBtn) phHeaderBtn.style.display = 'inline-flex';
                 } else {
-                    if (appStepsWrap) appStepsWrap.style.display = 'block';
-                    if (appDashboardWrap) appDashboardWrap.style.display = 'none';
                     if (headerBackArrow) headerBackArrow.style.display = 'inline-flex';
                     if (headerLoginBtn) headerLoginBtn.style.display = 'inline-block';
                     if (openProfilePanelBtn) openProfilePanelBtn.style.display = 'none';
@@ -6754,15 +6493,12 @@
                         seg.classList.toggle('active', idx < stepNum);
                     });
                 }
-                [appStep1, appStep2, appStep3, appStep4].forEach((stepEl, idx) => {
+                [appStep1, appStep2, appStep3].forEach((stepEl, idx) => {
                     if (stepEl) stepEl.classList.toggle('active', (idx + 1) === stepNum);
                 });
 
                 if (stepNum === 3) {
                     updateStepSummary();
-                }
-                if (stepNum === 4 && typeof updateStep4ContinueBtn === 'function') {
-                    updateStep4ContinueBtn();
                 }
 
                 const card = document.getElementById('appStepsCard');
@@ -6876,12 +6612,6 @@
 
             function openApplicantTopupModal() {
                 if (applicantTopupModal) {
-                    const title = document.getElementById('appTopupModalTitle');
-                    const subtitle = applicantTopupModal.querySelector('.db-payment-header .db-modal-sub');
-                    const confirmText = appConfirmTopupBtn?.querySelector('span');
-                    if (title) title.textContent = 'Add ₱10 for 5 Hires';
-                    if (subtitle) subtitle.textContent = 'Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift opportunities.';
-                    if (confirmText) confirmText.textContent = 'Confirm ₱10.00 (+5 Hires)';
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -7078,7 +6808,7 @@
 
             function applySessionToDashboard(userSession) {
                 session = userSession;
-                selectedServices = Array.isArray(userSession.services) ? [...userSession.services] : [];
+                selectedServices = normalizeServices(userSession.services);
                 pendingLocation = userSession.location || 'Cebu City';
                 pendingEmploymentPreference = userSession.employmentPreference || 'full-time';
                 isOnline = userSession.active !== false;
@@ -7706,61 +7436,6 @@
                     });
                 }
 
-                // Step 3 -> Step 4 (Hiring Pass & Activation)
-                if (appToStep4) {
-                    appToStep4.addEventListener('click', () => {
-                        goToAppStep(4);
-                    });
-                }
-
-                // Step 4 -> Step 3
-                if (appBackToStep3) {
-                    appBackToStep3.addEventListener('click', () => {
-                        goToAppStep(3);
-                    });
-                }
-
-                // Step 4: Payment Method Tabs switching (GCash, Maya, Card)
-                let step4PaymentMethod = 'gcash';
-                const appStepPayTabs = document.getElementById('appStepPayTabs');
-                const appStepGcashWrap = document.getElementById('appStepGcashWrap');
-                const appStepMayaWrap = document.getElementById('appStepMayaWrap');
-                const appStepCardWrap = document.getElementById('appStepCardWrap');
-
-                if (appStepPayTabs) {
-                    const methodBtns = appStepPayTabs.querySelectorAll('.db-pay-method-btn');
-                    methodBtns.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            methodBtns.forEach(b => {
-                                b.classList.remove('active');
-                                b.setAttribute('aria-checked', 'false');
-                            });
-                            btn.classList.add('active');
-                            btn.setAttribute('aria-checked', 'true');
-                            step4PaymentMethod = btn.dataset.method || 'gcash';
-                            step4ProofFile = null;
-                            step4ProofDataUrl = '';
-                            ['appStepGcashProofFile', 'appStepMayaProofFile'].forEach(id => {
-                                const input = document.getElementById(id);
-                                if (input) input.value = '';
-                            });
-                            ['appStepGcashAttachedBox', 'appStepMayaAttachedBox'].forEach(id => {
-                                const attached = document.getElementById(id);
-                                if (attached) attached.style.display = 'none';
-                            });
-                            ['appStepGcashDropzone', 'appStepMayaDropzone'].forEach(id => {
-                                const dropzone = document.getElementById(id);
-                                if (dropzone) dropzone.style.display = 'flex';
-                            });
-
-                            if (appStepGcashWrap) appStepGcashWrap.style.display = step4PaymentMethod === 'gcash' ? 'block' : 'none';
-                            if (appStepMayaWrap) appStepMayaWrap.style.display = step4PaymentMethod === 'maya' ? 'block' : 'none';
-                            if (appStepCardWrap) appStepCardWrap.style.display = step4PaymentMethod === 'card' ? 'block' : 'none';
-                            updateStep4ContinueBtn();
-                        });
-                    });
-                }
-
                 // Eye toggle helper for Card inputs
                 function setupCardInputToggle(btnId, inputId, eyeOpenClass, eyeClosedClass, showTitle, hideTitle) {
                     const btn = document.getElementById(btnId);
@@ -7802,7 +7477,7 @@
                 }
 
                 // Format expiration date MM/YY
-                ['appStepCardExp', 'appTopupCardExp'].forEach(id => {
+                ['appTopupCardExp'].forEach(id => {
                     const el = document.getElementById(id);
                     if (!el) return;
                     el.addEventListener('input', (e) => {
@@ -7813,11 +7488,6 @@
                         e.target.value = v;
                     });
                 });
-
-                // Wire up Step 4 Card Eye Toggles & Number Formatting
-                setupCardInputToggle('toggleAppStepCardNumBtn', 'appStepCardNum', 'db-card-eye-open', 'db-card-eye-closed', 'Show card number', 'Hide card number');
-                setupCardInputToggle('toggleAppStepCardCvcBtn', 'appStepCardCvc', 'db-cvv-eye-open', 'db-cvv-eye-closed', 'Show CVV', 'Hide CVV');
-                setupCardFormatting('appStepCardNum');
 
                 // Wire up Top-Up Modal Card Eye Toggles & Number Formatting
                 setupCardInputToggle('toggleAppTopupCardNumBtn', 'appTopupCardNum', 'db-card-eye-open', 'db-card-eye-closed', 'Show card number', 'Hide card number');
@@ -7882,27 +7552,6 @@
                     }
                 }
 
-                // Step 4 proof state
-                let step4ProofFile = null;
-                let step4ProofDataUrl = '';
-
-                function updateStep4ContinueBtn() {
-                    if (!appPayAndProceedBtn) return;
-                    appPayAndProceedBtn.disabled = false;
-                    appPayAndProceedBtn.style.opacity = '1';
-                    appPayAndProceedBtn.style.cursor = 'pointer';
-                    appPayAndProceedBtn.title = '';
-                }
-
-                setupProofUploader('appStepGcashProofFile', 'appStepGcashDropzone', 'appStepGcashAttachedBox', 'appStepGcashThumb', 'appStepGcashFilename', 'appStepGcashRemoveBtn',
-                    (file, dataUrl) => { step4ProofFile = file; step4ProofDataUrl = dataUrl; updateStep4ContinueBtn(); },
-                    () => { step4ProofFile = null; step4ProofDataUrl = ''; updateStep4ContinueBtn(); }
-                );
-                setupProofUploader('appStepMayaProofFile', 'appStepMayaDropzone', 'appStepMayaAttachedBox', 'appStepMayaThumb', 'appStepMayaFilename', 'appStepMayaRemoveBtn',
-                    (file, dataUrl) => { step4ProofFile = file; step4ProofDataUrl = dataUrl; updateStep4ContinueBtn(); },
-                    () => { step4ProofFile = null; step4ProofDataUrl = ''; updateStep4ContinueBtn(); }
-                );
-
                 // Helper to upload proof file to server
                 async function uploadProofImage(file, fallbackUrl) {
                     if (!file) return fallbackUrl || '';
@@ -7924,68 +7573,15 @@
                     return fallbackUrl || '';
                 }
 
-                async function submitStep4ApplicantPayment() {
-                    appPayAndProceedBtn.disabled = true;
-                    const idleHTML = appPayAndProceedBtn.innerHTML;
-                    appPayAndProceedBtn.innerHTML = '<span class="db-btn-spinner"></span> Submitting receipt…';
-                    try {
-                        const proofUrl = await uploadProofImage(step4ProofFile, step4ProofDataUrl);
-                        const response = await fetch('/api/applicant/hiring-pass/pay', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ method: step4PaymentMethod, proof_image: proofUrl })
-                        });
-                        const data = await response.json().catch(() => ({}));
-                        if (!response.ok) throw new Error(data.error || 'Payment receipt could not be submitted.');
-                        if (session) {
-                            session.hiringQuota = data.hiring_pass;
-                            saveWorkerSession(session);
-                            updateHiringPassUI();
-                        }
-                        showToast(data.pending
-                            ? 'Receipt submitted. Your 5 hires will activate after accounting verifies it.'
-                            : 'Your 5 hiring opportunities are active.');
-                    } catch (err) {
-                        showToast(err.message || 'Payment receipt could not be submitted.', true);
-                    } finally {
-                        appPayAndProceedBtn.disabled = false;
-                        appPayAndProceedBtn.innerHTML = idleHTML;
-                    }
-                }
-
-                // Step 4 CTA "Pay ₱10.00 & Continue to Sign Up / Log In"
-                if (appPayAndProceedBtn) {
-                    appPayAndProceedBtn.addEventListener('click', async () => {
-                        const hasStep4Proof = step4PaymentMethod !== 'card' && !!(step4ProofFile || step4ProofDataUrl);
-                        // New applicants can sign up without paying; the ₱10 pass is paid later from the portal.
-                        if (!hasWorkerSession() && !hasStep4Proof) {
-                            pendingInitialApplicantProof = false;
-                            openApplicantAuthModal();
-                            if (tabApplicantSignup) tabApplicantSignup.click();
+                // Step 3 CTA: the sign-up modal is the last step; the applicant lands in the portal after it.
+                if (appCompleteApplication) {
+                    appCompleteApplication.addEventListener('click', () => {
+                        if (hasWorkerSession()) {
+                            updateViewMode();
                             return;
                         }
-                        if (step4PaymentMethod === 'card') {
-                            showToast('Please pay by GCash or Maya and upload your receipt.', true);
-                            return;
-                        }
-                        if (!step4ProofFile && !step4ProofDataUrl) {
-                            const walletName = step4PaymentMethod === 'maya' ? 'Maya' : 'GCash';
-                            showToast(`Please upload your ${walletName} payment receipt.`, true);
-                            return;
-                        }
-
-                        if (!hasWorkerSession()) {
-                            pendingInitialApplicantProof = true;
-                            pendingInitialApplicantProofFile = step4ProofFile;
-                            pendingInitialApplicantProofDataUrl = step4ProofDataUrl;
-                            pendingInitialApplicantPaymentMethod = step4PaymentMethod;
-                            openApplicantAuthModal();
-                            if (tabApplicantSignup) tabApplicantSignup.click();
-                            showToast('Create your account to submit the receipt for verification.');
-                            return;
-                        }
-                        await submitStep4ApplicantPayment();
+                        openApplicantAuthModal();
+                        if (tabApplicantSignup) tabApplicantSignup.click();
                     });
                 }
 
@@ -8229,24 +7825,6 @@
                 });
 
                 // Modal Login Form Submission
-                async function submitPendingInitialApplicantPayment(targetSession) {
-                    if (!pendingInitialApplicantProof) return null;
-                    const proofUrl = await uploadProofImage(pendingInitialApplicantProofFile, pendingInitialApplicantProofDataUrl);
-                    const response = await fetch('/api/applicant/hiring-pass/pay', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ method: pendingInitialApplicantPaymentMethod, proof_image: proofUrl })
-                    });
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok) throw new Error(data.error || 'Your account is ready, but the payment receipt could not be submitted. Please try again.');
-                    targetSession.hiringQuota = data.hiring_pass;
-                    pendingInitialApplicantProof = false;
-                    pendingInitialApplicantProofFile = null;
-                    pendingInitialApplicantProofDataUrl = '';
-                    return data;
-                }
-
                 async function handleApplicantModalLogin(e) {
                     if (e) e.preventDefault();
                     const emailInput = document.getElementById('appModalLoginEmail');
@@ -8278,10 +7856,9 @@
                         const profileResponse = await fetch('/api/applicant/profile', { credentials: 'same-origin' });
                         if (profileResponse.ok) {
                             const profileData = await profileResponse.json();
-                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: normalizeServices(profileData.profile.roles), employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                         }
                         await loadApplicantAvailability(newSession);
-                        const initialPayment = await submitPendingInitialApplicantPayment(newSession);
 
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
@@ -8315,9 +7892,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast(initialPayment?.pending
-                            ? 'Receipt submitted. Your first 5 hires will activate after accounting verifies it.'
-                            : 'Welcome back!');
+                        showToast('Welcome back!');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
@@ -8329,7 +7904,6 @@
                 // Modal Sign Up Form Submission
                 async function handleApplicantModalSignup(e) {
                     if (e) e.preventDefault();
-                    const signupStartedWithInitialPayment = pendingInitialApplicantProof;
                     const nameInput = document.getElementById('appModalSignupName');
                     const emailInput = document.getElementById('appModalSignupEmail');
                     const passInput = document.getElementById('appModalSignupPass');
@@ -8343,13 +7917,22 @@
                         return;
                     }
 
+                    // The first submit emails a code to the Gmail address; the next one sends it.
+                    let code = '';
+                    try {
+                        code = await window.ICEmailCode.signupCode({ form: applicantModalSignupForm, email, role: 'applicant', before: btn, inputClass: 'db-auth-input' });
+                    } catch (err) {
+                        showApplicantAuthError(err.message);
+                    }
+                    if (!code) return;
+
                     if (btn) {
                         btn.disabled = true;
                         btn.innerHTML = '<span class="db-btn-spinner"></span> Creating account…';
                     }
 
                     try {
-                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass, code }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
                         const categoryRoles = SERVICES_CATALOG[appState.category] || [];
@@ -8382,7 +7965,7 @@
 
                         const newSession = {
                             ...data.user,
-                            services: profileData.profile?.roles || [],
+                            services: normalizeServices(profileData.profile?.roles),
                             active: true,
                             employmentPreference: profileData.profile?.employment_type || appState.workType || 'full-time',
                             location: profileData.profile?.city || appState.location || 'Cebu City',
@@ -8393,8 +7976,6 @@
                             hiringQuota: { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 }
                         };
                         session = newSession;
-
-                        const initialPayment = await submitPendingInitialApplicantPayment(newSession);
 
                         if (pendingPassQuota) {
                             const paid = await fetch('/api/applicant/hiring-pass/pay', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: pendingPassQuota.paymentMethod }) });
@@ -8419,13 +8000,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        if (signupStartedWithInitialPayment) {
-                            showToast(initialPayment?.pending
-                                ? 'Receipt submitted. Your first 5 hires will activate after accounting verifies it.'
-                                : 'Payment submitted for your first 5 hires.');
-                        } else {
-                            showToast('Account created. Use Add ₱10 for 5 Hires in your hiring pass panel to activate opportunities.');
-                        }
+                        showToast('Account created. Use Add ₱10 for 5 Hires in your hiring pass panel to activate opportunities.');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -8444,7 +8019,7 @@
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
                     session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };
                     return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
-                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: normalizeServices(profileData.profile.roles), employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                     }).then(() => loadApplicantAvailability(session));
                 }).then(() => {
                     if (!hasWorkerSession()) return;
@@ -8531,6 +8106,7 @@
             initApplicantStepsListeners();
         })();
     </script>
+    <script src="js/email-code.js?v=20261027"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261026-brand-btn"></script>
     <script src="js/pwa-install.js?v=20261028-homescreen"></script>
