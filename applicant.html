@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css?v=20261026-modal-sso">
-    <link rel="stylesheet" href="css/applicant.css?v=20261026-arrival-limit">
+    <link rel="stylesheet" href="css/applicant.css?v=20261027-applicant-step4">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
     <link rel="manifest" href="manifest.json">
@@ -531,12 +531,13 @@
                     <span class="db-progress-seg active" data-seg="1"></span>
                     <span class="db-progress-seg" data-seg="2"></span>
                     <span class="db-progress-seg" data-seg="3"></span>
+                    <span class="db-progress-seg" data-seg="4"></span>
                 </div>
 
                 <!-- ════ STEP 1 — Select Job & Category ════ -->
                 <section class="db-step active" id="appStep1" aria-labelledby="appStep1Heading">
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 1 of 3</p>
+                        <p class="db-step-label">Step 1 of 4</p>
                         <h2 id="appStep1Heading">What job are you looking for?</h2>
                         <p class="db-step-sub">Select your industry category and choose your specialty role.</p>
                     </div>
@@ -668,7 +669,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 2 of 3</p>
+                        <p class="db-step-label">Step 2 of 4</p>
                         <h2 id="appStep2Heading">Rate &amp; Work Type</h2>
                         <p class="db-step-sub">Set your expected pay and how you prefer to work.</p>
                     </div>
@@ -842,7 +843,7 @@
                     </button>
 
                     <div class="db-step-header">
-                        <p class="db-step-label">Step 3 of 3</p>
+                        <p class="db-step-label">Step 3 of 4</p>
                         <h2 id="appStep3Heading">When are you available?</h2>
                         <p class="db-step-sub">Select your availability so employers can find you.</p>
                     </div>
@@ -1024,6 +1025,22 @@
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </button>
+                </section>
+
+                <!-- ════ STEP 4 — Activate Hiring Pass (shown after the account is created) ════ -->
+                <section class="db-step" id="appStep4" aria-labelledby="appStep4Heading">
+                    <div class="db-step-header">
+                        <p class="db-step-label">Step 4 of 4</p>
+                        <h2 id="appStep4Heading">Activate your 5 hires</h2>
+                        <p class="db-step-sub">Your account is ready. Pay ₱10 (₱2 per hire) to start receiving and
+                            accepting shift opportunities.</p>
+                    </div>
+
+                    <!-- The Hiring Pass payment form (#appTopupModalBody) is moved here while Step 4 is shown. -->
+                    <div id="appStep4PaymentSlot"></div>
+
+                    <button type="button" class="db-btn-secondary" id="appStep4SkipBtn">Skip for now — go to my
+                        portal</button>
                 </section>
 
             </div>
@@ -6130,6 +6147,9 @@
             const appStep1 = document.getElementById('appStep1');
             const appStep2 = document.getElementById('appStep2');
             const appStep3 = document.getElementById('appStep3');
+            const appStep4 = document.getElementById('appStep4');
+            const appStep4PaymentSlot = document.getElementById('appStep4PaymentSlot');
+            const appStep4SkipBtn = document.getElementById('appStep4SkipBtn');
             const appToStep2 = document.getElementById('appToStep2');
             const appToStep3 = document.getElementById('appToStep3');
             const appToStep4 = document.getElementById('appToStep4');
@@ -6237,19 +6257,21 @@
 
             function updateViewMode() {
                 const isLogged = hasWorkerSession();
+                // Step 4 needs an account; drop back to Step 3 if the session ends there.
+                if (!isLogged && appState.step === 4) goToAppStep(3);
+                // Step 4 (Hiring Pass activation) stays in the onboarding card after sign-up.
+                const showSteps = !isLogged || appState.step === 4;
+                if (appStepsWrap) appStepsWrap.style.display = showSteps ? 'block' : 'none';
+                if (appDashboardWrap) appDashboardWrap.style.display = showSteps ? 'none' : 'block';
                 const notifWrap = document.querySelector('.db-notif-wrap');
                 const phHeaderBtn = document.getElementById('phHeaderBtn');
                 if (isLogged) {
-                    if (appStepsWrap) appStepsWrap.style.display = 'none';
-                    if (appDashboardWrap) appDashboardWrap.style.display = 'block';
                     if (headerBackArrow) headerBackArrow.style.display = 'none';
                     if (headerLoginBtn) headerLoginBtn.style.display = 'none';
                     if (openProfilePanelBtn) openProfilePanelBtn.style.display = 'flex';
                     if (notifWrap) notifWrap.style.display = 'inline-block';
                     if (phHeaderBtn) phHeaderBtn.style.display = 'inline-flex';
                 } else {
-                    if (appStepsWrap) appStepsWrap.style.display = 'block';
-                    if (appDashboardWrap) appDashboardWrap.style.display = 'none';
                     if (headerBackArrow) headerBackArrow.style.display = 'inline-flex';
                     if (headerLoginBtn) headerLoginBtn.style.display = 'inline-block';
                     if (openProfilePanelBtn) openProfilePanelBtn.style.display = 'none';
@@ -6265,13 +6287,15 @@
                         seg.classList.toggle('active', idx < stepNum);
                     });
                 }
-                [appStep1, appStep2, appStep3].forEach((stepEl, idx) => {
+                [appStep1, appStep2, appStep3, appStep4].forEach((stepEl, idx) => {
                     if (stepEl) stepEl.classList.toggle('active', (idx + 1) === stepNum);
                 });
 
                 if (stepNum === 3) {
                     updateStepSummary();
                 }
+                // Step 4 borrows the Hiring Pass payment form from the top-up modal.
+                placeTopupForm(stepNum === 4 ? appStep4PaymentSlot : null);
 
                 const card = document.getElementById('appStepsCard');
                 if (card) {
@@ -6382,17 +6406,16 @@
                 return session?.hiringQuota;
             }
 
-            function openApplicantTopupModal(mode) {
+            // Moves the Hiring Pass payment form into `slot`, or back into its modal when slot is null.
+            function placeTopupForm(slot) {
+                const form = document.getElementById('appTopupModalBody');
+                const target = slot || applicantTopupModal?.querySelector('.db-payment-modal-card');
+                if (form && target && form.parentElement !== target) target.appendChild(form);
+            }
+
+            function openApplicantTopupModal() {
                 if (applicantTopupModal) {
-                    const activating = mode === 'activate';
-                    const title = document.getElementById('appTopupModalTitle');
-                    const subtitle = applicantTopupModal.querySelector('.db-payment-header .db-modal-sub');
-                    const confirmText = appConfirmTopupBtn?.querySelector('span');
-                    if (title) title.textContent = activating ? 'Activate Your Hiring Pass' : 'Add ₱10 for 5 Hires';
-                    if (subtitle) subtitle.textContent = activating
-                        ? 'Your account is ready. Pay ₱10 to activate 5 hiring opportunities (₱2 per hire). You can also do this later from your portal.'
-                        : 'Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift opportunities.';
-                    if (confirmText) confirmText.textContent = 'Confirm ₱10.00 (+5 Hires)';
+                    placeTopupForm(null);
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -7350,16 +7373,30 @@
                     return fallbackUrl || '';
                 }
 
-                // Opens the ₱10 Hiring Pass payment for a new account. Applicants who
+                // Shows Step 4 (₱10 Hiring Pass payment) for a new account. Applicants who
                 // already have hires or a receipt awaiting verification are left alone.
                 function promptInitialHiringPass() {
                     const quota = session?.hiringQuota || {};
                     if (Number(quota.remainingHires) > 0 || quota.pendingPayment?.status === 'pending') return false;
-                    openApplicantTopupModal('activate');
+                    goToAppStep(4);
+                    updateViewMode();
                     return true;
                 }
 
-                // Step 3 CTA: create the account first; the ₱10 activation modal opens once it exists.
+                // Leaves Step 4 for the applicant portal.
+                function finishActivationStep() {
+                    goToAppStep(1);
+                    updateViewMode();
+                }
+
+                if (appStep4SkipBtn) {
+                    appStep4SkipBtn.addEventListener('click', () => {
+                        finishActivationStep();
+                        showToast('You can activate your 5 hires anytime from your portal with Add ₱10 for 5 Hires.');
+                    });
+                }
+
+                // Step 3 CTA: create the account first; Step 4 (₱10 activation) follows once it exists.
                 if (appToStep4) {
                     appToStep4.addEventListener('click', () => {
                         if (hasWorkerSession()) {
@@ -7475,7 +7512,8 @@
                             if (session) { session.hiringQuota = data.hiring_pass; saveWorkerSession(session); }
                             updateHiringPassUI();
                             renderShiftsFeed();
-                            closeApplicantTopupModal();
+                            if (appState.step === 4) finishActivationStep();
+                            else closeApplicantTopupModal();
                             showToast(data.pending
                                 ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
                                 : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');

@@ -7166,3 +7166,13 @@ body.app-sheet-open {
 .app-btn-topup-now:active {
     transform: translateY(0);
 }
+/* Step 4 hosts the Hiring Pass payment form outside its modal */
+#appStep4PaymentSlot .db-payment-modal-body {
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+}
+
+#appStep4PaymentSlot .db-payment-header {
+    display: none;
+}
