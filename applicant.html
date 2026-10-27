@@ -2236,8 +2236,30 @@
 
             // Available services catalog matching employer.js ROLES
             const SERVICES_CATALOG = { kitchen: [], delivery: [], helpers: [] };
+            const ROLE_LABELS_BY_ID = {};
+            // The server stores role IDs (e.g. "cook") but the pickers work with labels ("Cook").
+            // Map saved IDs back to labels so previously selected roles stay checked after a refresh.
+            function normalizeServices(list) {
+                const out = [];
+                for (const role of Array.isArray(list) ? list : []) {
+                    const label = ROLE_LABELS_BY_ID[role] || role;
+                    if (!out.includes(label)) out.push(label);
+                }
+                return out;
+            }
             fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
-                for (const category of categories || []) SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
+                for (const category of categories || []) {
+                    SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
+                    for (const role of category.roles || []) ROLE_LABELS_BY_ID[role.id] = role.label;
+                }
+                if (typeof session !== 'undefined' && session) {
+                    session.services = normalizeServices(session.services);
+                    selectedServices = normalizeServices(selectedServices);
+                    if (hasWorkerSession()) {
+                        saveWorkerSession(session);
+                        renderMainServicesDisplay();
+                    }
+                }
                 // The onboarding step initializes before the catalog arrives, which can leave a
                 // placeholder role selected. Re-run category setup so a real catalog role is chosen.
                 if (typeof setAppCategory === 'function' && typeof appState !== 'undefined') setAppCategory(appState.category);
@@ -2302,7 +2324,7 @@
             }
             let pendingLocation = session.location || 'Cebu City';
             let pendingEmploymentPreference = session.employmentPreference || 'full-time';
-            let selectedServices = Array.isArray(session.services) ? [...session.services] : [];
+            let selectedServices = normalizeServices(session.services);
             let isOnline = session.active !== false;
 
             // DOM Elements
@@ -5818,7 +5840,7 @@
                 profileOverlay.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
 
-                selectedServices = Array.isArray(session.services) ? [...session.services] : [];
+                selectedServices = normalizeServices(session.services);
                 pendingEmploymentPreference = session.employmentPreference || 'full-time';
                 pendingLocation = session.location || 'Cebu City';
                 if (profileEmpNote) {
@@ -6575,7 +6597,7 @@
 
             function applySessionToDashboard(userSession) {
                 session = userSession;
-                selectedServices = Array.isArray(userSession.services) ? [...userSession.services] : [];
+                selectedServices = normalizeServices(userSession.services);
                 pendingLocation = userSession.location || 'Cebu City';
                 pendingEmploymentPreference = userSession.employmentPreference || 'full-time';
                 isOnline = userSession.active !== false;
@@ -7618,7 +7640,7 @@
                         const profileResponse = await fetch('/api/applicant/profile', { credentials: 'same-origin' });
                         if (profileResponse.ok) {
                             const profileData = await profileResponse.json();
-                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                            if (profileData.profile) Object.assign(newSession, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: normalizeServices(profileData.profile.roles), employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                         }
                         await loadApplicantAvailability(newSession);
 
@@ -7727,7 +7749,7 @@
 
                         const newSession = {
                             ...data.user,
-                            services: profileData.profile?.roles || [],
+                            services: normalizeServices(profileData.profile?.roles),
                             active: true,
                             employmentPreference: profileData.profile?.employment_type || appState.workType || 'full-time',
                             location: profileData.profile?.city || appState.location || 'Cebu City',
@@ -7781,7 +7803,7 @@
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
                     session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };
                     return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
-                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: profileData.profile.roles || [], employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: normalizeServices(profileData.profile.roles), employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
                     }).then(() => loadApplicantAvailability(session));
                 }).then(() => {
                     if (!hasWorkerSession()) return;
