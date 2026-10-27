@@ -11,10 +11,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261026-modal-sso">
+    <link rel="stylesheet" href="css/employer.css?v=20261027-terms-btn">
+    <link rel="stylesheet" href="css/pwa-install.css?v=20261028-homescreen">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#F5A623">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Instant Crew">
 </head>
 
 <body>
@@ -40,6 +46,20 @@
                 <!-- Header Log In button (visible when not logged in) -->
                 <button type="button" class="db-header-login-btn" id="headerLoginBtn" style="display:none;">Log
                     In</button>
+
+                <!-- Install App Button -->
+                <button type="button" class="nav-install-btn" id="headerInstallBtn"
+                    onclick="window.triggerAppInstall && window.triggerAppInstall(event)"
+                    aria-label="Install Instant Crew App" title="Add Instant Crew to Home Screen">
+                    <svg class="install-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span class="install-btn-text">Install</span>
+                </button>
 
                 <!-- Payment History Button -->
                 <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payment history</button>
@@ -715,11 +735,13 @@
                             <div class="db-search-progress-bar" style="display: none;">
                                 <div class="db-search-progress-fill" id="dbSearchProgressFill"></div>
                             </div>
-                            <p class="db-search-timer-note" id="dbSearchTimerNote" style="display: none;">Each attempt lasts 3 minutes · Up to
+                            <p class="db-search-timer-note" id="dbSearchTimerNote" style="display: none;">Each attempt
+                                lasts 3 minutes · Up to
                                 9 mins per try</p>
                         </div>
 
-                        <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading" style="display: none;">
+                        <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading"
+                            style="display: none;">
                             <div class="db-matched-crew-heading-row">
                                 <h3 id="matchedCrewHeading">Active crew matching this shift</h3>
                                 <span id="matchedCrewCount" class="db-matched-crew-count">0</span>
@@ -788,20 +810,24 @@
                         <!-- Combined Match Card: Applicant + Employer Offer in One Card -->
                         <div class="db-match-combined-card" id="matchCombinedCard">
                             <div class="db-crew-list" id="crewList" role="list"></div>
-                            <div class="db-match-card-divider"></div>
-                            <div class="db-match-offer-row db-rate-row">
-                                <div>
-                                    <p class="db-rate-amount" id="rateAmount">₱85<span>/hr</span></p>
-                                    <p class="db-rate-note">Employer offered rate</p>
-                                </div>
-                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions Agreement -->
+                        <div class="db-terms-consent-wrap" id="employerTermsWrap">
+                            <label class="db-terms-consent-label" for="employerTermsCheckbox">
+                                <input type="checkbox" id="employerTermsCheckbox" class="db-terms-checkbox"
+                                    aria-required="true">
+                                <span class="db-terms-text">
+                                    I agree to the <button type="button" class="db-terms-link-btn"
+                                        id="openEmployerTermsModalBtn">Terms and Conditions</button>
+                                </span>
+                            </label>
                         </div>
 
                         <div class="db-results-actions-group">
-                            <button type="button" class="db-btn-primary"
-                                id="confirmBooking">Confirm</button>
-                            <button type="button" class="db-btn-secondary"
-                                id="cancelMatchBtn">Cancel</button>
+                            <button type="button" class="db-btn-primary" id="confirmBooking" disabled
+                                title="Please agree to the Terms and Conditions to confirm">Confirm</button>
+                            <button type="button" class="db-btn-secondary" id="cancelMatchBtn">Cancel</button>
                         </div>
                     </div>
                 </section>
@@ -818,7 +844,7 @@
                         <h2 id="step5Heading">All set!</h2>
                         <p class="db-step-sub">Your crew is on the way.</p>
 
-                        <button type="button" class="db-details-toggle" id="detailsToggle" aria-expanded="false">
+                        <button type="button" class="db-details-toggle" id="detailsToggle" aria-expanded="true">
                             <span>View Booking Details</span>
                             <svg class="db-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
@@ -1034,7 +1060,8 @@
                 <div class="db-auth-social">
                     <p class="db-auth-social-title">or continue with social platforms</p>
                     <div class="db-auth-social-row">
-                        <button type="button" class="db-auth-social-btn google-sso-btn" aria-label="Continue with Google" data-sso="google">
+                        <button type="button" class="db-auth-social-btn google-sso-btn"
+                            aria-label="Continue with Google" data-sso="google">
                             <svg width="18" height="18" viewBox="0 0 24 24">
                                 <path fill="#EA4335"
                                     d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
@@ -1651,20 +1678,90 @@
         </div>
     </div>
 
+    <!-- ════ Employer Terms and Conditions Modal ════ -->
+    <div class="db-modal-overlay" id="employerTermsModal" role="dialog" aria-modal="true"
+        aria-labelledby="empTermsModalTitle" hidden>
+        <div class="db-modal-card db-terms-modal-card">
+            <div class="db-terms-modal-header">
+                <div class="db-terms-modal-header-text">
+                    <span class="db-terms-modal-badge">Legal Agreement</span>
+                    <h3 id="empTermsModalTitle">Instant Crew — Employer Terms and Conditions</h3>
+                </div>
+                <button type="button" class="db-terms-modal-close" id="closeEmpTermsModalBtn"
+                    aria-label="Close Terms modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="db-terms-modal-body">
+                <div class="db-terms-section">
+                    <h4>1. Purpose of the Platform</h4>
+                    <p>Instant Crew is a matching platform that connects employers, individuals, and businesses needing
+                        temporary or immediate manpower with individuals looking for work. The platform provides work
+                        categories and roles that users can select from.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>2. Matching System</h4>
+                    <p>Instant Crew matches employers and workers based on the available work roles, employer's offered
+                        rate, worker's acceptable rate, and location. A match is intended to connect parties whose
+                        selected roles, rates, and locations are compatible.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>3. Role and Responsibility of Instant Crew</h4>
+                    <p>Instant Crew acts solely as a matching platform. It does not employ, supply, supervise, manage,
+                        or guarantee the performance of matched workers. Instant Crew does not perform the work itself
+                        and is not a party to the work arrangement between the employer and worker.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>4. Employer Responsibility</h4>
+                    <p>The employer is responsible for agreeing directly with the worker on the work to be performed,
+                        instructions, schedule, payment, work conditions, and other arrangements. The employer is also
+                        responsible for applicable legal obligations arising from the engagement, including workplace
+                        safety and payment of agreed compensation.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>5. Limitation of Liability</h4>
+                    <p>To the extent permitted by law, Instant Crew shall not be responsible for a worker's actions,
+                        omissions, attendance, performance, misconduct, or failure to complete a job, nor for disputes,
+                        losses, damages, injuries, or payment issues arising from the employer-worker arrangement.
+                        Instant Crew does not guarantee the accuracy of user-provided information or the outcome of any
+                        match.</p>
+                    <p class="db-terms-subtext">Nothing in these Terms excludes liability that cannot legally be
+                        excluded under applicable law.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>6. Acceptance of Terms</h4>
+                    <p>By using Instant Crew to find or match with workers, the employer acknowledges and agrees to
+                        these Terms and Conditions. These Terms shall be governed by the laws of the Republic of the
+                        Philippines.</p>
+                </div>
+            </div>
+            <div class="db-terms-modal-footer">
+                <button type="button" class="db-btn-primary" id="agreeEmpTermsModalBtn">I Agree & Accept</button>
+                <button type="button" class="db-btn-secondary" id="closeEmpTermsModalBtn2">Close</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="db-footer">
         <span>© 2026 Instant Crew</span>
         <div class="db-footer-links">
             <a href="privacy.html" target="_blank" rel="noopener">Privacy</a>
-            <a href="terms.html" target="_blank" rel="noopener">Terms</a>
-            <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank" rel="noopener noreferrer">Facebook</a>
+            <a href="terms.html" target="_blank" rel="noopener">Rules</a>
+            <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank"
+                rel="noopener noreferrer">Facebook</a>
         </div>
     </footer>
 
     <script src="js/location.js"></script>
     <script src="js/shared-data.js?v=20261026-arrival-limit"></script>
-    <script src="js/employer.js?v=20261026-confirm-reset"></script>
+    <script src="js/employer.js?v=20261027-details-expanded"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261026-brand-btn"></script>
+    <script src="js/pwa-install.js?v=20261028-homescreen"></script>
 </body>
 
 </html>

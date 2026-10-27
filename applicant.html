@@ -11,11 +11,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261026-modal-sso">
-    <link rel="stylesheet" href="css/applicant.css?v=20261026-arrival-limit">
+    <link rel="stylesheet" href="css/employer.css?v=20261027-terms-btn">
+    <link rel="stylesheet" href="css/applicant.css?v=20261027-terms">
+    <link rel="stylesheet" href="css/pwa-install.css?v=20261028-homescreen">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f97316">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Instant Crew">
 </head>
 
 <body>
@@ -39,6 +45,18 @@
             </div>
 
             <div style="display:flex; align-items:center; gap:12px;">
+                <!-- Install App Button -->
+                <button type="button" class="nav-install-btn" id="headerInstallBtn" aria-label="Install App"
+                    title="Add to Home Screen">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span>Install App</span>
+                </button>
+
                 <!-- Header Log In button (visible when not logged in) -->
                 <button type="button" class="db-header-login-btn" id="headerLoginBtn" style="display:none;">Log
                     In</button>
@@ -2042,6 +2060,62 @@
         </div>
     </div>
 
+    <!-- ════ Worker Terms and Conditions Modal ════ -->
+    <div class="db-modal-overlay" id="applicantTermsModal" role="dialog" aria-modal="true" aria-labelledby="appTermsModalTitle" hidden>
+        <div class="db-modal-card db-terms-modal-card">
+            <div class="db-terms-modal-header">
+                <div class="db-terms-modal-header-text">
+                    <span class="db-terms-modal-badge">Legal Agreement</span>
+                    <h3 id="appTermsModalTitle">Instant Crew — Worker Terms and Conditions</h3>
+                </div>
+                <button type="button" class="db-terms-modal-close" id="closeAppTermsModalBtn" aria-label="Close Terms modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="db-terms-modal-body">
+                <div class="db-terms-section">
+                    <h4>1. Purpose of the Platform</h4>
+                    <p>Instant Crew is a matching platform that connects individuals looking for work with employers, customers, and businesses needing temporary or immediate manpower.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>2. Matching System</h4>
+                    <p>Workers may select their preferred work categories and roles, indicate their acceptable rates, and provide their location. Instant Crew matches workers with employers based on compatible work roles, offered rates, and location. A match does not guarantee that work will be available or awarded.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>3. Role of Instant Crew</h4>
+                    <p>Instant Crew acts solely as a matching platform. It does not employ, supervise, manage, or guarantee the conduct or performance of employers or other users. Instant Crew does not assign work beyond its matching function and is not a party to the work arrangement between the worker and employer, unless expressly agreed otherwise in writing.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>4. Worker Responsibilities</h4>
+                    <p>Workers are responsible for providing accurate information about their skills, experience, availability, location, and acceptable rates. Workers must review the available work details before accepting a job and are responsible for completing the work they accept.</p>
+                    <p>Instant Crew facilitates communication only through platform-generated updates, such as confirmation that a worker has accepted a job and notification that the worker is on the way. Direct communication between employers and workers is not provided through the platform.</p>
+                    <p>Workers are responsible for complying with applicable laws and reasonable, lawful instructions relevant to the accepted work.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>5. Compensation and Work Arrangements</h4>
+                    <p>The employer and worker are responsible for agreeing on compensation and payment arrangements before work begins. Unless expressly stated otherwise, Instant Crew does not pay wages, guarantee payment, collect compensation on behalf of workers, or resolve payment disputes between the parties.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>6. Limitation of Liability</h4>
+                    <p>To the extent permitted by law, Instant Crew shall not be responsible for an employer's actions, omissions, payment failures, workplace conditions, or disputes arising from a work arrangement, nor for a worker's failure to secure work or receive payment from an employer.</p>
+                    <p>Workers understand that Instant Crew facilitates matching only and does not guarantee employment, income, work availability, or the outcome of any match.</p>
+                    <p class="db-terms-subtext">Nothing in these Terms excludes liability that cannot legally be excluded under applicable law.</p>
+                </div>
+                <div class="db-terms-section">
+                    <h4>7. Acceptance of Terms</h4>
+                    <p>By creating an account or using Instant Crew's matching services, the worker acknowledges and agrees to these Terms and Conditions. These Terms shall be governed by the laws of the Republic of the Philippines.</p>
+                </div>
+            </div>
+            <div class="db-terms-modal-footer">
+                <button type="button" class="db-btn-primary" id="agreeAppTermsModalBtn">I Agree & Accept</button>
+                <button type="button" class="db-btn-secondary" id="closeAppTermsModalBtn2">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════════════════════════════════════════════════
          APPLICANT AUTH MODAL (Log In / Sign Up)
          ═══════════════════════════════════════════════════════ -->
@@ -2720,6 +2794,70 @@
                 document.addEventListener('keydown', e => {
                     if (e.key === 'Escape' && appJobActionConfirmModal.classList.contains('open')) {
                         closeAppJobActionConfirm(false);
+                    }
+                });
+            }
+
+            // ── Worker Terms and Conditions Modal & State Persistence ──
+            const agreedTermsShiftIds = new Set();
+            const manuallyUncheckedShiftIds = new Set();
+            let workerHasAgreedTerms = false;
+            try {
+                if (sessionStorage.getItem('ic_worker_terms_agreed') === 'true') {
+                    workerHasAgreedTerms = true;
+                }
+            } catch (e) {}
+
+            const applicantTermsModal = document.getElementById('applicantTermsModal');
+            const closeAppTermsModalBtn = document.getElementById('closeAppTermsModalBtn');
+            const closeAppTermsModalBtn2 = document.getElementById('closeAppTermsModalBtn2');
+            const agreeAppTermsModalBtn = document.getElementById('agreeAppTermsModalBtn');
+            let activeTermsTargetShiftId = null;
+
+            function openApplicantTermsModal(shiftId) {
+                activeTermsTargetShiftId = shiftId;
+                if (!applicantTermsModal) return;
+                applicantTermsModal.removeAttribute('hidden');
+                applicantTermsModal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeApplicantTermsModal() {
+                if (!applicantTermsModal) return;
+                applicantTermsModal.classList.remove('open');
+                applicantTermsModal.setAttribute('hidden', '');
+                document.body.style.overflow = '';
+            }
+
+            if (closeAppTermsModalBtn) closeAppTermsModalBtn.addEventListener('click', closeApplicantTermsModal);
+            if (closeAppTermsModalBtn2) closeAppTermsModalBtn2.addEventListener('click', closeApplicantTermsModal);
+
+            if (agreeAppTermsModalBtn) {
+                agreeAppTermsModalBtn.addEventListener('click', () => {
+                    workerHasAgreedTerms = true;
+                    try { sessionStorage.setItem('ic_worker_terms_agreed', 'true'); } catch (e) {}
+                    if (activeTermsTargetShiftId) {
+                        agreedTermsShiftIds.add(String(activeTermsTargetShiftId));
+                        manuallyUncheckedShiftIds.delete(String(activeTermsTargetShiftId));
+                    }
+                    // Check and enable all visible shift card checkboxes
+                    document.querySelectorAll('.app-shift-terms-cb').forEach(cb => {
+                        const sId = cb.getAttribute('data-shift-id');
+                        if (sId) {
+                            agreedTermsShiftIds.add(String(sId));
+                            manuallyUncheckedShiftIds.delete(String(sId));
+                        }
+                        cb.checked = true;
+                        cb.dispatchEvent(new Event('change'));
+                    });
+                    closeApplicantTermsModal();
+                });
+            }
+
+            if (applicantTermsModal) {
+                applicantTermsModal.addEventListener('click', (e) => {
+                    if (e.target === applicantTermsModal) {
+                        closeApplicantTermsModal();
                     }
                 });
             }
@@ -5415,7 +5553,7 @@
                             }));
                         }).catch(err => { showToast(err.message, true); serverApplicantJobs = []; serverApplicantJobsFetchedAt = Date.now(); }).finally(() => {
                             loadingApplicantJobs = false;
-                            renderShiftsFeed(true);
+                            renderShiftsFeed(false);
                         });
                     }
                     return;
@@ -5509,6 +5647,17 @@
                     return;
                 }
                 lastShiftsFeedSig = currentFeedSig;
+
+                // Preserve any currently checked checkboxes in the DOM before re-rendering
+                if (shiftsListContainer) {
+                    shiftsListContainer.querySelectorAll('.app-shift-terms-cb:checked').forEach(cb => {
+                        const sId = cb.getAttribute('data-shift-id');
+                        if (sId) {
+                            agreedTermsShiftIds.add(String(sId));
+                            manuallyUncheckedShiftIds.delete(String(sId));
+                        }
+                    });
+                }
 
                 shiftsListContainer.innerHTML = '';
 
@@ -5639,6 +5788,8 @@
                     const shiftMapLoc = shift.mapLocation || (shift.notes ? shift.notes.split('·')[0].trim() : (shift.location || 'Cebu City'));
                     const shiftMapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(shiftMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shiftMapLoc)}`);
 
+                    const isTermsChecked = (agreedTermsShiftIds.has(String(shift.id)) || workerHasAgreedTerms) && !manuallyUncheckedShiftIds.has(String(shift.id));
+
                     const shiftIcon = window.InstantCrewShared ? window.InstantCrewShared.getRoleIcon(shift, 20) : (shift.emoji || '');
                     card.innerHTML = `
                         <div class="app-shift-top">
@@ -5688,6 +5839,16 @@
                             </div>
                         </div>
 
+                        <!-- Terms and Conditions Agreement -->
+                        <div class="app-shift-terms-wrap" id="appShiftTermsWrap-${shift.id}">
+                            <label class="app-shift-terms-label" for="appShiftTerms-${shift.id}">
+                                <input type="checkbox" class="app-shift-terms-cb" id="appShiftTerms-${shift.id}" data-shift-id="${shift.id}" ${isTermsChecked ? 'checked' : ''} aria-required="true">
+                                <span class="app-shift-terms-text">
+                                    I agree to the <button type="button" class="app-terms-trigger-btn" data-shift-id="${shift.id}">Worker Terms and Conditions</button>
+                                </span>
+                            </label>
+                        </div>
+
                         <div class="app-shift-footer">
                             <div class="app-shift-rate-wrap">
                                 <div class="app-shift-rate">${shift.rate} <span>/hr</span></div>
@@ -5696,7 +5857,7 @@
                                 <button type="button" class="app-btn-reject" title="Decline and remove shift from feed">
                                     Decline
                                 </button>
-                                <button type="button" class="app-btn-accept" ${canAccept ? '' : 'disabled'} title="${lockedReason}">
+                                <button type="button" class="app-btn-accept" ${canAccept && isTermsChecked ? '' : 'disabled'} title="${canAccept ? (isTermsChecked ? 'Click to accept this job' : 'Please agree to the Terms & Conditions to accept') : lockedReason}">
                                     ${canAccept ? 'Accept Job' : lockedReason}
                                 </button>
                             </div>
@@ -5728,10 +5889,55 @@
                         dismissShift(shift, card);
                     });
 
+                    // Terms and Conditions checkbox & modal wiring
+                    const termsCb = card.querySelector(`#appShiftTerms-${shift.id}`);
+                    const termsWrap = card.querySelector(`#appShiftTermsWrap-${shift.id}`);
+                    const termsTriggerBtn = card.querySelector(`.app-terms-trigger-btn[data-shift-id="${shift.id}"]`);
+
+                    if (termsTriggerBtn) {
+                        termsTriggerBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openApplicantTermsModal(shift.id);
+                        });
+                    }
+
                     // Accept button
                     const acceptBtn = card.querySelector('.app-btn-accept');
+
+                    if (canAccept && termsCb) {
+                        termsCb.addEventListener('change', () => {
+                            if (termsCb.checked) {
+                                agreedTermsShiftIds.add(String(shift.id));
+                                manuallyUncheckedShiftIds.delete(String(shift.id));
+                                workerHasAgreedTerms = true;
+                                try { sessionStorage.setItem('ic_worker_terms_agreed', 'true'); } catch (e) {}
+                            } else {
+                                agreedTermsShiftIds.delete(String(shift.id));
+                                manuallyUncheckedShiftIds.add(String(shift.id));
+                            }
+                            acceptBtn.disabled = !termsCb.checked;
+                            if (acceptBtn.disabled) {
+                                acceptBtn.title = 'Please agree to the Terms & Conditions to accept';
+                            } else {
+                                acceptBtn.title = 'Click to accept this job';
+                                if (termsWrap) termsWrap.classList.remove('highlight-shake');
+                            }
+                        });
+                    }
+
                     if (canAccept) {
                         acceptBtn.addEventListener('click', () => {
+                            if (termsCb && !termsCb.checked) {
+                                if (termsWrap) {
+                                    termsWrap.classList.remove('highlight-shake');
+                                    void termsWrap.offsetWidth;
+                                    termsWrap.classList.add('highlight-shake');
+                                }
+                                termsCb.focus();
+                                showToast('Please agree to the Worker Terms & Conditions before accepting.', true);
+                                return;
+                            }
                             acceptWorkerShift(shift, card);
                         });
                     } else if (!standingLock && remainingHires <= 0) {
@@ -6894,11 +7100,16 @@
                 }
                 const mainPrefTimingVal = document.getElementById('mainPrefTimingVal');
                 if (mainPrefTimingVal) {
-                    mainPrefTimingVal.textContent = userSession.timingPreference === 'later' ? 'Scheduled' : 'Immediate';
+                    const isLater = userSession.timingPreference === 'later';
+                    mainPrefTimingVal.innerHTML = isLater
+                        ? '<svg class="app-pref-cal-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Scheduled'
+                        : '<span class="app-pref-dot"></span> Instant Ready';
                 }
                 const mainPrefRateVal = document.getElementById('mainPrefRateVal');
                 if (mainPrefRateVal) {
-                    mainPrefRateVal.textContent = '₱' + (userSession.offeredRate || '95') + ' / ' + (userSession.ratePeriod || 'per hour');
+                    const unitMap = { 'per hour': '/ hr', 'per day': '/ day', 'per week': '/ wk', 'per month': '/ mo' };
+                    const unitStr = unitMap[userSession.ratePeriod] || '/ hr';
+                    mainPrefRateVal.innerHTML = '₱' + (userSession.offeredRate || '95') + ` <span class="app-pref-val-unit">${unitStr}</span>`;
                 }
                 if (feedLocationText) feedLocationText.textContent = userSession.location || 'Cebu City';
 
@@ -8322,6 +8533,7 @@
     </script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261026-brand-btn"></script>
+    <script src="js/pwa-install.js?v=20261028-homescreen"></script>
 </body>
 
 </html>

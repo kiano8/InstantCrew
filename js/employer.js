@@ -713,6 +713,10 @@ function goStep(n) {
   // Hide progress bar on Step 5 (success screen)
   progress.style.display = (n >= 5) ? 'none' : 'flex';
 
+  if (n === 5 && detailsToggle) {
+    detailsToggle.setAttribute('aria-expanded', 'true');
+  }
+
   updateStep4BackButton();
 
   // Scroll card to top smoothly
@@ -2376,6 +2380,12 @@ function onCrewAccepted(job) {
     state.acceptanceHandled = true;
     matchLoading.style.display = 'none';
     matchResults.style.display = 'block';
+    const initEmpTermsCb = document.getElementById('employerTermsCheckbox');
+    if (initEmpTermsCb) initEmpTermsCb.checked = false;
+    if (confirmBooking) {
+      confirmBooking.disabled = true;
+      confirmBooking.title = 'Please agree to the Terms and Conditions to confirm';
+    }
     updateStep4BackButton();
     renderCrewResults(acceptedCrew, job);
     if (resultsPaidBadge) resultsPaidBadge.textContent = '✓ Search Fee Paid (₱100.00)';
@@ -2420,8 +2430,10 @@ function onCrewAccepted(job) {
 }
 
 function renderCrewResults(acceptedCrew = [], job = null) {
-  rateAmount.innerHTML = `₱${state.offeredRate}<span>/${String(state.ratePeriod).replace(/^per\s+/, '')}</span>`;
-  document.getElementById('rateAmount').nextElementSibling.textContent = 'Employer offered rate';
+  const offeredRate = (job && job.offered_rate != null) ? job.offered_rate : (state.offeredRate || 85);
+  const rawPeriod = (job && job.rate_period) ? job.rate_period : (state.ratePeriod || 'per hour');
+  const period = String(rawPeriod).replace(/^per\s+/, '').trim() || 'hour';
+  const rateHtml = `₱${offeredRate}<span>/${period}</span>`;
 
   // Render crew cards
   crewList.innerHTML = '';
@@ -2438,7 +2450,10 @@ function renderCrewResults(acceptedCrew = [], job = null) {
     card.innerHTML = `
             <span class="db-avatar">${initials}</span>
             <div class="db-crew-info">
-                <p class="db-crew-name">${workerName}</p>
+                <div class="db-crew-name-row">
+                    <p class="db-crew-name">${workerName}</p>
+                    <span class="db-crew-offered-rate"${i === 0 ? ' id="rateAmount"' : ''}>${rateHtml}</span>
+                </div>
                 <p class="db-crew-meta">Accepted this shift</p>
             </div>
             <span class="db-crew-role-tag" style="background:#DCFCE7; color:#15803D; font-weight:700;">Accepted</span>
@@ -2448,8 +2463,84 @@ function renderCrewResults(acceptedCrew = [], job = null) {
   });
 }
 
+/* ─── Employer Terms and Conditions Modal & Checkbox Wiring ─── */
+const employerTermsCheckbox = document.getElementById('employerTermsCheckbox');
+const openEmployerTermsModalBtn = document.getElementById('openEmployerTermsModalBtn');
+const employerTermsModal = document.getElementById('employerTermsModal');
+const closeEmpTermsModalBtn = document.getElementById('closeEmpTermsModalBtn');
+const closeEmpTermsModalBtn2 = document.getElementById('closeEmpTermsModalBtn2');
+const agreeEmpTermsModalBtn = document.getElementById('agreeEmpTermsModalBtn');
+const employerTermsWrap = document.getElementById('employerTermsWrap');
+
+if (employerTermsCheckbox && confirmBooking) {
+  employerTermsCheckbox.addEventListener('change', () => {
+    confirmBooking.disabled = !employerTermsCheckbox.checked;
+    if (confirmBooking.disabled) {
+      confirmBooking.title = 'Please agree to the Terms and Conditions to confirm';
+    } else {
+      confirmBooking.removeAttribute('title');
+      if (employerTermsWrap) employerTermsWrap.classList.remove('highlight-shake');
+    }
+  });
+}
+
+function openEmployerTermsModal() {
+  if (!employerTermsModal) return;
+  employerTermsModal.removeAttribute('hidden');
+  employerTermsModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEmployerTermsModal() {
+  if (!employerTermsModal) return;
+  employerTermsModal.classList.remove('open');
+  employerTermsModal.setAttribute('hidden', '');
+  document.body.style.overflow = '';
+}
+
+if (openEmployerTermsModalBtn) {
+  openEmployerTermsModalBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    openEmployerTermsModal();
+  });
+}
+if (closeEmpTermsModalBtn) closeEmpTermsModalBtn.addEventListener('click', closeEmployerTermsModal);
+if (closeEmpTermsModalBtn2) closeEmpTermsModalBtn2.addEventListener('click', closeEmployerTermsModal);
+
+if (agreeEmpTermsModalBtn) {
+  agreeEmpTermsModalBtn.addEventListener('click', () => {
+    if (employerTermsCheckbox) {
+      employerTermsCheckbox.checked = true;
+      employerTermsCheckbox.dispatchEvent(new Event('change'));
+    }
+    closeEmployerTermsModal();
+  });
+}
+
+if (employerTermsModal) {
+  employerTermsModal.addEventListener('click', (e) => {
+    if (e.target === employerTermsModal) {
+      closeEmployerTermsModal();
+    }
+  });
+}
+
 confirmBooking.addEventListener('click', async () => {
   if (!state.currentJobId) return;
+
+  if (employerTermsCheckbox && !employerTermsCheckbox.checked) {
+    if (employerTermsWrap) {
+      employerTermsWrap.classList.remove('highlight-shake');
+      void employerTermsWrap.offsetWidth;
+      employerTermsWrap.classList.add('highlight-shake');
+    }
+    employerTermsCheckbox.focus();
+    if (window.InstantCrewShared && window.InstantCrewShared.showPushToast) {
+      window.InstantCrewShared.showPushToast('Terms Required', 'Please agree to the Employer Terms and Conditions before confirming.', 'alert');
+    }
+    return;
+  }
+
   confirmBooking.disabled = true;
   try {
     const response = await fetch(`/api/jobs/${state.currentJobId}/confirm`, { method: 'POST', credentials: 'same-origin' });
@@ -2578,7 +2669,7 @@ bookAnother.addEventListener('click', () => {
 
   // Reset Step 5 UI
   if (detailsToggle) {
-    detailsToggle.setAttribute('aria-expanded', 'false');
+    detailsToggle.setAttribute('aria-expanded', 'true');
     detailsToggle.style.borderRadius = '';
   }
   if (detailsBox) {
