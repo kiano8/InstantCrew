@@ -6120,8 +6120,6 @@ body.app-sheet-open {
 }
 
 .app-btn-modal-transit.arrive .app-btn-icon-wrap {
-    background: rgba(15, 23, 42, 0.09);
-    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.08);
     color: #0F172A;
 }
 
@@ -6164,19 +6162,16 @@ body.app-sheet-open {
 }
 
 .app-btn-icon-wrap {
-    width: 42px;
+    width: 28px;
     height: 42px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.20);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    backdrop-filter: blur(6px);
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45), 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .app-btn-icon-wrap svg {
+    stroke-width: 2.6;
     transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -7086,15 +7081,17 @@ body.app-sheet-open {
 }
 
 .app-pass-icon-badge {
-    width: 38px;
+    width: 24px;
     height: 38px;
-    border-radius: 11px;
-    background: transparent;
     color: #D97706;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+.app-pass-icon-badge svg {
+    stroke-width: 2.6;
 }
 
 .app-pass-widget-info {

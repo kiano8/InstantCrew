@@ -1812,16 +1812,18 @@ button {
 
 .privacy-icon-box,
 .terms-icon-box {
-    width: 40px;
+    width: 26px;
     height: 40px;
-    border-radius: 12px;
-    background: var(--amber-light);
-    border: 1px solid var(--amber-border);
     color: var(--ink);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+.privacy-icon-box svg,
+.terms-icon-box svg {
+    stroke-width: 2.6;
 }
 
 .privacy-modal-title,

@@ -682,14 +682,15 @@ body {
 .auth-modal-icon-badge {
     width: 52px;
     height: 52px;
-    border-radius: 16px;
-    background: var(--amber-light);
-    border: 1.5px solid var(--amber-border);
     color: var(--amber-deep);
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 16px;
+}
+
+.auth-modal-icon-badge svg {
+    stroke-width: 2.6;
 }
 
 .auth-modal-header {
