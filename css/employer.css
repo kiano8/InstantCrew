@@ -4837,13 +4837,13 @@ h2 {
 
 .db-booking-item.ended .app-job-card-icon,
 .app-job-card.ended .app-job-card-icon {
-    color: var(--muted);
+    color: var(--yellow);
 }
 
 .db-booking-item.ended .app-job-card-icon svg,
 .app-job-card.ended .app-job-card-icon svg {
-    stroke: var(--muted);
-    color: var(--muted);
+    stroke: var(--yellow);
+    color: var(--yellow);
 }
 
 .app-job-card-title-col {
