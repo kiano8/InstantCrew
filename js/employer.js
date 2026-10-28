@@ -713,10 +713,6 @@ function goStep(n) {
   // Hide progress bar on Step 5 (success screen)
   progress.style.display = (n >= 5) ? 'none' : 'flex';
 
-  // Hide the header Install button during Steps 1–4
-  const installBtn = document.getElementById('headerInstallBtn');
-  if (installBtn) installBtn.style.display = (n >= 5) ? '' : 'none';
-
   if (n === 5 && detailsToggle) {
     detailsToggle.setAttribute('aria-expanded', 'true');
   }
