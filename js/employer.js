@@ -4264,7 +4264,7 @@ function setAuthTab(which) {
 authModal.querySelectorAll('.google-sso-btn').forEach((button) => {
   button.addEventListener('click', () => {
     const mode = tabSignup.classList.contains('active') ? 'signup' : 'login';
-    // Google SSO reloads the page, so keep the Step 1-2 booking to resume at Step 3.
+    // Google SSO reloads the page, so keep the booking to resume where login was asked.
     if (pendingAuthAction) saveBookingDraft();
     const params = new URLSearchParams({ role: 'hirer', mode });
     window.location.assign('/api/auth/google?' + params.toString());
@@ -4285,11 +4285,16 @@ function saveBookingDraft() {
     location: state.location,
     mapLocation: (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation,
     geo: state.geo,
+    timing: state.timing,
+    scheduledDate: state.scheduledDate ? new Date(state.scheduledDate).toISOString() : null,
+    scheduledTime: state.scheduledTime,
+    // Login from Step 3's Find a Crew resumes at the search-fee modal (then Step 4).
+    resumeAtPayment: !!document.querySelector('#step3.active'),
     savedAt: Date.now(),
   }));
 }
 
-/* Refill Steps 1-2 from a saved draft and continue to Step 3. */
+/* Refill Steps 1-3 from a saved draft and continue to Step 3 (or Step 4's fee modal). */
 function restoreBookingDraft() {
   let draft = null;
   try { draft = JSON.parse(sessionStorage.getItem(BOOKING_DRAFT_KEY)); } catch (e) { /* ignore */ }
@@ -4319,6 +4324,18 @@ function restoreBookingDraft() {
 
   goStep(2);
   goStep(3);
+
+  if (draft.scheduledDate) state.scheduledDate = new Date(draft.scheduledDate);
+  if (draft.scheduledTime) state.scheduledTime = draft.scheduledTime;
+  scheduleDisplayDate.textContent = formatDateShort(state.scheduledDate);
+  scheduleDisplayTime.textContent = `${format12Hour(state.scheduledTime)} · Scheduled Shift`;
+  if (draft.timing) {
+    state.timing = draft.timing;
+    document.querySelectorAll('.db-toggle').forEach(b => b.classList.toggle('active', b.dataset.timing === draft.timing));
+    laterField.classList.toggle('open', draft.timing === 'later');
+  }
+
+  if (draft.resumeAtPayment) openPaymentModal('search');
   return true;
 }
 
@@ -4445,14 +4462,17 @@ signupForm.addEventListener('submit', async (e) => {
     window.InstantCrewShared.syncPushSubscription();
   }
   updateAuthUI();
+  let resumedDraft = false;
   if (authUser) {
-    await catalogReady; // the draft's role must exist in ROLES before refilling Step 1
-    restoreBookingDraft();
+    // The draft's role must exist in ROLES before refilling Step 1.
+    resumedDraft = await catalogReady.then(restoreBookingDraft, () => false);
   }
   else sessionStorage.removeItem(BOOKING_DRAFT_KEY);
   // A push notification opens employer.html?job=<id> to show that shift.
   const linkedJobId = new URLSearchParams(window.location.search).get('job');
-  if (authUser && linkedJobId) {
+  if (resumedDraft) {
+    // Resuming the booking the employer just logged in for.
+  } else if (authUser && linkedJobId) {
     history.replaceState(null, '', window.location.pathname);
     await openEmployerJobNotification(linkedJobId);
   } else {
