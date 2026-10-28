@@ -1809,8 +1809,8 @@ body {
 .app-cat-card .db-cat-icon svg {
     width: 24px;
     height: 24px;
-    color: var(--ink, #111827);
-    stroke: var(--ink, #111827);
+    color: var(--yellow, #FFCC00);
+    stroke: var(--yellow, #FFCC00);
     transition: stroke var(--dur-fast, 0.15s), color var(--dur-fast, 0.15s);
 }
 

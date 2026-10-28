@@ -471,8 +471,8 @@ h2 {
 .db-cat-icon svg {
     width: 26px;
     height: 26px;
-    color: var(--ink);
-    stroke: var(--ink);
+    color: var(--yellow);
+    stroke: var(--yellow);
     transition: stroke var(--dur-fast), color var(--dur-fast);
 }
 
@@ -4823,16 +4823,16 @@ h2 {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: var(--ink);
+    color: var(--yellow);
 }
 
 .app-job-card-icon svg {
     display: block;
     width: 20px;
     height: 20px;
-    stroke: var(--ink);
+    stroke: var(--yellow);
     stroke-width: 2.6;
-    color: var(--ink);
+    color: var(--yellow);
 }
 
 .db-booking-item.ended .app-job-card-icon,
