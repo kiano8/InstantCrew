@@ -6,6 +6,8 @@
     var isEmployer = /employer/i.test(location.pathname);
     var ENDPOINT = isEmployer ? '/api/employer/payments' : '/api/applicant/payments';
     var TITLE = isEmployer ? 'Payment history' : 'Payments & hires log';
+    var SUBTITLE = isEmployer ? 'Search fees you have paid' : 'Your free hires, top-ups and hires used';
+    var RECEIPT_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>';
 
     var CSS = '\
 .ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 16px 0 13px;border:1.5px solid #E6B800;border-radius:9999px;background:#FFCC00;color:#1C1C1E;font-family:inherit;font-size:.8rem;font-weight:700;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;line-height:1;text-decoration:none;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 2px rgba(28,28,30,.08),0 2px 8px rgba(255,204,0,.28);transition:background .14s ease,transform .14s ease,box-shadow .14s ease}\
@@ -15,33 +17,40 @@
 .ph-btn-icon{display:inline-flex;flex-shrink:0}\
 @media (max-width:520px){.ph-btn{height:34px;padding:0 12px 0 10px;font-size:.74rem;gap:5px}}\
 @media (max-width:420px){.ph-btn{width:38px;height:38px;padding:0;gap:0}.ph-btn-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}\
-.ph-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}\
+.ph-overlay{position:fixed;inset:0;background:rgba(28,28,30,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}\
 .ph-overlay.open{display:flex}\
-.ph-card{background:#fff;color:#0F172A;width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.3);overflow:hidden;font-family:inherit}\
-.ph-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #E2E8F0}\
-.ph-head h3{margin:0;font-size:1.05rem}\
-.ph-close{border:0;background:transparent;font-size:1.4rem;line-height:1;cursor:pointer;color:#475569}\
-.ph-filters{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid #F1F5F9;flex-wrap:wrap}\
-.ph-chip-btn{border:1px solid #E2E8F0;background:#fff;border-radius:999px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;color:#475569}\
-.ph-chip-btn.active{background:#0F172A;color:#fff;border-color:#0F172A}\
-.ph-body{overflow:auto;padding:6px 18px 16px}\
-.ph-row{display:flex;gap:12px;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F1F5F9}\
-.ph-row:last-child{border-bottom:0}\
+.ph-card{background:#FFFFFF;color:#1C1C1E;width:min(560px,100%);max-height:86vh;display:flex;flex-direction:column;border:1px solid #E5E5EA;border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);overflow:hidden;font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;animation:ph-pop .24s cubic-bezier(.16,1,.3,1)}\
+@keyframes ph-pop{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}\
+.ph-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 14px}\
+.ph-head-left{display:flex;align-items:center;gap:12px;min-width:0}\
+.ph-head-icon{width:42px;height:42px;border-radius:12px;background:#FFCC00;color:#1C1C1E;display:flex;align-items:center;justify-content:center;flex-shrink:0}\
+.ph-head h3{margin:0;font-size:1.05rem;font-weight:800;letter-spacing:-.02em;color:#1C1C1E}\
+.ph-head p{margin:3px 0 0;font-size:.78rem;color:#8E8E93}\
+.ph-close{width:32px;height:32px;flex-shrink:0;border-radius:50%;border:1px solid #E5E5EA;background:#F5F5F7;color:#8E8E93;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .14s ease,color .14s ease}\
+.ph-close:hover{background:#EFEFF4;color:#1C1C1E}\
+.ph-close:focus-visible,.ph-chip-btn:focus-visible{outline:2px solid #1C1C1E;outline-offset:2px}\
+.ph-filters{display:flex;gap:4px;margin:0 20px 6px;padding:4px;background:#F5F5F7;border-radius:9999px}\
+.ph-chip-btn{flex:1;border:0;background:transparent;border-radius:9999px;padding:8px 12px;font-family:inherit;font-size:.8rem;font-weight:600;color:#8E8E93;cursor:pointer;transition:background .14s ease,color .14s ease,box-shadow .14s ease}\
+.ph-chip-btn.active{background:#FFFFFF;color:#1C1C1E;box-shadow:0 1px 4px rgba(0,0,0,.08)}\
+.ph-body{overflow:auto;padding:10px 20px 20px;display:flex;flex-direction:column;gap:10px}\
+.ph-row{display:flex;gap:12px;justify-content:space-between;padding:14px;background:#FFFFFF;border:1px solid #E5E5EA;border-radius:14px}\
 .ph-main{min-width:0}\
-.ph-title{font-weight:700;font-size:.9rem}\
-.ph-desc{color:#475569;font-size:.8rem;margin-top:2px;word-break:break-word}\
-.ph-meta{color:#94A3B8;font-size:.72rem;margin-top:4px}\
-.ph-side{text-align:right;flex-shrink:0}\
-.ph-amt{font-weight:800;font-size:.95rem}\
-.ph-status{display:inline-block;margin-top:4px;padding:2px 9px;border-radius:999px;font-size:.68rem;font-weight:700;text-transform:capitalize}\
-.ph-s-verified,.ph-s-granted{background:#DCFCE7;color:#166534}\
-.ph-s-pending{background:#DBEAFE;color:#1E40AF}\
-.ph-s-rejected{background:#FEE2E2;color:#991B1B}\
-.ph-s-used{background:#FEF3C7;color:#92400E}\
-.ph-link{color:#2563EB;font-size:.72rem;text-decoration:underline;margin-left:8px}\
-.ph-empty,.ph-err{padding:28px 0;text-align:center;color:#64748B;font-size:.85rem}\
-.ph-err{color:#B91C1C}\
-@media (prefers-color-scheme:dark){.ph-card{background:#0F172A;color:#E2E8F0}.ph-head,.ph-filters,.ph-row{border-color:#1E293B}.ph-chip-btn{background:#1E293B;color:#E2E8F0;border-color:#334155}.ph-chip-btn.active{background:#E2E8F0;color:#0F172A}.ph-desc{color:#94A3B8}}';
+.ph-title{font-weight:800;font-size:.9rem;letter-spacing:-.01em;color:#1C1C1E}\
+.ph-desc{color:rgba(28,28,30,.6);font-size:.8rem;margin-top:3px;word-break:break-word}\
+.ph-reason{color:#C0392B}\
+.ph-meta{color:#8E8E93;font-size:.72rem;margin-top:6px}\
+.ph-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;flex-shrink:0}\
+.ph-amt{font-weight:800;font-size:1rem;letter-spacing:-.02em;color:#1C1C1E}\
+.ph-status{display:inline-flex;align-items:center;gap:6px;font-size:.66rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#8E8E93;white-space:nowrap}\
+.ph-status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}\
+.ph-s-verified,.ph-s-granted{color:#1F9D48}\
+.ph-s-pending{color:#B38F00}\
+.ph-s-pending::before{background:#FFCC00}\
+.ph-s-rejected{color:#C0392B}\
+.ph-s-used{color:#8E8E93}\
+.ph-link{color:#1C1C1E;font-weight:700;font-size:.72rem;text-decoration:underline;text-decoration-color:#FFCC00;text-decoration-thickness:2px;text-underline-offset:3px;margin-left:8px}\
+.ph-empty,.ph-err{padding:32px 16px;text-align:center;color:#8E8E93;font-size:.85rem;background:#F5F5F7;border-radius:14px}\
+.ph-err{color:#C0392B}';
 
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -87,7 +96,7 @@
             var amount = e.amount_centavos > 0 ? esc(e.amount_pesos) : (e.kind === 'free_hires' ? 'Free' : '');
             var method = e.method ? ' · ' + esc(e.method.toUpperCase()) : '';
             var ref = e.ref ? ' · ' + esc(e.ref) : '';
-            var reason = e.status === 'rejected' && e.rejection_reason ? '<div class="ph-desc" style="color:#B91C1C">Reason: ' + esc(e.rejection_reason) + '</div>' : '';
+            var reason = e.status === 'rejected' && e.rejection_reason ? '<div class="ph-desc ph-reason">Reason: ' + esc(e.rejection_reason) + '</div>' : '';
             return '<div class="ph-row"><div class="ph-main">' +
                 '<div class="ph-title">' + esc(e.title) + '</div>' +
                 '<div class="ph-desc">' + esc(e.description) + '</div>' + reason +
@@ -124,8 +133,10 @@
         overlay.className = 'ph-overlay';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
-        overlay.innerHTML = '<div class="ph-card"><div class="ph-head"><h3>' + TITLE +
-            '</h3><button type="button" class="ph-close" aria-label="Close">&times;</button></div>' +
+        overlay.innerHTML = '<div class="ph-card"><div class="ph-head"><div class="ph-head-left">' +
+            '<span class="ph-head-icon" aria-hidden="true">' + RECEIPT_SVG + '</span>' +
+            '<div><h3>' + TITLE + '</h3><p>' + SUBTITLE + '</p></div></div>' +
+            '<button type="button" class="ph-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>' +
             '<div class="ph-filters"></div><div class="ph-body"></div></div>';
         document.body.appendChild(overlay);
         filterEl = overlay.querySelector('.ph-filters');
@@ -163,7 +174,7 @@
         // Receipt icon + label; the label is visually hidden on narrow phones.
         if (!btn.querySelector('.ph-btn-label')) {
             var label = btn.textContent.trim() || TITLE;
-            btn.innerHTML = '<span class="ph-btn-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span><span class="ph-btn-label"></span>';
+            btn.innerHTML = '<span class="ph-btn-icon" aria-hidden="true">' + RECEIPT_SVG.replace('width="20" height="20"', 'width="15" height="15"') + '</span><span class="ph-btn-label"></span>';
             btn.querySelector('.ph-btn-label').textContent = label;
             btn.title = label;
         }

@@ -443,15 +443,15 @@ h2 {
 }
 
 .db-cat-card:hover {
-    border-color: var(--yellow-dark);
-    box-shadow: 0 2px 10px rgba(255, 204, 0, 0.18);
+    border-color: #D8D8DE;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
     transform: translateY(-1px);
 }
 
 .db-cat-card[aria-pressed="true"] {
-    border-color: var(--yellow);
+    border-color: #0F172A;
     background: transparent;
-    box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.22);
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
 }
 
 .db-cat-icon {
@@ -1465,8 +1465,8 @@ h2 {
 }
 
 .db-crew-card:hover {
-    border-color: var(--yellow);
-    box-shadow: 0 2px 10px rgba(255, 204, 0, 0.14);
+    border-color: #D8D8DE;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 }
 
 .db-matched-crew-panel {
@@ -2476,8 +2476,8 @@ h2 {
 }
 
 .db-schedule-card:hover {
-    border-color: var(--yellow);
-    box-shadow: 0 4px 16px rgba(255, 204, 0, 0.15);
+    border-color: #D8D8DE;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     transform: translateY(-1px);
 }
 
@@ -2589,8 +2589,7 @@ h2 {
     box-shadow:
         0 24px 60px rgba(0, 0, 0, 0.22),
         0 0 0 1px rgba(0, 0, 0, 0.04);
-    border: 2.5px solid #FFCC00;
-    /* Distinctive yellow accent border */
+    border: 1px solid var(--border);
     transform: scale(0.95) translateY(12px);
     transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
     max-height: 92vh;
@@ -3966,7 +3965,7 @@ h2 {
     padding: 24px 24px 22px;
     background: #FFFFFF;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
-    border: 2.5px solid #FFCC00;
+    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     max-height: 90vh;
@@ -5482,8 +5481,6 @@ h2 {
 .app-loc-badge-role {
     font-size: 0.72rem;
     font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
     color: #0F172A;
     background: #F1F5F9;
     border: 1px solid #CBD5E1;

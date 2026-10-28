@@ -3363,7 +3363,6 @@ function openLocationDetailModal(shift) {
 
   const venue = shift.venue || shift.employerName || shift.location || 'Employer Shift';
   const cleanRole = (shift.title || shift.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
-  const roleUpper = cleanRole.toUpperCase();
 
   const isPart = (shift.employmentType && shift.employmentType.toLowerCase().includes('part')) ||
     (shift.title && shift.title.toLowerCase().includes('part')) ||
@@ -3371,7 +3370,7 @@ function openLocationDetailModal(shift) {
   const empUpper = isPart ? 'PART-TIME' : 'FULL-TIME';
 
   const cardBadgesHtml = `
-        <span class="app-loc-badge-role">${roleUpper}</span>
+        <span class="app-loc-badge-role">${cleanRole}</span>
         <span class="app-loc-badge-emp ${isPart ? 'part-time' : 'full-time'}">${empUpper}</span>
     `;
 
