@@ -400,7 +400,7 @@
                             <div class="form-group">
                                 <div class="input-wrapper">
                                     <input type="email" id="appSignupEmail" class="form-input"
-                                        placeholder="Gmail Address (name@gmail.com)" required>
+                                        placeholder="Email Address" required>
                                     <span class="input-icon-right">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -1034,14 +1034,11 @@
             formApplicantSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btnSubmitApplicantSignup');
-                const code = await signupCode(formApplicantSignup, 'appSignupEmail', 'applicant', btn);
-                if (!code) return;
                 const user = await authRequest('/api/auth/signup', {
                     role: 'applicant',
                     name: document.getElementById('appFullName').value,
                     email: document.getElementById('appSignupEmail').value,
                     password: document.getElementById('appSignupPassword').value,
-                    code,
                 }, btn, 'Joining Instant Crew...', 'Register');
                 if (!user) return;
                 saveWorkerSession(user);

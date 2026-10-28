@@ -1949,7 +1949,7 @@
                     </div>
 
                     <div class="db-auth-field">
-                        <label for="appModalSignupEmail" class="db-field-label">Gmail Address</label>
+                        <label for="appModalSignupEmail" class="db-field-label">Email Address</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -1958,7 +1958,7 @@
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                             <input type="email" id="appModalSignupEmail" class="db-auth-input"
-                                placeholder="name@gmail.com" required autocomplete="email">
+                                placeholder="name@example.com" required autocomplete="email">
                         </div>
                     </div>
 
@@ -7905,22 +7905,13 @@
                         return;
                     }
 
-                    // The first submit emails a code to the Gmail address; the next one sends it.
-                    let code = '';
-                    try {
-                        code = await window.ICEmailCode.signupCode({ form: applicantModalSignupForm, email, role: 'applicant', before: btn, inputClass: 'db-auth-input' });
-                    } catch (err) {
-                        showApplicantAuthError(err.message);
-                    }
-                    if (!code) return;
-
                     if (btn) {
                         btn.disabled = true;
                         btn.innerHTML = '<span class="db-btn-spinner"></span> Creating account…';
                     }
 
                     try {
-                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass, code }) });
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
                         const categoryRoles = SERVICES_CATALOG[appState.category] || [];

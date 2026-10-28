@@ -10,7 +10,7 @@
     var RECEIPT_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>';
 
     var CSS = '\
-.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 16px 0 13px;border:1.5px solid #E6B800;border-radius:9999px;background:#FFCC00;color:#1C1C1E;font-family:inherit;font-size:.8rem;font-weight:700;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;line-height:1;text-decoration:none;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 2px rgba(28,28,30,.08),0 2px 8px rgba(255,204,0,.28);transition:background .14s ease,transform .14s ease,box-shadow .14s ease}\
+.ph-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 16px 0 13px;border:1.5px solid #FFCC00;border-radius:9999px;background:#FFCC00;color:#1C1C1E;font-family:inherit;font-size:.8rem;font-weight:700;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;line-height:1;text-decoration:none;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 2px rgba(28,28,30,.08),0 2px 8px rgba(255,204,0,.28);transition:background .14s ease,transform .14s ease,box-shadow .14s ease}\
 .ph-btn:hover{background:#FFD633;transform:translateY(-1px);box-shadow:0 2px 4px rgba(28,28,30,.1),0 6px 14px rgba(255,204,0,.38)}\
 .ph-btn:active{background:#E6B800;transform:translateY(0);box-shadow:0 1px 2px rgba(28,28,30,.1)}\
 .ph-btn:focus-visible{outline:2px solid #1C1C1E;outline-offset:2px}\
