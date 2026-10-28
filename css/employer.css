@@ -600,7 +600,7 @@ h2 {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: var(--ink);
+    color: var(--yellow);
     transition: all 0.2s ease;
 }
 
@@ -2488,7 +2488,7 @@ h2 {
 .db-schedule-icon-badge {
     width: 24px;
     height: 38px;
-    color: var(--ink);
+    color: var(--yellow);
     display: flex;
     align-items: center;
     justify-content: center;

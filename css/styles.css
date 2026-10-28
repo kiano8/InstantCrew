@@ -1814,7 +1814,7 @@ button {
 .terms-icon-box {
     width: 26px;
     height: 40px;
-    color: var(--ink);
+    color: #FFCC00;
     display: flex;
     align-items: center;
     justify-content: center;
