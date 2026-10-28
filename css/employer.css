@@ -4998,25 +4998,20 @@ h2 {
     flex: 1;
 }
 
+/* Secondary card action — sits beside the primary action in the footer */
 .app-job-view-detail-btn {
-    display: inline-flex;
-    align-items: center;
-    background: #FFF7ED;
-    border: 1px solid #FED7AA;
-    color: #D97706;
-    font-size: 0.76rem;
-    font-weight: 700;
+    background: #FFFFFF;
+    border: 1.2px solid #E2E8F0;
+    color: #0F172A;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 999px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: color 0.15s ease, transform 0.15s ease;
+    font-family: inherit;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .app-job-view-detail-btn:hover {
-    color: #B45309 !important;
-    text-decoration: underline;
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    transform: translateY(-1px);
 }
 
 /* Keep employer job details visually identical to the employee details card. */
@@ -5062,26 +5057,58 @@ h2 {
     gap: 6px;
 }
 
-/* Footer / Action row */
-.app-job-card-footer.active-contract-footer {
+/* Footer: status row on top, evenly sized action buttons below */
+.app-job-card-footer.active-contract-footer,
+.app-job-card-footer.ended-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    background: #F8FAFC;
-    border-top: 1px solid #E2E8F0;
-    padding: 10px 14px;
-    margin: 4px -18px -16px;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin: 2px 0 0;
+    padding: 12px 0 0;
+    background: none;
+    border-top: 1px solid #EEF2F6;
+    border-radius: 0;
 }
 
 .app-card-transit-box {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
     flex-wrap: wrap;
+    min-width: 0;
+}
+
+.app-card-transit-box:empty {
+    display: none;
+}
+
+.app-job-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.app-job-card-actions > button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+/* Primary transit action takes its own full-width row above the secondary pair */
+.app-job-card-actions > .app-btn-transit-sm {
+    flex-basis: 100%;
 }
 
 .app-card-transit-status {
@@ -5243,16 +5270,6 @@ h2 {
     color: #1E40AF;
 }
 
-.app-job-card-footer.ended-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #E2E8F0;
-    margin-top: 4px;
-}
-
 .app-ended-note {
     font-size: 0.78rem;
     color: #64748B;
@@ -5260,6 +5277,8 @@ h2 {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
+    flex: 1;
 }
 
 .app-job-archived-tag {

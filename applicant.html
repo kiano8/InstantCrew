@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261027-terms-btn">
-    <link rel="stylesheet" href="css/applicant.css?v=20261027-terms">
+    <link rel="stylesheet" href="css/employer.css?v=20261028-job-cards">
+    <link rel="stylesheet" href="css/applicant.css?v=20261028-job-cards">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261028-homescreen">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
     <link rel="apple-touch-icon" sizes="192x192" href="images/Instalogo.png">
@@ -5119,7 +5119,7 @@
                     const isNoShowExpired = remainingMs <= 0 && contract.transitStatus !== 'arrived' && contract.transitStatus !== 'on_the_way';
 
                     const countdownHtml = (contract.confirmed && contract.transitStatus !== 'arrived' && contract.transitStatus !== 'on_the_way' && !isNoShowExpired) ? `
-                        <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${contract.id}">
+                        <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${contract.id}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                             <span>1-Hr Arrival Limit: <strong class="app-transit-timer-val">${remMins}m ${remSecs < 10 ? '0' : ''}${remSecs}s left</strong></span>
                         </div>
@@ -5802,6 +5802,26 @@
                 const locationAddress = (item.mapLocation || item.location || venueName).trim();
                 const isLocationSameAsVenue = locationAddress.toLowerCase() === venueName.toLowerCase();
 
+                const viewDetailsBtnHtml = `<button type="button" class="app-job-view-detail-btn">View Details</button>`;
+                const showTransitAction = !isEnded && !isNoShowExpired && item.confirmed && item.transitStatus !== 'arrived';
+                const transitActionHtml = !showTransitAction ? '' : (item.transitStatus === 'on_the_way' ? `
+                    <button type="button" class="app-btn-transit-sm arrive" data-id="${item.id}" title="Notify employer that you have arrived">
+                        <span class="app-btn-transit-sm-icon">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </span>
+                        <span class="app-btn-transit-sm-text">Mark Arrived</span>
+                    </button>` : `
+                    <button type="button" class="app-btn-transit-sm depart" data-id="${item.id}" title="Notify employer you are heading to the location">
+                        <span class="app-btn-transit-sm-icon">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                            </svg>
+                        </span>
+                        <span class="app-btn-transit-sm-text">I'm On the Way</span>
+                    </button>`);
+
                 card.innerHTML = `
                     <div class="app-job-card-header">
                         <div class="app-job-card-left">
@@ -5825,17 +5845,12 @@
                             </svg>
                             <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${venueName}</span>
                         </div>` : ''}
-                        <div class="app-job-meta-line app-job-location-line" style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-                            <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
-                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#D97706"/>
-                                    <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
-                                </svg>
-                                <span class="app-meta-loc-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locationAddress}</span>
-                            </div>
-                            <button type="button" class="app-job-view-detail-btn">
-                                View Details ↗
-                            </button>
+                        <div class="app-job-meta-line app-job-location-line">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#D97706"/>
+                                <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
+                            </svg>
+                            <span class="app-meta-loc-text" style="min-width:0; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locationAddress}</span>
                         </div>
                         <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
@@ -5863,21 +5878,13 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 <span>1-Hr Arrival Limit Expired &bull; Auto-Cancelling</span>
                             </span>
-                            <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
+                            <div style="flex-basis:100%; font-size:0.75rem; color:#DC2626;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
                         </div>` : (!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">Waiting for employer confirmation before starting.</span></div>` : item.transitStatus === 'on_the_way' ? `
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status on-the-way">
                                 <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
                                 <span>En Route (${item.departedAt || 'Just now'})</span>
                             </span>
-                            <button type="button" class="app-btn-transit-sm arrive" data-id="${item.id}" title="Notify employer that you have arrived">
-                                <span class="app-btn-transit-sm-icon">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                </span>
-                                <span class="app-btn-transit-sm-text">Mark Arrived</span>
-                            </button>
                         </div>` : (item.transitStatus === 'arrived' ? `
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status arrived">
@@ -5888,24 +5895,19 @@
                             </span>
                         </div>` : `
                         <div class="app-card-transit-box">
-                            <button type="button" class="app-btn-transit-sm depart" data-id="${item.id}" title="Notify employer you are heading to the location">
-                                <span class="app-btn-transit-sm-icon">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-                                    </svg>
-                                </span>
-                                <span class="app-btn-transit-sm-text">I'm On the Way</span>
-                            </button>
-                            <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; margin-top:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${item.id}">
+                            <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${item.id}">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                                 <span>Time for transit: <strong class="app-transit-timer-val">${remMins}m ${remSecs < 10 ? '0' : ''}${remSecs}s left</strong></span>
                             </div>
                         </div>`))}
-                        ${!isNoShowExpired ? `<button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">
-                            End Job
-                        </button>` : ''}
+                        <div class="app-job-card-actions">
+                            ${transitActionHtml}
+                            ${viewDetailsBtnHtml}
+                            ${!isNoShowExpired ? `<button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">End Job</button>` : ''}
+                        </div>
                     </div>` : `
                     <div class="app-job-card-footer ended-footer">
+                        <div class="app-card-transit-box">
                         ${item.transitStatus === 'no_show' ? `
                         <span class="app-ended-note" style="color:#DC2626; font-weight:600;">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -5926,6 +5928,8 @@
                         </span>
                         <span class="app-job-archived-tag">Archived</span>
                         `}
+                        </div>
+                        <div class="app-job-card-actions">${viewDetailsBtnHtml}</div>
                     </div>`}
                 `;
 

@@ -3221,6 +3221,8 @@ function buildBookingItem(b) {
   const rawRate = b.crewRate || (b.offeredRate ? `₱${b.offeredRate}` : '₱85');
   const displayRate = String(rawRate).replace(/\/hr.*$/i, '').trim();
 
+  const viewDetailsBtnHtml = `<button type="button" class="app-job-view-detail-btn db-btn-view-shift" data-booking-id="${jobId}">View Details</button>`;
+
   item.innerHTML = `
         <div class="app-job-card-header">
             <div class="app-job-card-left">
@@ -3242,7 +3244,6 @@ function buildBookingItem(b) {
                     <circle cx="12" cy="10" r="3"></circle>
                 </svg>
                 <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayLocation}</span>
-                <button type="button" class="app-job-view-detail-btn db-btn-view-shift" data-booking-id="${jobId}">View Details ↗</button>
             </div>
             <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
@@ -3302,10 +3303,14 @@ function buildBookingItem(b) {
                     <span>Crew Preparing &bull; Awaiting Transit</span>
                 </span>
             </div>`)))}
-            ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
-            ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
+            <div class="app-job-card-actions">
+                ${viewDetailsBtnHtml}
+                ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
+                ${isSearching ? `<button type="button" class="app-btn-end-contract-clean db-btn-cancel-search" data-booking-id="${jobId}">Cancel Search</button>` : ''}
+            </div>
         </div>` : `
         <div class="app-job-card-footer ended-footer">
+            <div class="app-card-transit-box">
             <span class="app-ended-note">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -3314,6 +3319,8 @@ function buildBookingItem(b) {
                 <span>${isAutoCancelled ? 'Auto-Cancelled: 1-Hr Arrival Limit Expired (No-Show Penalty)' : (b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract'))}</span>
             </span>
             <span class="app-job-archived-tag">Archived</span>
+            </div>
+            <div class="app-job-card-actions">${viewDetailsBtnHtml}</div>
         </div>`}
     `;
 

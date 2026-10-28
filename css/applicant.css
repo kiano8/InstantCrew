@@ -4567,16 +4567,6 @@ body.app-sheet-open {
     gap: 6px;
 }
 
-/* Action button row */
-.app-job-card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border);
-}
-
 .app-btn-end-contract-clean {
     padding: 7px 16px;
     font-size: 0.82rem;
@@ -4596,15 +4586,6 @@ body.app-sheet-open {
     color: #B91C1C;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
-}
-
-.app-ended-note {
-    font-size: 0.78rem;
-    color: #64748B;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
 }
 
 .app-job-archived-tag {
@@ -4697,28 +4678,6 @@ body.app-sheet-open {
     border-radius: 5px;
 }
 
-/* View detail button in drawer job card */
-.app-job-view-detail-btn {
-    display: inline-flex;
-    align-items: center;
-    background: #FFF7ED;
-    border: 1px solid #FED7AA;
-    color: #D97706;
-    font-size: 0.76rem;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 999px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: color 0.15s ease, transform 0.15s ease;
-}
-
-.app-job-view-detail-btn:hover {
-    color: #B45309 !important;
-    text-decoration: underline;
-}
-
 .db-profile-panel .app-job-status-badge {
     font-size: 0.68rem;
     padding: 2px 7px;
@@ -4735,23 +4694,8 @@ body.app-sheet-open {
     line-height: 1.35;
 }
 
-.db-profile-panel .app-job-card-footer {
-    padding-top: 8px;
-    margin-top: 2px;
-    border-top: 1px dashed #E2E8F0;
-}
-
-.db-profile-panel .app-btn-end-contract-clean {
-    padding: 5px 12px;
-    font-size: 0.76rem;
-}
-
 .db-profile-panel .app-ended-note {
     font-size: 0.74rem;
-    color: #64748B;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
     gap: 5px;
 }
 
@@ -5944,26 +5888,6 @@ body.app-sheet-open {
 /* ═══════════════════════════════════════════════════════════
    ACCEPTED SHIFTS DRAWER JOB CARD FOOTER & TRANSIT BUTTONS
    ═══════════════════════════════════════════════════════════ */
-
-.app-job-card-footer.active-contract-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    background: #F8FAFC;
-    border-top: 1px solid #E2E8F0;
-    padding: 10px 14px;
-    border-bottom-left-radius: inherit;
-    border-bottom-right-radius: inherit;
-}
-
-.app-card-transit-box {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
 
 /* 1-hour arrival limit reminder on confirmed contracts */
 .app-arrival-reminder {
