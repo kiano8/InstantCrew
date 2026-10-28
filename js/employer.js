@@ -2456,7 +2456,7 @@ function renderCrewResults(acceptedCrew = [], job = null) {
                 </div>
                 <p class="db-crew-meta">Accepted this shift</p>
             </div>
-            <span class="db-crew-role-tag" style="background:#DCFCE7; color:#15803D; font-weight:700;">Accepted</span>
+            <span class="db-crew-role-tag" style="color:#15803D; font-weight:700;">Accepted</span>
         `;
 
     crewList.appendChild(card);
@@ -3043,18 +3043,19 @@ function bookingProgressHtml(b) {
     {
       label: 'Crew On the Way',
       sub: onTheWay || arrived ? `Departed ${b.departedAt || 'just now'}` : awaitingSub,
-      state: onTheWay || arrived ? 'done' : 'current',
-      extra: onTheWay || arrived ? '' : countdown
+      state: onTheWay || arrived ? 'done' : 'current'
     },
     {
       label: 'Arrived on Site',
       sub: arrived ? `Arrived ${b.arrivedAt || 'just now'}` : (onTheWay ? 'Crew is en route' : 'Pending arrival'),
-      state: arrived ? 'done' : (onTheWay ? 'current' : 'upcoming'),
-      extra: onTheWay ? countdown : ''
+      state: arrived ? 'done' : (onTheWay ? 'current' : 'upcoming')
     }
   ];
   const checkSvg = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  const clockSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>';
+  const banner = countdown ? `<div class="app-booking-arrival-banner" role="timer">${clockSvg}${countdown}</div>` : '';
   return `
+            ${banner}
             <ol class="app-booking-progress" aria-label="Booking progress">
                 ${steps.map(step => `
                 <li class="app-booking-progress-step ${step.state}"${step.state === 'current' ? ' aria-current="step"' : ''}>
@@ -3062,7 +3063,6 @@ function bookingProgressHtml(b) {
                     <div class="app-booking-progress-text">
                         <span class="app-booking-progress-label">${step.label}</span>
                         <span class="app-booking-progress-sub">${step.sub}</span>
-                        ${step.extra || ''}
                     </div>
                 </li>`).join('')}
             </ol>`;

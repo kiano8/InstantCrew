@@ -1600,9 +1600,6 @@ h2 {
 }
 
 .db-crew-role-tag {
-    padding: 4px 10px;
-    border-radius: var(--radius-pill);
-    background: var(--surface-2);
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--ink-60);
@@ -4820,10 +4817,8 @@ h2 {
 }
 
 .app-job-card-icon {
-    width: 42px;
+    width: 24px;
     height: 42px;
-    border-radius: 12px;
-    background: var(--yellow);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4836,12 +4831,12 @@ h2 {
     width: 20px;
     height: 20px;
     stroke: var(--ink);
+    stroke-width: 2.6;
     color: var(--ink);
 }
 
 .db-booking-item.ended .app-job-card-icon,
 .app-job-card.ended .app-job-card-icon {
-    background: var(--surface-3);
     color: var(--muted);
 }
 
@@ -5327,8 +5322,30 @@ h2 {
     line-height: 1.35;
 }
 
-.app-booking-progress-text .app-card-arrival-countdown {
-    margin-top: 4px;
+/* Arrival-limit countdown shown above the progress steps */
+.app-booking-arrival-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: #B45309;
+}
+
+.app-booking-arrival-banner svg {
+    flex-shrink: 0;
+}
+
+.app-booking-arrival-banner .app-card-arrival-countdown {
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 0.88rem;
+    white-space: normal;
 }
 
 .app-btn-end-contract-clean {
@@ -5491,11 +5508,8 @@ h2 {
 }
 
 .app-loc-modal-icon {
-    width: 42px;
+    width: 24px;
     height: 42px;
-    border-radius: 12px;
-    background: #FEF2F2;
-    border: 1px solid #FEE2E2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5586,10 +5600,6 @@ h2 {
     font-size: 0.72rem;
     font-weight: 800;
     color: #0F172A;
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    padding: 3px 8px;
-    border-radius: 6px;
 }
 
 .app-loc-badge-emp {
@@ -5597,20 +5607,14 @@ h2 {
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 3px 8px;
-    border-radius: 6px;
 }
 
 .app-loc-badge-emp.full-time {
     color: #92400E;
-    background: #FEF3C7;
-    border: 1px solid #FCD34D;
 }
 
 .app-loc-badge-emp.part-time {
     color: #0284C7;
-    background: #F0F9FF;
-    border: 1px solid #BAE6FD;
 }
 
 .app-loc-address-text {
@@ -6207,7 +6211,6 @@ body {
 
     .db-crew-role-tag {
         font-size: 0.72rem;
-        padding: 3px 8px;
         flex-shrink: 0;
         white-space: nowrap;
     }
@@ -6482,7 +6485,6 @@ body {
 
     .db-crew-role-tag {
         font-size: 0.68rem;
-        padding: 2px 7px;
     }
 }
 
@@ -7191,10 +7193,6 @@ body {
 .app-card-arrival-countdown {
     display: inline-flex;
     align-items: center;
-    padding: 3px 9px;
-    border-radius: 999px;
-    background: #FFFBEB;
-    border: 1px solid #FDE68A;
     color: #B45309;
     font-size: 0.74rem;
     font-weight: 700;
