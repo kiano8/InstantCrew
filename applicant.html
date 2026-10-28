@@ -5038,6 +5038,7 @@
                     </div>`;
             }
             function refreshApplicantAssignments(force = false) {
+                if (!hasWorkerSession()) return;
                 if (assignmentFetchPending || (!force && serverAssignments !== null && Date.now() - assignmentFetchedAt < 2500)) return;
                 assignmentFetchPending = true;
                 fetch('/api/applicant/assignments', { credentials: 'same-origin' }).then(async r => {
@@ -5275,7 +5276,7 @@
                 }
 
                 const applicantJobsAreStale = Date.now() - serverApplicantJobsFetchedAt >= 5000;
-                if (serverApplicantJobs === null || applicantJobsAreStale) {
+                if (hasWorkerSession() && (serverApplicantJobs === null || applicantJobsAreStale)) {
                     if (!loadingApplicantJobs) {
                         loadingApplicantJobs = true;
                         fetch('/api/applicant/jobs', { credentials: 'same-origin', cache: 'no-store' }).then(async r => {
