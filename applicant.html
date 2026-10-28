@@ -51,7 +51,7 @@
 
             <div style="display:flex; align-items:center; gap:12px;">
                 <!-- Install App Button -->
-                <button type="button" class="nav-install-btn" id="headerInstallBtn" aria-label="Install App"
+                <button type="button" class="nav-install-btn" id="headerInstallBtn" style="display:none;" aria-label="Install App"
                     title="Add to Home Screen">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -6469,6 +6469,9 @@
                 const isLogged = hasWorkerSession();
                 if (appStepsWrap) appStepsWrap.style.display = isLogged ? 'none' : 'block';
                 if (appDashboardWrap) appDashboardWrap.style.display = isLogged ? 'block' : 'none';
+                // Hide the header Install button during the onboarding steps
+                const headerInstallBtn = document.getElementById('headerInstallBtn');
+                if (headerInstallBtn) headerInstallBtn.style.display = isLogged ? '' : 'none';
                 const notifWrap = document.querySelector('.db-notif-wrap');
                 const phHeaderBtn = document.getElementById('phHeaderBtn');
                 if (isLogged) {
