@@ -5297,7 +5297,7 @@
                     }
                     return;
                 }
-                const allJobs = serverApplicantJobs;
+                const allJobs = serverApplicantJobs || [];
                 const rejectedIds = InstantCrewShared.getRejectedJobIds();
                 const activeContracts = getActiveContractsList();
                 const hasFullTime = activeContracts.some(c => c.employmentType === 'full-time');
@@ -5335,7 +5335,8 @@
                     // Only show jobs whose role matches one of the worker's selected services.
                     // If the worker has no services selected, show nothing.
                     if (workerServices.length === 0) return false;
-                    if (!workerServices.includes(job.roleKey || job.role)) return false;
+                    // session.services holds role labels ("Cook"); match the job's label or its role ID.
+                    if (!workerServices.includes(job.role) && !workerServices.includes(job.roleKey)) return false;
 
                     // If holding 1 part-time job, full-time jobs cannot be taken (only 1 more part-time)
                     if (partTimeCount > 0 && job.employmentType === 'full-time') {
