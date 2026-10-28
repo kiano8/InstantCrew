@@ -594,10 +594,8 @@ h2 {
 }
 
 .db-custom-trigger-icon {
-    width: 32px;
+    width: 22px;
     height: 32px;
-    border-radius: 8px;
-    background: var(--surface-2);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -608,7 +606,6 @@ h2 {
 
 .db-custom-dropdown-trigger:hover .db-custom-trigger-icon,
 .db-custom-dropdown.open .db-custom-trigger-icon {
-    background: #FEF3C7;
     color: #92400E;
     transform: scale(1.05);
 }
@@ -2489,15 +2486,19 @@ h2 {
 }
 
 .db-schedule-icon-badge {
-    width: 38px;
+    width: 24px;
     height: 38px;
-    border-radius: 12px;
-    background: var(--yellow-tint);
     color: var(--ink);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+.db-schedule-icon-badge svg,
+.db-custom-trigger-icon svg,
+.db-empty-icon svg {
+    stroke-width: 2.6;
 }
 
 .db-schedule-main-text {

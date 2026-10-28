@@ -1136,15 +1136,17 @@ body {
 }
 
 .app-avail-instant-icon {
-    width: 32px;
+    width: 22px;
     height: 32px;
-    border-radius: 8px;
-    background: #FEF3C7;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     color: #D97706;
+}
+
+.app-avail-instant-icon svg {
+    stroke-width: 2.6;
 }
 
 .app-avail-instant-text strong {
@@ -4673,8 +4675,6 @@ body.app-sheet-open {
 .db-profile-panel .db-empty-icon {
     width: 46px;
     height: 46px;
-    border-radius: 12px;
-    background: #F1F5F9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6246,15 +6246,16 @@ body.app-sheet-open {
 }
 
 .app-loc-transit-confirmed-icon {
-    width: 36px;
+    width: 24px;
     height: 36px;
-    border-radius: 10px;
-    background: #D1FAE5;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+}
+
+.app-loc-transit-confirmed-icon svg {
+    stroke-width: 2.6;
 }
 
 .app-loc-transit-confirmed-text {
