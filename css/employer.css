@@ -4773,18 +4773,19 @@ h2 {
     gap: 10px;
 }
 
-/* ── Booking List Item Card (Layout Matching Applicant Card) ── */
+/* ── Booking List Item Card ──
+   A job "ticket": header, a spec strip (where / when / rate), then actions. */
 .db-booking-item,
 .app-job-card {
-    background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 16px 18px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 1px 0 rgba(28, 28, 30, 0.04);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     cursor: default;
     position: relative;
     overflow: hidden;
@@ -4792,226 +4793,274 @@ h2 {
 
 .db-booking-item:hover,
 .app-job-card:hover {
-    border-color: #CBD5E1;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+    border-color: #D8D8DE;
+    box-shadow: 0 8px 22px -12px rgba(28, 28, 30, 0.22);
 }
 
 .db-booking-item.ended,
 .app-job-card.ended {
-    background: #F9FAFB;
-    border-color: #E5E7EB;
+    background: var(--surface-2);
+    border-color: var(--border);
+    box-shadow: none;
 }
 
 /* Card Header */
 .app-job-card-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.db-booking-item .app-job-card-header>.app-job-status-badge {
-    flex-shrink: 0;
-}
-
-.db-booking-item .app-job-card-title-row {
-    gap: 8px;
-}
-
-.db-booking-item .app-job-card-title {
-    min-width: 0;
+    gap: 10px;
 }
 
 .app-job-card-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex: 1;
     min-width: 0;
 }
 
 .app-job-card-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: #FEF9C3;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--yellow);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: inset 0 0 0 1px rgba(217, 130, 0, 0.25);
-    color: #D98200;
+    color: var(--ink);
 }
 
 .app-job-card-icon svg {
     display: block;
     width: 20px;
     height: 20px;
-    stroke: #D98200;
-    color: #D98200;
+    stroke: var(--ink);
+    color: var(--ink);
 }
 
 .db-booking-item.ended .app-job-card-icon,
 .app-job-card.ended .app-job-card-icon {
-    background: #F1F5F9;
-    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
-    color: #94A3B8;
+    background: var(--surface-3);
+    color: var(--muted);
 }
 
 .db-booking-item.ended .app-job-card-icon svg,
 .app-job-card.ended .app-job-card-icon svg {
-    stroke: #94A3B8;
-    color: #94A3B8;
+    stroke: var(--muted);
+    color: var(--muted);
 }
 
 .app-job-card-title-col {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
-.app-job-card-title-row {
-    display: inline-flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 8px;
-    white-space: nowrap;
-    max-width: 100%;
+.app-job-card-kicker {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1;
+}
+
+.app-job-card-kicker.part-time {
+    color: #0369A1;
 }
 
 .app-job-card-title {
-    font-size: 0.90rem;
+    font-size: 1.02rem;
     font-weight: 800;
-    color: #0F172A;
+    color: var(--ink);
     margin: 0;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: inline-block;
 }
 
-.app-job-emp-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    display: inline-flex;
-    align-items: center;
-    line-height: 1.25;
-    white-space: nowrap;
-    flex-shrink: 0;
+.db-booking-item.ended .app-job-card-title {
+    color: var(--ink-60);
 }
 
-.app-job-emp-badge.full-time {
-    background: #FEF3C7;
-    color: #92400E;
-    border: 1px solid #FCD34D;
-}
-
-.app-job-emp-badge.part-time {
-    background: #E0F2FE;
-    color: #0369A1;
-    border: 1px solid #BAE6FD;
-}
-
-/* Status Badges */
+/* Status: a quiet label with a state dot rather than a filled pill */
 .app-job-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 9999px;
-    font-size: 0.70rem;
-    font-weight: 700;
+    gap: 6px;
+    padding: 4px 0 0;
+    font-size: 0.68rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.07em;
     flex-shrink: 0;
+    white-space: nowrap;
+    color: var(--muted);
+}
+
+.app-job-status-badge .dot {
+    position: relative;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
 }
 
 .app-job-status-badge.active {
-    background: #ECFDF5;
-    color: #059669;
-    border: 1px solid #A7F3D0;
-}
-
-.app-job-status-badge.active .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    color: #1F9D48;
 }
 
 .app-job-status-badge.matching {
-    background: #EFF6FF;
-    color: #2563EB;
-    border: 1px solid #BFDBFE;
+    color: #B38F00;
 }
 
 .app-job-status-badge.matching .dot {
-    width: 6px;
-    height: 6px;
+    background: var(--yellow);
+}
+
+.app-job-status-badge.matching .dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
     border-radius: 50%;
-    background: #3B82F6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    background: var(--yellow);
+    animation: app-transit-ping-anim 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 .app-job-status-badge.ended {
-    background: #F3F4F6;
-    color: #4B5563;
-    border: 1px solid #E5E7EB;
+    color: var(--muted);
 }
 
-/* Meta Section */
-.app-job-card-meta {
+/* Spec strip: where on top, when + rate side by side */
+.app-job-card-spec {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    margin: 0;
+    background: var(--surface-2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.db-booking-item.ended .app-job-card-spec {
+    background: var(--surface-3);
+}
+
+.app-job-spec-cell {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    font-size: 0.82rem;
-    color: #64748B;
-    margin-top: 2px;
+    gap: 3px;
+    min-width: 0;
+    padding: 10px 12px;
 }
 
-.app-job-meta-line {
+.app-job-spec-cell dt {
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.app-job-spec-cell dd {
+    margin: 0;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-job-spec-where {
+    grid-column: 1 / -1;
+    border-bottom: 1px dashed #D8D8DE;
+}
+
+.app-job-spec-rate {
+    border-left: 1px dashed #D8D8DE;
+    text-align: right;
+}
+
+.app-job-spec-rate dd {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+.app-job-spec-rate dd span {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-left: 1px;
+}
+
+/* Assigned crew */
+.app-job-crew-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    line-height: 1.4;
+    min-width: 0;
+    font-size: 0.82rem;
 }
 
-.app-job-meta-line svg {
+.app-job-crew-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--yellow);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    color: #64748B;
 }
 
-.app-job-location-line {
-    justify-content: space-between;
-    min-width: 0;
+.app-job-crew-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
 }
 
-.app-job-location-line .app-meta-venue-text {
+.app-job-crew-name {
+    font-weight: 700;
+    color: var(--ink);
     min-width: 0;
-    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Secondary card action — sits beside the primary action in the footer */
 .app-job-view-detail-btn {
-    background: #FFFFFF;
-    border: 1.2px solid #E2E8F0;
-    color: #0F172A;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink);
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+    transition: background 0.16s ease, border-color 0.16s ease;
 }
 
 .app-job-view-detail-btn:hover {
-    background: #F8FAFC;
-    border-color: #CBD5E1;
-    transform: translateY(-1px);
+    background: var(--surface-2);
+    border-color: #D1D1D6;
+}
+
+.app-job-view-detail-btn:active {
+    transform: scale(0.98);
 }
 
 /* Keep employer job details visually identical to the employee details card. */
@@ -5064,10 +5113,10 @@ h2 {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
-    margin: 2px 0 0;
-    padding: 12px 0 0;
+    margin: 0;
+    padding: 0;
     background: none;
-    border-top: 1px solid #EEF2F6;
+    border: 0;
     border-radius: 0;
 }
 
@@ -5093,16 +5142,16 @@ h2 {
 .app-job-card-actions > button {
     flex: 1 1 0;
     min-width: 0;
-    min-height: 38px;
+    min-height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 8px 14px;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
     line-height: 1.2;
-    border-radius: 9999px;
+    border-radius: 12px;
     white-space: nowrap;
 }
 
@@ -5111,35 +5160,36 @@ h2 {
     flex-basis: 100%;
 }
 
+/* Transit state reads as a line of text, not another pill */
 .app-card-transit-status {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
+    gap: 7px;
+    font-size: 0.8rem;
     font-weight: 700;
-    padding: 5px 12px;
-    border-radius: 9999px;
-    letter-spacing: 0.01em;
+    color: var(--ink);
 }
 
 .app-card-transit-status.on-the-way {
-    background: #FFFBEB;
-    border: 1px solid #FDE68A;
-    color: #92400E;
-    box-shadow: 0 1px 3px rgba(217, 119, 6, 0.08);
+    color: #9A6B00;
 }
 
 .app-card-transit-status.arrived {
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    color: #065F46;
-    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.06);
+    color: #1F7A3E;
 }
 
 .app-card-transit-status.pending {
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    color: #475569;
+    color: var(--ink-60);
+    font-weight: 600;
+}
+
+.app-card-transit-status.pending::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    flex-shrink: 0;
 }
 
 /* Pulsing beacon */
@@ -5214,9 +5264,9 @@ h2 {
     color: var(--ink);
     background: var(--yellow);
     border: 1px solid var(--yellow-dark);
-    box-shadow: 0 2px 6px rgba(230, 184, 0, 0.18);
+    box-shadow: none;
     font-weight: 700;
-    transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .db-booking-item .db-btn-end-contract:hover,
@@ -5224,8 +5274,7 @@ h2 {
     color: var(--ink);
     background: var(--yellow-dark);
     border-color: #C99F00;
-    box-shadow: 0 4px 10px rgba(230, 184, 0, 0.28);
-    transform: translateY(-1px);
+    box-shadow: none;
 }
 
 .db-booking-item .db-btn-end-contract:active,
@@ -5272,7 +5321,7 @@ h2 {
 
 .app-ended-note {
     font-size: 0.78rem;
-    color: #64748B;
+    color: var(--muted);
     font-weight: 500;
     display: inline-flex;
     align-items: center;
@@ -5282,15 +5331,11 @@ h2 {
 }
 
 .app-job-archived-tag {
-    font-size: 0.68rem;
+    font-size: 0.64rem;
     font-weight: 700;
-    color: #64748B;
-    background: #F1F5F9;
-    padding: 2px 7px;
-    border-radius: 5px;
-    border: 1px solid #E2E8F0;
+    color: var(--muted);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
     display: inline-flex;
     align-items: center;
 }

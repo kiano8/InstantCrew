@@ -3223,51 +3223,46 @@ function buildBookingItem(b) {
 
   const viewDetailsBtnHtml = `<button type="button" class="app-job-view-detail-btn db-btn-view-shift" data-booking-id="${jobId}">View Details</button>`;
 
+  const roleName = (b.roleLabel || b.role || 'Crew Member')
+    .replace(/\s*\((Full-Time|Part-Time)\)/gi, '')
+    .trim();
+  const crewInitials = crewName
+    ? crewName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+    : '';
+
   item.innerHTML = `
         <div class="app-job-card-header">
             <div class="app-job-card-left">
                 <div class="app-job-card-icon">${iconSvg}</div>
                 <div class="app-job-card-title-col">
-                    <div class="app-job-card-title-row" style="display:inline-flex; align-items:center; flex-wrap:nowrap; gap:8px; white-space:nowrap;">
-                        <h4 class="app-job-card-title" style="white-space:nowrap; margin:0;">${roleTitle}</h4>
-                        <span class="app-job-emp-badge ${empClass}" style="flex-shrink:0;">${empLabel}</span>
-                    </div>
+                    <span class="app-job-card-kicker ${empClass}">${empLabel.replace('-', ' ')}</span>
+                    <h4 class="app-job-card-title">${roleName}</h4>
                 </div>
             </div>
             ${statusBadgeHtml}
         </div>
 
-        <div class="app-job-card-meta">
-            <div class="app-job-meta-line app-job-location-line">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayLocation}</span>
+        <dl class="app-job-card-spec">
+            <div class="app-job-spec-cell app-job-spec-where">
+                <dt>Where</dt>
+                <dd class="app-meta-venue-text">${displayLocation}</dd>
             </div>
-            <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <span>${displayTiming}</span>
+            <div class="app-job-spec-cell">
+                <dt>When</dt>
+                <dd>${displayTiming}</dd>
             </div>
-            <div class="app-job-meta-line" style="color:#0F172A; font-weight:700; display:flex; align-items:center; gap:6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
-                <span>Rate: ${displayRate}/hr</span>
+            <div class="app-job-spec-cell app-job-spec-rate">
+                <dt>Rate</dt>
+                <dd>${displayRate}<span>/hr</span></dd>
             </div>
-            ${crewName ? `
-            <div class="app-job-meta-line" style="color:#059669; font-weight:600; display:flex; align-items:center; gap:6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span>Crew: ${crewName}</span>
-            </div>` : ''}
-        </div>
+        </dl>
+
+        ${crewName ? `
+        <div class="app-job-crew-row">
+            <span class="app-job-crew-avatar" aria-hidden="true">${crewInitials}</span>
+            <span class="app-job-crew-label">Crew</span>
+            <span class="app-job-crew-name">${crewName}</span>
+        </div>` : ''}
 
         ${!isEnded ? `
         <div class="app-job-card-footer active-contract-footer">
@@ -3286,12 +3281,7 @@ function buildBookingItem(b) {
                     </svg>
                     <span>Arrived on Site (${b.arrivedAt || 'Active'})</span>
                 </span>
-            </div>` : (b.status === 'matching' ? `
-            <div class="app-card-transit-box">
-                <span class="app-card-transit-status pending">
-                    <span>Looking for Nearby Crew</span>
-                </span>
-            </div>` : (b.status === 'active' ? `
+            </div>` : (b.status === 'matching' ? '' : (b.status === 'active' ? `
             <div class="app-card-transit-box">
                 <span class="app-card-transit-status pending">
                     <span>Waiting for transit of crew</span>
