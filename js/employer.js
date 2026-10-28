@@ -15,7 +15,7 @@ const CAT_LABELS = {
   helpers: 'Helpers',
 };
 
-fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
+const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
   for (const category of categories || []) {
     ROLES[category.id] = (category.roles || []).map(role => ({ id: role.id, label: role.label }));
     CAT_LABELS[category.id] = category.label;
@@ -4264,10 +4264,63 @@ function setAuthTab(which) {
 authModal.querySelectorAll('.google-sso-btn').forEach((button) => {
   button.addEventListener('click', () => {
     const mode = tabSignup.classList.contains('active') ? 'signup' : 'login';
+    // Google SSO reloads the page, so keep the Step 1-2 booking to resume at Step 3.
+    if (pendingAuthAction) saveBookingDraft();
     const params = new URLSearchParams({ role: 'hirer', mode });
     window.location.assign('/api/auth/google?' + params.toString());
   });
 });
+
+/* ── Booking draft: survives the Google SSO round trip ── */
+const BOOKING_DRAFT_KEY = 'ic_employer_booking_draft';
+const BOOKING_DRAFT_TTL = 30 * 60 * 1000;
+
+function saveBookingDraft() {
+  sessionStorage.setItem(BOOKING_DRAFT_KEY, JSON.stringify({
+    category: state.category,
+    role: state.role,
+    employmentType: state.employmentType,
+    offeredRate: state.offeredRate,
+    ratePeriod: state.ratePeriod,
+    location: state.location,
+    mapLocation: (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation,
+    geo: state.geo,
+    savedAt: Date.now(),
+  }));
+}
+
+/* Refill Steps 1-2 from a saved draft and continue to Step 3. */
+function restoreBookingDraft() {
+  let draft = null;
+  try { draft = JSON.parse(sessionStorage.getItem(BOOKING_DRAFT_KEY)); } catch (e) { /* ignore */ }
+  sessionStorage.removeItem(BOOKING_DRAFT_KEY);
+  if (!draft || Date.now() - draft.savedAt > BOOKING_DRAFT_TTL) return false;
+
+  const card = Array.from(catCards).find(c => c.dataset.cat === draft.category);
+  const role = (ROLES[draft.category] || []).find(r => r.id === draft.role);
+  if (!card || !role || !draft.mapLocation) return false;
+  card.click();
+  selectRole(role);
+
+  const empToggle = Array.from(empToggles).find(t => t.dataset.emp === draft.employmentType);
+  if (empToggle) empToggle.click();
+  offeredRateInput.value = draft.offeredRate;
+  state.offeredRate = draft.offeredRate;
+  selectRatePeriod(draft.ratePeriod);
+  selectLocation(draft.location);
+
+  if (googleMapLocationInput) googleMapLocationInput.value = draft.mapLocation;
+  if (clearMapLocationBtn) clearMapLocationBtn.style.display = 'block';
+  state.mapLocation = draft.mapLocation;
+  state.geo = draft.geo;
+  state.googleMapsUrl = draft.geo && draft.geo.label === draft.mapLocation
+    ? draft.geo.mapsUrl
+    : buildMapsUrlFor(draft.mapLocation);
+
+  goStep(2);
+  goStep(3);
+  return true;
+}
 
 function openAuthModal(tab = 'login') {
   setAuthTab(tab);
@@ -4392,6 +4445,11 @@ signupForm.addEventListener('submit', async (e) => {
     window.InstantCrewShared.syncPushSubscription();
   }
   updateAuthUI();
+  if (authUser) {
+    await catalogReady; // the draft's role must exist in ROLES before refilling Step 1
+    restoreBookingDraft();
+  }
+  else sessionStorage.removeItem(BOOKING_DRAFT_KEY);
   // A push notification opens employer.html?job=<id> to show that shift.
   const linkedJobId = new URLSearchParams(window.location.search).get('job');
   if (authUser && linkedJobId) {
