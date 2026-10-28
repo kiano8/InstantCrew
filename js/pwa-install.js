@@ -130,7 +130,13 @@
                 </div>
             `;
             document.body.appendChild(modal);
+        }
 
+        // Bind close handlers once, whether the modal was created here or is
+        // already present in the page markup (e.g. index.html).
+        const modal = document.getElementById('installModalOverlay');
+        if (modal && !modal.dataset.closeBound) {
+            modal.dataset.closeBound = 'true';
             const closeBtn = document.getElementById('installModalCloseBtn');
             const backdrop = document.getElementById('installModalBackdrop');
             const gotItBtn = document.getElementById('btnInstallModalClose');
