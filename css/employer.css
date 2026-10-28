@@ -5227,6 +5227,110 @@ h2 {
     }
 }
 
+/* Vertical booking progress: circular checks joined by connector lines */
+.app-booking-progress {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-booking-progress-step {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 16px;
+}
+
+.app-booking-progress-step:last-child {
+    padding-bottom: 0;
+}
+
+/* Connector line runs from this marker down to the next one */
+.app-booking-progress-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 24px;
+    bottom: 2px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--border);
+    transform: translateX(-50%);
+}
+
+.app-booking-progress-step.done:not(:last-child)::after {
+    background: var(--green);
+}
+
+.app-booking-progress-marker {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: #FFFFFF;
+    box-sizing: border-box;
+}
+
+.app-booking-progress-step.done .app-booking-progress-marker {
+    background: var(--green);
+    border-color: var(--green);
+}
+
+.app-booking-progress-step.current .app-booking-progress-marker {
+    border-color: #D97706;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+}
+
+.app-booking-progress-step.current .app-booking-progress-marker::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D97706;
+}
+
+.app-booking-progress-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 1px;
+}
+
+.app-booking-progress-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.3;
+}
+
+.app-booking-progress-step.upcoming .app-booking-progress-label {
+    color: var(--ink-40);
+    font-weight: 600;
+}
+
+.app-booking-progress-sub {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--muted);
+    line-height: 1.35;
+}
+
+.app-booking-progress-text .app-card-arrival-countdown {
+    margin-top: 4px;
+}
+
 .app-btn-end-contract-clean {
     padding: 6px 18px;
     font-size: 0.82rem;

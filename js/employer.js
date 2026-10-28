@@ -3031,6 +3031,43 @@ function arrivalCountdownHtml(deadline) {
   return `<span class="app-card-arrival-countdown" data-arrival-deadline="${deadline}">${window.InstantCrewShared.formatArrivalCountdown(deadline)}</span>`;
 }
 
+// Vertical progress for a confirmed booking: Confirmed → On the Way → Arrived.
+// Each step is done, current, or upcoming; connectors fill once a step is done.
+function bookingProgressHtml(b) {
+  const onTheWay = b.transitStatus === 'on_the_way';
+  const arrived = b.transitStatus === 'arrived';
+  const countdown = b.status === 'active' && !arrived ? arrivalCountdownHtml(b.arrivalDeadline) : '';
+  const awaitingSub = b.status === 'active' ? 'Waiting for crew to depart' : 'Crew preparing for the shift';
+  const steps = [
+    { label: 'Booking Confirmed', sub: 'Crew accepted your booking', state: 'done' },
+    {
+      label: 'Crew On the Way',
+      sub: onTheWay || arrived ? `Departed ${b.departedAt || 'just now'}` : awaitingSub,
+      state: onTheWay || arrived ? 'done' : 'current',
+      extra: onTheWay || arrived ? '' : countdown
+    },
+    {
+      label: 'Arrived on Site',
+      sub: arrived ? `Arrived ${b.arrivedAt || 'just now'}` : (onTheWay ? 'Crew is en route' : 'Pending arrival'),
+      state: arrived ? 'done' : (onTheWay ? 'current' : 'upcoming'),
+      extra: onTheWay ? countdown : ''
+    }
+  ];
+  const checkSvg = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  return `
+            <ol class="app-booking-progress" aria-label="Booking progress">
+                ${steps.map(step => `
+                <li class="app-booking-progress-step ${step.state}"${step.state === 'current' ? ' aria-current="step"' : ''}>
+                    <span class="app-booking-progress-marker">${step.state === 'done' ? checkSvg : ''}</span>
+                    <div class="app-booking-progress-text">
+                        <span class="app-booking-progress-label">${step.label}</span>
+                        <span class="app-booking-progress-sub">${step.sub}</span>
+                        ${step.extra || ''}
+                    </div>
+                </li>`).join('')}
+            </ol>`;
+}
+
 let lastEmployerBookingsSig = null;
 let employerBookingsFetchedAt = 0;
 let employerBookingsFetchPending = false;
@@ -3266,33 +3303,7 @@ function buildBookingItem(b) {
 
         ${!isEnded ? `
         <div class="app-job-card-footer active-contract-footer">
-            ${b.transitStatus === 'on_the_way' ? `
-            <div class="app-card-transit-box">
-                <span class="app-card-transit-status on-the-way">
-                    <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
-                    <span>En Route (${b.departedAt || 'Just now'})</span>
-                </span>
-                ${arrivalCountdownHtml(b.arrivalDeadline)}
-            </div>` : (b.transitStatus === 'arrived' ? `
-            <div class="app-card-transit-box">
-                <span class="app-card-transit-status arrived">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    <span>Arrived on Site (${b.arrivedAt || 'Active'})</span>
-                </span>
-            </div>` : (b.status === 'matching' ? '' : (b.status === 'active' ? `
-            <div class="app-card-transit-box">
-                <span class="app-card-transit-status pending">
-                    <span>Waiting for transit of crew</span>
-                </span>
-                ${arrivalCountdownHtml(b.arrivalDeadline)}
-            </div>` : `
-            <div class="app-card-transit-box">
-                <span class="app-card-transit-status pending">
-                    <span>Crew Preparing &bull; Awaiting Transit</span>
-                </span>
-            </div>`)))}
+            ${b.status === 'matching' ? '' : bookingProgressHtml(b)}
             <div class="app-job-card-actions">
                 ${viewDetailsBtnHtml}
                 ${canEndJob ? `<button type="button" class="app-btn-end-contract-clean db-btn-end-contract" data-booking-id="${jobId}">End Job</button>` : ''}
