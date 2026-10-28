@@ -3297,7 +3297,6 @@ function buildBookingItem(b) {
         ${crewName ? `
         <div class="app-job-crew-row">
             <span class="app-job-crew-avatar" aria-hidden="true">${crewInitials}</span>
-            <span class="app-job-crew-label">Crew</span>
             <span class="app-job-crew-name">${crewName}</span>
         </div>` : ''}
 

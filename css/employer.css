@@ -5021,14 +5021,6 @@ h2 {
     flex-shrink: 0;
 }
 
-.app-job-crew-label {
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-}
-
 .app-job-crew-name {
     font-weight: 700;
     color: var(--ink);
