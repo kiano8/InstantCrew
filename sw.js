@@ -1,9 +1,14 @@
 // Instant Crew - Service Worker for PWA Add-to-Home-Screen Support
-const CACHE_NAME = 'instantcrew-v1';
+const CACHE_NAME = 'instantcrew-v2';
 const CORE_ASSETS = [
     './',
     './index.html',
     './css/styles.css',
+    './images/icon-192.png',
+    './images/icon-512.png',
+    './images/icon-maskable-192.png',
+    './images/icon-maskable-512.png',
+    './images/apple-touch-icon.png',
     './images/Instalogo.png',
     './images/logo.png',
     './images/instadelivery.png',
