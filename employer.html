@@ -11,11 +11,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261029-payment-modal">
-    <link rel="stylesheet" href="css/pwa-install.css?v=20261029-iosfix">
-    <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/employer.css?v=20261029-deslop-merged">
+    <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#F5A623">
     <meta name="mobile-web-app-capable" content="yes">
@@ -1103,13 +1102,6 @@
             <div class="db-payment-modal-body" id="paymentModalBody">
                 <!-- Modal Header -->
                 <div class="db-modal-header db-payment-header">
-                    <div class="db-payment-shield-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            <path d="M9 12l2 2 4-4" />
-                        </svg>
-                    </div>
                     <h3 class="db-modal-title" id="paymentModalTitle">Payment Details</h3>
                 </div>
 
@@ -1153,9 +1145,8 @@
                         <span class="db-breakdown-label">
                             <span class="db-wage-title">Crew Shift Wage</span>
                             <span class="db-wage-rate-tag">(<span id="payBreakdownMath">₱85/hr</span>)</span>
-                            <span class="db-info-tooltip"
-                                title="Hourly wage is paid directly to crew upon shift completion">ⓘ</span>
                         </span>
+                        <span class="db-wage-note">Paid directly to crew upon shift completion</span>
                     </div>
                     <div class="db-breakdown-row db-breakdown-total">
                         <span class="db-breakdown-total-label">Total to Pay Now</span>
@@ -1165,17 +1156,17 @@
 
                 <!-- Payment Method Selector -->
                 <div class="db-payment-methods-section">
-                    <label class="db-payment-section-label">Select Payment Method</label>
-                    <div class="db-pay-method-tabs" role="radiogroup">
-                        <button type="button" class="db-pay-method-btn active" data-method="gcash" aria-checked="true">
+                    <span class="db-payment-section-label" id="payMethodLabel">Select Payment Method</span>
+                    <div class="db-pay-method-tabs" role="radiogroup" aria-labelledby="payMethodLabel">
+                        <button type="button" class="db-pay-method-btn active" data-method="gcash" role="radio" aria-checked="true">
                             <span class="db-pay-dot"></span>
                             <span class="db-pay-method-name">GCash</span>
                         </button>
-                        <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
+                        <button type="button" class="db-pay-method-btn" data-method="maya" role="radio" aria-checked="false">
                             <span class="db-pay-dot"></span>
                             <span class="db-pay-method-name">Maya</span>
                         </button>
-                        <button type="button" class="db-pay-method-btn" data-method="card" aria-checked="false">
+                        <button type="button" class="db-pay-method-btn" data-method="card" role="radio" aria-checked="false">
                             <span class="db-pay-dot"></span>
                             <span class="db-pay-method-name">Card</span>
                         </button>
@@ -1200,10 +1191,10 @@
                             </div>
 
                             <div class="db-proof-upload-section">
-                                <div class="db-proof-upload-label">
+                                <label class="db-proof-upload-label" for="empGcashProofFile">
                                     <span>Proof of Payment Screenshot</span>
-                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
-                                </div>
+                                    <span class="db-proof-required">Required</span>
+                                </label>
                                 <div class="db-proof-dropzone" id="empGcashDropzone">
                                     <input type="file" id="empGcashProofFile" class="db-proof-file-input"
                                         accept="image/*">
@@ -1217,7 +1208,7 @@
                                         </svg>
                                     </div>
                                     <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 15MB</span>
                                 </div>
                                 <div class="db-proof-attached-box" id="empGcashAttachedBox">
                                     <img src="" alt="Proof Preview" class="db-proof-thumb" id="empGcashThumb">
@@ -1258,10 +1249,10 @@
                             </div>
 
                             <div class="db-proof-upload-section">
-                                <div class="db-proof-upload-label">
+                                <label class="db-proof-upload-label" for="empMayaProofFile">
                                     <span>Proof of Payment Screenshot</span>
-                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
-                                </div>
+                                    <span class="db-proof-required">Required</span>
+                                </label>
                                 <div class="db-proof-dropzone" id="empMayaDropzone">
                                     <input type="file" id="empMayaProofFile" class="db-proof-file-input"
                                         accept="image/*">
@@ -1275,7 +1266,7 @@
                                         </svg>
                                     </div>
                                     <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 15MB</span>
                                 </div>
                                 <div class="db-proof-attached-box" id="empMayaAttachedBox">
                                     <img src="" alt="Proof Preview" class="db-proof-thumb" id="empMayaThumb">
@@ -1745,11 +1736,11 @@
 
     <script src="js/location.js"></script>
     <script src="js/email-code.js?v=20261027"></script>
-    <script src="js/shared-data.js?v=20261027-web-push"></script>
-    <script src="js/employer.js?v=20261029-payment-status"></script>
+    <script src="js/shared-data.js?v=20261029-escape-user-text"></script>
+    <script src="js/employer.js?v=20261029-escape-user-text"></script>
     <script src="/js/session.js"></script>
-    <script src="js/payment-history.js?v=20261028-themed"></script>
-    <script src="js/pwa-install.js?v=20261029-iosfix"></script>
+    <script src="js/payment-history.js?v=20261029-escape-user-text-merged"></script>
+    <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>
 </body>
 
 </html>

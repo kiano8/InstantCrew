@@ -19,6 +19,7 @@ import (
 	"instantcrew/internal/auth"
 	"instantcrew/internal/jobs"
 	"instantcrew/internal/store"
+	"instantcrew/internal/store/storetest"
 )
 
 type testEnv struct {
@@ -32,13 +33,7 @@ type testEnv struct {
 }
 
 func setupTestEnv(t *testing.T) *testEnv {
-	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "test.db")
-	st, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("store.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = st.Close() })
+	st, _ := storetest.Open(t)
 
 	ctx := context.Background()
 	if err := jobs.SyncCatalog(ctx, st); err != nil {
@@ -217,11 +212,24 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &jobRes)
 	jobID := jobRes.Job.ID
 
+	// 4a. A proof_image that is not an UploadProof path is refused (it is rendered on the admin page).
+	for _, bad := range []string{`/uploads/proof_1_ab.jpg" onerror="alert(1)`, "https://evil.example/x.jpg", "data:image/png;base64,AAAA"} {
+		body, _ = json.Marshal(map[string]any{"method": "gcash", "proof_image": bad})
+		req = httptest.NewRequest("POST", "/api/jobs/"+jsonNumber(jobID)+"/pay", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(empCookie)
+		rec = httptest.NewRecorder()
+		env.mux.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("pay with proof_image %q expected 400, got %d: %s", bad, rec.Code, rec.Body.String())
+		}
+	}
+
 	// 4. Employer pays search fee
 	payPayload := map[string]any{
 		"method":      "gcash",
 		"details":     "GCash payment test",
-		"proof_image": "/uploads/test_receipt.jpg",
+		"proof_image": "/uploads/proof_1700000000_abcdef0123456789.jpg",
 	}
 	body, _ = json.Marshal(payPayload)
 	req = httptest.NewRequest("POST", "/api/jobs/"+strings.TrimSpace(jsonNumber(jobID))+"/pay", bytes.NewReader(body))
@@ -296,7 +304,7 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	// 9. Applicant pays hiring pass (₱10 for 5 hires)
 	appPayPayload := map[string]any{
 		"method":      "gcash",
-		"proof_image": "/uploads/applicant_receipt.jpg",
+		"proof_image": "/uploads/proof_1700000001_abcdef0123456789.png",
 	}
 	body, _ = json.Marshal(appPayPayload)
 	req = httptest.NewRequest("POST", "/api/applicant/hiring-pass/pay", bytes.NewReader(body))

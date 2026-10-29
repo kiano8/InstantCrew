@@ -18,7 +18,7 @@
     --radius-card: 32px;
     --radius-pill: 9999px;
     --shadow-card: 0 24px 60px -12px rgba(18, 17, 14, 0.12), 0 4px 20px rgba(18, 17, 14, 0.04);
-    --shadow-amber: 0 8px 24px -4px rgba(217, 119, 6, 0.38);
+    --shadow-amber: 0 8px 24px -4px rgba(18, 17, 14, 0.2);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -36,12 +36,6 @@ button {
 
 body {
     background-color: var(--paper);
-    background-image:
-        radial-gradient(circle at 12% 18%, rgba(245, 166, 35, 0.10) 0%, transparent 45%),
-        radial-gradient(circle at 88% 30%, rgba(217, 119, 6, 0.08) 0%, transparent 45%),
-        radial-gradient(circle at 50% 90%, rgba(245, 166, 35, 0.06) 0%, transparent 50%),
-        radial-gradient(#E8E3DA 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 24px 24px;
     color: var(--ink);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.5;
@@ -110,7 +104,7 @@ body {
     border-color: var(--amber-deep);
     color: var(--amber-deep);
     transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.12);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.06);
 }
 
 /* ── Main Auth Stage ── */
@@ -364,7 +358,7 @@ body {
 .role-pill-btn.active {
     background: #FFFFFF;
     color: var(--amber-deep);
-    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15), 0 1px 2px rgba(18, 17, 14, 0.04);
+    box-shadow: 0 2px 8px rgba(28, 28, 30, 0.07), 0 1px 2px rgba(18, 17, 14, 0.04);
 }
 
 .role-pill-btn.active .role-pill-svg {
@@ -563,12 +557,12 @@ body {
 .btn-auth-submit:hover {
     background: linear-gradient(135deg, #FFC01E 0%, #B45309 100%);
     transform: translateY(-1.5px);
-    box-shadow: 0 10px 28px rgba(217, 119, 6, 0.45);
+    box-shadow: 0 10px 28px rgba(28, 28, 30, 0.2);
 }
 
 .btn-auth-submit:active {
     transform: translateY(0);
-    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
+    box-shadow: 0 3px 10px rgba(28, 28, 30, 0.11);
 }
 
 .btn-auth-submit:disabled {

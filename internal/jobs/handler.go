@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -225,6 +226,9 @@ func (h *Handler) ApplicantRating(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// proofPath matches only filenames UploadProof creates, so a payer cannot inject markup or an outside URL.
+var proofPath = regexp.MustCompile(`^/uploads/proof_[0-9]+_[0-9a-f]+\.(jpg|jpeg|png|webp|gif)$`)
+
 func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
 	p, err := h.Store.ApplicantHiringPass(r.Context(), u.ID)
@@ -250,6 +254,10 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	proofImage := strings.TrimSpace(req.ProofImage)
+	if proofImage != "" && !proofPath.MatchString(proofImage) {
+		httpx.Error(w, http.StatusBadRequest, "invalid proof of payment; please upload the screenshot again")
+		return
+	}
 	if (method == "gcash" || method == "maya") && proofImage == "" {
 		httpx.Error(w, http.StatusBadRequest, "proof of payment is required for GCash and Maya")
 		return
@@ -923,6 +931,10 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Details = strings.TrimSpace(req.Details)
 	req.ProofImage = strings.TrimSpace(req.ProofImage)
+	if req.ProofImage != "" && !proofPath.MatchString(req.ProofImage) {
+		httpx.Error(w, http.StatusBadRequest, "invalid proof of payment; please upload the screenshot again")
+		return
+	}
 	if len(req.Details) > 255 {
 		httpx.Error(w, http.StatusBadRequest, "payment details must be 255 characters or fewer")
 		return
@@ -1170,4 +1182,3 @@ func (h *Handler) CheckApplicantNoShow(w http.ResponseWriter, r *http.Request) {
 	h.expireOverdue(r)
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
 }
-

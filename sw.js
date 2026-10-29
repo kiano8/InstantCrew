@@ -10,6 +10,7 @@ const CORE_ASSETS = [
     './images/icon-maskable-512.png',
     './images/apple-touch-icon.png',
     './images/Instalogo.png',
+    './images/logo.svg',
     './images/logo.png',
     './images/instadelivery.png',
     './manifest.json'

@@ -242,13 +242,15 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	}
 	defer tx.Rollback()
 
+	// FOR UPDATE below makes a second concurrent verify wait and then see
+	// credits_granted=1, so hires and notifications are granted only once.
 	var userID int64
 	var jobID sql.NullInt64
 	var prevStatus string
 	var creditsGranted int
 	switch strings.ToLower(pType) {
 	case "employer":
-		err = tx.QueryRowContext(ctx, `SELECT user_id, job_id, COALESCE(status,'') FROM payments WHERE id=$1`, id).Scan(&userID, &jobID, &prevStatus)
+		err = tx.QueryRowContext(ctx, `SELECT user_id, job_id, COALESCE(status,'') FROM payments WHERE id=$1 FOR UPDATE`, id).Scan(&userID, &jobID, &prevStatus)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}
@@ -273,7 +275,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			}
 		}
 	case "applicant":
-		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0) FROM applicant_hiring_pass_payments WHERE id=$1`, id).Scan(&userID, &prevStatus, &creditsGranted)
+		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0) FROM applicant_hiring_pass_payments WHERE id=$1 FOR UPDATE`, id).Scan(&userID, &prevStatus, &creditsGranted)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}

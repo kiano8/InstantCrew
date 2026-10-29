@@ -2,80 +2,24 @@ package store_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"io"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"instantcrew/internal/jobs"
 	"instantcrew/internal/store"
+	"instantcrew/internal/store/storetest"
 )
 
 func TestStore_OpenAndMigrateNew(t *testing.T) {
-	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "test.db")
-
-	st, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("store.Open failed on new db: %v", err)
-	}
-	defer st.Close()
-
-	ctx := context.Background()
-	if err := st.EnsureAdminUser(ctx, "admin@instantcrew.com", "admin123", "Instant Crew Administrator"); err != nil {
-		t.Fatalf("EnsureAdminUser failed: %v", err)
-	}
-}
-
-func TestStore_MigrateExistingDB(t *testing.T) {
-	srcPath := filepath.Join("..", "..", "data", "instantcrew.db")
-	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
-		t.Skip("data/instantcrew.db not found, skipping migration test against existing db")
-	}
-
-	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "existing_copy.db")
-
-	src, err := os.Open(srcPath)
-	if err != nil {
-		t.Fatalf("open src: %v", err)
-	}
-	defer src.Close()
-
-	dst, err := os.Create(dbPath)
-	if err != nil {
-		t.Fatalf("create dst: %v", err)
-	}
-	if _, err := io.Copy(dst, src); err != nil {
-		dst.Close()
-		t.Fatalf("copy db: %v", err)
-	}
-	dst.Close()
-
-	st, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("store.Open failed on existing db copy: %v", err)
-	}
-	defer st.Close()
-
-	ctx := context.Background()
-	if err := st.EnsureAdminUser(ctx, "admin@instantcrew.com", "admin123", "Instant Crew Administrator"); err != nil {
+	st, _ := storetest.Open(t)
+	if err := st.EnsureAdminUser(context.Background(), "admin@instantcrew.com", "admin123", "Instant Crew Administrator"); err != nil {
 		t.Fatalf("EnsureAdminUser failed: %v", err)
 	}
 }
 
 func TestStore_PaymentVerificationFlows(t *testing.T) {
-	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "test_payments.db")
-
-	st, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("store.Open failed: %v", err)
-	}
-	defer st.Close()
+	st, raw := storetest.Open(t)
 
 	ctx := context.Background()
 	if err := jobs.SyncCatalog(ctx, st); err != nil {
@@ -144,7 +88,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 
 	// 3. Test Employer Search Fee Flow
 	// Try start search before payment -> should fail
-	err = st.StartSearch(ctx, employer.ID, job.ID, 3*time.Minute)
+	err := st.StartSearch(ctx, employer.ID, job.ID, 3*time.Minute)
 	if !errors.Is(err, store.ErrPaymentNotVerified) {
 		t.Fatalf("expected ErrPaymentNotVerified, got %v", err)
 	}
@@ -241,15 +185,9 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Simulate the free hires being used up so the paid top-up flow below applies.
-	raw, err := sql.Open("sqlite", "file:"+dbPath+"?_pragma=busy_timeout(5000)")
-	if err != nil {
-		t.Fatalf("open raw db: %v", err)
-	}
-	if _, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=0, remaining_hires=0, used_hires=0 WHERE applicant_id=?`, applicant.ID); err != nil {
-		raw.Close()
+	if _, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=0, remaining_hires=0, used_hires=0 WHERE applicant_id=$1`, applicant.ID); err != nil {
 		t.Fatalf("exhaust free hires: %v", err)
 	}
-	raw.Close()
 
 	// Attempting AcceptJob fails with ErrHiringPassEmpty
 	err = st.AcceptJob(ctx, job.ID, applicant.ID)
@@ -353,5 +291,58 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
 	if err != nil || pass.RemainingHires != 4 || pass.UsedHires != 1 {
 		t.Fatalf("expected 4 remaining / 1 used after confirmation, got %+v", pass)
+	}
+}
+
+// Two accounting staff (or a double-click) verifying the same ₱10 receipt at
+// once must add the 5 hires only once.
+func TestStore_ConcurrentHiringPassVerifyGrantsOnce(t *testing.T) {
+	st, raw := storetest.Open(t)
+	ctx := context.Background()
+	app := &store.User{Email: "race@test.com", PasswordHash: "x", Role: "applicant", Name: "Race"}
+	if err := st.CreateUser(ctx, app); err != nil {
+		t.Fatal(err)
+	}
+	before, err := st.ApplicantHiringPass(ctx, app.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pass, err := st.AddApplicantHiringPass(ctx, app.ID, "gcash", "/uploads/proof_1_ab.jpg")
+	if err != nil || pass.PendingPayment == nil {
+		t.Fatalf("AddApplicantHiringPass: %v %+v", err, pass)
+	}
+
+	// Hold the payment row so every verify reads it before any of them commits;
+	// without that, a fast local database finishes each verify before the next starts.
+	hold, err := raw.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := hold.Exec(`UPDATE applicant_hiring_pass_payments SET method=method WHERE id=$1`, pass.PendingPayment.ID); err != nil {
+		t.Fatal(err)
+	}
+	const n = 4
+	errs := make(chan error, n)
+	for i := 0; i < n; i++ {
+		go func() {
+			errs <- st.SetPaymentStatus(ctx, "applicant", pass.PendingPayment.ID, "verified", "Accounting", "")
+		}()
+	}
+	time.Sleep(300 * time.Millisecond)
+	if err := hold.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < n; i++ {
+		if err := <-errs; err != nil {
+			t.Fatalf("SetPaymentStatus: %v", err)
+		}
+	}
+
+	after, err := st.ApplicantHiringPass(ctx, app.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := after.RemainingHires - before.RemainingHires; got != 5 {
+		t.Fatalf("concurrent verifies added %d hires, want 5", got)
 	}
 }

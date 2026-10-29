@@ -52,11 +52,7 @@
 .ph-empty,.ph-err{padding:32px 16px;text-align:center;color:#8E8E93;font-size:.85rem;background:#F5F5F7;border-radius:14px}\
 .ph-err{color:#C0392B}';
 
-    function esc(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-    }
+    var esc = window.InstantCrewShared.escHtml;
     function when(ts) {
         try { return new Date(ts * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }); }
         catch (e) { return ''; }

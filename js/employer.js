@@ -2422,10 +2422,10 @@ function renderCrewResults(acceptedCrew = [], job = null) {
     card.style.animationDelay = `${i * 120}ms`;
 
     card.innerHTML = `
-            <span class="db-avatar">${initials}</span>
+            <span class="db-avatar">${window.InstantCrewShared.escHtml(initials)}</span>
             <div class="db-crew-info">
                 <div class="db-crew-name-row">
-                    <p class="db-crew-name">${workerName}</p>
+                    <p class="db-crew-name">${window.InstantCrewShared.escHtml(workerName)}</p>
                     <span class="db-crew-offered-rate"${i === 0 ? ' id="rateAmount"' : ''}>${rateHtml}</span>
                 </div>
                 <p class="db-crew-meta">Accepted this shift</p>
@@ -2537,7 +2537,7 @@ confirmBooking.addEventListener('click', async () => {
   document.getElementById('dLocation').textContent = state.location || 'Cebu City';
   if (dMapLocation) {
     if (state.mapLocation) {
-      dMapLocation.innerHTML = `<span style="font-weight:600;">${state.mapLocation}</span> <a href="${state.googleMapsUrl || '#'}" target="_blank" rel="noopener noreferrer" style="color:#EA4335; font-size:0.8rem; margin-left:6px; font-weight:700; text-decoration:none;">Open Map ↗</a>`;
+      dMapLocation.innerHTML = `<span style="font-weight:600;">${window.InstantCrewShared.escHtml(state.mapLocation)}</span> <a href="${window.InstantCrewShared.escHtml(state.googleMapsUrl || '#')}" target="_blank" rel="noopener noreferrer" style="color:#EA4335; font-size:0.8rem; margin-left:6px; font-weight:700; text-decoration:none;">Open Map ↗</a>`;
     } else {
       dMapLocation.textContent = 'City Center';
     }
@@ -2547,7 +2547,7 @@ confirmBooking.addEventListener('click', async () => {
   document.getElementById('dRate').textContent = `₱${state.offeredRate} ${state.ratePeriod}`;
   if (dPayment) {
     const paidTotal = state.paymentAmount ? `₱${state.paymentAmount.toFixed(2)}` : '₱100.00';
-    dPayment.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Search Fee Paid</span> (${paidTotal} via ${state.paymentMethod || 'GCash'})`;
+    dPayment.innerHTML = `<span style="color:#059669; font-weight:700;">✓ Search Fee Paid</span> (${paidTotal} via ${window.InstantCrewShared.escHtml(state.paymentMethod || 'GCash')})`;
   }
 
   // Finalize booking in session to active
@@ -3270,8 +3270,8 @@ function buildBookingItem(b) {
 
         ${crewName ? `
         <div class="app-job-crew-row">
-            <span class="app-job-crew-avatar" aria-hidden="true">${crewInitials}</span>
-            <span class="app-job-crew-name">${crewName}</span>
+            <span class="app-job-crew-avatar" aria-hidden="true">${window.InstantCrewShared.escHtml(crewInitials)}</span>
+            <span class="app-job-crew-name">${window.InstantCrewShared.escHtml(crewName)}</span>
         </div>` : ''}
 
         ${!isEnded ? `
@@ -3354,7 +3354,7 @@ function openLocationDetailModal(shift) {
   const empUpper = isPart ? 'PART-TIME' : 'FULL-TIME';
 
   const cardBadgesHtml = `
-        <span class="app-loc-badge-role">${cleanRole}</span>
+        <span class="app-loc-badge-role">${window.InstantCrewShared.escHtml(cleanRole)}</span>
         <span class="app-loc-badge-emp ${isPart ? 'part-time' : 'full-time'}">${empUpper}</span>
     `;
 
@@ -3992,9 +3992,9 @@ function renderEmployerNotifications() {
         el.innerHTML = `
                     <span class="db-notif-icon">${iconSvg}</span>
                     <div>
-                        <p class="db-notif-title">${n.title}</p>
-                        <p class="db-notif-desc">${n.message}</p>
-                        <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
+                        <p class="db-notif-title">${window.InstantCrewShared.escHtml(n.title)}</p>
+                        <p class="db-notif-desc">${window.InstantCrewShared.escHtml(n.message)}</p>
+                        <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : window.InstantCrewShared.escHtml(n.time || '')}</span>
                     </div>
                 `;
         if (jobId) {
@@ -4107,24 +4107,24 @@ function updateStep5TransitLiveStatus() {
     badgeEl.className = 'db-live-transit-badge on-the-way';
     badgeEl.innerHTML = `<span class="db-transit-beacon"><span class="db-transit-ping"></span><span class="db-transit-dot"></span></span><span>Crew is On the Way!</span>`;
     timeEl.textContent = arrivalDeadline ? window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline) : (departedAt ? ` ${departedAt}` : 'Departed: Just now');
-    bodyEl.innerHTML = `<strong>${crewName}</strong> has notified you that they have departed and are en route to <strong>${venueName}</strong>.`;
+    bodyEl.innerHTML = `<strong>${window.InstantCrewShared.escHtml(crewName)}</strong> has notified you that they have departed and are en route to <strong>${window.InstantCrewShared.escHtml(venueName)}</strong>.`;
   } else if (transitStatus === 'arrived') {
     box.className = 'db-live-transit-box arrived';
     badgeEl.className = 'db-live-transit-badge arrived';
     badgeEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Crew Has Arrived</span>`;
     timeEl.textContent = arrivedAt ? `Arrived: ${arrivedAt}` : 'Arrived: Just now';
-    bodyEl.innerHTML = `<strong>${crewName}</strong> has safely arrived at <strong>${venueName}</strong> and is ready to work!`;
+    bodyEl.innerHTML = `<strong>${window.InstantCrewShared.escHtml(crewName)}</strong> has safely arrived at <strong>${window.InstantCrewShared.escHtml(venueName)}</strong> and is ready to work!`;
   } else {
     box.className = 'db-live-transit-box pending';
     badgeEl.className = 'db-live-transit-badge pending';
     if (arrivalDeadline) {
       badgeEl.innerHTML = `<span>Waiting for transit of crew</span>`;
       timeEl.textContent = window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline);
-      bodyEl.innerHTML = `<strong>${crewName}</strong> must arrive at <strong>${venueName}</strong> and mark arrival within 1 hour, or the shift is auto-cancelled.`;
+      bodyEl.innerHTML = `<strong>${window.InstantCrewShared.escHtml(crewName)}</strong> must arrive at <strong>${window.InstantCrewShared.escHtml(venueName)}</strong> and mark arrival within 1 hour, or the shift is auto-cancelled.`;
     } else {
       badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
       timeEl.textContent = 'Awaiting Departure';
-      bodyEl.innerHTML = `<strong>${crewName}</strong> has accepted your booking and will notify you when heading to <strong>${venueName}</strong>.`;
+      bodyEl.innerHTML = `<strong>${window.InstantCrewShared.escHtml(crewName)}</strong> has accepted your booking and will notify you when heading to <strong>${window.InstantCrewShared.escHtml(venueName)}</strong>.`;
     }
   }
 }

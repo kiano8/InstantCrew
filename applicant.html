@@ -11,12 +11,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261029-payment-modal">
-    <link rel="stylesheet" href="css/applicant.css?v=20261028-yellow-icons-2">
-    <link rel="stylesheet" href="css/pwa-install.css?v=20261029-iosfix">
-    <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/employer.css?v=20261029-deslop-merged">
+    <link rel="stylesheet" href="css/applicant.css?v=20261029-deslop">
+    <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f97316">
     <meta name="mobile-web-app-capable" content="yes">
@@ -1059,7 +1058,6 @@
 
                 <!-- Step Header (identical to Employer Step 1 Header) -->
                 <div class="db-step-header" style="margin-bottom: 20px;">
-                    <p class="db-step-label">Applicant Portal</p>
                     <h2 id="crewGreeting">Welcome back!</h2>
                     <p class="app-greeting-sub">Opportunities matched with your profile in real-time. Review and accept
                         shifts below.</p>
@@ -1456,7 +1454,6 @@
                 <div class="db-step-header" style="margin-top: 26px; margin-bottom: 16px;">
                     <div class="app-feed-header-flex">
                         <div>
-                            <p class="db-step-label">Live Matching Feed</p>
                             <h2>Available Jobs For You</h2>
                         </div>
                         <!-- In-Feed Direct Location Dropdown -->
@@ -2289,7 +2286,7 @@
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js?v=20261027-system-notifs"></script>
+    <script src="js/shared-data.js?v=20261029-escape-user-text"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -2951,7 +2948,7 @@
                 } else if (isTempSuspended) {
                     const unlockTimeStr = deactivatedUntilMs ? new Date(deactivatedUntilMs).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '5 days';
                     html = `
-                        <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #F59E0B; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(245,158,11,0.12);">
+                        <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #F59E0B; border-radius: 12px; padding: 16px 18px; box-shadow: 0 4px 12px rgba(28, 28, 30, 0.06);">
                             <div style="display:flex; align-items:flex-start; gap:12px;">
                                 <div style="width:36px; height:36px; border-radius:50%; background:#D97706; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -5191,7 +5188,7 @@
                                 <span>${cleanContractTitle}</span>
                                 ${empBadge}
                             </div>
-                            <p class="app-contract-meta">${contract.venue} &bull; Rate: ${contract.rate}/hr &bull; Started: ${contract.startedAt || 'Today'}</p>
+                            <p class="app-contract-meta">${window.InstantCrewShared.escHtml(contract.venue)} &bull; Rate: ${window.InstantCrewShared.escHtml(contract.rate)}/hr &bull; Started: ${window.InstantCrewShared.escHtml(contract.startedAt || 'Today')}</p>
                             ${arrivalReminderHtml(contract)}
                             ${transitHtml}
                         </div>
@@ -5544,12 +5541,12 @@
                                             <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
                                             <circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.6"/>
                                         </svg>
-                                        ${shift.location || 'Cebu City'}
+                                        ${window.InstantCrewShared.escHtml(shift.location || 'Cebu City')}
                                     </span>
                                 </div>
                                 <div class="app-shift-venue-row" style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:4px;">
                                     <div class="app-shift-venue">
-                                        ${shift.venue} · <strong>${shift.location || 'Cebu City'}</strong>
+                                        ${window.InstantCrewShared.escHtml(shift.venue)} · <strong>${window.InstantCrewShared.escHtml(shift.location || 'Cebu City')}</strong>
                                     </div>
                                     <button type="button" class="app-shift-view-detail-btn" data-job-id="${shift.id}" title="Click to view employer's location & Google Maps">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
@@ -5845,14 +5842,14 @@
                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                 <circle cx="12" cy="10" r="3"></circle>
                             </svg>
-                            <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${venueName}</span>
+                            <span class="app-meta-venue-text" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${window.InstantCrewShared.escHtml(venueName)}</span>
                         </div>` : ''}
                         <div class="app-job-meta-line app-job-location-line">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
                                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#D97706"/>
                                 <circle cx="12" cy="9" r="2.8" fill="#FFFFFF"/>
                             </svg>
-                            <span class="app-meta-loc-text" style="min-width:0; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locationAddress}</span>
+                            <span class="app-meta-loc-text" style="min-width:0; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${window.InstantCrewShared.escHtml(locationAddress)}</span>
                         </div>
                         <div class="app-job-meta-line" style="display:flex; align-items:center; gap:6px;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
@@ -6254,8 +6251,8 @@
                             el.innerHTML = `
                                 <span class="db-notif-icon">${iconSvg}</span>
                                 <div>
-                                    <p class="db-notif-title">${n.title}</p>
-                                    <p class="db-notif-desc">${cleanMsg}</p>
+                                    <p class="db-notif-title">${window.InstantCrewShared.escHtml(n.title)}</p>
+                                    <p class="db-notif-desc">${window.InstantCrewShared.escHtml(cleanMsg)}</p>
                                 <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
                                 </div>
                             `;
@@ -8089,8 +8086,8 @@
     </script>
     <script src="js/email-code.js?v=20261027"></script>
     <script src="/js/session.js"></script>
-    <script src="js/payment-history.js?v=20261028-themed"></script>
-    <script src="js/pwa-install.js?v=20261029-iosfix"></script>
+    <script src="js/payment-history.js?v=20261029-escape-user-text-merged"></script>
+    <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>
 </body>
 
 </html>

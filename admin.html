@@ -11,10 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/admin.css?v=20261018">
-    <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+    <link rel="stylesheet" href="css/admin.css?v=20261029-deslop">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -172,9 +171,6 @@
                 </svg>
                 <h3>No payments found</h3>
                 <p id="emptyStateMsg">There are no transactions matching your current filters.</p>
-                <button type="button" class="adm-refresh-btn" id="btnLoadDemo" style="margin-top: 14px;">
-                    Load Demo Payments
-                </button>
             </div>
         </div>
     </main>
@@ -261,7 +257,6 @@
             let activeMethod = 'all'; // 'all', 'gcash', 'maya', 'card'
             let searchQuery = '';
             let currentViewingPayment = null;
-            let serverReachable = false; // true when the Go API answered; demo data is offline-only
 
             // Guard: only signed-in admins may view this portal. The API enforces
             // the same rule; this keeps non-admins from seeing an empty console.
@@ -342,140 +337,42 @@
                 });
             }
 
-            // Escape free-form text (rejection reasons) before injecting it as HTML.
+            // Escape every user-controlled value before injecting it as HTML.
             function escHtml(value) {
                 return String(value == null ? '' : value)
                     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             }
 
-            // Fetch Payments from Server & LocalStorage
+            // Fetch Payments from the server; it is the only source of truth.
             async function fetchPayments({ silent = false } = {}) {
                 if (refreshBtn && !silent) refreshBtn.classList.add('rotating');
                 try {
-                    let serverRecords = [];
-                    const res = await fetch('/api/admin/payments', { credentials: 'same-origin' }).catch(() => null);
-                    if (res && res.ok) {
-                        serverReachable = true;
-                        const data = await res.json();
-                        if (data && Array.isArray(data.payments)) {
-                            serverRecords = data.payments;
-                        }
+                    const res = await fetch('/api/admin/payments', { credentials: 'same-origin' });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    const serverRecords = data && Array.isArray(data.payments) ? data.payments : [];
+                    const isFirstLoad = knownPaymentIds === null;
+                    const prevIds = knownPaymentIds || new Set();
+                    knownPaymentIds = new Set(serverRecords.map(p => p.id));
+                    const fresh = isFirstLoad ? [] : serverRecords.filter(p => !prevIds.has(p.id));
+                    paymentsData = serverRecords;
+                    try { localStorage.removeItem('ic_local_payments'); } catch (e) { } // purge caches older builds wrote
+                    if (fresh.length) {
+                        highlightIds = new Set(fresh.map(p => p.id));
+                        showToast(fresh.length === 1
+                            ? `New payment verification request from ${fresh[0].user_name || 'a user'}`
+                            : `${fresh.length} new payment verification requests`, true);
                     }
-
-                    if (serverReachable) {
-                        // Live database records are the source of truth in production.
-                        const isFirstLoad = knownPaymentIds === null;
-                        const prevIds = knownPaymentIds || new Set();
-                        knownPaymentIds = new Set(serverRecords.map(p => p.id));
-                        const fresh = isFirstLoad ? [] : serverRecords.filter(p => !prevIds.has(p.id));
-                        paymentsData = serverRecords;
-                        localStorage.removeItem('ic_local_payments');
-                        if (fresh.length) {
-                            highlightIds = new Set(fresh.map(p => p.id));
-                            showToast(fresh.length === 1
-                                ? `New payment verification request from ${fresh[0].user_name || 'a user'}`
-                                : `${fresh.length} new payment verification requests`, true);
-                        }
-                    } else {
-                        // Offline fallback: cached records, then demonstration data.
-                        paymentsData = JSON.parse(localStorage.getItem('ic_local_payments') || '[]');
-                    }
-
-                    if (paymentsData.length === 0) {
-                        if (serverReachable) {
-                            renderAll();
-                        } else {
-                            seedSampleData();
-                        }
-                    } else {
-                        renderAll();
-                    }
+                    renderAll();
                 } catch (err) {
                     console.error('Failed to load payments', err);
-                    if (!silent) showToast('Could not reach backend, displaying cached records.', false);
+                    if (!silent) showToast('Could not load payments. Check your connection and sign-in, then refresh.', false);
                 } finally {
                     setTimeout(() => {
                         if (refreshBtn) refreshBtn.classList.remove('rotating');
                     }, 400);
                 }
-            }
-
-            // Seed demonstration records if brand new database
-            function seedSampleData() {
-                const now = Math.floor(Date.now() / 1000);
-                paymentsData = [
-                    {
-                        id: 'emp_demo_1',
-                        raw_id: 1,
-                        type: 'employer',
-                        type_label: 'Employer Search Fee',
-                        user_id: 101,
-                        user_name: 'Maria Santos',
-                        user_email: 'maria@bistrocebu.ph',
-                        user_role: 'employer',
-                        company: 'Bistro Cebu Corp.',
-                        amount_centavos: 10000,
-                        amount_pesos: '₱100.00',
-                        method: 'gcash',
-                        details: 'GCash InstaPay Transfer',
-                        proof_image: 'images/payment_qr.jpg',
-                        status: 'pending',
-                        is_verified: false,
-                        verified_at: null,
-                        verified_by: '',
-                        created_at: now - 360,
-                        ref: 'GCASH-9921448',
-                        job_role: 'Service Crew'
-                    },
-                    {
-                        id: 'app_demo_2',
-                        raw_id: 2,
-                        type: 'applicant',
-                        type_label: 'Applicant Hiring Pass (5 Hires)',
-                        user_id: 202,
-                        user_name: 'Juan Dela Cruz',
-                        user_email: 'juandelacruz@gmail.com',
-                        user_role: 'applicant',
-                        company: '',
-                        amount_centavos: 1000,
-                        amount_pesos: '₱10.00',
-                        method: 'maya',
-                        details: 'Maya QR Payment',
-                        proof_image: 'images/payment_qr.jpg',
-                        status: 'pending',
-                        is_verified: false,
-                        verified_at: null,
-                        verified_by: '',
-                        created_at: now - 1400,
-                        ref: 'MAYA-8812391'
-                    },
-                    {
-                        id: 'emp_demo_3',
-                        raw_id: 3,
-                        type: 'employer',
-                        type_label: 'Employer Search Fee',
-                        user_id: 103,
-                        user_name: 'Arthur Gomez',
-                        user_email: 'arthur@cebudelivery.com',
-                        user_role: 'employer',
-                        company: 'Cebu Delivery Hub',
-                        amount_centavos: 10000,
-                        amount_pesos: '₱100.00',
-                        method: 'gcash',
-                        details: 'GCash Express Pay',
-                        proof_image: 'images/payment_qr.jpg',
-                        status: 'verified',
-                        is_verified: true,
-                        verified_at: now - 3600,
-                        verified_by: 'Accounting Staff',
-                        created_at: now - 7200,
-                        ref: 'GCASH-7719234',
-                        job_role: 'Delivery Driver'
-                    }
-                ];
-                localStorage.setItem('ic_local_payments', JSON.stringify(paymentsData));
-                renderAll();
             }
 
             // Update KPI Statistics
@@ -562,7 +459,7 @@
                     const isVer = p.is_verified || p.status === 'verified';
                     const isRej = p.status === 'rejected';
                     const initials = (p.user_name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                    const method = (p.method || 'gcash').toLowerCase();
+                    const method = escHtml((p.method || 'gcash').toLowerCase());
 
                     const tr = document.createElement('tr');
                     tr.id = `row_${p.id}`;
@@ -571,25 +468,25 @@
                     tr.innerHTML = `
                         <td>
                             <div style="font-weight:700; color:var(--adm-text-primary);">${formatDate(p.created_at)}</div>
-                            <span class="adm-item-ref">${p.ref || p.id}</span>
+                            <span class="adm-item-ref">${escHtml(p.ref || p.id)}</span>
                         </td>
                         <td>
                             <div class="adm-payer-cell">
-                                <div class="adm-avatar ${p.type === 'applicant' ? 'applicant' : ''}">${initials}</div>
+                                <div class="adm-avatar ${p.type === 'applicant' ? 'applicant' : ''}">${escHtml(initials)}</div>
                                 <div class="adm-payer-meta">
-                                    <span class="adm-payer-name">${p.user_name || 'Anonymous User'}</span>
-                                    <span class="adm-payer-email">${p.user_email || 'No email provided'}</span>
+                                    <span class="adm-payer-name">${escHtml(p.user_name || 'Anonymous User')}</span>
+                                    <span class="adm-payer-email">${escHtml(p.user_email || 'No email provided')}</span>
                                     <div>
                                         <span class="adm-role-tag ${p.type === 'employer' ? 'employer' : 'applicant'}">
-                                            ${p.type === 'employer' ? (p.company ? p.company : 'Hirer') : 'Crew Member'}
+                                            ${p.type === 'employer' ? escHtml(p.company || 'Hirer') : 'Crew Member'}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="adm-item-title">${p.type_label || (p.type === 'employer' ? 'Employer Search Fee' : 'Applicant Hiring Pass')}</div>
-                            ${p.job_role ? `<div style="font-size:0.74rem; color:var(--adm-text-secondary);">Role: ${p.job_role}</div>` : ''}
+                            <div class="adm-item-title">${escHtml(p.type_label || (p.type === 'employer' ? 'Employer Search Fee' : 'Applicant Hiring Pass'))}</div>
+                            ${p.job_role ? `<div style="font-size:0.74rem; color:var(--adm-text-secondary);">Role: ${escHtml(p.job_role)}</div>` : ''}
                             ${isRej && p.rejection_reason ? `<div title="Rejection reason" style="margin-top:4px; font-size:0.72rem; color:#DC2626; font-weight:600;">✕ ${escHtml(p.rejection_reason)}</div>` : ''}
                         </td>
                         <td>
@@ -604,7 +501,7 @@
                         <td>
                             ${p.proof_image ? `
                                 <button type="button" class="adm-proof-thumb-btn view-proof-btn" data-id="${p.id}" title="Click to view full receipt">
-                                    <img src="${p.proof_image}" alt="Receipt" class="adm-proof-mini-img">
+                                    <img src="${escHtml(p.proof_image)}" alt="Receipt" class="adm-proof-mini-img">
                                     <span>View Proof</span>
                                 </button>
                             ` : `
@@ -738,14 +635,13 @@
 
                 // Call Go API
                 try {
-                    const rawId = item.raw_id || parseInt(String(paymentId).replace(/\D/g, ''), 10) || 1;
                     const res = await fetch('/api/admin/payments/verify', {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             type: item.type || 'employer',
-                            id: rawId,
+                            id: item.raw_id,
                             status: targetStatus,
                             verified: isVerified,
                             reason: isRejected ? reason : ''
@@ -754,15 +650,15 @@
                     if (!res.ok) {
                         const err = await res.json().catch(() => ({}));
                         showToast(err.error || 'The server rejected that change. Please try again.', false);
+                        fetchPayments(); // undo the optimistic update
                         return;
                     }
                     fetchPayments(); // sync with the database's canonical state
                 } catch (e) {
-                    console.warn('Backend verify API offline, stored locally', e);
+                    showToast('Could not save that change. Check your connection and try again.', false);
+                    fetchPayments(); // undo the optimistic update
+                    return;
                 }
-
-                // Persist local state
-                localStorage.setItem('ic_local_payments', JSON.stringify(paymentsData));
 
                 if (isVerified) {
                     showToast(`Payment #${item.ref || item.id} marked as Done!`, true);
@@ -936,14 +832,6 @@
                         setPaymentStatus(currentViewingPayment.id, 'rejected', reason);
                         closeReceiptModal();
                     });
-                });
-            }
-
-            const btnLoadDemo = document.getElementById('btnLoadDemo');
-            if (btnLoadDemo) {
-                btnLoadDemo.addEventListener('click', () => {
-                    seedSampleData();
-                    showToast('Sample demonstration payments loaded!');
                 });
             }
 

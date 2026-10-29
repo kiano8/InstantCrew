@@ -44,7 +44,7 @@
     --radius-pill: 9999px;
 
     /* ── Motion ── */
-    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --dur-fast: 140ms;
     --dur-base: 280ms;
@@ -60,7 +60,7 @@
 
 body {
     margin: 0;
-    background: #FAF7F0;
+    background: var(--surface);
     color: var(--ink);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     line-height: 1.5;
@@ -69,31 +69,6 @@ body {
 }
 
 /* Decorative background blobs */
-body::before,
-body::after {
-    content: '';
-    position: fixed;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-}
-
-body::before {
-    width: 500px;
-    height: 500px;
-    top: -160px;
-    right: -140px;
-    background: radial-gradient(circle, rgba(255, 204, 0, 0.12) 0%, transparent 70%);
-}
-
-body::after {
-    width: 400px;
-    height: 400px;
-    bottom: -120px;
-    left: -100px;
-    background: radial-gradient(circle, rgba(255, 204, 0, 0.08) 0%, transparent 70%);
-}
-
 h2 {
     margin: 0;
     font-size: 1.55rem;
@@ -313,7 +288,7 @@ a {
     height: 5px;
     border-radius: var(--radius-pill);
     background: rgba(28, 28, 30, 0.12);
-    transition: background var(--dur-slow) var(--ease-spring);
+    transition: background var(--dur-slow) var(--ease-out-expo);
 }
 
 .db-progress-seg.active {
@@ -324,7 +299,7 @@ a {
 /* ── Step container ────────────────────────────────────────────── */
 .db-step {
     display: none;
-    animation: stepIn var(--dur-slow) var(--ease-spring) both;
+    animation: stepIn var(--dur-slow) var(--ease-out-expo) both;
 }
 
 .db-step.active {
@@ -438,7 +413,7 @@ h2 {
         border-color var(--dur-fast) var(--ease-out),
         background var(--dur-fast) var(--ease-out),
         box-shadow var(--dur-fast) var(--ease-out),
-        transform var(--dur-fast) var(--ease-spring);
+        transform var(--dur-fast) var(--ease-out-expo);
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -498,7 +473,7 @@ h2 {
 .db-roles-wrap {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows var(--dur-slow) var(--ease-spring);
+    transition: grid-template-rows var(--dur-slow) var(--ease-out-expo);
     margin-top: 0;
 }
 
@@ -575,7 +550,7 @@ h2 {
     border-color: #F59E0B;
     background: #FFFDF7;
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.06);
 }
 
 .db-custom-dropdown.open .db-custom-dropdown-trigger {
@@ -637,7 +612,7 @@ h2 {
 
 .db-custom-chevron {
     color: var(--muted);
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
 }
 
 .db-custom-dropdown.open .db-custom-chevron {
@@ -659,9 +634,9 @@ h2 {
     backdrop-filter: blur(16px);
     border: 1.6px solid rgba(245, 158, 11, 0.35);
     border-radius: var(--radius-m);
-    box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(245, 158, 11, 0.10);
+    box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(28, 28, 30, 0.06);
     padding: 7px;
-    animation: menuSpringDown 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: menuSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Search input inside menu */
@@ -825,7 +800,7 @@ h2 {
     color: #D97706;
     opacity: 0;
     transform: scale(0.6);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .db-custom-option-item.selected .db-custom-option-check {
@@ -871,14 +846,14 @@ h2 {
     cursor: pointer;
     transition:
         background var(--dur-fast) var(--ease-out),
-        transform var(--dur-fast) var(--ease-spring),
+        transform var(--dur-fast) var(--ease-out-expo),
         box-shadow var(--dur-fast) var(--ease-out),
         opacity var(--dur-fast) var(--ease-out);
 }
 
 .db-btn-primary:hover:not(:disabled) {
     background: var(--yellow-dark);
-    box-shadow: 0 4px 18px rgba(255, 204, 0, 0.40);
+    box-shadow: 0 4px 18px rgba(28, 28, 30, 0.18);
     transform: translateY(-1px);
 }
 
@@ -917,7 +892,7 @@ h2 {
     transition:
         border-color var(--dur-fast) var(--ease-out),
         background var(--dur-fast) var(--ease-out),
-        transform var(--dur-fast) var(--ease-spring);
+        transform var(--dur-fast) var(--ease-out-expo);
 }
 
 .db-btn-secondary:hover {
@@ -960,7 +935,7 @@ h2 {
     border-color: var(--yellow);
     background: var(--yellow);
     color: var(--ink);
-    box-shadow: 0 2px 10px rgba(255, 204, 0, 0.30);
+    box-shadow: 0 2px 10px rgba(28, 28, 30, 0.14);
 }
 
 .db-toggle:hover:not(.active) {
@@ -973,7 +948,7 @@ h2 {
 .db-later-field {
     display: none;
     margin-bottom: 20px;
-    animation: fadeSlideDown var(--dur-base) var(--ease-spring) both;
+    animation: fadeSlideDown var(--dur-base) var(--ease-out-expo) both;
 }
 
 .db-later-field.open {
@@ -1070,7 +1045,7 @@ h2 {
     border-left: 1.6px solid var(--border);
     border-right: 1.6px solid var(--border);
     padding: 0 4px;
-    transition: transform var(--dur-fast) var(--ease-spring);
+    transition: transform var(--dur-fast) var(--ease-out-expo);
 }
 
 
@@ -1186,7 +1161,7 @@ h2 {
     width: 50%;
     height: 2px;
     background: linear-gradient(90deg, rgba(255, 204, 0, 0.2), #FFCC00);
-    box-shadow: 0 0 6px #FFCC00;
+    box-shadow: none;
     transform-origin: left center;
 }
 
@@ -1208,10 +1183,8 @@ h2 {
     background: #F59E0B;
     border: 1.5px solid #FFFFFF;
     border-radius: 50%;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
     z-index: 2;
     pointer-events: none;
-    animation: dbBlipPing 2.8s ease-out infinite;
 }
 
 .db-blip-1 {
@@ -1230,33 +1203,6 @@ h2 {
     bottom: 34px;
     right: 30px;
     animation-delay: 2.3s;
-}
-
-@keyframes dbBlipPing {
-    0% {
-        transform: scale(0.6);
-        opacity: 0;
-    }
-
-    20% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-
-    40% {
-        transform: scale(1);
-        opacity: 0.85;
-    }
-
-    70% {
-        transform: scale(1);
-        opacity: 0.85;
-    }
-
-    100% {
-        transform: scale(0.6);
-        opacity: 0;
-    }
 }
 
 /* Circular SVG Progress & Spinner Ring */
@@ -1283,7 +1229,6 @@ h2 {
     stroke-dasharray: 376.99;
     stroke-dashoffset: 0;
     transition: stroke-dashoffset 1s linear;
-    filter: drop-shadow(0 0 4px rgba(255, 204, 0, 0.5));
 }
 
 /* Center Avatar Hub */
@@ -1297,7 +1242,7 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6px 20px rgba(255, 204, 0, 0.45), 0 0 0 4px rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 20px rgba(28, 28, 30, 0.2), 0 0 0 4px rgba(255, 255, 255, 0.95);
     animation: dbHubBreathing 2.4s ease-in-out infinite;
 }
 
@@ -1323,24 +1268,7 @@ h2 {
     border-radius: 50%;
     background: #10B981;
     border: 2px solid #FFFFFF;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
-    animation: dbLiveDotPulse 1.8s ease-in-out infinite;
 }
-
-@keyframes dbLiveDotPulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 0.8;
-    }
-}
-
 
 /* ── Step 3 — Results ────────────────────────────────────────── */
 .db-results-badge {
@@ -1365,19 +1293,6 @@ h2 {
     height: 7px;
     border-radius: 50%;
     background: var(--green);
-    animation: blink 1.4s ease infinite;
-}
-
-@keyframes blink {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.3;
-    }
 }
 
 .db-match-status-badge {
@@ -1398,7 +1313,6 @@ h2 {
     height: 8px;
     border-radius: 50%;
     background: #D97706;
-    animation: blink 1.2s infinite ease-in-out;
 }
 
 .db-simulate-accept-btn {
@@ -1457,7 +1371,7 @@ h2 {
     border-radius: var(--radius-m);
     border: 1.6px solid var(--border);
     background: var(--surface);
-    animation: fadeSlideUp var(--dur-slow) var(--ease-spring) both;
+    animation: fadeSlideUp var(--dur-slow) var(--ease-out-expo) both;
     transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
@@ -1656,7 +1570,7 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: successPop var(--dur-slow) var(--ease-spring) both;
+    animation: successPop var(--dur-slow) var(--ease-out-expo) both;
 }
 
 @keyframes successPop {
@@ -1702,7 +1616,7 @@ h2 {
 }
 
 .db-chevron {
-    transition: transform var(--dur-base) var(--ease-spring);
+    transition: transform var(--dur-base) var(--ease-out-expo);
     flex-shrink: 0;
 }
 
@@ -1788,7 +1702,7 @@ h2 {
         margin-bottom: 20px;
         border-top: none;
         border-radius: 0 0 var(--radius-m) var(--radius-m);
-        animation: fadeSlideDown var(--dur-base) var(--ease-spring) both;
+        animation: fadeSlideDown var(--dur-base) var(--ease-out-expo) both;
     }
 
     /* When toggle is collapsed on mobile, hide the details box */
@@ -2019,7 +1933,7 @@ h2 {
     border-color: #F59E0B;
     background: #FFFDF7;
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.06);
 }
 
 .db-select-custom-wrap.open .db-select-custom-trigger {
@@ -2055,7 +1969,7 @@ h2 {
 .db-select-custom-chevron {
     color: var(--muted);
     flex-shrink: 0;
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
 }
 
 .db-select-custom-wrap.open .db-select-custom-chevron {
@@ -2071,7 +1985,7 @@ h2 {
     border: 1.6px solid rgba(245, 158, 11, 0.35);
     border-radius: var(--radius-m);
     padding: 6px;
-    animation: menuSpringDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: menuSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Rate Period Menu: compact floating pill right under trigger */
@@ -2082,7 +1996,7 @@ h2 {
     width: 100%;
     min-width: 155px;
     z-index: 180;
-    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.15), 0 6px 16px rgba(245, 158, 11, 0.1);
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.15), 0 6px 16px rgba(28, 28, 30, 0.06);
 }
 
 .db-period-menu .db-select-options-scroll {
@@ -2100,7 +2014,7 @@ h2 {
     margin-top: 0;
     box-sizing: border-box;
     z-index: 100;
-    box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(245, 158, 11, 0.10);
+    box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(28, 28, 30, 0.06);
 }
 
 /* Options list: size just right to fit 5 complete items cleanly */
@@ -2197,7 +2111,7 @@ h2 {
     opacity: 0;
     transform: scale(0.6);
     flex-shrink: 0;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .db-select-custom-item.selected .db-select-item-check {
@@ -2441,7 +2355,7 @@ h2 {
     background: #EA4335;
     color: #FFFFFF;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(234, 67, 53, 0.25);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.11);
 }
 
 .db-map-preview-btn:active {
@@ -2496,7 +2410,6 @@ h2 {
 }
 
 .db-schedule-icon-badge svg,
-.db-payment-shield-icon svg,
 .db-auth-icon-badge svg,
 .db-custom-trigger-icon svg,
 .db-empty-icon svg {
@@ -2776,7 +2689,7 @@ h2 {
     background: #FFCC00 !important;
     color: #111827 !important;
     font-weight: 700;
-    box-shadow: 0 4px 12px rgba(255, 204, 0, 0.45);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.2);
     transform: scale(1.04);
 }
 
@@ -3060,13 +2973,13 @@ h2 {
     font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(255, 204, 0, 0.38);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.17);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .db-modal-confirm-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(255, 204, 0, 0.48);
+    box-shadow: 0 6px 18px rgba(28, 28, 30, 0.22);
 }
 
 .db-modal-confirm-btn:active {
@@ -3107,16 +3020,6 @@ h2 {
     overflow: hidden;
     max-height: 92vh;
     background: #FFFFFF;
-}
-
-/* Brand accent strip across the top of the payment card */
-.db-payment-modal-card::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--yellow) 0%, #FFE066 50%, var(--yellow) 100%);
-    z-index: 31;
 }
 
 .db-payment-close-btn {
@@ -3175,19 +3078,6 @@ h2 {
 
 .db-payment-modal-body::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
-}
-
-.db-payment-shield-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-    background: var(--ink);
-    color: var(--yellow);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 10px;
-    box-shadow: 0 8px 20px -6px rgba(28, 28, 30, 0.45);
 }
 
 .db-payment-header {
@@ -3338,6 +3228,18 @@ h2 {
     cursor: help;
 }
 
+/* The wage explanation is visible text (it was a hover-only glyph): rate on one line, note below. */
+.db-breakdown-wage-row {
+    flex-wrap: wrap;
+    row-gap: 1px;
+}
+
+.db-wage-note {
+    flex-basis: 100%;
+    font-size: 0.72rem;
+    color: var(--ink-60);
+}
+
 .db-breakdown-val {
     font-weight: 700;
     color: var(--ink);
@@ -3370,7 +3272,7 @@ h2 {
     display: block;
     font-size: 0.7rem;
     font-weight: 800;
-    color: var(--muted);
+    color: var(--ink-60);
     margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -3431,6 +3333,13 @@ h2 {
     background: var(--surface-2);
     border-radius: 18px;
     padding: 14px;
+}
+
+/* Wallet (QR) methods sit directly on the card: no gray panel holding white cards. */
+.db-pay-method-details:has(> .db-qr-container) {
+    background: none;
+    border-radius: 0;
+    padding: 4px 0 0;
 }
 
 .db-pay-field label {
@@ -3551,15 +3460,15 @@ h2 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
 }
 
 
 .db-qr-card {
     background: #FFFFFF;
+    border: 1px solid var(--border);
     border-radius: 18px;
     padding: 12px;
-    box-shadow: 0 10px 28px -10px rgba(28, 28, 30, 0.22);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3577,19 +3486,16 @@ h2 {
 }
 
 .db-qr-caption {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    color: var(--muted);
+    color: var(--ink-60);
     margin-top: 8px;
     text-align: center;
 }
 
 .db-qr-instructions {
-    background: #FFFFFF;
-    border-radius: 14px;
-    padding: 10px 12px;
     width: 100%;
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     color: var(--ink-60);
     line-height: 1.45;
 }
@@ -3604,7 +3510,7 @@ h2 {
 .db-qr-instructions li {
     position: relative;
     padding-left: 26px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     counter-increment: qr-step;
 }
 
@@ -3635,17 +3541,24 @@ h2 {
 /* ── Proof of Payment File Uploader ── */
 .db-proof-upload-section {
     width: 100%;
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
 .db-proof-upload-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--ink);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.db-proof-required {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #C81E1E;
 }
 
 .db-proof-dropzone {
@@ -3666,7 +3579,11 @@ h2 {
 .db-proof-dropzone:hover {
     border-color: var(--yellow);
     background: var(--yellow-tint);
-    transform: translateY(-1px);
+}
+
+.db-proof-dropzone:focus-within {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.35);
 }
 
 .db-proof-dropzone.dragover {
@@ -3702,8 +3619,8 @@ h2 {
 }
 
 .db-proof-hint-text {
-    font-size: 0.68rem;
-    color: var(--muted);
+    font-size: 0.7rem;
+    color: var(--ink-60);
 }
 
 /* File attached preview state */
@@ -3713,9 +3630,9 @@ h2 {
     gap: 10px;
     background: #FFFFFF;
     border-radius: 14px;
-    padding: 8px 12px 8px 8px;
+    padding: 8px 10px 8px 8px;
     width: 100%;
-    box-shadow: inset 4px 0 0 var(--green), 0 4px 14px -6px rgba(28, 28, 30, 0.15);
+    border: 1px solid var(--border);
 }
 
 .db-proof-thumb {
@@ -3723,7 +3640,6 @@ h2 {
     height: 44px;
     border-radius: 10px;
     object-fit: cover;
-    margin-left: 4px;
     background: var(--surface-2);
     flex-shrink: 0;
     cursor: pointer;
@@ -3750,9 +3666,9 @@ h2 {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    color: #1F9D47;
+    color: #15803D;
 }
 
 .db-proof-remove-btn {
@@ -3770,6 +3686,12 @@ h2 {
 
 .db-proof-remove-btn:hover {
     background: var(--yellow);
+}
+
+.db-proof-remove-btn:focus-visible,
+.db-pay-method-btn:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
 }
 
 .db-pay-quick-chip {
@@ -3794,10 +3716,10 @@ h2 {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
-    background: var(--surface-2);
-    border-radius: 14px;
+    padding: 12px 0 0;
+    border-top: 1px dashed var(--border);
     font-size: 0.75rem;
+    font-weight: 600;
     line-height: 1.4;
     color: var(--ink-60);
     margin-bottom: 14px;
@@ -3805,6 +3727,12 @@ h2 {
 
 .db-escrow-guarantee-box svg {
     flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 6px;
+    border-radius: 8px;
+    background: var(--ink);
+    stroke: var(--yellow);
 }
 
 /* ── Payment verification status card ── */
@@ -3899,7 +3827,7 @@ h2 {
 .db-pay-status.is-success .db-pay-status-icon {
     background: var(--green);
     color: #FFFFFF;
-    box-shadow: 0 6px 16px -4px rgba(52, 199, 89, 0.55);
+    box-shadow: 0 6px 16px -4px rgba(28, 28, 30, 0.25);
 }
 
 .db-pay-status.is-success .db-pay-status-msg {
@@ -3915,7 +3843,7 @@ h2 {
 .db-pay-status.is-error .db-pay-status-icon {
     background: #FF3B30;
     color: #FFFFFF;
-    box-shadow: 0 6px 16px -4px rgba(255, 59, 48, 0.5);
+    box-shadow: 0 6px 16px -4px rgba(28, 28, 30, 0.25);
 }
 
 .db-pay-status.is-error .db-pay-status-msg {
@@ -3929,7 +3857,6 @@ h2 {
     background: #FFF1F0;
     color: #7F1D1D;
     padding: 11px 14px;
-    box-shadow: inset 4px 0 0 #FF3B30;
 }
 
 @keyframes dbPayStatusIn {
@@ -4316,13 +4243,13 @@ h2 {
     background: #FFCC00;
     color: #111827;
     border: none;
-    box-shadow: 0 4px 14px rgba(255, 204, 0, 0.38);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.17);
 }
 
 .db-terms-modal-footer .db-btn-primary:hover {
     background: #E5B800;
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(255, 204, 0, 0.48);
+    box-shadow: 0 6px 18px rgba(28, 28, 30, 0.22);
 }
 
 .db-terms-modal-footer .db-btn-primary:active {
@@ -4437,22 +4364,6 @@ h2 {
     height: 8px;
     border-radius: 50%;
     background: #F59E0B;
-    box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
-    animation: dbTimerDotPing 1.4s ease-in-out infinite;
-}
-
-@keyframes dbTimerDotPing {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.3);
-        opacity: 0.5;
-    }
 }
 
 .db-try-timer {
@@ -4486,28 +4397,7 @@ h2 {
     border-radius: 9999px;
     transition: width 1s linear;
     position: relative;
-    box-shadow: 0 0 8px rgba(255, 204, 0, 0.4);
-}
-
-.db-search-progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
-    animation: dbProgressShimmer 2.2s infinite;
-}
-
-@keyframes dbProgressShimmer {
-    0% {
-        transform: translateX(-100%);
-    }
-
-    100% {
-        transform: translateX(100%);
-    }
+    box-shadow: none;
 }
 
 .db-search-timer-note {
@@ -4799,7 +4689,7 @@ h2 {
     justify-content: center;
     flex-shrink: 0;
     letter-spacing: 0.02em;
-    box-shadow: 0 2px 8px rgba(255, 204, 0, 0.32);
+    box-shadow: 0 2px 8px rgba(28, 28, 30, 0.14);
 }
 
 .db-profile-header-info {
@@ -5880,7 +5770,19 @@ h2 {
 .app-map-pulse-pin {
     position: relative;
     z-index: 2;
-    animation: pinBounce 1.8s ease-in-out infinite;
+    animation: pinDrop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pinDrop {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .app-pin-glow {
@@ -5955,13 +5857,13 @@ h2 {
     font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(234, 67, 53, 0.3);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.14);
     transition: all 0.18s ease;
 }
 
 .app-btn-open-google-maps:hover {
     background: #D93025;
-    box-shadow: 0 6px 20px rgba(234, 67, 53, 0.4);
+    box-shadow: 0 6px 20px rgba(28, 28, 30, 0.18);
 }
 
 /* ── Empty State ───────────────────────────────────── */
@@ -6013,13 +5915,13 @@ h2 {
     font-size: 0.84rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(255, 204, 0, 0.28);
+    box-shadow: 0 2px 8px rgba(28, 28, 30, 0.13);
     transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .db-empty-search-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 204, 0, 0.38);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.17);
 }
 
 .db-empty-search-btn:active {
@@ -7103,7 +7005,7 @@ body {
 .db-live-transit-box.arrived {
     border-color: #86EFAC;
     background: #F0FDF4;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.06);
 }
 
 .db-live-transit-box.pending {

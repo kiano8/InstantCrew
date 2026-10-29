@@ -21,3 +21,6 @@ server.exe
 .env.*
 !.env.example
 *.env
+
+# User-uploaded payment receipts contain personal data; never commit them.
+uploads/

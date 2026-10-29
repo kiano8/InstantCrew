@@ -19,7 +19,7 @@
     --shadow-sm: 0 2px 8px rgba(18, 17, 14, 0.04);
     --shadow-md: 0 10px 30px -8px rgba(18, 17, 14, 0.08);
     --shadow-lg: 0 20px 45px -12px rgba(18, 17, 14, 0.12);
-    --shadow-amber: 0 10px 28px -6px rgba(245, 166, 35, 0.42);
+    --shadow-amber: 0 10px 28px -6px rgba(18, 17, 14, 0.22);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -209,7 +209,7 @@ button {
     border-color: var(--amber);
     color: var(--amber-deep);
     transform: translateY(-1.5px);
-    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.22);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.1);
 }
 
 .nav-install-btn:active {
@@ -255,7 +255,7 @@ button {
     color: #FFFFFF;
     font-size: 0.94rem;
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.16);
     transition: all 0.18s var(--ease-out);
     text-decoration: none;
 }
@@ -263,7 +263,7 @@ button {
 .nav-login-btn:hover {
     background: #E59800;
     transform: translateY(-1.5px);
-    box-shadow: 0 6px 18px rgba(245, 166, 35, 0.45);
+    box-shadow: 0 6px 18px rgba(28, 28, 30, 0.2);
 }
 
 .nav-login-btn:active {
@@ -361,44 +361,6 @@ button {
     align-items: flex-start;
 }
 
-.hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border-radius: var(--radius-full);
-    background: transparent;
-    border: 1px solid var(--amber-border);
-    color: var(--amber-deep);
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-    letter-spacing: 0.01em;
-}
-
-.hero-badge .badge-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--amber);
-    box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.25);
-    animation: pulseBadge 2s infinite;
-}
-
-@keyframes pulseBadge {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.25);
-        opacity: 0.7;
-    }
-}
-
 .hero-title {
     font-size: clamp(2.8rem, 5.4vw, 4.5rem);
     line-height: 1.05;
@@ -450,27 +412,10 @@ button {
     overflow: hidden;
 }
 
-.btn-instant-crew::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 60%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-    transform: skewX(-20deg);
-    transition: 0.6s ease;
-    pointer-events: none;
-}
-
 .btn-instant-crew:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 16px 36px -4px rgba(245, 166, 35, 0.55);
+    box-shadow: 0 16px 36px -4px rgba(28, 28, 30, 0.25);
     background: linear-gradient(135deg, #FFBE1A 0%, #F8AD33 50%, #EB9B05 100%);
-}
-
-.btn-instant-crew:hover::after {
-    left: 150%;
 }
 
 .btn-instant-crew:active {
@@ -1120,7 +1065,7 @@ button {
 .role-option-card.selected {
     background: #FFFDF9;
     border-color: var(--amber);
-    box-shadow: 0 8px 24px -4px rgba(245, 166, 35, 0.2), 0 0 0 1px var(--amber);
+    box-shadow: 0 8px 24px -4px rgba(28, 28, 30, 0.09), 0 0 0 1px var(--amber);
     transform: translateY(-1px);
 }
 
@@ -1302,13 +1247,13 @@ button {
     background: var(--amber);
     color: var(--ink);
     cursor: pointer;
-    box-shadow: 0 10px 24px -4px rgba(245, 166, 35, 0.45);
+    box-shadow: 0 10px 24px -4px rgba(28, 28, 30, 0.2);
 }
 
 .btn-role-continue.active:hover {
     background: var(--amber-deep);
     transform: translateY(-1.5px);
-    box-shadow: 0 14px 28px -4px rgba(245, 166, 35, 0.55);
+    box-shadow: 0 14px 28px -4px rgba(28, 28, 30, 0.25);
 }
 
 .btn-role-continue.active:hover svg {
@@ -1617,7 +1562,7 @@ button {
     border-radius: 16px;
     margin: 0 auto 12px;
     display: block;
-    box-shadow: 0 8px 20px rgba(245, 166, 35, 0.25);
+    box-shadow: 0 8px 20px rgba(28, 28, 30, 0.11);
     border: 1px solid var(--line);
     object-fit: contain;
 }
@@ -1697,14 +1642,14 @@ button {
     font-family: inherit;
     border: none;
     cursor: pointer;
-    box-shadow: 0 6px 18px rgba(245, 166, 35, 0.35);
+    box-shadow: 0 6px 18px rgba(28, 28, 30, 0.16);
     transition: all 0.18s ease;
 }
 
 .btn-install-modal-action:hover {
     background: var(--amber-deep);
     transform: translateY(-1px);
-    box-shadow: 0 8px 22px rgba(245, 166, 35, 0.45);
+    box-shadow: 0 8px 22px rgba(28, 28, 30, 0.2);
 }
 
 @media (max-width: 600px) {
@@ -2069,7 +2014,7 @@ button {
     font-weight: 700;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(245, 166, 35, 0.35);
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.16);
     transition: all 0.18s ease;
 }
 

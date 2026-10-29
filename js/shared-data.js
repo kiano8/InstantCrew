@@ -411,8 +411,8 @@
         toast.innerHTML = `
             <span class="db-push-toast-icon">${iconMarkup}</span>
             <div class="db-push-toast-body">
-                <p class="db-push-toast-title">${title}</p>
-                <p class="db-push-toast-msg">${message}</p>
+                <p class="db-push-toast-title">${escHtml(title)}</p>
+                <p class="db-push-toast-msg">${escHtml(message)}</p>
             </div>
             <button type="button" class="db-push-toast-close" aria-label="Dismiss">&times;</button>
         `;
@@ -603,8 +603,16 @@
     }
     setInterval(tickArrivalCountdowns, 1000);
 
+    // Escape text another user wrote (names, venues, notifications) before it goes into innerHTML.
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
     // Export to global window object
     window.InstantCrewShared = {
+        escHtml,
         formatArrivalCountdown,
         arrivalDeadlineFromSeconds,
         tickArrivalCountdowns,

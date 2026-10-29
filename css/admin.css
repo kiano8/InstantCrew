@@ -95,22 +95,6 @@ body {
     height: 6px;
     border-radius: 50%;
     background: #10B981;
-    box-shadow: 0 0 8px #10B981;
-    animation: pulseLive 2s infinite;
-}
-
-@keyframes pulseLive {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.5;
-        transform: scale(0.85);
-    }
 }
 
 .adm-nav-actions {
@@ -221,32 +205,6 @@ body {
     gap: 8px;
     position: relative;
     overflow: hidden;
-}
-
-.adm-metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--adm-amber);
-}
-
-.adm-metric-card.verified::before {
-    background: var(--adm-amber);
-}
-
-.adm-metric-card.pending::before {
-    background: var(--adm-amber);
-}
-
-.adm-metric-card.revenue::before {
-    background: var(--adm-amber);
-}
-
-.adm-metric-card.total::before {
-    background: var(--adm-amber);
 }
 
 .adm-metric-label {
@@ -572,8 +530,8 @@ body {
 }
 
 .adm-method-badge.card {
-    background: #F3E8FF;
-    color: #7E22CE;
+    background: #F2F2F7;
+    color: #1C1C1E;
 }
 
 .adm-amount-cell {
@@ -727,13 +685,13 @@ body {
 .adm-btn-verify.action-verify {
     background: var(--adm-emerald);
     color: #FFFFFF;
-    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+    box-shadow: 0 2px 8px rgba(28, 28, 30, 0.11);
 }
 
 .adm-btn-verify.action-verify:hover {
     background: #047857;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.16);
 }
 
 .adm-btn-verify.action-verified {
