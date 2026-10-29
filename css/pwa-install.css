@@ -144,7 +144,10 @@
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
     width: 100%;
     max-width: 440px;
-    padding: 28px 24px 22px;
+    max-height: min(90vh, 680px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 26px 22px 20px;
     transform: scale(0.95) translateY(14px);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s;
     text-align: center;
@@ -243,6 +246,36 @@
     color: #111827;
 }
 
+.install-step-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.install-step-title {
+    font-size: 0.90rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2px;
+    line-height: 1.35;
+}
+
+.install-step-desc {
+    font-size: 0.82rem;
+    color: #4B5563;
+    line-height: 1.45;
+}
+
+.install-step-hint {
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: #92400E;
+    background: #FEF3C7;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    border: 1px solid #FDE68A;
+}
+
 .install-step-inline-icon {
     display: inline-flex;
     vertical-align: middle;
@@ -324,7 +357,7 @@
 
 @keyframes iosBounce {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
+    50% { transform: translateY(5px); }
 }
 
 .ios-share-guide-text {

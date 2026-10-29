@@ -18,6 +18,7 @@
     let deferredPrompt = window.deferredPrompt || null;
     let toastTimeout = null;
     let pendingPromptWaitTimeout = null;
+    let isIosGuideActive = false;
 
     // 2. Intercept beforeinstallprompt for instant 1-tap Android & Chrome prompt
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -44,13 +45,17 @@
         return /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
+    function isChromeIOS() {
+        return isIOS() && /crios/i.test(getUA());
+    }
+
     function isAndroid() {
         return /android/.test(getUA());
     }
 
     function isInAppBrowser() {
         const ua = getUA();
-        return /fban|fbav|instagram|messenger|line|micromessenger|tiktok|snapchat|gsa\//i.test(ua);
+        return /fban|fbav|instagram|messenger|line|micromessenger|tiktok|snapchat|gsa\/|twitter|threads|linkedin/i.test(ua);
     }
 
     function isStandaloneMode() {
@@ -81,14 +86,14 @@
             banner.id = 'iosShareGuideBanner';
             banner.innerHTML = `
                 <div class="ios-share-guide-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <polyline points="19 12 12 19 5 12"></polyline>
                     </svg>
                 </div>
                 <div class="ios-share-guide-text">
-                    <div class="ios-share-guide-title">Add to Home Screen</div>
-                    <div class="ios-share-guide-sub">Tap <strong>"Add to Home Screen"</strong> in the Safari menu that just opened.</div>
+                    <div class="ios-share-guide-title">Look for the Share Button Below 👇</div>
+                    <div class="ios-share-guide-sub">Tap <strong style="color:#FFCC00;">[↑] Share</strong> in Safari's toolbar, then scroll down to <strong>"Add to Home Screen"</strong></div>
                 </div>
                 <button type="button" class="ios-share-guide-close" id="iosShareGuideCloseBtn" aria-label="Dismiss">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -176,12 +181,14 @@
         if (banner) banner.classList.remove('show');
     }
 
-    function openInstallModal(customSubtitle, customStepsHtml) {
+    function openInstallModal(customSubtitle, customStepsHtml, customTitle) {
         ensureInstallDOM();
         const modal = document.getElementById('installModalOverlay');
+        const title = document.getElementById('installModalTitle');
         const sub = document.getElementById('installModalSubtitle');
         const list = document.getElementById('installStepsList');
 
+        if (customTitle && title) title.textContent = customTitle;
         if (customSubtitle && sub) sub.textContent = customSubtitle;
         if (customStepsHtml && list) list.innerHTML = customStepsHtml;
 
@@ -198,6 +205,10 @@
             modal.classList.remove('open');
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
+        }
+        if (isIosGuideActive && isIOS() && !isStandaloneMode()) {
+            isIosGuideActive = false;
+            showIosGuideBanner();
         }
     }
 
@@ -315,56 +326,133 @@
                 const iosInAppSteps = `
                     <div class="install-step-item">
                         <span class="install-step-num">1</span>
-                        <div>Tap the menu icon (<strong>⋯</strong> or <strong>Share</strong>) in the corner</div>
+                        <div class="install-step-body">
+                            <div class="install-step-title">Tap the menu in the corner</div>
+                            <div class="install-step-desc">Tap the <strong>•••</strong> (three dots) or <strong>Share</strong> button at the top-right or bottom-right of this in-app browser.</div>
+                        </div>
                     </div>
                     <div class="install-step-item">
                         <span class="install-step-num">2</span>
-                        <div>Select <strong>'Open in Safari'</strong></div>
+                        <div class="install-step-body">
+                            <div class="install-step-title">Select <strong>'Open in Safari'</strong></div>
+                            <div class="install-step-desc">In-app browsers (Instagram, Messenger, etc.) do not allow adding apps to the Home Screen. Safari is required.</div>
+                        </div>
                     </div>
                     <div class="install-step-item">
                         <span class="install-step-num">3</span>
-                        <div>Then tap <strong>Install</strong> to add Instant Crew to your Home Screen</div>
+                        <div class="install-step-body">
+                            <div class="install-step-title">Tap <strong>'Install'</strong> once Safari opens</div>
+                            <div class="install-step-desc">You can then add Instant Crew straight to your Home Screen in 1 tap.</div>
+                        </div>
                     </div>
                 `;
-                openInstallModal('Open in Safari to add Instant Crew to your iPhone Home Screen:', iosInAppSteps);
+                openInstallModal('Open in Safari first to add Instant Crew to your iPhone Home Screen:', iosInAppSteps, 'Open in Safari to Install');
                 return;
             }
 
-            // On iOS Safari, navigator.share() automatically opens the native iOS Share Sheet from the bottom!
-            if (navigator.share) {
-                try {
-                    showIosGuideBanner();
-                    await navigator.share({
-                        title: 'Instant Crew',
-                        text: 'Instant Crew — Get Trusted Crew in Minutes',
-                        url: window.location.origin + '/'
-                    });
-                    showInstallToast('Instant Crew added to Home Screen!');
-                    return;
-                } catch (shareErr) {
-                    // If user dismissed the share sheet or it threw AbortError, don't show full modal unless desired
-                    if (shareErr && shareErr.name === 'AbortError') {
-                        return;
-                    }
-                }
+            if (isChromeIOS()) {
+                const chromeIosSteps = `
+                    <div class="install-step-item">
+                        <span class="install-step-num">1</span>
+                        <div class="install-step-body">
+                            <div class="install-step-title">Tap the <strong>Share</strong> icon in Chrome</div>
+                            <div class="install-step-desc">
+                                Tap the
+                                <span class="install-step-inline-icon">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                                        <polyline points="16 6 12 2 8 6"/>
+                                        <line x1="12" y1="2" x2="12" y2="15"/>
+                                    </svg>
+                                </span>
+                                Share button at the top-right of the address bar, or tap the three dots (<strong>⋯</strong>) at the bottom.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="install-step-item">
+                        <span class="install-step-num">2</span>
+                        <div class="install-step-body">
+                            <div class="install-step-title">Scroll down and tap <strong>'Add to Home Screen'</strong></div>
+                            <div class="install-step-desc">
+                                In the options list, scroll down and select
+                                <span class="install-step-inline-icon">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                                        <rect x="3" y="3" width="18" height="18" rx="3"/>
+                                        <line x1="12" y1="8" x2="12" y2="16"/>
+                                        <line x1="8" y1="12" x2="16" y2="12"/>
+                                    </svg>
+                                </span>
+                                <strong>Add to Home Screen</strong>.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="install-step-item">
+                        <span class="install-step-num">3</span>
+                        <div class="install-step-body">
+                            <div class="install-step-title">Tap <strong>'Add'</strong> in the top-right corner</div>
+                            <div class="install-step-desc">Instant Crew will appear on your Home Screen as an app.</div>
+                        </div>
+                    </div>
+                `;
+                openInstallModal('Add Instant Crew to your iPhone Home Screen using Google Chrome:', chromeIosSteps, 'Add to Home Screen');
+                return;
             }
 
-            // Fallback iOS guidance sheet
-            const iosSteps = `
+            // Safari on iPhone / iPad (Apple does not support programmatic install or navigator.share for Home Screen)
+            const isIPad = /ipad/.test(getUA()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const toolbarLocation = isIPad ? 'at the top-right of Safari' : 'in Safari\'s toolbar at the bottom of your screen';
+            const toolbarHint = isIPad ? '' : '<div class="install-step-hint">💡 <em>Toolbar hidden? Tap near the bottom of your screen to show it.</em></div>';
+
+            const safariSteps = `
                 <div class="install-step-item">
                     <span class="install-step-num">1</span>
-                    <div>Tap the <strong>Share</strong> button <span class="install-step-inline-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></span> at the bottom of Safari</div>
+                    <div class="install-step-body">
+                        <div class="install-step-title">Tap the <strong>Share</strong> button in Safari</div>
+                        <div class="install-step-desc">
+                            Look for the
+                            <span class="install-step-inline-icon" title="Share button">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                                    <polyline points="16 6 12 2 8 6"/>
+                                    <line x1="12" y1="2" x2="12" y2="15"/>
+                                </svg>
+                            </span>
+                            Share icon ${toolbarLocation}.
+                            ${toolbarHint}
+                        </div>
+                    </div>
                 </div>
                 <div class="install-step-item">
                     <span class="install-step-num">2</span>
-                    <div>Scroll down and select <strong>'Add to Home Screen'</strong> <span class="install-step-inline-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span></div>
+                    <div class="install-step-body">
+                        <div class="install-step-title">Scroll down and tap <strong>'Add to Home Screen'</strong></div>
+                        <div class="install-step-desc">
+                            In the menu sheet, scroll past your contacts &amp; apps until you see
+                            <span class="install-step-inline-icon" title="Add to Home Screen">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                                    <rect x="3" y="3" width="18" height="18" rx="3"/>
+                                    <line x1="12" y1="8" x2="12" y2="16"/>
+                                    <line x1="8" y1="12" x2="16" y2="12"/>
+                                </svg>
+                            </span>
+                            <strong>Add to Home Screen</strong>.
+                        </div>
+                    </div>
                 </div>
                 <div class="install-step-item">
                     <span class="install-step-num">3</span>
-                    <div>Tap <strong>'Add'</strong> in the top-right corner to finish</div>
+                    <div class="install-step-body">
+                        <div class="install-step-title">Tap <strong>'Add'</strong> in the top-right corner</div>
+                        <div class="install-step-desc">Instant Crew will be added to your Home Screen with our app icon!</div>
+                    </div>
                 </div>
             `;
-            openInstallModal('Add Instant Crew to your iPhone Home Screen for 1-tap access:', iosSteps);
+            isIosGuideActive = !isIPad;
+            openInstallModal(
+                'Follow these 3 quick steps in Safari to add Instant Crew to your Home Screen:',
+                safariSteps,
+                'Add to iPhone Home Screen'
+            );
             return;
         }
 
