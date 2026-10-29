@@ -3106,30 +3106,40 @@ h2 {
     flex-direction: column;
     overflow: hidden;
     max-height: 92vh;
+    background: #FFFFFF;
+}
+
+/* Brand accent strip across the top of the payment card */
+.db-payment-modal-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--yellow) 0%, #FFE066 50%, var(--yellow) 100%);
+    z-index: 31;
 }
 
 .db-payment-close-btn {
     position: absolute;
     top: 16px;
     right: 18px;
-    background: #F3F4F6;
+    background: var(--surface-2);
     border: none;
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    color: #4B5563;
+    color: var(--ink);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
     z-index: 30;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .db-payment-close-btn:hover {
-    background: #E5E7EB;
-    color: #111827;
+    background: var(--yellow);
+    color: var(--ink);
     transform: scale(1.06);
 }
 
@@ -3141,12 +3151,12 @@ h2 {
     flex: 1;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 26px 20px 22px 22px;
+    padding: 28px 20px 22px 22px;
     margin-right: 3px;
     margin-top: 3px;
     margin-bottom: 3px;
     scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-color: var(--muted-2) transparent;
 }
 
 .db-payment-modal-body::-webkit-scrollbar {
@@ -3159,50 +3169,52 @@ h2 {
 }
 
 .db-payment-modal-body::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
+    background: var(--muted-2);
     border-radius: 9999px;
 }
 
 .db-payment-modal-body::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
+    background: var(--muted);
 }
 
 .db-payment-shield-icon {
-    width: 38px;
-    height: 38px;
-    color: #D97706;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: var(--ink);
+    color: var(--yellow);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 8px;
+    margin: 0 auto 10px;
+    box-shadow: 0 8px 20px -6px rgba(28, 28, 30, 0.45);
 }
 
 .db-payment-header {
     text-align: center;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .db-payment-header .db-modal-title {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 800;
-    color: #0F172A;
+    color: var(--ink);
     letter-spacing: -0.02em;
     margin: 0 0 4px 0;
 }
 
 .db-payment-header .db-modal-sub {
     font-size: 0.82rem;
-    color: #64748B;
+    color: var(--muted);
     line-height: 1.45;
     margin: 0 auto;
     max-width: 360px;
 }
 
 .db-payment-summary-box {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 13px 15px;
+    background: var(--surface-2);
+    border-radius: 18px;
+    padding: 14px 16px;
     margin-bottom: 12px;
 }
 
@@ -3214,22 +3226,21 @@ h2 {
 }
 
 .db-payment-role-badge {
-    font-size: 1.02rem;
-    font-weight: 700;
-    color: #0F172A;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--ink);
     letter-spacing: -0.01em;
 }
 
 .db-payment-cat-tag {
-    font-size: 0.68rem;
-    font-weight: 700;
+    font-size: 0.66rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: #EEF2F6;
-    color: #475569;
-    padding: 3px 9px;
+    letter-spacing: 0.06em;
+    background: var(--yellow);
+    color: var(--ink);
+    padding: 4px 10px;
     border-radius: 9999px;
-    border: 1px solid #E2E8F0;
 }
 
 .db-payment-meta-grid {
@@ -3243,18 +3254,18 @@ h2 {
     align-items: center;
     gap: 7px;
     font-size: 0.81rem;
-    color: #475569;
+    color: var(--ink-60);
     font-weight: 500;
 }
 
 .db-payment-meta-item .db-meta-icon {
     display: flex;
     align-items: center;
-    color: #64748B;
+    color: var(--muted);
 }
 
 .db-payment-meta-full {
-    color: #334155;
+    color: var(--ink);
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3263,14 +3274,13 @@ h2 {
 
 .db-payment-breakdown {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 13px 15px;
-    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
     display: flex;
     flex-direction: column;
     gap: 7px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .db-breakdown-row {
@@ -3279,7 +3289,7 @@ h2 {
     justify-content: space-between;
     gap: 8px;
     font-size: 0.83rem;
-    color: #475569;
+    color: var(--ink-60);
 }
 
 .db-breakdown-label {
@@ -3287,29 +3297,28 @@ h2 {
     align-items: center;
     gap: 5px;
     line-height: 1.35;
-    color: #475569;
+    color: var(--ink-60);
     font-weight: 500;
 }
 
 .db-wage-title {
     font-weight: 500;
-    color: #475569;
+    color: var(--ink-60);
 }
 
 .db-wage-rate-tag {
     font-weight: 700;
-    color: #0F172A;
+    color: var(--ink);
     white-space: nowrap;
 }
 
 .db-wage-status-val {
-    color: #475569;
+    color: var(--ink-60);
     font-size: 0.72rem;
     font-weight: 600;
-    background: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    padding: 2.5px 8px;
-    border-radius: 6px;
+    background: var(--surface-2);
+    padding: 3px 9px;
+    border-radius: 9999px;
     white-space: nowrap;
     text-align: right;
     flex-shrink: 0;
@@ -3322,9 +3331,8 @@ h2 {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    color: #64748B;
+    background: var(--surface-2);
+    color: var(--muted);
     font-size: 0.65rem;
     font-weight: 700;
     cursor: help;
@@ -3332,24 +3340,26 @@ h2 {
 
 .db-breakdown-val {
     font-weight: 700;
-    color: #0F172A;
+    color: var(--ink);
     font-size: 0.88rem;
 }
 
 .db-breakdown-total {
-    border-top: 1px solid #F1F5F9;
+    border-top: 1px dashed var(--border);
     margin-top: 3px;
-    padding-top: 9px;
+    padding-top: 10px;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #0F172A;
+    color: var(--ink);
 }
 
 .db-breakdown-total-val {
-    font-size: 1.22rem;
+    font-size: 1.3rem;
     font-weight: 800;
-    color: #D97706;
-    letter-spacing: -0.01em;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    background: linear-gradient(transparent 58%, rgba(255, 204, 0, 0.55) 58%);
+    padding: 0 2px;
 }
 
 .db-payment-methods-section {
@@ -3358,19 +3368,22 @@ h2 {
 
 .db-payment-section-label {
     display: block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748B;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--muted);
     margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.07em;
 }
 
 .db-pay-method-tabs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 4px;
+    padding: 4px;
     margin-bottom: 10px;
+    background: var(--surface-2);
+    border-radius: 9999px;
 }
 
 .db-pay-method-btn {
@@ -3379,54 +3392,52 @@ h2 {
     justify-content: center;
     gap: 6px;
     padding: 9px 8px;
-    border-radius: 12px;
-    border: 1.5px solid #E2E8F0;
-    background: #FFFFFF;
+    border-radius: 9999px;
+    border: none;
+    background: transparent;
     font-family: inherit;
     font-size: 0.82rem;
-    font-weight: 600;
-    color: #475569;
+    font-weight: 700;
+    color: var(--ink-60);
     cursor: pointer;
-    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .db-pay-method-btn:hover {
-    border-color: #CBD5E1;
-    background: #F8FAFC;
-    color: #0F172A;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.7);
 }
 
 .db-pay-method-btn.active {
-    border-color: #0F172A;
-    background: #0F172A;
+    background: var(--ink);
     color: #FFFFFF;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 4px 12px rgba(28, 28, 30, 0.2);
 }
 
 .db-pay-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #CBD5E1;
+    background: var(--muted-2);
     transition: background 0.15s ease;
 }
 
 .db-pay-method-btn.active .db-pay-dot {
-    background: #FFCC00;
+    background: var(--yellow);
+    box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25);
 }
 
 .db-pay-method-details {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 12px 14px;
+    background: var(--surface-2);
+    border-radius: 18px;
+    padding: 14px;
 }
 
 .db-pay-field label {
     display: block;
     font-size: 0.72rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--ink-60);
     margin-bottom: 5px;
 }
 
@@ -3434,21 +3445,21 @@ h2 {
     display: flex;
     align-items: center;
     background: #FFFFFF;
-    border: 1.5px solid #CBD5E1;
-    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
     padding: 3px 12px;
     transition: all 0.18s ease;
 }
 
 .db-pay-input-wrap:focus-within {
-    border-color: #0F172A;
-    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.22);
 }
 
 .db-pay-prefix {
     font-size: 0.88rem;
     font-weight: 700;
-    color: #64748B;
+    color: var(--muted);
     margin-right: 8px;
     user-select: none;
 }
@@ -3459,27 +3470,33 @@ h2 {
     font-family: inherit;
     font-size: 0.94rem;
     font-weight: 600;
-    color: #0F172A;
+    color: var(--ink);
     width: 100%;
     padding: 6px 0;
     background: transparent;
 }
 
 .db-pay-input::placeholder {
-    color: #94A3B8;
+    color: var(--muted-2);
     font-weight: 500;
     opacity: 1;
 }
 
 .db-pay-input-full {
-    border: 1.5px solid #CBD5E1;
-    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
     padding: 8px 12px;
     background: #FFFFFF;
+    transition: all 0.18s ease;
+}
+
+.db-pay-input-full:focus {
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.22);
 }
 
 .db-pay-input-full::placeholder {
-    color: #94A3B8;
+    color: var(--muted-2);
     font-weight: 500;
     opacity: 1;
 }
@@ -3499,8 +3516,8 @@ h2 {
 
 .db-pay-card-num-wrap:focus-within,
 .db-pay-cvv-wrap:focus-within {
-    border-color: #0F172A;
-    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.22);
 }
 
 .db-cvv-toggle-btn {
@@ -3509,19 +3526,19 @@ h2 {
     outline: none;
     padding: 4px;
     cursor: pointer;
-    color: #9CA3AF;
+    color: var(--muted-2);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: color 0.15s ease, background 0.15s ease;
     line-height: 1;
     margin-left: 2px;
 }
 
 .db-cvv-toggle-btn:hover {
-    color: #111827;
-    background: rgba(0, 0, 0, 0.05);
+    color: var(--ink);
+    background: var(--surface-2);
 }
 
 .db-cvv-eye-icon {
@@ -3534,16 +3551,15 @@ h2 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 
 .db-qr-card {
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 10px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 10px 28px -10px rgba(28, 28, 30, 0.22);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3556,35 +3572,60 @@ h2 {
     width: 165px;
     height: 165px;
     object-fit: contain;
-    border-radius: 8px;
+    border-radius: 10px;
     display: block;
 }
 
 .db-qr-caption {
     font-size: 0.68rem;
-    font-weight: 600;
-    color: #64748B;
-    margin-top: 6px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-top: 8px;
     text-align: center;
 }
 
 .db-qr-instructions {
-    background: #F1F5F9;
-    border-radius: 10px;
-    padding: 8px 12px;
+    background: #FFFFFF;
+    border-radius: 14px;
+    padding: 10px 12px;
     width: 100%;
-    font-size: 0.72rem;
-    color: #334155;
+    font-size: 0.74rem;
+    color: var(--ink-60);
     line-height: 1.45;
 }
 
 .db-qr-instructions ol {
     margin: 0;
-    padding-left: 18px;
+    padding: 0;
+    list-style: none;
+    counter-reset: qr-step;
 }
 
 .db-qr-instructions li {
-    margin-bottom: 2px;
+    position: relative;
+    padding-left: 26px;
+    margin-bottom: 6px;
+    counter-increment: qr-step;
+}
+
+.db-qr-instructions li::before {
+    content: counter(qr-step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--ink);
+    font-size: 0.66rem;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+}
+
+.db-qr-instructions li strong {
+    color: var(--ink);
 }
 
 .db-qr-instructions li:last-child {
@@ -3603,15 +3644,15 @@ h2 {
     justify-content: space-between;
     font-size: 0.74rem;
     font-weight: 700;
-    color: #334155;
+    color: var(--ink);
     margin-bottom: 6px;
 }
 
 .db-proof-dropzone {
-    border: 2px dashed #CBD5E1;
-    border-radius: 12px;
+    border: 2px dashed var(--muted-2);
+    border-radius: 14px;
     background: #FFFFFF;
-    padding: 12px;
+    padding: 14px 12px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -3623,14 +3664,14 @@ h2 {
 }
 
 .db-proof-dropzone:hover {
-    border-color: #0F172A;
-    background: #F8FAFC;
+    border-color: var(--yellow);
+    background: var(--yellow-tint);
     transform: translateY(-1px);
 }
 
 .db-proof-dropzone.dragover {
-    border-color: #007DFE;
-    background: #EFF6FF;
+    border-color: var(--yellow);
+    background: var(--yellow-tint);
 }
 
 .db-proof-file-input {
@@ -3644,25 +3685,25 @@ h2 {
 }
 
 .db-proof-icon-wrap {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #F1F5F9;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: var(--ink);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #475569;
+    color: var(--yellow);
 }
 
 .db-proof-prompt-text {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #1E293B;
+    color: var(--ink);
 }
 
 .db-proof-hint-text {
     font-size: 0.68rem;
-    color: #64748B;
+    color: var(--muted);
 }
 
 /* File attached preview state */
@@ -3670,20 +3711,20 @@ h2 {
     display: none;
     align-items: center;
     gap: 10px;
-    background: #F0FDF4;
-    border: 1.5px solid #BBF7D0;
-    border-radius: 12px;
-    padding: 8px 12px;
+    background: #FFFFFF;
+    border-radius: 14px;
+    padding: 8px 12px 8px 8px;
     width: 100%;
+    box-shadow: inset 4px 0 0 var(--green), 0 4px 14px -6px rgba(28, 28, 30, 0.15);
 }
 
 .db-proof-thumb {
     width: 44px;
     height: 44px;
-    border-radius: 8px;
+    border-radius: 10px;
     object-fit: cover;
-    border: 1px solid #86EFAC;
-    background: #FFFFFF;
+    margin-left: 4px;
+    background: var(--surface-2);
     flex-shrink: 0;
     cursor: pointer;
 }
@@ -3699,7 +3740,7 @@ h2 {
 .db-proof-filename {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #14532D;
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3710,24 +3751,25 @@ h2 {
     align-items: center;
     gap: 4px;
     font-size: 0.68rem;
-    font-weight: 600;
-    color: #15803D;
+    font-weight: 700;
+    color: #1F9D47;
 }
 
 .db-proof-remove-btn {
     border: none;
-    background: transparent;
-    color: #DC2626;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-family: inherit;
     font-size: 0.72rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
+    padding: 6px 12px;
+    border-radius: 9999px;
     transition: background 0.15s ease;
 }
 
 .db-proof-remove-btn:hover {
-    background: #FEE2E2;
+    background: var(--yellow);
 }
 
 .db-pay-quick-chip {
@@ -3751,15 +3793,189 @@ h2 {
 .db-escrow-guarantee-box {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 12px;
-    background: #F0FDF4;
-    border: 1px solid #BBF7D0;
-    border-radius: 12px;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border-radius: 14px;
     font-size: 0.75rem;
     line-height: 1.4;
-    color: #166534;
+    color: var(--ink-60);
     margin-bottom: 14px;
+}
+
+.db-escrow-guarantee-box svg {
+    flex-shrink: 0;
+}
+
+/* ── Payment verification status card ── */
+.db-pay-status {
+    position: relative;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+    overflow: hidden;
+    animation: dbPayStatusIn 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.db-pay-status-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.db-pay-status-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.db-pay-status-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+.db-pay-status-msg {
+    font-size: 0.76rem;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+/* Pending: dark brand card with a pulsing yellow badge and live progress bar */
+.db-pay-status.is-pending {
+    background: var(--ink);
+    color: #FFFFFF;
+    box-shadow: 0 14px 30px -14px rgba(28, 28, 30, 0.6);
+}
+
+.db-pay-status.is-pending .db-pay-status-icon {
+    background: var(--yellow);
+    color: var(--ink);
+    animation: dbPayStatusPulse 1.8s ease-out infinite;
+}
+
+.db-pay-status.is-pending .db-pay-status-icon svg {
+    animation: dbBtnSpin 2.4s linear infinite;
+}
+
+.db-pay-status.is-pending .db-pay-status-msg {
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.db-pay-status-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.db-pay-status-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, var(--yellow), transparent);
+    animation: dbPayStatusSweep 1.6s ease-in-out infinite;
+}
+
+/* Verified */
+.db-pay-status.is-success {
+    background: var(--green-tint);
+    color: #14532D;
+}
+
+.db-pay-status.is-success .db-pay-status-icon {
+    background: var(--green);
+    color: #FFFFFF;
+    box-shadow: 0 6px 16px -4px rgba(52, 199, 89, 0.55);
+}
+
+.db-pay-status.is-success .db-pay-status-msg {
+    color: rgba(20, 83, 45, 0.78);
+}
+
+/* Rejected */
+.db-pay-status.is-error {
+    background: #FFF1F0;
+    color: #7F1D1D;
+}
+
+.db-pay-status.is-error .db-pay-status-icon {
+    background: #FF3B30;
+    color: #FFFFFF;
+    box-shadow: 0 6px 16px -4px rgba(255, 59, 48, 0.5);
+}
+
+.db-pay-status.is-error .db-pay-status-msg {
+    color: rgba(127, 29, 29, 0.8);
+}
+
+/* Inline errors inside the payment modal follow the same card language */
+.db-payment-modal-body .db-auth-error-banner {
+    border: none;
+    border-radius: 14px;
+    background: #FFF1F0;
+    color: #7F1D1D;
+    padding: 11px 14px;
+    box-shadow: inset 4px 0 0 #FF3B30;
+}
+
+@keyframes dbPayStatusIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes dbPayStatusPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.55);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 204, 0, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 204, 0, 0);
+    }
+}
+
+@keyframes dbPayStatusSweep {
+    from {
+        left: -40%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .db-pay-status,
+    .db-pay-status.is-pending .db-pay-status-icon,
+    .db-pay-status.is-pending .db-pay-status-icon svg,
+    .db-pay-status-progress::after {
+        animation: none;
+    }
 }
 
 .db-payment-actions {

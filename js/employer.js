@@ -1501,13 +1501,7 @@ function startFeeVerificationPolling(jobId) {
       if (p.status === 'verified') {
         stopFeeVerificationPolling();
         state.feePendingVerification = false;
-        if (paymentPendingNotice) {
-          paymentPendingNotice.style.display = 'block';
-          paymentPendingNotice.style.background = '#ECFDF5';
-          paymentPendingNotice.style.borderColor = '#A7F3D0';
-          paymentPendingNotice.style.color = '#065F46';
-          paymentPendingNotice.textContent = '✓ Payment verified! Starting crew search…';
-        }
+        showPaymentStatus('success', 'Payment verified', 'Starting your crew search…');
         const searchResponse = await fetch(`/api/jobs/${jobId}/search`, { method: 'POST', credentials: 'same-origin' });
         const searchData = await searchResponse.json().catch(() => ({}));
         if (searchResponse.ok) {
@@ -1525,13 +1519,7 @@ function startFeeVerificationPolling(jobId) {
         stopFeeVerificationPolling();
         state.feePendingVerification = false;
         const reason = p.rejection_reason || 'Accounting could not verify the receipt.';
-        if (paymentPendingNotice) {
-          paymentPendingNotice.style.display = 'block';
-          paymentPendingNotice.style.background = '#FEF2F2';
-          paymentPendingNotice.style.borderColor = '#FECACA';
-          paymentPendingNotice.style.color = '#B91C1C';
-          paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${reason}. Please upload a new proof of payment.`;
-        }
+        showPaymentStatus('error', 'Receipt rejected', `${reason.replace(/\.$/, '')}. Please upload a new proof of payment.`);
         if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
         clearEmployerPaymentProof();
       }
@@ -1558,38 +1546,20 @@ async function checkCurrentJobPaymentStatus(jobId) {
 
     if (p.status === 'pending') {
       state.feePendingVerification = true;
-      if (paymentPendingNotice) {
-        paymentPendingNotice.style.display = 'block';
-        paymentPendingNotice.style.background = '#EFF6FF';
-        paymentPendingNotice.style.borderColor = '#BFDBFE';
-        paymentPendingNotice.style.color = '#1E40AF';
-        paymentPendingNotice.textContent = '⏳ Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
-      }
+      showPaymentStatus('pending', 'Payment submitted', 'Processing verification. Accounting is reviewing your receipt, and crew search starts automatically once approved.');
       if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
       updateEmployerPayBtn();
       startFeeVerificationPolling(jobId);
     } else if (p.status === 'rejected') {
       state.feePendingVerification = false;
       const reason = p.rejection_reason || 'Accounting could not verify the receipt.';
-      if (paymentPendingNotice) {
-        paymentPendingNotice.style.display = 'block';
-        paymentPendingNotice.style.background = '#FEF2F2';
-        paymentPendingNotice.style.borderColor = '#FECACA';
-        paymentPendingNotice.style.color = '#B91C1C';
-        paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${reason}. Please upload a new proof of payment.`;
-      }
+      showPaymentStatus('error', 'Receipt rejected', `${reason.replace(/\.$/, '')}. Please upload a new proof of payment.`);
       if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
       clearEmployerPaymentProof();
     } else if (p.status === 'verified') {
       // The receipt is already on file, so the button only needs to start the search.
       state.feePendingVerification = true;
-      if (paymentPendingNotice) {
-        paymentPendingNotice.style.display = 'block';
-        paymentPendingNotice.style.background = '#ECFDF5';
-        paymentPendingNotice.style.borderColor = '#A7F3D0';
-        paymentPendingNotice.style.color = '#065F46';
-        paymentPendingNotice.textContent = '✓ Payment verified! Ready to start crew search.';
-      }
+      showPaymentStatus('success', 'Payment verified', 'You’re all set. Start your crew search below.');
       if (payNowBtnText) payNowBtnText.textContent = 'Start Crew Search';
       updateEmployerPayBtn();
     }
@@ -1713,6 +1683,28 @@ function clearPaymentNotices() {
     paymentPendingNotice.textContent = '';
     paymentPendingNotice.style.display = 'none';
   }
+}
+
+const PAYMENT_STATUS_ICONS = {
+  pending: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+  success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+};
+
+// Renders the payment verification status card (tone: pending | success | error).
+function showPaymentStatus(tone, title, message) {
+  if (!paymentPendingNotice) return;
+  paymentPendingNotice.className = `db-pay-status is-${tone}`;
+  paymentPendingNotice.innerHTML = `
+    <span class="db-pay-status-icon">${PAYMENT_STATUS_ICONS[tone]}</span>
+    <div class="db-pay-status-copy">
+      <strong class="db-pay-status-title"></strong>
+      <span class="db-pay-status-msg"></span>
+    </div>
+    ${tone === 'pending' ? '<span class="db-pay-status-progress" aria-hidden="true"></span>' : ''}`;
+  paymentPendingNotice.querySelector('.db-pay-status-title').textContent = title;
+  paymentPendingNotice.querySelector('.db-pay-status-msg').textContent = message;
+  paymentPendingNotice.style.display = 'grid';
 }
 
 function updateEmployerPayBtn() {
@@ -1905,23 +1897,11 @@ if (payNowBtn) {
           if (p?.status === 'rejected') {
             state.feePendingVerification = false;
             stopFeeVerificationPolling();
-            if (paymentPendingNotice) {
-              paymentPendingNotice.style.display = 'block';
-              paymentPendingNotice.style.background = '#FEF2F2';
-              paymentPendingNotice.style.borderColor = '#FECACA';
-              paymentPendingNotice.style.color = '#B91C1C';
-              paymentPendingNotice.textContent = `✕ Payment receipt was rejected: ${p.rejection_reason || 'Please upload a new proof of payment.'}`;
-            }
+            showPaymentStatus('error', 'Receipt rejected', `${p.rejection_reason || 'Accounting could not verify the receipt'}. Please upload a new proof of payment.`);
             if (payNowBtnText) payNowBtnText.textContent = 'Re-upload & Submit';
             clearEmployerPaymentProof();
           } else {
-            if (paymentPendingNotice) {
-              paymentPendingNotice.style.display = 'block';
-              paymentPendingNotice.style.background = '#EFF6FF';
-              paymentPendingNotice.style.borderColor = '#BFDBFE';
-              paymentPendingNotice.style.color = '#1E40AF';
-              paymentPendingNotice.textContent = '⏳ Still awaiting verification by accounting. As soon as it is approved, your search starts automatically.';
-            }
+            showPaymentStatus('pending', 'Still verifying', 'Accounting hasn’t approved your receipt yet. Your crew search starts automatically once it’s approved.');
             if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
           }
         } else {
@@ -2086,13 +2066,7 @@ async function startCrewSearch() {
   if (!searchResponse.ok) {
     if (searchResponse.status === 402) {
       state.feePendingVerification = true;
-      if (paymentPendingNotice) {
-        paymentPendingNotice.style.display = 'block';
-        paymentPendingNotice.style.background = '#EFF6FF';
-        paymentPendingNotice.style.borderColor = '#BFDBFE';
-        paymentPendingNotice.style.color = '#1E40AF';
-        paymentPendingNotice.textContent = 'Proof of payment uploaded! Accounting is verifying your receipt. Crew search will begin automatically once approved.';
-      }
+      showPaymentStatus('pending', 'Payment submitted', 'Processing verification. Accounting is reviewing your receipt, and crew search starts automatically once approved.');
       if (paymentError) paymentError.style.display = 'none';
       if (payNowBtnText) payNowBtnText.textContent = 'Start Search';
       updateEmployerPayBtn();
