@@ -257,6 +257,9 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 		if err != nil {
 			return err
 		}
+		if prevStatus == "verified" && normStatus != "verified" {
+			return ErrAlreadyVerified
+		}
 		if normStatus == "verified" {
 			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=$1, verified_at=$2, verified_by=$3, rejection_reason='' WHERE id=$4`, normStatus, now, vBy, id)
 			if err != nil {
@@ -281,6 +284,10 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 		}
 		if err != nil {
 			return err
+		}
+		// Hires granted on verify are not taken back, so a verified receipt stays verified.
+		if prevStatus == "verified" && normStatus != "verified" {
+			return ErrAlreadyVerified
 		}
 		if normStatus == "verified" {
 			res, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET status=$1, verified_at=$2, verified_by=$3, rejection_reason='' WHERE id=$4`, normStatus, now, vBy, id)

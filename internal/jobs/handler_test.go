@@ -465,3 +465,63 @@ func mustRead(r io.Reader) string {
 	b, _ := io.ReadAll(r)
 	return string(b)
 }
+
+// An applicant can accept only an offer they match, and not one the employer
+// already declined them for.
+func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
+	env := setupTestEnv(t)
+	ctx := context.Background()
+	must := func(what string, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+	}
+	givePass := func(u *store.User) {
+		pass, err := env.st.AddApplicantHiringPass(ctx, u.ID, "gcash", "/uploads/pass.jpg")
+		must("add pass", err)
+		must("verify pass", env.st.SetPaymentStatus(ctx, "applicant", pass.PendingPayment.ID, "verified", "Admin", ""))
+	}
+	givePass(env.applicant)
+
+	// A second applicant in another city does not match the Cebu job.
+	other := &store.User{Email: "manila@test.com", PasswordHash: "x", Role: "applicant", Name: "Other"}
+	must("create other", env.st.CreateUser(ctx, other))
+	active := true
+	must("other profile", env.st.SaveApplicantProfile(ctx, other.ID, store.ApplicantProfile{
+		EmploymentType: "full-time", ExpectedRate: 150, RatePeriod: "hour", City: "Manila",
+		Availability: "now", Active: &active, Roles: []string{"waiter-server"},
+	}))
+	givePass(other)
+
+	job := &store.Job{EmployerID: env.employer.ID, Category: "kitchen", RoleID: "waiter-server", RoleLabel: "Waiter",
+		EmploymentType: "full-time", RateCentavos: 15000, RatePeriod: "hour", City: "Cebu City",
+		MapLocation: "IT Park", MapsURL: "https://www.google.com/maps", Timing: "now", CrewNeeded: 1}
+	must("create job", env.st.CreateJob(ctx, job))
+	must("pay", env.st.RecordMatchFee(ctx, env.employer.ID, job.ID, "gcash", "", "/uploads/fee.jpg", 10000, "pay_x"))
+	pay, err := env.st.LatestJobPayment(ctx, job.ID)
+	must("latest payment", err)
+	must("verify fee", env.st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
+	must("start search", env.st.StartSearch(ctx, env.employer.ID, job.ID, env.jobsH.SearchWindow))
+
+	cookies := map[int64]*http.Cookie{env.applicant.ID: env.createSessionCookie(t, env.applicant), other.ID: env.createSessionCookie(t, other)}
+	accept := func(u *store.User) int {
+		req := httptest.NewRequest("POST", "/api/applicant/jobs/"+jsonNumber(job.ID)+"/accept", nil)
+		req.AddCookie(cookies[u.ID])
+		rec := httptest.NewRecorder()
+		env.mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if code := accept(other); code != http.StatusNotFound {
+		t.Fatalf("non-matching applicant: want 404, got %d", code)
+	}
+	if code := accept(env.applicant); code != http.StatusOK {
+		t.Fatalf("matching applicant: want 200, got %d", code)
+	}
+	if _, err := env.st.DeclineMatch(ctx, env.employer.ID, job.ID, env.jobsH.SearchWindow); err != nil {
+		t.Fatalf("decline: %v", err)
+	}
+	if code := accept(env.applicant); code != http.StatusNotFound {
+		t.Fatalf("declined applicant accepting again: want 404, got %d", code)
+	}
+}

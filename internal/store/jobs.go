@@ -301,28 +301,42 @@ func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window ti
 }
 
 func (s *Store) LatestJobPayment(ctx context.Context, jobID int64) (*JobPayment, error) {
-	var p JobPayment
-	var verifiedAt sql.NullInt64
-	err := s.db.QueryRowContext(ctx, `
-		SELECT id, COALESCE(status,''), COALESCE(method,''), COALESCE(proof_image,''), search_attempt, verified_at, COALESCE(rejection_reason,'')
-		FROM payments WHERE job_id=$1 ORDER BY search_attempt DESC, id DESC LIMIT 1`, jobID).
-		Scan(&p.ID, &p.Status, &p.Method, &p.ProofImage, &p.SearchAttempt, &verifiedAt, &p.RejectionReason)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+	m, err := s.LatestJobPayments(ctx, []int64{jobID})
+	return m[jobID], err
+}
+
+// LatestJobPayments returns each job's newest payment in one query; jobs without one are absent.
+func (s *Store) LatestJobPayments(ctx context.Context, jobIDs []int64) (map[int64]*JobPayment, error) {
+	out := map[int64]*JobPayment{}
+	if len(jobIDs) == 0 {
+		return out, nil
 	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT DISTINCT ON (job_id) job_id, id, COALESCE(status,''), COALESCE(method,''), COALESCE(proof_image,''), search_attempt, verified_at, COALESCE(rejection_reason,'')
+		FROM payments WHERE job_id = ANY($1) ORDER BY job_id, search_attempt DESC, id DESC`, jobIDs)
 	if err != nil {
 		return nil, err
 	}
-	if verifiedAt.Valid && verifiedAt.Int64 > 0 {
-		v := verifiedAt.Int64
-		p.VerifiedAt = &v
-		if p.Status == "" || p.Status == "paid" {
-			p.Status = "verified"
+	defer rows.Close()
+	for rows.Next() {
+		var p JobPayment
+		var jobID int64
+		var verifiedAt sql.NullInt64
+		if err := rows.Scan(&jobID, &p.ID, &p.Status, &p.Method, &p.ProofImage, &p.SearchAttempt, &verifiedAt, &p.RejectionReason); err != nil {
+			return nil, err
 		}
-	} else if p.Status == "paid" || p.Status == "" {
-		p.Status = "pending"
+		if verifiedAt.Valid && verifiedAt.Int64 > 0 {
+			v := verifiedAt.Int64
+			p.VerifiedAt = &v
+			if p.Status == "" || p.Status == "paid" {
+				p.Status = "verified"
+			}
+		} else if p.Status == "paid" || p.Status == "" {
+			p.Status = "pending"
+		}
+		out[jobID] = &p
 	}
-	return &p, nil
+	return out, rows.Err()
 }
 
 func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
@@ -903,20 +917,30 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 
 // Assignments: call only after the caller has proven they own the job.
 func (s *Store) Assignments(ctx context.Context, jobID int64) ([]Assignment, error) {
+	m, err := s.AssignmentsForJobs(ctx, []int64{jobID})
+	return m[jobID], err
+}
+
+// AssignmentsForJobs loads the crew of many jobs in one query, keyed by job ID.
+// Call only with jobs the caller may see.
+func (s *Store) AssignmentsForJobs(ctx context.Context, jobIDs []int64) (map[int64][]Assignment, error) {
+	out := map[int64][]Assignment{}
+	if len(jobIDs) == 0 {
+		return out, nil
+	}
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status, a.arrival_deadline_at
+		SELECT a.job_id, a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status, a.arrival_deadline_at
 		FROM job_assignments a JOIN users u ON u.id = a.applicant_id
-		WHERE a.job_id = $1 ORDER BY a.accepted_at`, jobID)
+		WHERE a.job_id = ANY($1) ORDER BY a.accepted_at`, jobIDs)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []Assignment
 	for rows.Next() {
 		var a Assignment
-		var acc int64
+		var jobID, acc int64
 		var ended, deadline sql.NullInt64
-		if err := rows.Scan(&a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline); err != nil {
+		if err := rows.Scan(&jobID, &a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline); err != nil {
 			return nil, err
 		}
 		a.AcceptedAt = time.Unix(acc, 0)
@@ -928,7 +952,7 @@ func (s *Store) Assignments(ctx context.Context, jobID int64) ([]Assignment, err
 			t := time.Unix(deadline.Int64, 0)
 			a.ArrivalDeadlineAt = &t
 		}
-		out = append(out, a)
+		out[jobID] = append(out[jobID], a)
 	}
 	return out, rows.Err()
 }

@@ -354,18 +354,10 @@ func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	out := make([]jobDTO, 0, len(jobs))
-	for _, j := range jobs {
-		d := h.toDTO(j)
-		crew, crewErr := h.Store.Assignments(r.Context(), j.ID)
-		if crewErr != nil {
-			h.fail(w, crewErr)
-			return
-		}
-		for _, c := range crew {
-			d.Crew = append(d.Crew, toCrewDTO(c))
-		}
-		out = append(out, d)
+	out, err := h.jobDTOs(r, jobs, false)
+	if err != nil {
+		h.fail(w, err)
+		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"jobs": out})
 }
@@ -406,6 +398,11 @@ func (h *Handler) ApplicantAccept(w http.ResponseWriter, r *http.Request) {
 	}
 	if p.DeactivatedUntil > time.Now().Unix() {
 		httpx.Error(w, http.StatusForbidden, fmt.Sprintf("your account is temporarily deactivated for 5 days (until %s)", time.Unix(p.DeactivatedUntil, 0).Format(time.RFC1123)))
+		return
+	}
+	// Only offers this applicant matches (and was not declined for) can be accepted.
+	if _, err = h.Store.ApplicantJob(r.Context(), u.ID, id); err != nil {
+		h.fail(w, err)
 		return
 	}
 	if err = h.Store.AcceptJob(r.Context(), id, u.ID); err != nil {
@@ -649,6 +646,35 @@ func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, e
 	httpx.JSON(w, status, map[string]any{"job": d})
 }
 
+// jobDTOs adds crew (and, for the job's owner, the latest payment) to jobs
+// with one query each, instead of one or two per job.
+func (h *Handler) jobDTOs(r *http.Request, jobs []*store.Job, withPayment bool) ([]jobDTO, error) {
+	ids := make([]int64, len(jobs))
+	for i, j := range jobs {
+		ids[i] = j.ID
+	}
+	crew, err := h.Store.AssignmentsForJobs(r.Context(), ids)
+	if err != nil {
+		return nil, err
+	}
+	var pays map[int64]*store.JobPayment
+	if withPayment {
+		if pays, err = h.Store.LatestJobPayments(r.Context(), ids); err != nil {
+			return nil, err
+		}
+	}
+	out := make([]jobDTO, 0, len(jobs))
+	for _, j := range jobs {
+		d := h.toDTO(j)
+		for _, c := range crew[j.ID] {
+			d.Crew = append(d.Crew, toCrewDTO(c))
+		}
+		d.Payment = pays[j.ID]
+		out = append(out, d)
+	}
+	return out, nil
+}
+
 // ── request parsing / validation ──
 
 type jobRequest struct {
@@ -842,24 +868,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	out := make([]jobDTO, 0, len(jobs))
-	for _, j := range jobs {
-		d := h.toDTO(j)
-		crew, crewErr := h.Store.Assignments(r.Context(), j.ID)
-		if crewErr != nil {
-			h.fail(w, crewErr)
-			return
-		}
-		for _, c := range crew {
-			d.Crew = append(d.Crew, toCrewDTO(c))
-		}
-		if pay, payErr := h.Store.LatestJobPayment(r.Context(), j.ID); payErr != nil {
-			h.fail(w, payErr)
-			return
-		} else if pay != nil {
-			d.Payment = pay
-		}
-		out = append(out, d)
+	out, err := h.jobDTOs(r, jobs, true)
+	if err != nil {
+		h.fail(w, err)
+		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"jobs": out})
 }
@@ -1150,6 +1162,10 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 	if err := h.Store.SetPaymentStatus(r.Context(), req.Type, req.ID, status, verifier, reason); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			httpx.Error(w, http.StatusNotFound, "payment not found")
+			return
+		}
+		if errors.Is(err, store.ErrAlreadyVerified) {
+			httpx.Error(w, http.StatusConflict, err.Error())
 			return
 		}
 		httpx.Error(w, http.StatusInternalServerError, err.Error())

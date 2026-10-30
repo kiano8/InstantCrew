@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -29,6 +30,63 @@ type Handler struct {
 	google       *googleOAuth
 	facebook     *facebookOAuth
 	codeMail     mailLimiter
+	loginFails   loginLimiter
+}
+
+const (
+	maxLoginFailures = 10
+	loginLockout     = 15 * time.Minute
+)
+
+// loginLimiter counts failed password logins per email, so passwords (the admin's
+// included, which has no emailed code) can't be guessed by a script.
+// shortcut: in-memory, so it only works with one server process; move to the DB if we run several.
+type loginLimiter struct {
+	mu    sync.Mutex
+	fails map[string][]time.Time
+}
+
+// recent drops failures older than loginLockout and returns what is left. Caller holds mu.
+func (l *loginLimiter) recent(email string, now time.Time) []time.Time {
+	kept := l.fails[email][:0]
+	for _, t := range l.fails[email] {
+		if now.Sub(t) < loginLockout {
+			kept = append(kept, t)
+		}
+	}
+	if len(kept) == 0 {
+		delete(l.fails, email)
+	} else {
+		l.fails[email] = kept
+	}
+	return kept
+}
+
+func (l *loginLimiter) blocked(email string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.recent(email, time.Now())) >= maxLoginFailures
+}
+
+func (l *loginLimiter) fail(email string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := time.Now()
+	if l.fails == nil {
+		l.fails = make(map[string][]time.Time)
+	}
+	if len(l.fails) > 10000 { // keep a flood of made-up emails from growing the map forever
+		for e := range l.fails {
+			l.recent(e, now)
+		}
+	}
+	l.fails[email] = append(l.recent(email, now), now)
+}
+
+func (l *loginLimiter) reset(email string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.fails, email)
 }
 
 // Compared against when the email doesn't exist, so response time doesn't reveal valid emails.
@@ -201,6 +259,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	normEmail := normalizeEmail(req.Email)
+	if h.loginFails.blocked(normEmail) {
+		httpx.Error(w, http.StatusTooManyRequests, "too many failed logins; please wait 15 minutes or reset your password")
+		return
+	}
 	hash := dummyHash
 	var u *store.User
 
@@ -227,13 +289,16 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 		pwErr := bcrypt.CompareHashAndPassword(hash, []byte(req.Password))
 		if u == nil || pwErr != nil {
+			h.loginFails.fail(normEmail)
 			httpx.Error(w, http.StatusUnauthorized, "invalid email or password")
 			return
 		}
 	} else if u == nil {
+		h.loginFails.fail(normEmail)
 		httpx.Error(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
+	h.loginFails.reset(normEmail)
 
 	if needsLoginCode(u) && !h.checkLoginCode(w, r, u, req.Code) {
 		return

@@ -206,6 +206,10 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	if pass.RemainingHires != 0 {
 		t.Fatalf("expected 0 remaining hires before verification, got %d", pass.RemainingHires)
 	}
+	// A second receipt while the first is pending must not overwrite it.
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof_dup.jpg"); !errors.Is(err, store.ErrPaymentPendingExists) {
+		t.Fatalf("expected ErrPaymentPendingExists, got %v", err)
+	}
 
 	// Attempting AcceptJob now returns ErrHiringPassPending
 	err = st.AcceptJob(ctx, job.ID, applicant.ID)
@@ -272,6 +276,10 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
 	if err != nil || pass.RemainingHires != 5 {
 		t.Fatalf("expected still 5 remaining hires, got %d", pass.RemainingHires)
+	}
+	// Rejecting after hires were granted would leave them free, so it is refused.
+	if err := st.SetPaymentStatus(ctx, "applicant", appPayRecord.RawID, "rejected", "Admin Jane", "oops"); !errors.Is(err, store.ErrAlreadyVerified) {
+		t.Fatalf("expected ErrAlreadyVerified, got %v", err)
 	}
 
 	// Applicant accepts job -> succeeds, but NO hire is spent yet (employer has not confirmed).

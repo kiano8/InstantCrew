@@ -5432,9 +5432,9 @@
                             <div class="app-loc-drawer-inner">
                                 <div class="app-loc-drawer-left">
                                     <div class="app-loc-tag">Employer's Map Location</div>
-                                    <div class="app-loc-address-text">${shiftMapLoc}</div>
+                                    <div class="app-loc-address-text">${window.InstantCrewShared.escHtml(shiftMapLoc)}</div>
                                 </div>
-                                <a href="${shiftMapsUrl}" target="_blank" rel="noopener noreferrer" class="app-loc-direct-link" title="Direct to Google Maps">
+                                <a href="${window.InstantCrewShared.escHtml(shiftMapsUrl)}" target="_blank" rel="noopener noreferrer" class="app-loc-direct-link" title="Direct to Google Maps">
                                     <span>Open in Google Maps</span>
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>

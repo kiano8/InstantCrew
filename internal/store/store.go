@@ -23,6 +23,7 @@ var (
 	ErrPaymentNotVerified   = errors.New("accounting has not verified this payment yet")
 	ErrPaymentRejected      = errors.New("this payment receipt was rejected; please upload a new proof of payment")
 	ErrPaymentPendingExists = errors.New("a payment is already waiting for accounting verification")
+	ErrAlreadyVerified      = errors.New("this payment is already verified and can no longer be changed")
 )
 
 type User struct {

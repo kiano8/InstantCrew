@@ -82,3 +82,27 @@ func TestLogin_GmailNeedsEmailedCode(t *testing.T) {
 		t.Fatalf("non-Gmail login: want 200 with session, got %d", rec.Code)
 	}
 }
+
+// Ten wrong passwords lock the email; a success clears the count.
+func TestLoginLimiter(t *testing.T) {
+	var l loginLimiter
+	for i := 0; i < maxLoginFailures-1; i++ {
+		l.fail("a@b.c")
+	}
+	if l.blocked("a@b.c") {
+		t.Fatal("blocked before the limit")
+	}
+	l.fail("a@b.c")
+	if !l.blocked("a@b.c") || l.blocked("other@b.c") {
+		t.Fatal("want a@b.c blocked and other@b.c not")
+	}
+	l.fails["a@b.c"] = []time.Time{time.Now().Add(-loginLockout)}
+	if l.blocked("a@b.c") {
+		t.Fatal("old failures must expire")
+	}
+	l.fail("a@b.c")
+	l.reset("a@b.c")
+	if len(l.fails) != 0 {
+		t.Fatal("reset must clear the email")
+	}
+}

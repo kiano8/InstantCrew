@@ -105,7 +105,11 @@ func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, m
 	if scanErr != nil && scanErr != sql.ErrNoRows {
 		return HiringPass{}, scanErr
 	}
-	if scanErr == nil && (existingStatus == "pending" || existingStatus == "rejected") {
+	// A pending receipt is never replaced: a second payment would overwrite the first one's record.
+	if scanErr == nil && existingStatus == "pending" {
+		return HiringPass{}, ErrPaymentPendingExists
+	}
+	if scanErr == nil && existingStatus == "rejected" {
 		if _, err = tx.ExecContext(ctx, `
 			UPDATE applicant_hiring_pass_payments
 			SET method=$1, proof_image=$2, status='pending', verified_at=NULL, verified_by='', rejection_reason='', created_at=$3
@@ -403,7 +407,8 @@ func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Jo
 			AND ((j.timing='now' AND p.availability_mode='now') OR
 				(j.timing='later' AND (p.availability_mode='now' OR EXISTS (SELECT 1 FROM applicant_availability av
 					WHERE av.applicant_id=p.user_id AND av.status='available'
-					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at)))))`,
+					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at)))))
+		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$3 AND a.status='rejected')`,
 		jobID, time.Now().Unix(), applicantID))
 }
 
@@ -458,7 +463,8 @@ func (s *Store) AdjustApplicantRating(ctx context.Context, jobID, applicantID in
 }
 
 // RecordApplicantOfferViews marks eligible offers shown to an online worker.
-// Unanswered offers that close while the worker is still online lower the rating once.
+// Unanswered offers that close with nobody hired lower the rating once; offers another
+// worker took, or the employer cancelled, do not.
 func (s *Store) RecordApplicantOfferViews(ctx context.Context, applicantID int64, jobs []*Job) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -472,12 +478,12 @@ func (s *Store) RecordApplicantOfferViews(ctx context.Context, applicantID int64
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=GREATEST(100,rating_hundredths-5*(
 		 SELECT COUNT(*) FROM applicant_offer_impressions i JOIN jobs j ON j.id=i.job_id
-		 WHERE i.applicant_id=$1 AND i.resolved=false AND j.status<>'matching'
+		 WHERE i.applicant_id=$1 AND i.resolved=false AND j.status='unfulfilled'
 		 AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$2 AND a.status IN ('accepted','rejected'))
 		))
 		WHERE user_id=$3 AND is_active=true AND EXISTS (
 		 SELECT 1 FROM applicant_offer_impressions i JOIN jobs j ON j.id=i.job_id
-		 WHERE i.applicant_id=$4 AND i.resolved=false AND j.status<>'matching'
+		 WHERE i.applicant_id=$4 AND i.resolved=false AND j.status='unfulfilled'
 		 AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$5 AND a.status IN ('accepted','rejected'))
 		)`, applicantID, applicantID, applicantID, applicantID, applicantID); err != nil {
 		return err
@@ -529,4 +535,3 @@ func (s *Store) ApplicantAssignmentState(ctx context.Context, applicantID, jobID
 	}
 	return a, nil
 }
-
