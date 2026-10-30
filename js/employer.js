@@ -1437,14 +1437,6 @@ function openPaymentModal(step = 'payment') {
   if (payNowBtnText) {
     payNowBtnText.textContent = step === 'search' ? 'Confirm' : 'Pay';
   }
-  let selectedMethodButton = null;
-  document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
-    const selected = btn.dataset.method === state.selectedPaymentMethod;
-    btn.classList.toggle('active', selected);
-    btn.setAttribute('aria-checked', String(selected));
-    if (selected) selectedMethodButton = btn;
-  });
-  if (selectedMethodButton) selectedMethodButton.click();
   if (payCancelBtn) payCancelBtn.textContent = 'Back to Details';
   clearPaymentNotices();
   // Verification state is re-derived from the job's next search fee below.
@@ -1465,7 +1457,7 @@ function openPaymentModal(step = 'payment') {
 
 function loadEmployerPaymentPreference() {
   const preference = getSession()?.paymentPreference;
-  if (!preference || !['gcash', 'maya', 'card'].includes(preference.method)) return;
+  if (!preference || preference.method !== 'gcash') return;
   state.selectedPaymentMethod = preference.method;
   state.selectedPaymentDetails = preference.details || '';
 }
@@ -1718,136 +1710,31 @@ function updateEmployerPayBtn() {
     payNowBtn.title = '';
     return;
   }
-  const method = state.selectedPaymentMethod || 'gcash';
-  if (method === 'gcash' || method === 'maya') {
-    const hasProof = !!(state.selectedPaymentProofFile || state.selectedPaymentProof);
-    payNowBtn.disabled = !hasProof;
-    payNowBtn.style.opacity = hasProof ? '1' : '0.5';
-    payNowBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
-    payNowBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
-  } else {
-    payNowBtn.disabled = false;
-    payNowBtn.style.opacity = '1';
-    payNowBtn.style.cursor = 'pointer';
-    payNowBtn.title = '';
-  }
+  const hasProof = !!(state.selectedPaymentProofFile || state.selectedPaymentProof);
+  payNowBtn.disabled = !hasProof;
+  payNowBtn.style.opacity = hasProof ? '1' : '0.5';
+  payNowBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
+  payNowBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
 }
 
-// Wire up GCash and Maya proof uploader on employer payment modal
+// Wire up GCash proof uploader on employer payment modal
 const gcashReturned = window.InstantCrewShared.watchGcashReturn(document.getElementById('payMethodGcashWrap'));
 setupEmployerProofUpload('empGcashProofFile', 'empGcashDropzone', 'empGcashAttachedBox', 'empGcashThumb', 'empGcashFilename', 'empGcashRemoveBtn');
-setupEmployerProofUpload('empMayaProofFile', 'empMayaDropzone', 'empMayaAttachedBox', 'empMayaThumb', 'empMayaFilename', 'empMayaRemoveBtn');
-
-// Payment method tab switching
-document.querySelectorAll('.db-pay-method-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.db-pay-method-btn').forEach(b => {
-      b.classList.remove('active');
-      b.setAttribute('aria-checked', 'false');
-    });
-    btn.classList.add('active');
-    btn.setAttribute('aria-checked', 'true');
-
-    const method = btn.getAttribute('data-method');
-    state.selectedPaymentMethod = method;
-    const gcashWrap = document.getElementById('payMethodGcashWrap');
-    const mayaWrap = document.getElementById('payMethodMayaWrap');
-    const cardWrap = document.getElementById('payMethodCardWrap');
-
-    if (gcashWrap) gcashWrap.style.display = method === 'gcash' ? 'block' : 'none';
-    if (mayaWrap) mayaWrap.style.display = method === 'maya' ? 'block' : 'none';
-    if (cardWrap) cardWrap.style.display = method === 'card' ? 'block' : 'none';
-    updateEmployerPayBtn();
-  });
-});
-
-if (paymentCloseXBtn) paymentCloseXBtn.addEventListener('click', closePaymentModal);
-if (payCancelBtn) payCancelBtn.addEventListener('click', closePaymentModal);
-if (paymentModal) {
-  paymentModal.addEventListener('click', (e) => {
-    if (e.target === paymentModal) closePaymentModal();
-  });
-}
-
-// Toggle Card Number eye visibility
-const toggleCardNumBtn = document.getElementById('toggleCardNumBtn');
-const payCardNumber = document.getElementById('payCardNumber');
-if (toggleCardNumBtn && payCardNumber) {
-  toggleCardNumBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const eyeOpen = toggleCardNumBtn.querySelector('.db-card-eye-open');
-    const eyeClosed = toggleCardNumBtn.querySelector('.db-card-eye-closed');
-    const isPassword = payCardNumber.type === 'password';
-
-    if (isPassword) {
-      payCardNumber.type = 'text';
-      toggleCardNumBtn.setAttribute('aria-label', 'Hide card number');
-      toggleCardNumBtn.setAttribute('title', 'Hide card number');
-      if (eyeOpen) eyeOpen.style.display = 'none';
-      if (eyeClosed) eyeClosed.style.display = 'block';
-    } else {
-      payCardNumber.type = 'password';
-      toggleCardNumBtn.setAttribute('aria-label', 'Show card number');
-      toggleCardNumBtn.setAttribute('title', 'Show card number');
-      if (eyeOpen) eyeOpen.style.display = 'block';
-      if (eyeClosed) eyeClosed.style.display = 'none';
-    }
-  });
-
-  // Format card number with spaces
-  payCardNumber.addEventListener('input', (e) => {
-    const val = e.target.value.replace(/\D/g, '').substring(0, 16);
-    const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
-    e.target.value = formatted;
-  });
-}
-
-// Toggle Card CVV eye visibility
-const toggleCardCvcBtn = document.getElementById('toggleCardCvcBtn');
-const payCardCvc = document.getElementById('payCardCvc');
-if (toggleCardCvcBtn && payCardCvc) {
-  toggleCardCvcBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const eyeOpen = toggleCardCvcBtn.querySelector('.db-cvv-eye-open');
-    const eyeClosed = toggleCardCvcBtn.querySelector('.db-cvv-eye-closed');
-    const isPassword = payCardCvc.type === 'password';
-
-    if (isPassword) {
-      payCardCvc.type = 'text';
-      toggleCardCvcBtn.setAttribute('aria-label', 'Hide CVV');
-      toggleCardCvcBtn.setAttribute('title', 'Hide CVV');
-      if (eyeOpen) eyeOpen.style.display = 'none';
-      if (eyeClosed) eyeClosed.style.display = 'block';
-    } else {
-      payCardCvc.type = 'password';
-      toggleCardCvcBtn.setAttribute('aria-label', 'Show CVV');
-      toggleCardCvcBtn.setAttribute('title', 'Show CVV');
-      if (eyeOpen) eyeOpen.style.display = 'block';
-      if (eyeClosed) eyeClosed.style.display = 'none';
-    }
-  });
-}
 
 // ── Record the search fee before sending crew offers ──
 if (payNowBtn) {
   payNowBtn.addEventListener('click', async () => {
-    const methodTab = document.querySelector('.db-pay-method-btn.active');
-    const method = methodTab ? methodTab.getAttribute('data-method') : 'gcash';
-    const methodLabels = { gcash: 'GCash', maya: 'Maya', card: 'Card' };
-    const methodLabel = methodLabels[method] || 'GCash';
+    const method = 'gcash';
+    const methodLabel = 'GCash';
 
     let proofImageUrl = state.selectedPaymentProof || '';
 
-    if (method === 'gcash' || method === 'maya') {
-      if (!proofImageUrl && !state.selectedPaymentProofFile) {
-        if (paymentError) {
-          paymentError.textContent = `Please upload your ${methodLabel} proof of payment screenshot.`;
-          paymentError.style.display = 'block';
-        }
-        return;
+    if (!proofImageUrl && !state.selectedPaymentProofFile) {
+      if (paymentError) {
+        paymentError.textContent = 'Please upload your GCash proof of payment screenshot.';
+        paymentError.style.display = 'block';
       }
+      return;
     }
 
     if (paymentError) paymentError.style.display = 'none';
@@ -1874,7 +1761,7 @@ if (payNowBtn) {
       }
     }
 
-    const details = (method === 'card') ? 'Card checkout' : 'InstaPay QR Receipt Uploaded';
+    const details = 'InstaPay QR Receipt Uploaded';
     state.selectedPaymentMethod = method;
     state.selectedPaymentDetails = details;
     state.selectedPaymentProof = proofImageUrl;
@@ -2083,14 +1970,13 @@ async function startCrewSearch() {
 }
 
 async function recordSearchFee(methodLabel, details = '', proofImage = '') {
-  const method = String(methodLabel).toLowerCase();
   const proof = proofImage || state.selectedPaymentProof || '';
   const response = await fetch(`/api/jobs/${state.currentJobId}/pay`, {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      method: ['gcash', 'maya'].includes(method) ? method : 'card',
+      method: 'gcash',
       details: details || (proof ? 'Receipt uploaded' : ''),
       proof_image: proof
     })

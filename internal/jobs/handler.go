@@ -249,8 +249,8 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	method := strings.ToLower(strings.TrimSpace(req.Method))
-	if method != "gcash" && method != "maya" && method != "card" {
-		httpx.Error(w, http.StatusBadRequest, "method must be gcash, maya, or card")
+	if method != "gcash" {
+		httpx.Error(w, http.StatusBadRequest, "method must be gcash")
 		return
 	}
 	proofImage := strings.TrimSpace(req.ProofImage)
@@ -258,8 +258,8 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		httpx.Error(w, http.StatusBadRequest, "invalid proof of payment; please upload the screenshot again")
 		return
 	}
-	if (method == "gcash" || method == "maya") && proofImage == "" {
-		httpx.Error(w, http.StatusBadRequest, "proof of payment is required for GCash and Maya")
+	if proofImage == "" {
+		httpx.Error(w, http.StatusBadRequest, "proof of payment is required")
 		return
 	}
 	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage)
@@ -920,8 +920,8 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.Method = strings.ToLower(strings.TrimSpace(req.Method))
-	if req.Method != "cash" && req.Method != "gcash" && req.Method != "maya" && req.Method != "card" {
-		httpx.Error(w, http.StatusBadRequest, "method must be cash, gcash, maya or card")
+	if req.Method != "gcash" {
+		httpx.Error(w, http.StatusBadRequest, "method must be gcash")
 		return
 	}
 	req.Details = strings.TrimSpace(req.Details)
@@ -934,8 +934,8 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "payment details must be 255 characters or fewer")
 		return
 	}
-	if (req.Method == "gcash" || req.Method == "maya") && req.ProofImage == "" && req.Details == "" {
-		httpx.Error(w, http.StatusBadRequest, "proof of payment screenshot is required for GCash and Maya")
+	if req.ProofImage == "" {
+		httpx.Error(w, http.StatusBadRequest, "proof of payment screenshot is required")
 		return
 	}
 

@@ -2077,21 +2077,7 @@
 
                 <!-- Payment Methods -->
                 <div class="db-payment-methods-section">
-                    <label class="db-payment-section-label">Select Payment Method</label>
-                    <div class="db-pay-method-tabs" role="radiogroup" id="appTopupPayTabs">
-                        <button type="button" class="db-pay-method-btn active" data-method="gcash" aria-checked="true">
-                            <span class="db-pay-dot"></span>
-                            <span class="db-pay-method-name">GCash</span>
-                        </button>
-                        <button type="button" class="db-pay-method-btn" data-method="maya" aria-checked="false">
-                            <span class="db-pay-dot"></span>
-                            <span class="db-pay-method-name">Maya</span>
-                        </button>
-                        <button type="button" class="db-pay-method-btn" data-method="card" aria-checked="false">
-                            <span class="db-pay-dot"></span>
-                            <span class="db-pay-method-name">Card</span>
-                        </button>
-                    </div>
+                    <span class="db-payment-section-label">Pay with GCash</span>
 
                     <!-- Top-Up GCash QR Code & Proof of Payment -->
                     <div class="db-pay-method-details" id="appTopupGcashWrap">
@@ -2147,118 +2133,6 @@
                                     </div>
                                     <button type="button" class="db-proof-remove-btn"
                                         id="appTopupGcashRemoveBtn">Change</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Top-Up Maya QR Code & Proof of Payment -->
-                    <div class="db-pay-method-details" id="appTopupMayaWrap" style="display:none;">
-                        <div class="db-qr-container">
-                            <div class="db-qr-card">
-                                <img src="images/payment_qr.jpg" alt="Maya InstaPay QR Code" class="db-qr-image">
-                                <span class="db-qr-caption">InstaPay QR • Scan with Maya App</span>
-                            </div>
-                            <div class="db-qr-instructions">
-                                <ol>
-                                    <li>Open your <strong>Maya</strong> app and tap <strong>Scan to Pay</strong>.</li>
-                                    <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
-                                    <li>Take a screenshot of the completed payment receipt.</li>
-                                    <li>Upload the screenshot below as Proof of Payment.</li>
-                                </ol>
-                            </div>
-                            <div class="db-proof-upload-section">
-                                <div class="db-proof-upload-label">
-                                    <span>Proof of Payment Screenshot</span>
-                                    <span style="color:#DC2626; font-size:0.7rem;">* Required</span>
-                                </div>
-                                <div class="db-proof-dropzone" id="appTopupMayaDropzone">
-                                    <input type="file" id="appTopupMayaProofFile" class="db-proof-file-input"
-                                        accept="image/*">
-                                    <div class="db-proof-icon-wrap">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                            <polyline points="17 8 12 3 7 8"></polyline>
-                                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                                        </svg>
-                                    </div>
-                                    <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
-                                </div>
-                                <div class="db-proof-attached-box" id="appTopupMayaAttachedBox">
-                                    <img src="" alt="Proof Preview" class="db-proof-thumb" id="appTopupMayaThumb">
-                                    <div class="db-proof-info">
-                                        <span class="db-proof-filename" id="appTopupMayaFilename">receipt.jpg</span>
-                                        <span class="db-proof-status-tag">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                            Receipt attached &amp; ready
-                                        </span>
-                                    </div>
-                                    <button type="button" class="db-proof-remove-btn"
-                                        id="appTopupMayaRemoveBtn">Change</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="db-pay-method-details" id="appTopupCardWrap" style="display:none;">
-                        <div class="db-pay-field">
-                            <label for="appTopupCardNum">Card Number</label>
-                            <div class="db-pay-input-wrap db-pay-card-num-wrap">
-                                <input type="password" id="appTopupCardNum" class="db-pay-input"
-                                    placeholder="4242 •••• •••• 4242" maxlength="19">
-                                <button type="button" class="db-cvv-toggle-btn" id="toggleAppTopupCardNumBtn"
-                                    aria-label="Show card number" title="Show card number">
-                                    <svg class="db-cvv-eye-icon db-card-eye-open" width="16" height="16"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                    <svg class="db-cvv-eye-icon db-card-eye-closed" width="16" height="16"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                        <path
-                                            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
-                                        </path>
-                                        <line x1="1" y1="1" x2="23" y2="23"></line>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="db-pay-card-row">
-                            <div class="db-pay-field">
-                                <label for="appTopupCardExp">Expiry</label>
-                                <input type="text" id="appTopupCardExp" class="db-pay-input db-pay-input-full"
-                                    placeholder="12/28" maxlength="5">
-                            </div>
-                            <div class="db-pay-field">
-                                <label for="appTopupCardCvc">CVV</label>
-                                <div class="db-pay-input-wrap db-pay-cvv-wrap">
-                                    <input type="password" id="appTopupCardCvc" class="db-pay-input" placeholder="123"
-                                        maxlength="4">
-                                    <button type="button" class="db-cvv-toggle-btn" id="toggleAppTopupCardCvcBtn"
-                                        aria-label="Show CVV" title="Show CVV">
-                                        <svg class="db-cvv-eye-icon db-cvv-eye-open" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                        <svg class="db-cvv-eye-icon db-cvv-eye-closed" width="16" height="16"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                            <path
-                                                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
-                                            </path>
-                                            <line x1="1" y1="1" x2="23" y2="23"></line>
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -7429,64 +7303,6 @@
                     });
                 }
 
-                // Eye toggle helper for Card inputs
-                function setupCardInputToggle(btnId, inputId, eyeOpenClass, eyeClosedClass, showTitle, hideTitle) {
-                    const btn = document.getElementById(btnId);
-                    const input = document.getElementById(inputId);
-                    if (!btn || !input) return;
-
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const eyeOpen = btn.querySelector('.' + eyeOpenClass);
-                        const eyeClosed = btn.querySelector('.' + eyeClosedClass);
-                        const isPassword = input.type === 'password';
-
-                        if (isPassword) {
-                            input.type = 'text';
-                            btn.setAttribute('aria-label', hideTitle);
-                            btn.setAttribute('title', hideTitle);
-                            if (eyeOpen) eyeOpen.style.display = 'none';
-                            if (eyeClosed) eyeClosed.style.display = 'block';
-                        } else {
-                            input.type = 'password';
-                            btn.setAttribute('aria-label', showTitle);
-                            btn.setAttribute('title', showTitle);
-                            if (eyeOpen) eyeOpen.style.display = 'block';
-                            if (eyeClosed) eyeClosed.style.display = 'none';
-                        }
-                    });
-                }
-
-                // Format card numbers with 4-digit spacing
-                function setupCardFormatting(inputId) {
-                    const el = document.getElementById(inputId);
-                    if (!el) return;
-                    el.addEventListener('input', (e) => {
-                        const val = e.target.value.replace(/\D/g, '').substring(0, 16);
-                        const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
-                        e.target.value = formatted;
-                    });
-                }
-
-                // Format expiration date MM/YY
-                ['appTopupCardExp'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (!el) return;
-                    el.addEventListener('input', (e) => {
-                        let v = e.target.value.replace(/\D/g, '').substring(0, 4);
-                        if (v.length >= 3) {
-                            v = v.substring(0, 2) + '/' + v.substring(2);
-                        }
-                        e.target.value = v;
-                    });
-                });
-
-                // Wire up Top-Up Modal Card Eye Toggles & Number Formatting
-                setupCardInputToggle('toggleAppTopupCardNumBtn', 'appTopupCardNum', 'db-card-eye-open', 'db-card-eye-closed', 'Show card number', 'Hide card number');
-                setupCardInputToggle('toggleAppTopupCardCvcBtn', 'appTopupCardCvc', 'db-cvv-eye-open', 'db-cvv-eye-closed', 'Show CVV', 'Hide CVV');
-                setupCardFormatting('appTopupCardNum');
-
                 // Helper to wire up proof uploaders
                 function setupProofUploader(fileInputId, dropzoneId, attachedBoxId, thumbId, filenameId, removeBtnId, onFileSelected, onFileRemoved) {
                     const fileInput = document.getElementById(fileInputId);
@@ -7598,25 +7414,17 @@
                     });
                 }
 
-                // Top-Up Payment Method Tabs (GCash, Maya, Card)
-                let topupPaymentMethod = 'gcash';
+                // Top-Up payment (GCash only)
                 let topupProofFile = null;
                 let topupProofDataUrl = '';
 
                 function updateTopupConfirmBtn() {
                     if (!appConfirmTopupBtn) return;
-                    if (topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya') {
-                        const hasProof = !!(topupProofFile || topupProofDataUrl);
-                        appConfirmTopupBtn.disabled = !hasProof;
-                        appConfirmTopupBtn.style.opacity = hasProof ? '1' : '0.5';
-                        appConfirmTopupBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
-                        appConfirmTopupBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
-                    } else {
-                        appConfirmTopupBtn.disabled = false;
-                        appConfirmTopupBtn.style.opacity = '1';
-                        appConfirmTopupBtn.style.cursor = 'pointer';
-                        appConfirmTopupBtn.title = '';
-                    }
+                    const hasProof = !!(topupProofFile || topupProofDataUrl);
+                    appConfirmTopupBtn.disabled = !hasProof;
+                    appConfirmTopupBtn.style.opacity = hasProof ? '1' : '0.5';
+                    appConfirmTopupBtn.style.cursor = hasProof ? 'pointer' : 'not-allowed';
+                    appConfirmTopupBtn.title = hasProof ? '' : 'Please upload your proof of payment screenshot to continue';
                 }
 
                 const topupGcashReturned = window.InstantCrewShared.watchGcashReturn(document.getElementById('appTopupGcashWrap'));
@@ -7627,49 +7435,13 @@
                     },
                     () => { topupProofFile = null; topupProofDataUrl = ''; updateTopupConfirmBtn(); }
                 );
-                setupProofUploader('appTopupMayaProofFile', 'appTopupMayaDropzone', 'appTopupMayaAttachedBox', 'appTopupMayaThumb', 'appTopupMayaFilename', 'appTopupMayaRemoveBtn',
-                    (file, dataUrl) => { topupProofFile = file; topupProofDataUrl = dataUrl; updateTopupConfirmBtn(); },
-                    () => { topupProofFile = null; topupProofDataUrl = ''; updateTopupConfirmBtn(); }
-                );
-
-                const appTopupPayTabs = document.getElementById('appTopupPayTabs');
-                const appTopupGcashWrap = document.getElementById('appTopupGcashWrap');
-                const appTopupMayaWrap = document.getElementById('appTopupMayaWrap');
-                const appTopupCardWrap = document.getElementById('appTopupCardWrap');
-
-                if (appTopupPayTabs) {
-                    const topupBtns = appTopupPayTabs.querySelectorAll('.db-pay-method-btn');
-                    topupBtns.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            topupBtns.forEach(b => {
-                                b.classList.remove('active');
-                                b.setAttribute('aria-checked', 'false');
-                            });
-                            btn.classList.add('active');
-                            btn.setAttribute('aria-checked', 'true');
-                            topupPaymentMethod = btn.dataset.method || 'gcash';
-
-                            if (appTopupGcashWrap) appTopupGcashWrap.style.display = topupPaymentMethod === 'gcash' ? 'block' : 'none';
-                            if (appTopupMayaWrap) appTopupMayaWrap.style.display = topupPaymentMethod === 'maya' ? 'block' : 'none';
-                            if (appTopupCardWrap) appTopupCardWrap.style.display = topupPaymentMethod === 'card' ? 'block' : 'none';
-                            updateTopupConfirmBtn();
-                        });
-                    });
-                }
 
                 // Confirm Top-Up Button (Add ₱10 for 5 Hires)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
-                        const needsProof = topupPaymentMethod === 'gcash' || topupPaymentMethod === 'maya';
-                        if (needsProof) {
-                            if (!topupProofFile && !topupProofDataUrl) {
-                                const walletName = topupPaymentMethod === 'gcash' ? 'GCash' : 'Maya';
-                                showToast(`Please upload your ${walletName} proof of payment screenshot.`, true);
-                                return;
-                            }
-                        } else if (topupPaymentMethod === 'card') {
-                            const num = document.getElementById('appTopupCardNum')?.value.trim();
-                            if (!num || num.replace(/\s/g, '').length < 12) { showToast('Please enter a valid card number.', true); return; }
+                        if (!topupProofFile && !topupProofDataUrl) {
+                            showToast('Please upload your GCash proof of payment screenshot.', true);
+                            return;
                         }
 
                         appConfirmTopupBtn.disabled = true;
@@ -7677,12 +7449,12 @@
 
                         try {
                             // Upload after disabling the button so a double-click cannot submit twice.
-                            const proofUrl = needsProof ? await uploadProofImage(topupProofFile, topupProofDataUrl) : '';
+                            const proofUrl = await uploadProofImage(topupProofFile, topupProofDataUrl);
                             const response = await fetch('/api/applicant/hiring-pass/pay', {
                                 method: 'POST',
                                 credentials: 'same-origin',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ method: topupPaymentMethod, proof_image: proofUrl })
+                                body: JSON.stringify({ method: 'gcash', proof_image: proofUrl })
                             });
                             const data = await response.json().catch(() => ({}));
                             if (!response.ok) throw new Error(data.error || 'Payment could not be completed.');

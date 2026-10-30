@@ -225,6 +225,25 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		}
 	}
 
+	// 4b. Only GCash with a receipt is accepted; Maya and card were removed.
+	for _, bad := range []map[string]any{{"method": "card"}, {"method": "maya", "proof_image": "/uploads/proof_1700000000_abcdef0123456789.jpg"}, {"method": "gcash", "details": "no receipt"}} {
+		for _, path := range []string{"/api/jobs/" + jsonNumber(jobID) + "/pay", "/api/applicant/hiring-pass/pay"} {
+			cookie := empCookie
+			if strings.Contains(path, "applicant") {
+				cookie = appCookie
+			}
+			body, _ = json.Marshal(bad)
+			req = httptest.NewRequest("POST", path, bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(cookie)
+			rec = httptest.NewRecorder()
+			env.mux.ServeHTTP(rec, req)
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("%s with %v expected 400, got %d: %s", path, bad, rec.Code, rec.Body.String())
+			}
+		}
+	}
+
 	// 4. Employer pays search fee
 	payPayload := map[string]any{
 		"method":      "gcash",
