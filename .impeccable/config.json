@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "admin.html"
+        ],
+        "createdAt": "2026-10-30T09:50:55.974Z",
+        "reason": "Claude: modalReceiptImg src is empty on purpose; admin.html:676 sets it when the receipt modal opens, line 724 clears it on close"
+      }
+    ]
+  }
+}

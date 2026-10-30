@@ -207,9 +207,9 @@ func (s *Store) TouchSession(ctx context.Context, tokenHash string) error {
 }
 
 // CreateUserCapped creates a user unless the beta already has max distinct
-// people (distinct emails). A person adding a second role with an email that
-// already exists is not a new tester, so it is always allowed. The check and
-// the insert are one statement, so concurrent signups cannot exceed the cap.
+// people (distinct emails). An email that already exists is not a new tester,
+// so it never counts as full and hits the duplicate check instead. The check
+// and the insert are one statement, so concurrent signups cannot exceed the cap.
 // max <= 0 means no cap.
 func (s *Store) createUserCappedRow(ctx context.Context, u *User, max int) error {
 	if max <= 0 {

@@ -415,7 +415,7 @@
 
     // Web Push lets the server reach this device while the app is closed (on iOS
     // only once the site is added to the Home Screen). The subscription belongs
-    // to the logged-in employer, so logout removes it again.
+    // to the logged-in user, so logout removes it again.
     let pushActive = false;
     function base64UrlToBytes(value) {
         const base64 = (value + '='.repeat((4 - value.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');

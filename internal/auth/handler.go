@@ -243,14 +243,13 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /api/auth/login
-// Gmail accounts take two calls: the first (no code) emails a login code and
-// answers 202 {"mfa_required": true}; the second repeats it with "code".
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Role     string `json:"role"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
-		Code     string `json:"code"` // emailed login code, see checkLoginCode
+		// shortcut: ignored, accepted so browsers with a cached login page still work; remove once those caches expire.
+		Code string `json:"code"`
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
@@ -298,9 +297,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	h.loginFails.reset(normEmail)
 
-	if needsLoginCode(u) && !h.checkLoginCode(w, r, u, req.Code) {
-		return
-	}
 	if err := h.startSession(w, r, u); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 		return

@@ -45,7 +45,11 @@ func TestMessageLinksToJob(t *testing.T) {
 	if m["url"] != "/employer.html" {
 		t.Fatalf("url = %q, want /employer.html", m["url"])
 	}
+<<<<<<< HEAD
 	m = message(store.PendingPush{ID: 9, Role: "applicant", Title: "New shift available", Message: "Cook in Cebu City", Payload: `{"job_id":42}`})
+=======
+	m = message(store.PendingPush{ID: 9, Role: "applicant", Type: "match", Payload: `{"job_id":42}`})
+>>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 	if m["url"] != "/applicant.html?job=42" || m["tag"] != "applicant-9" {
 		t.Fatalf("applicant message = %v", m)
 	}

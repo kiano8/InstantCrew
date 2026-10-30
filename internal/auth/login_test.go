@@ -2,10 +2,9 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -16,70 +15,65 @@ import (
 	"instantcrew/internal/store/storetest"
 )
 
-type fakeMail struct{ last string }
+type fakeMail struct{ sent bool }
 
 func (m *fakeMail) Configured() bool { return true }
-func (m *fakeMail) Send(_ context.Context, _, _, body string) error {
-	m.last = body
+func (m *fakeMail) Send(context.Context, string, string, string) error {
+	m.sent = true
 	return nil
 }
 
-// A Gmail password login only starts a session after the emailed code;
-// other addresses sign in with the password alone.
-func TestLogin_GmailNeedsEmailedCode(t *testing.T) {
+// A verified account signs in with its password alone, and no email goes out.
+func TestLogin_PasswordOnly(t *testing.T) {
+	st, _ := storetest.Open(t)
+	mail := &fakeMail{}
+	h := &Handler{Store: st, SessionTTL: time.Hour, Mail: mail}
+	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.MinCost)
+	if err := st.CreateUser(context.Background(), &store.User{Email: "crew@gmail.com", PasswordHash: string(hash), Role: "applicant", Name: "Crew"}); err != nil {
+		t.Fatal(err)
+	}
+	body := `{"role":"applicant","email":"crew@gmail.com","password":"password123"}`
+	req := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.Login(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", rec.Code, rec.Body)
+	}
+	hasSession := false
+	for _, c := range rec.Result().Cookies() {
+		hasSession = hasSession || (c.Name == CookieName && c.Value != "")
+	}
+	if !hasSession {
+		t.Fatal("want a session cookie")
+	}
+	if mail.sent {
+		t.Fatal("login must not send email")
+	}
+}
+
+// A Gmail with an employer account can't also sign up as an applicant.
+func TestSignup_EmailHoldsOneRole(t *testing.T) {
 	st, _ := storetest.Open(t)
 	ctx := context.Background()
 	mail := &fakeMail{}
 	h := &Handler{Store: st, SessionTTL: time.Hour, Mail: mail}
-	hash, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.MinCost)
-	for _, email := range []string{"crew@gmail.com", "crew@company.ph"} {
-		if err := st.CreateUser(ctx, &store.User{Email: email, PasswordHash: string(hash), Role: "applicant", Name: "Crew"}); err != nil {
-			t.Fatal(err)
-		}
+	if err := st.CreateUser(ctx, &store.User{Email: "boss@gmail.com", PasswordHash: "x", Role: "employer", Name: "Boss", Company: "Co"}); err != nil {
+		t.Fatal(err)
 	}
-	login := func(email, code string) (*httptest.ResponseRecorder, map[string]any) {
-		body, _ := json.Marshal(map[string]string{"role": "applicant", "email": email, "password": "password123", "code": code})
-		req := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(string(body)))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		h.Login(rec, req)
-		var out map[string]any
-		_ = json.Unmarshal(rec.Body.Bytes(), &out)
-		return rec, out
+	req := httptest.NewRequest("POST", "/api/auth/signup-code", strings.NewReader(`{"email":"boss@gmail.com","role":"applicant"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.SignupCode(rec, req)
+	if rec.Code != http.StatusConflict || mail.sent {
+		t.Fatalf("signup code: want 409 and no email, got %d sent=%v", rec.Code, mail.sent)
 	}
-	hasSession := func(rec *httptest.ResponseRecorder) bool {
-		for _, c := range rec.Result().Cookies() {
-			if c.Name == CookieName && c.Value != "" {
-				return true
-			}
-		}
-		return false
+	err := st.CreateUserCapped(ctx, &store.User{Email: "boss@gmail.com", PasswordHash: "x", Role: "applicant", Name: "Boss"}, 0)
+	if !errors.Is(err, store.ErrEmailTaken) {
+		t.Fatalf("create: want ErrEmailTaken, got %v", err)
 	}
-
-	rec, out := login("crew@gmail.com", "")
-	if rec.Code != http.StatusAccepted || out["mfa_required"] != true || hasSession(rec) {
-		t.Fatalf("first step: want 202 mfa_required and no session, got %d %v", rec.Code, out)
-	}
-	code := regexp.MustCompile(`\d{6}`).FindString(mail.last)
-	if code == "" {
-		t.Fatalf("no code in email: %q", mail.last)
-	}
-	wrong := "000000"
-	if code == wrong {
-		wrong = "111111"
-	}
-	if rec, _ := login("crew@gmail.com", wrong); rec.Code != http.StatusBadRequest || hasSession(rec) {
-		t.Fatalf("wrong code: want 400 and no session, got %d", rec.Code)
-	}
-	if rec, _ := login("crew@gmail.com", code); rec.Code != http.StatusOK || !hasSession(rec) {
-		t.Fatalf("right code: want 200 with session, got %d", rec.Code)
-	}
-	if rec, _ := login("crew@gmail.com", code); rec.Code != http.StatusBadRequest {
-		t.Fatalf("a used code must not work twice, got %d", rec.Code)
-	}
-
-	if rec, _ := login("crew@company.ph", ""); rec.Code != http.StatusOK || !hasSession(rec) {
-		t.Fatalf("non-Gmail login: want 200 with session, got %d", rec.Code)
+	if err := st.CreateUserCapped(ctx, &store.User{Email: "crew@gmail.com", PasswordHash: "x", Role: "applicant", Name: "Crew"}, 0); err != nil {
+		t.Fatalf("a new email must still sign up: %v", err)
 	}
 }
 

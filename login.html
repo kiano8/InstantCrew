@@ -548,7 +548,7 @@
     </div>
 
     <!-- ── Authentication State & Logic Script ── -->
-    <script src="js/email-code.js?v=20261030-login-code"></script>
+    <script src="js/email-code.js?v=20261030-no-login-code"></script>
     <script>
         (function () {
             'use strict';
@@ -822,17 +822,8 @@
                 authErrorMsg.style.display = 'none';
                 btn.disabled = true;
                 btn.textContent = busyText;
-                const isLogin = path === '/api/auth/login';
-                // Gmail accounts confirm each login with an emailed code.
-                if (isLogin) payload = { ...payload, code: window.ICEmailCode.loginCode(btn.form, payload.email) };
                 try {
                     const data = await postJSON(path, payload);
-                    if (isLogin && data.mfa_required) {
-                        window.ICEmailCode.askLoginCode({ form: btn.form, email: payload.email, before: btn, inputClass: 'form-input', message: data.message });
-                        btn.disabled = false;
-                        btn.textContent = idleText;
-                        return null;
-                    }
                     return data.user;
                 } catch (err) {
                     authErrorMsg.textContent = err.message;
