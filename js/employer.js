@@ -1568,6 +1568,14 @@ function closePaymentModal() {
   }
 }
 
+if (paymentCloseXBtn) paymentCloseXBtn.addEventListener('click', closePaymentModal);
+if (payCancelBtn) payCancelBtn.addEventListener('click', closePaymentModal);
+if (paymentModal) {
+  paymentModal.addEventListener('click', (e) => {
+    if (e.target === paymentModal) closePaymentModal();
+  });
+}
+
 // State for employer proof of payment
 state.selectedPaymentProof = '';
 state.selectedPaymentProofFile = null;

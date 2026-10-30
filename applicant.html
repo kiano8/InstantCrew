@@ -6483,7 +6483,6 @@
             function openApplicantTopupModal() {
                 if (applicantTopupModal) {
                     const required = needsStarterPass();
-                    if (appTopupCloseBtn) appTopupCloseBtn.style.display = required ? 'none' : '';
                     const logoutLink = document.getElementById('appTopupLogoutBtn');
                     if (logoutLink) logoutLink.style.display = required ? 'block' : 'none';
                     const title = document.getElementById('appTopupModalTitle');
@@ -6496,7 +6495,6 @@
             }
 
             function closeApplicantTopupModal() {
-                if (needsStarterPass()) return; // required until the first receipt is submitted
                 if (applicantTopupModal) {
                     applicantTopupModal.classList.remove('open');
                     applicantTopupModal.style.display = 'none';
