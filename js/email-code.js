@@ -104,37 +104,5 @@
         return '';
     }
 
-    /* ── Login code (MFA for Gmail accounts) ──────────────────────
-       POST /api/auth/login answers {mfa_required: true} after a correct
-       password; the form then shows a code box and the next submit sends
-       the typed code. Resend submits the form again without a code. */
-
-    // The typed login code for this email, or '' when there is none yet.
-    function loginCode(form, email) {
-        const box = form.querySelector('.ic-email-code[data-kind="login"]');
-        const normalized = String(email || '').trim().toLowerCase();
-        if (!box || box.dataset.email !== normalized) return '';
-        return box.querySelector('input').value;
-    }
-
-    // Shows (or refreshes) the code box after the server asked for a code.
-    function askLoginCode({ form, email, before, inputClass, message }) {
-        const normalized = String(email || '').trim().toLowerCase();
-        let box = form.querySelector('.ic-email-code[data-kind="login"]');
-        if (!box) {
-            box = buildBox(inputClass, async (b) => {
-                b.querySelector('input').value = '';
-                form.requestSubmit();
-            });
-            box.dataset.kind = 'login';
-            before.parentNode.insertBefore(box, before);
-        }
-        box.dataset.email = normalized;
-        box.querySelector('.ic-email-code-hint').textContent = message || `We sent a 6-digit code to ${normalized}.`;
-        const input = box.querySelector('input');
-        input.value = '';
-        input.focus();
-    }
-
-    window.ICEmailCode = { signupCode, loginCode, askLoginCode };
+    window.ICEmailCode = { signupCode };
 })(window);

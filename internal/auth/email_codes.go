@@ -104,9 +104,7 @@ func (h *Handler) sendCode(ctx context.Context, email, purpose, subject, bodyFor
 	if err := h.Store.SaveEmailCode(ctx, email, purpose, codeHash(purpose, email, code), codeTTL, codeResendInterval); err != nil {
 		return err
 	}
-	// Login codes only go out after a correct password, so a script can't use
-	// them to drain the mail quota; capping them would just lock people out.
-	if !strings.HasPrefix(purpose, "login:") && !h.codeMail.allow() {
+	if !h.codeMail.allow() {
 		_ = h.Store.DeleteEmailCode(ctx, email, purpose)
 		return errMailBusy
 	}
@@ -154,48 +152,6 @@ Enter it in the "Reset your password" window together with your new password. It
 If you didn't ask to reset your password, you can ignore this email; your password stays the same.
 `
 
-const loginCodeBody = `Your Instant Crew login code is:
-
-    %s
-
-Enter it on the login form to finish signing in. It expires in 15 minutes.
-
-If you didn't just try to log in, someone may know your password. Reset it from the login page.
-`
-
-// needsLoginCode reports whether a password login must also enter an emailed
-// code: Gmail accounts, whose ownership we verify on every sign-in.
-func needsLoginCode(u *store.User) bool { return u.Role != "admin" && isGmail(u.Email) }
-
-// checkLoginCode is the second step of a Gmail password login. Without a code it
-// emails one and answers 202 {"mfa_required": true}; with one it consumes it.
-// It returns true only when the code is valid and the session may start.
-func (h *Handler) checkLoginCode(w http.ResponseWriter, r *http.Request, u *store.User, code string) bool {
-	purpose := "login:" + u.Role
-	if strings.TrimSpace(code) == "" {
-		msg := fmt.Sprintf("We sent a 6-digit login code to %s. Enter it below, then log in again.", u.Email)
-		switch err := h.sendCode(r.Context(), u.Email, purpose, "Your Instant Crew login code", loginCodeBody); {
-		case err == nil:
-		case errors.Is(err, store.ErrCodeTooSoon):
-			msg = fmt.Sprintf("We already sent a code to %s. It can take a minute to arrive; you can request a new one after that.", u.Email)
-		default:
-			writeCodeError(w, err)
-			return false
-		}
-		httpx.JSON(w, http.StatusAccepted, map[string]any{"mfa_required": true, "message": msg})
-		return false
-	}
-	if err := h.Store.UseEmailCode(r.Context(), u.Email, purpose, codeHash(purpose, u.Email, code)); err != nil {
-		if errors.Is(err, store.ErrCodeInvalid) {
-			httpx.Error(w, http.StatusBadRequest, err.Error())
-			return false
-		}
-		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
-		return false
-	}
-	return true
-}
-
 // POST /api/auth/signup-code body: {"email","role"} emails the code that Signup requires.
 func (h *Handler) SignupCode(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -220,6 +176,14 @@ func (h *Handler) SignupCode(w http.ResponseWriter, r *http.Request) {
 		return
 	case !errors.Is(err, store.ErrNotFound):
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+		return
+	}
+	switch taken, err := h.Store.EmailInOtherRole(r.Context(), email, req.Role); {
+	case err != nil:
+		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+		return
+	case taken:
+		httpx.Error(w, http.StatusConflict, "an account with this email already exists")
 		return
 	}
 	if err := h.sendCode(r.Context(), email, "signup:"+req.Role, "Your Instant Crew verification code", signupCodeBody); err != nil {

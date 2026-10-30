@@ -45,8 +45,27 @@ func (s *Store) CreateUser(ctx context.Context, u *User) error {
 	return s.afterUserCreated(ctx, u)
 }
 
-// CreateUserCapped is CreateUser with the beta cap on distinct emails.
+// EmailInOtherRole reports whether email already has an employer or applicant
+// account under a role other than role.
+func (s *Store) EmailInOtherRole(ctx context.Context, email, role string) (bool, error) {
+	var taken bool
+	err := s.db.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM users WHERE email = $1 AND role <> $2 AND role IN ('employer', 'applicant'))`,
+		email, role).Scan(&taken)
+	return taken, err
+}
+
+// CreateUserCapped is CreateUser for signups: the beta cap on distinct emails,
+// and an email can only hold one of the employer and applicant roles.
+// shortcut: check then insert, so two simultaneous signups could still get both roles; upgrade to a unique index once existing dual-role emails are resolved.
 func (s *Store) CreateUserCapped(ctx context.Context, u *User, max int) error {
+	taken, err := s.EmailInOtherRole(ctx, u.Email, u.Role)
+	if err != nil {
+		return err
+	}
+	if taken {
+		return ErrEmailTaken
+	}
 	if err := s.createUserCappedRow(ctx, u, max); err != nil {
 		return err
 	}

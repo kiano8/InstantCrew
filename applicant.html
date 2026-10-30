@@ -7636,16 +7636,9 @@
                     }
 
                     try {
-                        // Gmail accounts confirm each login with an emailed code.
-                        const loginForm = btn.form;
-                        const code = window.ICEmailCode.loginCode(loginForm, email);
-                        const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass, code }) });
+                        const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Invalid email or password.');
-                        if (data.mfa_required) {
-                            window.ICEmailCode.askLoginCode({ form: loginForm, email, before: btn, inputClass: 'db-auth-input', message: data.message });
-                            return;
-                        }
                         if (data.user && data.user.role === 'admin') {
                             sessionStorage.setItem('ic_admin_session', JSON.stringify({ ...data.user, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }));
                             window.location.href = 'admin.html';
@@ -7905,7 +7898,7 @@
             initApplicantStepsListeners();
         })();
     </script>
-    <script src="js/email-code.js?v=20261030-login-code"></script>
+    <script src="js/email-code.js?v=20261030-no-login-code"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261029-escape-user-text-merged"></script>
     <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>

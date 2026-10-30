@@ -4288,15 +4288,8 @@ async function submitAuth(btn, path, payload, busyText) {
   const idleText = label.textContent;
   btn.disabled = true;
   label.textContent = busyText;
-  const isLogin = path === '/api/auth/login';
-  // Gmail accounts confirm each login with an emailed code.
-  if (isLogin) payload = { ...payload, code: window.ICEmailCode.loginCode(btn.form, payload.email) };
   try {
     const data = await authPost(path, payload);
-    if (isLogin && data.mfa_required) {
-      window.ICEmailCode.askLoginCode({ form: btn.form, email: payload.email, before: btn, inputClass: 'db-auth-input', message: data.message });
-      return;
-    }
     onAuthSuccess(data.user);
   } catch (err) {
     showAuthError(err.message);

@@ -63,16 +63,16 @@
 
         <!-- Metrics KPI Cards -->
         <div class="adm-metrics-grid">
-            <div class="adm-metric-card revenue">
+            <div class="adm-metric-card total">
                 <div class="adm-metric-label">
-                    <span>Total Revenue</span>
+                    <span>Total Processed</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="1" x2="12" y2="23"></line>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
                     </svg>
                 </div>
-                <div class="adm-metric-val" id="kpiRevenue">₱0.00</div>
-                <div class="adm-metric-sub" id="kpiRevenueSub">Verified incoming payments</div>
+                <div class="adm-metric-val" id="kpiTotal">0</div>
+                <div class="adm-metric-sub" id="kpiBreakdown">0 Employer • 0 Applicant</div>
             </div>
 
             <div class="adm-metric-card verified">
@@ -87,16 +87,16 @@
                 <div class="adm-metric-sub">Confirmed by Accounting</div>
             </div>
 
-            <div class="adm-metric-card total">
+            <div class="adm-metric-card revenue">
                 <div class="adm-metric-label">
-                    <span>Total Processed</span>
+                    <span>Total Revenue</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                     </svg>
                 </div>
-                <div class="adm-metric-val" id="kpiTotal">0</div>
-                <div class="adm-metric-sub" id="kpiBreakdown">0 Employer • 0 Applicant</div>
+                <div class="adm-metric-val" id="kpiRevenue">₱0.00</div>
+                <div class="adm-metric-sub" id="kpiRevenueSub">Verified incoming payments</div>
             </div>
         </div>
 
