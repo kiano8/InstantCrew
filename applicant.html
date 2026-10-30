@@ -5245,6 +5245,8 @@
                     hasFullTime,
                     partTimeCount,
                     standingLock: standingLockReason(),
+                    // Accept buttons lock on hires, so a verified pass must re-render the cards.
+                    hasHires: (session.hiringQuota?.remainingHires ?? 0) > 0,
                     jobs: visibleJobs.map(j => `${j.id}_${j.role}_${j.neededCrew}_${j.acceptedCount}_${j.contractStatus}`)
                 });
 
@@ -6429,24 +6431,32 @@
                     appPassPollTimer = null;
                 }
             }
+            async function checkApplicantPassPayment() {
+                try {
+                    const prevRemaining = session?.hiringQuota?.remainingHires ?? 0;
+                    const updated = await refreshHiringPass();
+                    if (updated && (updated.remainingHires > prevRemaining || !updated.pendingPayment || updated.pendingPayment.status !== 'pending')) {
+                        stopApplicantPassPolling();
+                        if (updated.remainingHires > prevRemaining) {
+                            closeApplicantTopupModal();
+                            applySessionToDashboard(session);
+                            updateViewMode();
+                            renderShiftsFeed(true);
+                            showToast('✓ Your ₱10 payment was verified by accounting! 5 hires are active.');
+                        } else if (updated.pendingPayment?.status === 'rejected') {
+                            showToast('✕ Your ₱10 payment receipt was rejected by accounting.', true);
+                        }
+                    }
+                } catch (e) { }
+            }
             function startApplicantPassPolling() {
                 if (appPassPollTimer) return;
-                appPassPollTimer = setInterval(async () => {
-                    try {
-                        const prevRemaining = session?.hiringQuota?.remainingHires ?? 0;
-                        const updated = await refreshHiringPass();
-                        if (updated && (updated.remainingHires > prevRemaining || !updated.pendingPayment || updated.pendingPayment.status !== 'pending')) {
-                            stopApplicantPassPolling();
-                            if (updated.remainingHires > prevRemaining) {
-                                showToast('✓ Your ₱10 payment was verified by accounting! 5 hires are active.');
-                                renderShiftsFeed();
-                            } else if (updated.pendingPayment?.status === 'rejected') {
-                                showToast('✕ Your ₱10 payment receipt was rejected by accounting.', true);
-                            }
-                        }
-                    } catch (e) { }
-                }, 4000);
+                appPassPollTimer = setInterval(checkApplicantPassPayment, 2000);
             }
+            // Phones throttle background timers, so check at once when the applicant returns (e.g. from GCash).
+            document.addEventListener('visibilitychange', () => {
+                if (appPassPollTimer && document.visibilityState === 'visible') checkApplicantPassPayment();
+            });
 
             async function refreshHiringPass() {
                 const response = await fetch('/api/applicant/hiring-pass', { credentials: 'same-origin', cache: 'no-store' });
@@ -7708,13 +7718,22 @@
                         return;
                     }
 
+                    // The first submit emails a code to the Gmail address; the next one sends it.
+                    let code = '';
+                    try {
+                        code = await window.ICEmailCode.signupCode({ form: btn.form, email, role: 'applicant', before: btn, inputClass: 'db-auth-input' });
+                    } catch (err) {
+                        showApplicantAuthError(err.message);
+                    }
+                    if (!code) return;
+
                     if (btn) {
                         btn.disabled = true;
                         btn.innerHTML = '<span class="db-btn-spinner"></span> Creating account…';
                     }
 
                     try {
-                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass, code }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
                         const categoryRoles = SERVICES_CATALOG[appState.category] || [];

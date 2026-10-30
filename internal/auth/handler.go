@@ -182,7 +182,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
 		return
 	}
-	if req.Role == "employer" && !isGmail(email) {
+	if !isGmail(email) {
 		httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
 		return
 	}
@@ -202,20 +202,18 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "applicant" {
 		company = ""
 	}
-	if req.Role == "employer" {
-		if strings.TrimSpace(req.Code) == "" {
-			httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
+	if strings.TrimSpace(req.Code) == "" {
+		httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
+		return
+	}
+	purpose := "signup:" + req.Role
+	if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
+		if errors.Is(err, store.ErrCodeInvalid) {
+			httpx.Error(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		purpose := "signup:" + req.Role
-		if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
-			if errors.Is(err, store.ErrCodeInvalid) {
-				httpx.Error(w, http.StatusBadRequest, err.Error())
-				return
-			}
-			httpx.Error(w, http.StatusInternalServerError, "something went wrong")
-			return
-		}
+		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

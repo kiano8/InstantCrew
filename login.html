@@ -1008,11 +1008,14 @@
             formApplicantSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btnSubmitApplicantSignup');
+                const code = await signupCode(formApplicantSignup, 'appSignupEmail', 'applicant', btn);
+                if (!code) return;
                 const user = await authRequest('/api/auth/signup', {
                     role: 'applicant',
                     name: document.getElementById('appFullName').value,
                     email: document.getElementById('appSignupEmail').value,
                     password: document.getElementById('appSignupPassword').value,
+                    code,
                 }, btn, 'Joining Instant Crew...', 'Register');
                 if (!user) return;
                 saveWorkerSession(user);
