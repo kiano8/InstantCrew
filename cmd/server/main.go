@@ -37,6 +37,15 @@ func getenvInt(k string, def int) int {
 	return def
 }
 
+// betaCapDefault is the closed-beta user cap when BETA_MAX_USERS is unset.
+// Local dev databases collect test accounts, so dev has no cap (0).
+func betaCapDefault(env string) int {
+	if env == "dev" {
+		return 0
+	}
+	return 100
+}
+
 func googleCredentialsPath() string {
 	if configured := os.Getenv("GOOGLE_OAUTH_CREDENTIALS"); configured != "" {
 		return configured
@@ -138,7 +147,7 @@ func main() {
 		Store:        st,
 		SessionTTL:   7 * 24 * time.Hour,
 		IdleTimeout:  idleTimeout,
-		MaxUsers:     getenvInt("BETA_MAX_USERS", 300),
+		MaxUsers:     getenvInt("BETA_MAX_USERS", betaCapDefault(env)),
 		CookieSecure: getenv("COOKIE_SECURE", "false") == "true", // set true behind HTTPS
 		Mail: &mailer.SMTP{
 			Host:     getenv("SMTP_HOST", "smtp.gmail.com"),
@@ -162,6 +171,9 @@ func main() {
 	}
 	if googleErr != nil {
 		log.Printf("Google SSO disabled: %v", googleErr)
+	}
+	if err := authH.ConfigureFacebook(os.Getenv("FACEBOOK_APP_ID"), os.Getenv("FACEBOOK_APP_SECRET"), os.Getenv("FACEBOOK_REDIRECT_URL")); err != nil {
+		log.Printf("Facebook SSO disabled: %v", err)
 	}
 	// Development mode must not create implicit accounts. Authentication always
 	// uses credentials explicitly written through the signup endpoint.
@@ -190,6 +202,8 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", authH.Logout)
 	mux.HandleFunc("GET /api/auth/google", authH.GoogleStart)
 	mux.HandleFunc("GET /api/auth/google/callback", authH.GoogleCallback)
+	mux.HandleFunc("GET /api/auth/facebook", authH.FacebookStart)
+	mux.HandleFunc("GET /api/auth/facebook/callback", authH.FacebookCallback)
 	mux.Handle("GET /api/auth/me", authH.RequireAuth(http.HandlerFunc(authH.Me)))
 	mux.Handle("POST /api/auth/activity", authH.RequireAuth(http.HandlerFunc(authH.Activity)))
 
@@ -268,12 +282,15 @@ func main() {
 	}()
 
 	go func() {
-		t := time.NewTicker(5 * time.Second)
+		// Every second, so read endpoints never need to sweep on their own.
+		t := time.NewTicker(time.Second)
 		defer t.Stop()
 		for {
 			select {
 			case <-t.C:
-				_, _ = st.ExpireSearches(context.Background())
+				if _, err := st.ExpireSearches(context.Background(), jobsH.SearchWindow); err != nil {
+					log.Printf("expire searches: %v", err)
+				}
 				if _, err := st.ExpireArrivals(context.Background()); err != nil {
 					log.Printf("expire arrivals: %v", err)
 				}

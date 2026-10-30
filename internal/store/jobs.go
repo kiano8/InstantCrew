@@ -570,7 +570,7 @@ func createMatchBatch(ctx context.Context, q matchBatchExecer, jobID int64, sear
 }
 
 // ExpireSearches advances timed-out searches to the next attempt, next try, or unfulfilled.
-func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
+func (s *Store) ExpireSearches(ctx context.Context, window time.Duration) (int64, error) {
 	now := time.Now().Unix()
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, employer_id FROM jobs
@@ -594,7 +594,7 @@ func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 
 	var count int64
 	for _, it := range expired {
-		if _, err := s.AdvanceSearchAttempt(ctx, it.empID, it.id, 3*time.Minute); err == nil {
+		if _, err := s.AdvanceSearchAttempt(ctx, it.empID, it.id, window); err == nil {
 			count++
 		}
 	}
@@ -602,6 +602,8 @@ func (s *Store) ExpireSearches(ctx context.Context) (int64, error) {
 }
 
 // AdvanceSearchAttempt advances to the next attempt (within the try) or next try (up to 3 tries, 3 attempts each).
+// It only acts on a window that has really run out, so the background sweep and the
+// employer's own timeout call can race without skipping a batch.
 func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, window time.Duration) (*Job, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -609,15 +611,15 @@ func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, 
 	}
 	defer tx.Rollback()
 
-	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2`, id, employerID))
+	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2 FOR UPDATE`, id, employerID))
 	if err != nil {
 		return nil, err
 	}
-	if j.Status != "matching" {
+	now := time.Now()
+	if j.Status != "matching" || (j.SearchExpiresAt != nil && j.SearchExpiresAt.After(now)) {
 		return j, nil
 	}
 
-	now := time.Now()
 	if j.CurrentAttempt < j.MaxAttempts {
 		j.CurrentAttempt++
 		j.CurrentBatch++
@@ -682,7 +684,7 @@ func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window t
 	}
 	defer tx.Rollback()
 
-	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2`, id, employerID))
+	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2 FOR UPDATE`, id, employerID))
 	if err != nil {
 		return nil, err
 	}
@@ -752,6 +754,13 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 	// A hire is only spent when the employer confirms the booking (see ConfirmJob).
 	// Here we only require a hire that is not already reserved by another
 	// accepted-but-unconfirmed shift, so confirmation can always spend one.
+	// Lock the pass first, in its own statement: a second concurrent accept by the
+	// same applicant waits here, and the count below then sees the shift this one
+	// reserved, so one hire can't cover two shifts.
+	var locked int
+	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM applicant_hiring_passes WHERE applicant_id=$1 FOR UPDATE`, applicantID).Scan(&locked); err != nil && err != sql.ErrNoRows {
+		return err
+	}
 	var available int
 	err = tx.QueryRowContext(ctx, `SELECT p.remaining_hires - (
 			SELECT COUNT(*) FROM job_assignments a JOIN jobs j ON j.id=a.job_id

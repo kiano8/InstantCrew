@@ -7,19 +7,16 @@ SRC=/home/instantcrew/DEPLOYMENT/InstantCrew
 APP=/opt/instantcrew
 cd "$SRC"
 
-# Back up data (db + wal/shm files) before touching git
+# Dump Postgres before the new binary runs its migrations. set -e stops the deploy
+# if the dump fails, so we never migrate without a fresh backup.
+# Needs ~/.pgpass (chmod 600) with: 127.0.0.1:5432:<db>:<user>:<password>
 STAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP=~/backups/data-$STAMP
-mkdir -p ~/backups data
-cp -a data "$BACKUP"
-touch "$BACKUP"
+mkdir -p ~/backups
+pg_dump -w -h 127.0.0.1 -U "${DB_USER:-instantcrew}" -Fc "${DB_NAME:-instantcrew}" > ~/backups/db-$STAMP.dump.tmp
+mv ~/backups/db-$STAMP.dump.tmp ~/backups/db-$STAMP.dump
 
 git fetch origin main
 git reset --hard origin/main
-
-# Restore live data in case git overwrote or deleted it
-mkdir -p data
-cp -a "$BACKUP/." data/
 
 go build -o instantcrew.new ./cmd/server
 
@@ -36,5 +33,5 @@ sleep 2
 systemctl is-active --quiet instantcrew || { echo "Service failed to start"; sudo systemctl status instantcrew --no-pager; exit 1; }
 
 # Keep last 10 backups (sort by name = timestamp, not mtime)
-ls -d ~/backups/data-* | sort | head -n -10 | xargs -r rm -rf
+ls -d ~/backups/db-*.dump | sort | head -n -10 | xargs -r rm -f
 echo "Deploy OK"

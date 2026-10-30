@@ -27,6 +27,7 @@ type Handler struct {
 	Mail         Mailer // sends signup and password reset codes
 	DevLogCodes  bool   // dev only: log codes instead of failing when Mail is unset
 	google       *googleOAuth
+	facebook     *facebookOAuth
 	codeMail     mailLimiter
 }
 
@@ -186,11 +187,14 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /api/auth/login
+// Gmail accounts take two calls: the first (no code) emails a login code and
+// answers 202 {"mfa_required": true}; the second repeats it with "code".
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Role     string `json:"role"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Code     string `json:"code"` // emailed login code, see checkLoginCode
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
@@ -231,6 +235,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if needsLoginCode(u) && !h.checkLoginCode(w, r, u, req.Code) {
+		return
+	}
 	if err := h.startSession(w, r, u); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 		return
@@ -251,7 +258,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true, Secure: h.CookieSecure, SameSite: http.SameSiteLaxMode,
 		})
 	} else {
-		if c, err := r.Cookie(CookieName); err == nil {
+		for _, c := range sessionCookies(r) {
 			_ = h.Store.DeleteSession(r.Context(), hashToken(c.Value))
 		}
 		for _, name := range []string{CookieName, CookieName + "_employer", CookieName + "_applicant", CookieName + "_admin"} {
@@ -276,9 +283,25 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 // POST /api/auth/activity  (wrap with RequireAuth)
 // The browser calls this when the person actually interacts with the page.
 // Background polling does not call it, so a forgotten open tab still times out.
+// Every session cookie is touched: with employer and applicant signed in on one
+// browser, the shared cookie points at only one of them, while each portal uses
+// its own role cookie.
 func (h *Handler) Activity(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(CookieName); err == nil {
+	for _, c := range sessionCookies(r) {
 		_ = h.Store.TouchSession(r.Context(), hashToken(c.Value))
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// sessionCookies returns the shared and role-scoped session cookies, one per distinct token.
+func sessionCookies(r *http.Request) []*http.Cookie {
+	var out []*http.Cookie
+	seen := map[string]bool{}
+	for _, c := range r.Cookies() {
+		if (c.Name == CookieName || strings.HasPrefix(c.Name, CookieName+"_")) && c.Value != "" && !seen[c.Value] {
+			seen[c.Value] = true
+			out = append(out, c)
+		}
+	}
+	return out
 }

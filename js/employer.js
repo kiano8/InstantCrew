@@ -1617,6 +1617,7 @@ function setupEmployerProofUpload(fileInputId, dropzoneId, attachedBoxId, thumbI
       dropzone.style.display = 'none';
       attachedBox.style.display = 'flex';
       updateEmployerPayBtn();
+      if (fileInputId === 'empGcashProofFile' && gcashReturned() && payNowBtn) payNowBtn.click();
     };
     reader.readAsDataURL(file);
   };
@@ -1733,6 +1734,7 @@ function updateEmployerPayBtn() {
 }
 
 // Wire up GCash and Maya proof uploader on employer payment modal
+const gcashReturned = window.InstantCrewShared.watchGcashReturn(document.getElementById('payMethodGcashWrap'));
 setupEmployerProofUpload('empGcashProofFile', 'empGcashDropzone', 'empGcashAttachedBox', 'empGcashThumb', 'empGcashFilename', 'empGcashRemoveBtn');
 setupEmployerProofUpload('empMayaProofFile', 'empMayaDropzone', 'empMayaAttachedBox', 'empMayaThumb', 'empMayaFilename', 'empMayaRemoveBtn');
 
@@ -2256,8 +2258,15 @@ if (editShiftFromFailedBtn) {
   });
 }
 
+// Both the 800ms sync loop and the 1s match timer call this; one request at a
+// time, at most every 1.5s, keeps each open tab from hammering the server.
+let crewCheckPending = false;
+let crewCheckedAt = 0;
 async function checkCrewAcceptance() {
   if (!state.currentJobId || !authUser) return;
+  if (crewCheckPending || Date.now() - crewCheckedAt < 1500) return;
+  crewCheckPending = true;
+  crewCheckedAt = Date.now();
   try {
     const response = await fetch(`/api/jobs/${state.currentJobId}`, { credentials: 'same-origin' });
     if (!response.ok) return;
@@ -2280,7 +2289,7 @@ async function checkCrewAcceptance() {
       state.searchCountdown = Math.max(0, job.seconds_remaining);
       updateSearchTimerUI();
     }
-  } catch (_) { /* the next poll retries */ }
+  } catch (_) { /* the next poll retries */ } finally { crewCheckPending = false; }
 }
 
 let matchedCrewFetchedAt = 0;
@@ -3012,12 +3021,16 @@ function bookingProgressHtml(b) {
   const arrived = b.transitStatus === 'arrived';
   const countdown = b.status === 'active' && !arrived ? arrivalCountdownHtml(b.arrivalDeadline) : '';
   const awaitingSub = b.status === 'active' ? 'Waiting for crew to depart' : 'Crew preparing for the shift';
+  // 'accepted' means crew said yes but the employer has not clicked Confirm yet.
+  const confirmed = b.status !== 'accepted';
   const steps = [
-    { label: 'Booking Confirmed', sub: 'Crew accepted your booking', state: 'done' },
+    confirmed
+      ? { label: 'Booking Confirmed', sub: 'You confirmed this booking', state: 'done' }
+      : { label: 'Booking Confirmed', sub: 'Crew accepted. Confirm the booking to secure them', state: 'current' },
     {
       label: 'Crew On the Way',
-      sub: onTheWay || arrived ? `Departed ${b.departedAt || 'just now'}` : awaitingSub,
-      state: onTheWay || arrived ? 'done' : 'current'
+      sub: onTheWay || arrived ? `Departed ${b.departedAt || 'just now'}` : (confirmed ? awaitingSub : 'Starts after you confirm'),
+      state: onTheWay || arrived ? 'done' : (confirmed ? 'current' : 'upcoming')
     },
     {
       label: 'Arrived on Site',
@@ -3814,28 +3827,21 @@ async function startVerifiedJobSearch(jobId) {
   }
 }
 
-function showEmployerJob(job, { notifySearchResume = false, startVerifiedSearch = false } = {}) {
+function showEmployerJob(job, { notifySearchResume = false } = {}) {
   loadEmployerJobIntoSearch(job);
   if (notifDropdown) notifDropdown.hidden = true;
 
   const fee = nextSearchFee(job);
   if (fee) {
-    if (fee.status === 'verified' && startVerifiedSearch) {
+    // A verified fee goes straight to the live crew search.
+    if (fee.status === 'verified') {
       startVerifiedJobSearch(job.id);
       return;
     }
-    // Pending receipts resume verification polling; verified and rejected ones
-    // show their status and the next action in the payment modal.
+    // Pending receipts resume verification polling; rejected ones show the
+    // reason and the re-upload action in the payment modal.
     goStep(3);
     openPaymentModal('search');
-    if (fee.status === 'verified' && window.InstantCrewShared) {
-      window.InstantCrewShared.showPushToast(
-        'Search fee verified',
-        `Tap to start your ${job.role_label || 'crew'} search.`,
-        'payment',
-        () => openEmployerJobNotification(job.id)
-      );
-    }
     return;
   }
 
@@ -3910,7 +3916,7 @@ async function openEmployerJobNotification(jobId) {
     const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, { credentials: 'same-origin' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.job) throw new Error(data.error || 'This shift is no longer available.');
-    showEmployerJob(data.job, { startVerifiedSearch: true });
+    showEmployerJob(data.job);
   } catch (error) {
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Could not open shift', error.message || 'Try refreshing your bookings.', 'alert');
   }
@@ -4239,17 +4245,25 @@ function setAuthTab(which) {
   authErrorBanner.style.display = 'none';
 }
 
-// Google SSO from the quick modal: same endpoint as login.html, mode follows the active tab.
+// Google/Facebook SSO from the quick modal: same endpoints as login.html, mode follows the active tab.
 // The server redirects back to employer.html once the session cookie is set.
-authModal.querySelectorAll('.google-sso-btn').forEach((button) => {
+authModal.querySelectorAll('[data-sso]').forEach((button) => {
   button.addEventListener('click', () => {
     const mode = tabSignup.classList.contains('active') ? 'signup' : 'login';
-    // Google SSO reloads the page, so keep the booking to resume where login was asked.
+    // SSO reloads the page, so keep the booking to resume where login was asked.
     if (pendingAuthAction) saveBookingDraft();
     const params = new URLSearchParams({ role: 'hirer', mode });
-    window.location.assign('/api/auth/google?' + params.toString());
+    window.location.assign(`/api/auth/${button.dataset.sso}?` + params.toString());
   });
 });
+
+// Carry the typed email to the reset flow on login.html.
+const empModalForgotLink = document.getElementById('empModalForgotLink');
+if (empModalForgotLink) {
+  empModalForgotLink.addEventListener('click', () => {
+    empModalForgotLink.href = 'login.html?' + new URLSearchParams({ role: 'hirer', forgot: '1', email: authVal('empModalLoginEmail') });
+  });
+}
 
 /* ── Booking draft: survives the Google SSO round trip ── */
 const BOOKING_DRAFT_KEY = 'ic_employer_booking_draft';
@@ -4380,9 +4394,16 @@ async function submitAuth(btn, path, payload, busyText) {
   const idleText = label.textContent;
   btn.disabled = true;
   label.textContent = busyText;
+  const isLogin = path === '/api/auth/login';
+  // Gmail accounts confirm each login with an emailed code.
+  if (isLogin) payload = { ...payload, code: window.ICEmailCode.loginCode(btn.form, payload.email) };
   try {
-    const { user } = await authPost(path, payload);
-    onAuthSuccess(user);
+    const data = await authPost(path, payload);
+    if (isLogin && data.mfa_required) {
+      window.ICEmailCode.askLoginCode({ form: btn.form, email: payload.email, before: btn, inputClass: 'db-auth-input', message: data.message });
+      return;
+    }
+    onAuthSuccess(data.user);
   } catch (err) {
     showAuthError(err.message);
   } finally {

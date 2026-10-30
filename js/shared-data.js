@@ -604,6 +604,31 @@
     setInterval(tickArrivalCountdowns, 1000);
 
     // Escape text another user wrote (names, venues, notifications) before it goes into innerHTML.
+    // GCash can't send the user back to a web page after paying, so once they
+    // switch back from the app we point them at the receipt step. The returned
+    // function is true once per "Open GCash" tap, letting the caller auto-submit.
+    function watchGcashReturn(wrap) {
+        const link = wrap && wrap.querySelector('a[href="gcash://"]');
+        const upload = wrap && wrap.querySelector('.db-proof-upload-section');
+        if (!link || !upload) return () => false;
+        let away = false;
+        let armed = false;
+        link.addEventListener('click', () => { away = true; armed = true; });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible' || !away) return;
+            away = false;
+            upload.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            upload.classList.remove('db-proof-attention');
+            void upload.offsetWidth; // restart the highlight animation
+            upload.classList.add('db-proof-attention');
+        });
+        return () => {
+            const was = armed;
+            armed = false;
+            return was;
+        };
+    }
+
     function escHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -613,6 +638,7 @@
     // Export to global window object
     window.InstantCrewShared = {
         escHtml,
+        watchGcashReturn,
         formatArrivalCountdown,
         arrivalDeadlineFromSeconds,
         tickArrivalCountdowns,

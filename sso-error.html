@@ -170,6 +170,7 @@
             var reason = params.get('reason') || 'failed';
             var role = params.get('role') === 'employer' ? 'hirer' : params.get('role');
             var mode = params.get('mode') === 'signup' ? 'signup' : 'login';
+            var P = params.get('provider') === 'facebook' ? 'Facebook' : 'Google';
 
             function loginUrl(targetMode) {
                 var q = new URLSearchParams();
@@ -183,14 +184,14 @@
             var STATES = {
                 not_configured: {
                     tone: 'notice',
-                    title: 'Google sign-in isn’t available yet',
-                    message: 'Google sign-in is still being set up for Instant Crew. Please log in with your email and password for now.',
+                    title: P + ' sign-in isn’t available yet',
+                    message: P + ' sign-in is still being set up for Instant Crew. Please log in with your email and password for now.',
                     primary: ['Log in with email', loginUrl(mode)]
                 },
                 invalid_role: {
                     tone: 'error',
                     title: 'Choose an account type first',
-                    message: 'Pick whether you’re hiring or looking for shifts, then continue with Google.',
+                    message: 'Pick whether you’re hiring or looking for shifts, then continue with ' + P + '.',
                     primary: ['Choose account type', 'login.html']
                 },
                 invalid_state: {
@@ -202,33 +203,40 @@
                 cancelled: {
                     tone: 'notice',
                     title: 'Sign-in was cancelled',
-                    message: 'You closed the Google window before finishing. You can try again whenever you’re ready.',
+                    message: 'You closed the ' + P + ' window before finishing. You can try again whenever you’re ready.',
                     primary: ['Try again', loginUrl(mode)]
                 },
                 failed: {
                     tone: 'error',
-                    title: 'Google sign-in didn’t work',
-                    message: 'We couldn’t confirm your Google account. Please try again in a moment.',
+                    title: P + ' sign-in didn’t work',
+                    message: 'We couldn’t confirm your ' + P + ' account. Please try again in a moment.',
                     primary: ['Try again', loginUrl(mode)]
                 },
                 email_unverified: {
                     tone: 'error',
-                    title: 'Google email isn’t verified',
-                    message: 'Your Google account email needs to be verified before you can use it here. Verify it with Google, or log in with email and password.',
+                    title: P + ' email isn’t verified',
+                    message: 'Your ' + P + ' account email needs to be verified before you can use it here. Verify it with ' + P + ', or log in with email and password.',
                     primary: ['Back to log in', loginUrl('login')]
                 },
                 no_account: {
                     tone: 'notice',
                     title: 'No account found',
-                    message: 'There’s no Instant Crew account for this Google email and account type yet. Create one to get started.',
+                    message: 'There’s no Instant Crew account for this ' + P + ' email and account type yet. Create one to get started.',
                     primary: ['Create account', loginUrl('signup')],
                     secondary: ['Back to log in', loginUrl('login')]
                 },
                 gmail_only: {
                     tone: 'notice',
                     title: 'Gmail accounts only',
-                    message: 'New Instant Crew accounts must use a Gmail address (name@gmail.com). Sign in to Google with your Gmail account and try again.',
+                    message: 'New Instant Crew accounts must use a Gmail address (name@gmail.com). Sign in to ' + P + ' with your Gmail account and try again.',
                     primary: ['Try again', loginUrl('signup')],
+                    secondary: ['Back to log in', loginUrl('login')]
+                },
+                no_email: {
+                    tone: 'notice',
+                    title: 'Facebook didn’t share an email',
+                    message: 'We need the email on your Facebook account to sign you in. Try again and allow access to your email, or log in with email and password.',
+                    primary: ['Try again', loginUrl(mode)],
                     secondary: ['Back to log in', loginUrl('login')]
                 },
                 email_taken: {

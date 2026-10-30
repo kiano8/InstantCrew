@@ -17,18 +17,9 @@ func UserFrom(ctx context.Context) (*store.User, bool) {
 }
 
 func (h *Handler) resolveUser(r *http.Request, preferredRole string) *store.User {
-	// 1. If preferredRole is specified, try that role's cookie first
-	if preferredRole != "" {
-		if c, err := r.Cookie(CookieName + "_" + preferredRole); err == nil && c.Value != "" {
-			if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
-				if u.Role == preferredRole || u.Role == "admin" {
-					return u
-				}
-			}
-		}
-	}
-
-	// 2. Try inferring role from request query, header, or referer
+	// 1. Use preferredRole's cookie, or infer the role from the query, header, or
+	// referer. A role cookie only ever holds a session of that role (or admin),
+	// and RequireRole checks the role afterwards.
 	targetRole := preferredRole
 	if targetRole == "" {
 		if qRole := r.URL.Query().Get("role"); qRole != "" {
@@ -55,14 +46,14 @@ func (h *Handler) resolveUser(r *http.Request, preferredRole string) *store.User
 		}
 	}
 
-	// 3. Fallback to standard shared session cookie
+	// 2. Fallback to standard shared session cookie
 	if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
 		if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
 			return u
 		}
 	}
 
-	// 4. Fallback: check any role-scoped cookies if standard cookie was missing
+	// 3. Fallback: check any role-scoped cookies if standard cookie was missing
 	for _, role := range []string{"employer", "admin", "applicant"} {
 		if c, err := r.Cookie(CookieName + "_" + role); err == nil && c.Value != "" {
 			if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {

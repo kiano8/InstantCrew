@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261029-deslop-merged">
+    <link rel="stylesheet" href="css/employer.css?v=20261030-gcash">
     <link rel="stylesheet" href="css/applicant.css?v=20261029-deslop">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
     <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
@@ -1659,7 +1659,7 @@
         <div class="db-footer-links">
             <a href="privacy.html" target="_blank" rel="noopener">Privacy</a>
             <a href="terms.html" target="_blank" rel="noopener">Terms</a>
-            <a href="https://www.facebook.com/search/top?q=instant%20crew" target="_blank"
+            <a href="https://www.facebook.com/profile.php?id=61588041527312" target="_blank"
                 rel="noopener noreferrer">Facebook</a>
         </div>
     </footer>
@@ -1922,6 +1922,10 @@
                         </div>
                     </div>
 
+                    <div class="db-auth-forgot">
+                        <a href="login.html?role=applicant&amp;forgot=1" class="db-auth-forgot-link" id="appModalForgotLink">Forgot password?</a>
+                    </div>
+
                     <button type="submit" class="db-btn-primary" id="btnSubmitAppModalLogin" style="margin-top:16px;">
                         <span>Log In &amp; View Shifts</span>
                         <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
@@ -2015,24 +2019,6 @@
                                     d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.4 7.5 23 12 23z" />
                             </svg>
                         </button>
-                        <button type="button" class="db-auth-social-btn" aria-label="Continue with Facebook">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
-                                <path
-                                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                            </svg>
-                        </button>
-                        <button type="button" class="db-auth-social-btn" aria-label="Continue with GitHub">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#24292F">
-                                <path fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                            </svg>
-                        </button>
-                        <button type="button" class="db-auth-social-btn" aria-label="Continue with LinkedIn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="#0A66C2">
-                                <path
-                                    d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                            </svg>
-                        </button>
                     </div>
                 </div>
 
@@ -2111,15 +2097,19 @@
                     <div class="db-pay-method-details" id="appTopupGcashWrap">
                         <div class="db-qr-container">
                             <div class="db-qr-card">
-                                <img src="images/payment_qr.jpg" alt="GCash InstaPay QR Code" class="db-qr-image">
-                                <span class="db-qr-caption">InstaPay QR • Scan with GCash App</span>
+                                <img src="images/payment_qr_10.png" alt="GCash InstaPay QR Code" class="db-qr-image">
+                                <span class="db-qr-caption">₱10.00 pre-filled • Scan or upload in GCash</span>
+                            </div>
+                            <div class="db-gcash-actions">
+                                <a href="images/payment_qr_10.png" download="instantcrew-gcash-10.png" class="db-gcash-btn db-gcash-btn-ghost">Save QR</a>
+                                <a href="gcash://" class="db-gcash-btn">Open GCash</a>
                             </div>
                             <div class="db-qr-instructions">
                                 <ol>
-                                    <li>Open your <strong>GCash</strong> app and tap <strong>QR / Scan</strong>.</li>
-                                    <li>Scan the QR code above and transfer exactly <strong>₱10.00</strong>.</li>
+                                    <li>Tap <strong>Save QR</strong> (on iPhone, long-press the QR and choose <strong>Save to Photos</strong>).</li>
+                                    <li>Tap <strong>Open GCash</strong>, go to <strong>QR</strong> → <strong>Upload QR</strong> and pick the saved image. <strong>₱10.00</strong> is filled in for you.</li>
                                     <li>Take a screenshot of the completed payment receipt.</li>
-                                    <li>Upload the screenshot below as Proof of Payment.</li>
+                                    <li>Switch back to Instant Crew and upload it below. Your payment is sent for verification right away.</li>
                                 </ol>
                             </div>
                             <div class="db-proof-upload-section">
@@ -2281,12 +2271,16 @@
                     title="Please upload your proof of payment screenshot to continue">
                     <span>Confirm ₱10.00 (+5 Hires)</span>
                 </button>
+                <button type="button" id="appTopupLogoutBtn"
+                    style="display:none; margin-top:12px; width:100%; background:none; border:0; color:#64748B; font-size:0.82rem; text-decoration:underline; cursor:pointer;">
+                    Not now? Log out
+                </button>
             </div>
         </div>
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js?v=20261029-escape-user-text"></script>
+    <script src="js/shared-data.js?v=20261030-gcash"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -5788,8 +5782,6 @@
                 const acceptedMs = item.acceptedAt ? new Date(item.acceptedAt).getTime() : Date.now();
                 const deadlineMs = acceptedMs + 3600000;
                 const remainingMs = Math.max(0, deadlineMs - Date.now());
-                const remMins = Math.floor(remainingMs / 60000);
-                const remSecs = Math.floor((remainingMs % 60000) / 1000);
                 const isNoShowExpired = (remainingMs <= 0 && item.transitStatus !== 'arrived' && item.transitStatus !== 'on_the_way') || item.transitStatus === 'no_show';
 
                 const statusBadgeHtml = isEnded
@@ -5892,13 +5884,7 @@
                                 </svg>
                                 <span>Arrived on Site (${item.arrivedAt || 'Active'})</span>
                             </span>
-                        </div>` : `
-                        <div class="app-card-transit-box">
-                            <div class="app-transit-countdown-box" style="display:inline-flex; align-items:center; gap:5px; font-size:0.75rem; color:#B45309; background:#FFFBEB; padding:3px 8px; border-radius:6px; border:1px solid #FDE68A;" data-deadline="${deadlineMs}" data-assignment-id="${item.id}">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                <span>Time for transit: <strong class="app-transit-timer-val">${remMins}m ${remSecs < 10 ? '0' : ''}${remSecs}s left</strong></span>
-                            </div>
-                        </div>`))}
+                        </div>` : ''))}
                         <div class="app-job-card-actions">
                             ${transitActionHtml}
                             ${viewDetailsBtnHtml}
@@ -6453,7 +6439,10 @@
             };
 
             function updateViewMode() {
-                const isLogged = hasWorkerSession();
+                // A new applicant stays out of the portal until the first ₱10 pass is submitted.
+                const gated = needsStarterPass();
+                const isLogged = hasWorkerSession() && !gated;
+                if (gated && applicantTopupModal && !applicantTopupModal.classList.contains('open')) openApplicantTopupModal();
                 if (appStepsWrap) appStepsWrap.style.display = isLogged ? 'none' : 'block';
                 if (appDashboardWrap) appDashboardWrap.style.display = isLogged ? 'block' : 'none';
                 const notifWrap = document.querySelector('.db-notif-wrap');
@@ -6591,14 +6580,30 @@
                 if (!response.ok) throw new Error(data.error || 'Could not load your Hiring Pass.');
                 if (session) {
                     session.hiringQuota = data.hiring_pass || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 };
+                    hiringPassChecked = true;
                     saveWorkerSession(session);
                     updateHiringPassUI();
                 }
                 return session?.hiringQuota;
             }
 
+            // The first ₱10 pass is required: an applicant who has never had hires and
+            // has no receipt on file must submit one before entering the portal. Until
+            // the server has answered, the cached quota may be stale, so it never gates.
+            let hiringPassChecked = false;
+            function needsStarterPass() {
+                const q = session && session.hiringQuota;
+                return hasWorkerSession() && hiringPassChecked && !!q && !(q.totalHires > 0) && !q.pendingPayment;
+            }
+
             function openApplicantTopupModal() {
                 if (applicantTopupModal) {
+                    const required = needsStarterPass();
+                    if (appTopupCloseBtn) appTopupCloseBtn.style.display = required ? 'none' : '';
+                    const logoutLink = document.getElementById('appTopupLogoutBtn');
+                    if (logoutLink) logoutLink.style.display = required ? 'block' : 'none';
+                    const title = document.getElementById('appTopupModalTitle');
+                    if (title) title.textContent = required ? 'Activate Your First 5 Hires' : 'Add ₱10 for 5 Hires';
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
@@ -6607,6 +6612,7 @@
             }
 
             function closeApplicantTopupModal() {
+                if (needsStarterPass()) return; // required until the first receipt is submitted
                 if (applicantTopupModal) {
                     applicantTopupModal.classList.remove('open');
                     applicantTopupModal.style.display = 'none';
@@ -7582,6 +7588,10 @@
                 if (appTopupCloseBtn) {
                     appTopupCloseBtn.addEventListener('click', closeApplicantTopupModal);
                 }
+                const appTopupLogoutBtn = document.getElementById('appTopupLogoutBtn');
+                if (appTopupLogoutBtn && logoutBtn) {
+                    appTopupLogoutBtn.addEventListener('click', () => logoutBtn.click());
+                }
                 if (applicantTopupModal) {
                     applicantTopupModal.addEventListener('click', (e) => {
                         if (e.target === applicantTopupModal) closeApplicantTopupModal();
@@ -7609,8 +7619,12 @@
                     }
                 }
 
+                const topupGcashReturned = window.InstantCrewShared.watchGcashReturn(document.getElementById('appTopupGcashWrap'));
                 setupProofUploader('appTopupGcashProofFile', 'appTopupGcashDropzone', 'appTopupGcashAttachedBox', 'appTopupGcashThumb', 'appTopupGcashFilename', 'appTopupGcashRemoveBtn',
-                    (file, dataUrl) => { topupProofFile = file; topupProofDataUrl = dataUrl; updateTopupConfirmBtn(); },
+                    (file, dataUrl) => {
+                        topupProofFile = file; topupProofDataUrl = dataUrl; updateTopupConfirmBtn();
+                        if (topupGcashReturned() && appConfirmTopupBtn) appConfirmTopupBtn.click();
+                    },
                     () => { topupProofFile = null; topupProofDataUrl = ''; updateTopupConfirmBtn(); }
                 );
                 setupProofUploader('appTopupMayaProofFile', 'appTopupMayaDropzone', 'appTopupMayaAttachedBox', 'appTopupMayaThumb', 'appTopupMayaFilename', 'appTopupMayaRemoveBtn',
@@ -7672,10 +7686,12 @@
                             });
                             const data = await response.json().catch(() => ({}));
                             if (!response.ok) throw new Error(data.error || 'Payment could not be completed.');
+                            const wasGated = needsStarterPass();
                             if (session) { session.hiringQuota = data.hiring_pass; saveWorkerSession(session); }
                             updateHiringPassUI();
-                            renderShiftsFeed();
                             closeApplicantTopupModal();
+                            if (wasGated && session) { applySessionToDashboard(session); updateViewMode(); }
+                            renderShiftsFeed();
                             showToast(data.pending
                                 ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
                                 : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
@@ -7772,13 +7788,22 @@
                     });
                 }
 
-                // Google SSO from the quick modal: same endpoint as login.html, mode follows the active tab.
+                // Carry the typed email to the reset flow on login.html.
+                const appModalForgotLink = document.getElementById('appModalForgotLink');
+                if (appModalForgotLink) {
+                    appModalForgotLink.addEventListener('click', () => {
+                        const email = (document.getElementById('appModalLoginEmail')?.value || '').trim();
+                        appModalForgotLink.href = 'login.html?' + new URLSearchParams({ role: 'applicant', forgot: '1', email });
+                    });
+                }
+
+                // Google/Facebook SSO from the quick modal: same endpoints as login.html, mode follows the active tab.
                 // The server redirects back to applicant.html once the session cookie is set.
-                document.querySelectorAll('#applicantAuthModal .google-sso-btn').forEach((button) => {
+                document.querySelectorAll('#applicantAuthModal [data-sso]').forEach((button) => {
                     button.addEventListener('click', () => {
                         const mode = tabApplicantSignup && tabApplicantSignup.classList.contains('active') ? 'signup' : 'login';
                         const params = new URLSearchParams({ role: 'applicant', mode });
-                        window.location.assign('/api/auth/google?' + params.toString());
+                        window.location.assign(`/api/auth/${button.dataset.sso}?` + params.toString());
                     });
                 });
 
@@ -7831,9 +7856,16 @@
                     }
 
                     try {
-                        const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass }) });
+                        // Gmail accounts confirm each login with an emailed code.
+                        const loginForm = btn.form;
+                        const code = window.ICEmailCode.loginCode(loginForm, email);
+                        const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass, code }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Invalid email or password.');
+                        if (data.mfa_required) {
+                            window.ICEmailCode.askLoginCode({ form: loginForm, email, before: btn, inputClass: 'db-auth-input', message: data.message });
+                            return;
+                        }
                         if (data.user && data.user.role === 'admin') {
                             sessionStorage.setItem('ic_admin_session', JSON.stringify({ ...data.user, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }));
                             window.location.href = 'admin.html';
@@ -7978,7 +8010,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast('Account created. Use Add ₱10 for 5 Hires in your hiring pass panel to activate opportunities.');
+                        showToast('Account created. Pay ₱10 to activate your first 5 hires.');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -8084,7 +8116,7 @@
             initApplicantStepsListeners();
         })();
     </script>
-    <script src="js/email-code.js?v=20261027"></script>
+    <script src="js/email-code.js?v=20261030-login-code"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261029-escape-user-text-merged"></script>
     <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>

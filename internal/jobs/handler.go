@@ -345,7 +345,6 @@ func (h *Handler) SaveApplicantProfile(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	h.expireOverdue(r)
 	jobs, err := h.Store.ApplicantJobs(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -439,7 +438,6 @@ func (h *Handler) ApplicantReject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApplicantAssignments(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	h.expireOverdue(r)
 	jobs, err := h.Store.ApplicantAssignments(r.Context(), u.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -616,19 +614,18 @@ func (h *Handler) ids(w http.ResponseWriter, r *http.Request) (*store.User, int6
 	return u, id, empID, true
 }
 
-// expireOverdue flips expired searches and missed arrival limits before a read,
-// so responses never lag the background sweep.
+// expireOverdue flips expired searches and missed arrival limits now. Reads don't
+// call it: the server's 1-second sweep does, so polling never triggers writes.
 func (h *Handler) expireOverdue(r *http.Request) {
-	_, _ = h.Store.ExpireSearches(r.Context())
+	_, _ = h.Store.ExpireSearches(r.Context(), h.SearchWindow)
 	if _, err := h.Store.ExpireArrivals(r.Context()); err != nil {
 		log.Printf("expire arrivals: %v", err)
 	}
 }
 
-// writeJob reloads the job (with crew) and sends it. Expired searches are flipped first.
+// writeJob reloads the job (with crew) and sends it.
 func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, employerID, id int64) {
 	ctx := r.Context()
-	h.expireOverdue(r)
 	j, err := h.Store.GetJob(ctx, employerID, id)
 	if err != nil {
 		h.fail(w, err)
@@ -811,7 +808,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // GET /api/jobs?status=active,completed&limit=20&offset=0
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
-	h.expireOverdue(r)
 	valid := map[string]bool{
 		"draft": true, "matching": true, "accepted": true, "active": true,
 		"completed": true, "unfulfilled": true, "cancelled": true,
@@ -837,7 +833,6 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	h.expireOverdue(r)
 	empID := u.ID
 	if u.Role == "admin" {
 		empID = 0

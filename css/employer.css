@@ -5966,6 +5966,24 @@ h2 {
 }
 
 
+/* "Forgot password?" under the login modal's password field (both portals). */
+.db-auth-forgot {
+    text-align: right;
+    margin-top: 8px;
+}
+
+.db-auth-forgot-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-60);
+    text-decoration: none;
+}
+
+.db-auth-forgot-link:hover {
+    color: var(--ink);
+    text-decoration: underline;
+}
+
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS (ALL DEVICES: TABLETS, MOBILES, DESKTOPS)
    ═══════════════════════════════════════════════════════════ */
@@ -7306,4 +7324,45 @@ body {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+}
+/* ── GCash quick actions (save amount QR / open app) ── */
+.db-gcash-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 320px;
+}
+
+.db-gcash-btn {
+    flex: 1;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: #007DFE;
+    color: #FFFFFF;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.db-gcash-btn-ghost {
+    background: #FFFFFF;
+    color: #007DFE;
+    border: 1.5px solid #007DFE;
+}
+
+/* Pulses the receipt step when the user returns from the GCash app */
+.db-proof-attention {
+    animation: db-proof-attention 1.2s ease-out 2;
+    border-radius: 14px;
+}
+
+@keyframes db-proof-attention {
+    0% { box-shadow: 0 0 0 0 rgba(0, 125, 254, 0.55); }
+    100% { box-shadow: 0 0 0 14px rgba(0, 125, 254, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .db-proof-attention { animation: none; outline: 2px solid #007DFE; outline-offset: 4px; }
 }
