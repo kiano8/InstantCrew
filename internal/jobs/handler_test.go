@@ -159,6 +159,36 @@ func TestUploadProof(t *testing.T) {
 	t.Cleanup(func() { _ = os.Remove(filepath.Join(".", strings.TrimPrefix(res.URL, "/"))) })
 }
 
+func TestUploadProofKeepsJPEGExtension(t *testing.T) {
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	part, err := w.CreateFormFile("proof", "receipt.JPEG")
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	_, _ = part.Write([]byte("fake image content for test"))
+	_ = w.Close()
+
+	req := httptest.NewRequest("POST", "/api/upload-proof", &buf)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	rec := httptest.NewRecorder()
+	(&jobs.Handler{}).UploadProof(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var res struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatalf("json unmarshal: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(filepath.Join(".", strings.TrimPrefix(res.URL, "/"))) })
+	if !strings.HasSuffix(res.URL, ".jpeg") {
+		t.Fatalf("expected a .jpeg URL, got %q", res.URL)
+	}
+}
+
 func TestAdminPaymentsEndpoints(t *testing.T) {
 	env := setupTestEnv(t)
 	adminCookie := env.createSessionCookie(t, env.admin)

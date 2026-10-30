@@ -2116,7 +2116,7 @@
                                         </svg>
                                     </div>
                                     <span class="db-proof-prompt-text">Click to upload receipt screenshot</span>
-                                    <span class="db-proof-hint-text">PNG, JPG, WebP up to 10MB</span>
+                                    <span class="db-proof-hint-text">PNG, JPG, JPEG, WebP up to 15MB</span>
                                 </div>
                                 <div class="db-proof-attached-box" id="appTopupGcashAttachedBox">
                                     <img src="" alt="Proof Preview" class="db-proof-thumb" id="appTopupGcashThumb">
@@ -7323,7 +7323,7 @@
 
                     const handleFile = (file) => {
                         if (!file || !file.type.startsWith('image/')) {
-                            showToast('Please select a valid image file (PNG, JPG, WebP).', true);
+                            showToast('Please select a valid image file (PNG, JPG, JPEG, WebP).', true);
                             return;
                         }
                         if (file.size > 15 * 1024 * 1024) {

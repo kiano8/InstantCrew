@@ -1594,7 +1594,7 @@ function setupEmployerProofUpload(fileInputId, dropzoneId, attachedBoxId, thumbI
   const handleFile = (file) => {
     if (!file || !file.type.startsWith('image/')) {
       if (paymentError) {
-        paymentError.textContent = 'Please select a valid image file (PNG, JPG, WebP).';
+        paymentError.textContent = 'Please select a valid image file (PNG, JPG, JPEG, WebP).';
         paymentError.style.display = 'block';
       }
       return;
