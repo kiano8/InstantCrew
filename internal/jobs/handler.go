@@ -24,8 +24,7 @@ import (
 
 type Handler struct {
 	Store            *store.Store
-	MatchFeeCentavos int64         // e.g. 10000 = ₱100.00
-	SearchWindow     time.Duration // e.g. 3 * time.Minute
+	MatchFeeCentavos int64 // base search fee, e.g. 10000 = ₱100.00; owed penalties are added on top
 
 	payments paymentHub // live payment updates for the admin console
 }
@@ -48,7 +47,6 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/jobs/{id}/end", emp(h.End))
 	mux.Handle("POST /api/jobs/{id}/cancel", emp(h.Cancel))
 	mux.Handle("POST /api/jobs/{id}/decline-match", emp(h.DeclineMatch))
-	mux.Handle("POST /api/jobs/{id}/next-attempt", emp(h.NextAttempt))
 	mux.Handle("POST /api/jobs/{id}/check-noshow", emp(h.CheckJobNoShow))
 
 	mux.Handle("GET /api/applicant/profile", app(h.ApplicantProfile))
@@ -72,6 +70,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 
 	mux.Handle("POST /api/upload-proof", a.RequireAuth(http.HandlerFunc(h.UploadProof)))
 	mux.Handle("GET /api/employer/payments", emp(h.EmployerPaymentHistory))
+	mux.Handle("GET /api/employer/fee-qr", emp(h.FeeQR))
 	mux.Handle("GET /api/applicant/payments", app(h.ApplicantPaymentHistory))
 	mux.Handle("GET /api/admin/payments", adm(h.AdminPayments))
 	mux.Handle("POST /api/admin/payments/verify", adm(h.AdminVerifyPayment))
@@ -487,80 +486,45 @@ func arrivalSecondsRemaining(a store.Assignment) int64 {
 }
 
 type jobDTO struct {
-	ID               int64             `json:"id"`
-	Category         string            `json:"category"`
-	Role             string            `json:"role"`
-	RoleLabel        string            `json:"role_label"`
-	EmploymentType   string            `json:"employment_type"`
-	Rate             float64           `json:"rate"`
-	RatePeriod       string            `json:"rate_period"`
-	City             string            `json:"city"`
-	MapLocation      string            `json:"map_location"`
-	MapsURL          string            `json:"maps_url"`
-	Lat              *float64          `json:"lat,omitempty"`
-	Lng              *float64          `json:"lng,omitempty"`
-	Timing           string            `json:"timing"`
-	ScheduledAt      *time.Time        `json:"scheduled_at,omitempty"`
-	CrewNeeded       int               `json:"crew_needed"`
-	AcceptedCount    int               `json:"accepted_count"`
-	Status           string            `json:"status"`
-	SearchAttempts   int               `json:"search_attempts"`
-	SearchExpiresAt  *time.Time        `json:"search_expires_at,omitempty"`
-	SecondsRemaining int64             `json:"seconds_remaining"` // server clock, so the countdown can't be cheated
-	CurrentTry       int               `json:"current_try"`
-	MaxTries         int               `json:"max_tries"`
-	CurrentAttempt   int               `json:"current_attempt"`
-	MaxAttempts      int               `json:"max_attempts"`
-	TriesRemaining   int               `json:"tries_remaining"`
-	MatchFee         float64           `json:"match_fee"`
-	Crew             []crewDTO         `json:"crew,omitempty"`
-	Payment          *store.JobPayment `json:"payment,omitempty"`
-	CreatedAt        time.Time         `json:"created_at"`
+	ID             int64             `json:"id"`
+	Category       string            `json:"category"`
+	Role           string            `json:"role"`
+	RoleLabel      string            `json:"role_label"`
+	EmploymentType string            `json:"employment_type"`
+	Rate           float64           `json:"rate"`
+	RatePeriod     string            `json:"rate_period"`
+	City           string            `json:"city"`
+	MapLocation    string            `json:"map_location"`
+	MapsURL        string            `json:"maps_url"`
+	Lat            *float64          `json:"lat,omitempty"`
+	Lng            *float64          `json:"lng,omitempty"`
+	Timing         string            `json:"timing"`
+	ScheduledAt    *time.Time        `json:"scheduled_at,omitempty"`
+	CrewNeeded     int               `json:"crew_needed"`
+	AcceptedCount  int               `json:"accepted_count"`
+	Status         string            `json:"status"`
+	SearchAttempts int               `json:"search_attempts"`
+	MatchFee       float64           `json:"match_fee"` // base fee plus owed penalties; set for the employer's own views
+	Crew           []crewDTO         `json:"crew,omitempty"`
+	Payment        *store.JobPayment `json:"payment,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
 }
 
 func (h *Handler) toDTO(j *store.Job) jobDTO {
-	curTry := j.CurrentTry
-	if curTry < 1 {
-		curTry = 1
-	}
-	maxTries := j.MaxTries
-	if maxTries < 1 {
-		maxTries = 3
-	}
-	curAtt := j.CurrentAttempt
-	if curAtt < 1 {
-		curAtt = 1
-	}
-	maxAtt := j.MaxAttempts
-	if maxAtt < 1 {
-		maxAtt = 3
-	}
-	triesRem := maxTries - curTry
-	if triesRem < 0 {
-		triesRem = 0
-	}
-
-	d := jobDTO{
+	return jobDTO{
 		ID: j.ID, Category: j.Category, Role: j.RoleID, RoleLabel: j.RoleLabel,
 		EmploymentType: j.EmploymentType, Rate: float64(j.RateCentavos) / 100, RatePeriod: j.RatePeriod,
 		City: j.City, MapLocation: j.MapLocation, MapsURL: j.MapsURL, Lat: j.Lat, Lng: j.Lng,
 		Timing: j.Timing, ScheduledAt: j.ScheduledAt, CrewNeeded: j.CrewNeeded,
 		AcceptedCount: j.AcceptedCount, Status: j.Status, SearchAttempts: j.SearchAttempts,
-		SearchExpiresAt: j.SearchExpiresAt,
-		CurrentTry:      curTry,
-		MaxTries:        maxTries,
-		CurrentAttempt:  curAtt,
-		MaxAttempts:     maxAtt,
-		TriesRemaining:  triesRem,
-		MatchFee:        float64(h.MatchFeeCentavos) / 100,
-		CreatedAt:       j.CreatedAt,
+		CreatedAt: j.CreatedAt,
 	}
-	if j.Status == "matching" && j.SearchExpiresAt != nil {
-		if rem := time.Until(*j.SearchExpiresAt); rem > 0 {
-			d.SecondsRemaining = int64(rem.Seconds())
-		}
-	}
-	return d
+}
+
+// matchFee is the employer's next search fee in pesos: the base fee plus owed penalties.
+func (h *Handler) matchFee(r *http.Request, employerID int64) (float64, error) {
+	penalty, err := h.Store.EmployerSearchPenalty(r.Context(), employerID)
+	return float64(h.MatchFeeCentavos+penalty) / 100, err
 }
 
 // ── helpers ──
@@ -571,7 +535,7 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusNotFound, "job not found")
 	case errors.Is(err, store.ErrBadState):
 		httpx.Error(w, http.StatusConflict, "this action isn't allowed in the job's current status")
-	case errors.Is(err, store.ErrNotConfirmed):
+	case errors.Is(err, store.ErrNotConfirmed), errors.Is(err, store.ErrBookingPending):
 		httpx.Error(w, http.StatusConflict, err.Error())
 	case errors.Is(err, store.ErrAlreadyAccepted):
 		httpx.Error(w, http.StatusConflict, "already accepted")
@@ -611,10 +575,9 @@ func (h *Handler) ids(w http.ResponseWriter, r *http.Request) (*store.User, int6
 	return u, id, empID, true
 }
 
-// expireOverdue flips expired searches and missed arrival limits now. Reads don't
-// call it: the server's 1-second sweep does, so polling never triggers writes.
+// expireOverdue flips missed arrival limits now. Reads don't call it: the
+// server's 1-second sweep does, so polling never triggers writes.
 func (h *Handler) expireOverdue(r *http.Request) {
-	_, _ = h.Store.ExpireSearches(r.Context(), h.SearchWindow)
 	if _, err := h.Store.ExpireArrivals(r.Context()); err != nil {
 		log.Printf("expire arrivals: %v", err)
 	}
@@ -629,6 +592,10 @@ func (h *Handler) writeJob(w http.ResponseWriter, r *http.Request, status int, e
 		return
 	}
 	d := h.toDTO(j)
+	if d.MatchFee, err = h.matchFee(r, j.EmployerID); err != nil {
+		h.fail(w, err)
+		return
+	}
 	crew, err := h.Store.Assignments(ctx, j.ID)
 	if err != nil {
 		h.fail(w, err)
@@ -663,9 +630,20 @@ func (h *Handler) jobDTOs(r *http.Request, jobs []*store.Job, withPayment bool) 
 			return nil, err
 		}
 	}
+	fees := map[int64]float64{}
 	out := make([]jobDTO, 0, len(jobs))
 	for _, j := range jobs {
 		d := h.toDTO(j)
+		if withPayment {
+			fee, ok := fees[j.EmployerID]
+			if !ok {
+				if fee, err = h.matchFee(r, j.EmployerID); err != nil {
+					return nil, err
+				}
+				fees[j.EmployerID] = fee
+			}
+			d.MatchFee = fee
+		}
 		for _, c := range crew[j.ID] {
 			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
@@ -904,20 +882,21 @@ func (h *Handler) Matches(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"matches": matches})
 }
 
-// POST /api/jobs/{id}/search opens a crew search after its fee has been recorded.
+// POST /api/jobs/{id}/search opens a crew search. The fee is paid once a crew member accepts.
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	_, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
-	if err := h.Store.StartSearch(r.Context(), empID, id, h.SearchWindow); err != nil {
+	if err := h.Store.StartSearch(r.Context(), empID, id); err != nil {
 		h.fail(w, err)
 		return
 	}
 	h.writeJob(w, r, http.StatusOK, empID, id)
 }
 
-// POST /api/jobs/{id}/pay body: {"method":"gcash", "proof_image":"..."} records the search fee before crew are notified.
+// POST /api/jobs/{id}/pay body: {"method":"gcash", "proof_image":"..."} records the search fee
+// after a crew member accepted. Accounting verifying it confirms the booking.
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	_, id, empID, ok := h.ids(w, r)
 	if !ok {
@@ -969,19 +948,9 @@ func (h *Handler) Confirm(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	crew, err := h.Store.Assignments(r.Context(), id)
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
 	if err := h.Store.ConfirmJob(r.Context(), empID, id); err != nil {
 		h.fail(w, err)
 		return
-	}
-	for _, c := range crew {
-		if err := h.Store.AddNotification(r.Context(), c.ApplicantID, "Booking confirmed", "The employer confirmed your shift booking.", "accept", "{}"); err != nil {
-			log.Printf("notification: %v", err)
-		}
 	}
 	h.writeJob(w, r, http.StatusOK, empID, id)
 }
@@ -1028,21 +997,7 @@ func (h *Handler) DeclineMatch(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	job, err := h.Store.DeclineMatch(r.Context(), empID, id, h.SearchWindow)
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"job": h.toDTO(job)})
-}
-
-// POST /api/jobs/{id}/next-attempt
-func (h *Handler) NextAttempt(w http.ResponseWriter, r *http.Request) {
-	_, id, empID, ok := h.ids(w, r)
-	if !ok {
-		return
-	}
-	job, err := h.Store.AdvanceSearchAttempt(r.Context(), empID, id, h.SearchWindow)
+	job, err := h.Store.DeclineMatch(r.Context(), empID, id)
 	if err != nil {
 		h.fail(w, err)
 		return

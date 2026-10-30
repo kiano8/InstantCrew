@@ -11,10 +11,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261030-btnheight">
+    <link rel="stylesheet" href="css/employer.css?v=20261030-catselect">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
-    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png">
+    <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
+    <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png?v=20261030-2">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png?v=20261030-2">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#F5A623">
     <meta name="mobile-web-app-capable" content="yes">
@@ -49,27 +51,6 @@
 
                 <!-- Payment History Button -->
                 <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payment history</button>
-
-                <!-- Notification Bell -->
-                <div class="db-notif-wrap" id="headerNotifWrap">
-                    <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
-                        title="Notifications">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                        </svg>
-                        <span class="db-notif-badge" id="notifBadge" style="display:none;">0</span>
-                    </button>
-                    <!-- Notification Dropdown -->
-                    <div class="db-notif-dropdown" id="notifDropdown" hidden>
-                        <div class="db-notif-dropdown-header">
-                            <h4>Crew Activity</h4>
-                            <button type="button" class="db-notif-clear-btn" id="clearNotifsBtn">Clear all</button>
-                        </div>
-                        <div class="db-notif-list" id="notifList"></div>
-                    </div>
-                </div>
 
                 <!-- Employer Profile Avatar (top-right) -->
                 <button type="button" class="db-profile-avatar-btn" id="openProfilePanel" aria-label="Open profile">
@@ -712,19 +693,8 @@
                         <p class="db-step-sub" id="step4Sub">Waiting for an available crew member to accept your offer…
                         </p>
 
-                        <!-- Search Window Timer & Progressive Bar (below the finding circle) -->
-                        <div class="db-search-timer-box" id="dbSearchTimerBox">
-                            <div class="db-try-attempt-row">
-                                <span class="db-try-pill" id="dbCurrentTryBadge">Try 1 of 3</span>
-                                <span class="db-attempt-pill" id="dbCurrentAttemptBadge">Attempt 1 of 3</span>
-                            </div>
-                            <div class="db-search-progress-bar" style="display: none;">
-                                <div class="db-search-progress-fill" id="dbSearchProgressFill"></div>
-                            </div>
-                            <p class="db-search-timer-note" id="dbSearchTimerNote" style="display: none;">Each attempt
-                                lasts 3 minutes · Up to
-                                9 mins per try</p>
-                        </div>
+                        <p class="db-search-timer-note" id="dbSearchTimerNote">Your search stays open until a crew
+                            member accepts. You pay the search fee after someone accepts.</p>
 
                         <section class="db-matched-crew-panel" aria-live="polite" aria-labelledby="matchedCrewHeading"
                             style="display: none;">
@@ -740,7 +710,7 @@
 
                     </div>
 
-                    <!-- ════ FAILED MATCH (All 3 Tries Expired) ════ -->
+                    <!-- ════ FAILED MATCH (search ended without a crew) ════ -->
                     <div id="matchFailed" style="display:none;" class="db-match-failed-view">
                         <div class="db-failed-icon-wrap">
                             <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#DC2626"
@@ -750,10 +720,10 @@
                                 <line x1="9" y1="9" x2="15" y2="15" />
                             </svg>
                         </div>
-                        <div class="db-failed-badge" id="dbFailedBadge">All 3 Tries Expired</div>
+                        <div class="db-failed-badge" id="dbFailedBadge">Search Ended</div>
                         <h2 class="db-failed-heading" id="dbFailedHeading">No Crew Matched</h2>
                         <p class="db-failed-sub" id="dbFailedSub">
-                            All 3 tries have been used, but no crew members were confirmed for this shift.
+                            This search ended before a crew member was confirmed for this shift.
                         </p>
 
                         <div class="db-repay-notice-box" id="dbRepayNoticeBox">
@@ -763,15 +733,15 @@
                                 <line x1="12" y1="16" x2="12" y2="12" />
                                 <line x1="12" y1="8" x2="12.01" y2="8" />
                             </svg>
-                            <span id="dbRepayNoticeText">To start a new search with 3 fresh tries, an additional fixed
-                                ₱100 match fee is required.</span>
+                            <span id="dbRepayNoticeText">Search again for free. You only pay the search fee once a crew
+                                member accepts.</span>
                         </div>
 
                         <button type="button" class="db-btn-primary db-repay-btn" id="repayMatchFeeBtn">
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                                 <path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="currentColor" />
                             </svg>
-                            Pay ₱100 to Search Again
+                            Search Again
                         </button>
                         <button type="button" class="db-btn-secondary" id="editShiftFromFailedBtn"
                             style="margin-top: 10px;">
@@ -786,9 +756,7 @@
                                 <span class="db-green-dot"></span>
                                 Crew Found!
                             </div>
-                            <div class="db-results-try-badge" id="resultsTryBadge">
-                                Try 1 of 3 · 2 tries remaining if declined
-                            </div>
+                            <div class="db-results-try-badge" id="resultsPaidBadge">Search fee due: ₱100.00</div>
                         </div>
                         <h2 class="db-results-heading" id="resultsHeading">Great news!</h2>
                         <p class="db-results-accepted-note" id="resultsAcceptedNote"></p>
@@ -812,8 +780,8 @@
 
                         <div class="db-results-actions-group">
                             <button type="button" class="db-btn-primary" id="confirmBooking" disabled
-                                title="Please agree to the Terms and Conditions to confirm">Confirm</button>
-                            <button type="button" class="db-btn-secondary" id="cancelMatchBtn">Cancel</button>
+                                title="Please agree to the Terms and Conditions to confirm">Pay &amp; Confirm</button>
+                            <button type="button" class="db-btn-secondary" id="cancelMatchBtn">Decline</button>
                         </div>
                     </div>
                 </section>
@@ -1127,6 +1095,10 @@
                         <span class="db-breakdown-label">Fixed Crew Matching Fee</span>
                         <span class="db-breakdown-val" id="payBreakdownSubtotal">₱100.00</span>
                     </div>
+                    <div class="db-breakdown-row" id="payBreakdownPenaltyRow" style="display:none;">
+                        <span class="db-breakdown-label">Cancellation penalty (crew ended while on the way)</span>
+                        <span class="db-breakdown-val" id="payBreakdownPenalty">₱0.00</span>
+                    </div>
                     <div class="db-breakdown-row db-breakdown-wage-row">
                         <span class="db-breakdown-label">
                             <span class="db-wage-title">Crew Shift Wage</span>
@@ -1150,17 +1122,17 @@
                             <div class="db-qr-card">
                                 <img src="images/payment_qr_100.png" alt="GCash InstaPay QR Code" class="db-qr-image"
                                     id="empGcashQrImg">
-                                <span class="db-qr-caption">₱100.00 pre-filled • Scan or upload in GCash</span>
+                                <span class="db-qr-caption" id="empGcashQrCaption">₱100.00 pre-filled • Scan or upload in GCash</span>
                             </div>
                             <div class="db-gcash-actions">
-                                <a href="images/payment_qr_100.png" download="instantcrew-gcash-100.png" class="db-gcash-btn db-gcash-btn-ghost">Save QR</a>
+                                <a href="images/payment_qr_100.png" download="instantcrew-gcash-100.png" class="db-gcash-btn db-gcash-btn-ghost" id="empGcashQrSave">Save QR</a>
                                 <a href="gcash://" class="db-gcash-btn">Open GCash</a>
                             </div>
 
                             <div class="db-qr-instructions">
                                 <ol>
                                     <li>Tap <strong>Save QR</strong>, then choose <strong>Save Image</strong> (or long-press the QR and choose <strong>Save to Photos</strong>).</li>
-                                    <li>Tap <strong>Open GCash</strong>, go to <strong>QR</strong> → <strong>Upload QR</strong> and pick the saved image. <strong>₱100.00</strong> is filled in for you.</li>
+                                    <li>Tap <strong>Open GCash</strong>, go to <strong>QR</strong> → <strong>Upload QR</strong> and pick the saved image. <strong id="empGcashQrAmount">₱100.00 is filled in for you.</strong></li>
                                     <li>Take a screenshot of the completed payment receipt.</li>
                                     <li>Switch back to Instant Crew and upload it below. Your payment is sent for verification right away.</li>
                                 </ol>
@@ -1596,10 +1568,10 @@
 
     <script src="js/location.js"></script>
     <script src="js/email-code.js?v=20261030-login-code"></script>
-    <script src="js/shared-data.js?v=20261030-saveqr"></script>
-    <script src="js/employer.js?v=20261030-modal-close"></script>
+    <script src="js/shared-data.js?v=20261030-extnotif"></script>
+    <script src="js/employer.js?v=20261030-extnotif"></script>
     <script src="/js/session.js"></script>
-    <script src="js/payment-history.js?v=20261029-escape-user-text-merged"></script>
+    <script src="js/payment-history.js?v=20261030-extnotif"></script>
     <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>
 </body>
 

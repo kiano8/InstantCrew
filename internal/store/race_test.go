@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"instantcrew/internal/jobs"
 	"instantcrew/internal/store"
@@ -41,11 +40,7 @@ func raceFixture(t *testing.T) (st *store.Store, openShift func(roleID, roleLabe
 			EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
 			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
 		must("create job", st.CreateJob(ctx, j))
-		must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
-		pay, err := st.LatestJobPayment(ctx, j.ID)
-		must("latest payment", err)
-		must("verify fee", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
-		must("start search", st.StartSearch(ctx, employer.ID, j.ID, 3*time.Minute))
+		must("start search", st.StartSearch(ctx, employer.ID, j.ID))
 		return j.ID
 	}
 	return st, openShift, employer.ID, crew.ID, exec
@@ -84,44 +79,5 @@ func TestAcceptJob_OneHireCoversOneShift(t *testing.T) {
 		if accepted != 1 {
 			t.Fatalf("round %d: %d shifts accepted with one hire (errors: %v)", round, accepted, errs)
 		}
-	}
-}
-
-// The background sweep and the employer's timeout call both advance an expired
-// search; together they must move it exactly one attempt, and never early.
-func TestAdvanceSearchAttempt_OnlyOncePerExpiredWindow(t *testing.T) {
-	st, openShift, employerID, _, exec := raceFixture(t)
-	ctx := context.Background()
-	id := openShift("cook", "Cook", "kitchen")
-
-	job, err := st.AdvanceSearchAttempt(ctx, employerID, id, 3*time.Minute)
-	if err != nil || job.CurrentAttempt != 1 {
-		t.Fatalf("a running window must not advance: attempt=%v err=%v", job, err)
-	}
-
-	exec(`UPDATE jobs SET search_expires_at=$1 WHERE id=$2`, time.Now().Unix()-1, id)
-	var wg sync.WaitGroup
-	start := make(chan struct{})
-	for i := 0; i < 6; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			<-start
-			if i%2 == 0 {
-				_, _ = st.ExpireSearches(ctx, 3*time.Minute)
-			} else {
-				_, _ = st.AdvanceSearchAttempt(ctx, employerID, id, 3*time.Minute)
-			}
-		}()
-	}
-	close(start)
-	wg.Wait()
-
-	job, err = st.GetJob(ctx, employerID, id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if job.Status != "matching" || job.CurrentAttempt != 2 || job.CurrentBatch != 2 {
-		t.Fatalf("want matching attempt 2 batch 2, got %s attempt %d batch %d", job.Status, job.CurrentAttempt, job.CurrentBatch)
 	}
 }

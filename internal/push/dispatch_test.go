@@ -74,17 +74,16 @@ func TestDispatch(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// Applicants are not pushed to even if they somehow have a subscription.
-	other := store.PushSubscription{Endpoint: "https://fcm.googleapis.com/fcm/send/applicant-" + randomString(t)}
-	other.P256dh, other.Auth = browserKeys(t)
-	if err := st.SavePushSubscription(ctx, applicant.ID, other); err != nil {
+	applicantSub := store.PushSubscription{Endpoint: "https://fcm.googleapis.com/fcm/send/applicant-" + randomString(t)}
+	applicantSub.P256dh, applicantSub.Auth = browserKeys(t)
+	if err := st.SavePushSubscription(ctx, applicant.ID, applicantSub); err != nil {
 		t.Fatal(err)
 	}
 
 	if err := st.AddNotification(ctx, employer.ID, "Shift accepted", "Ana accepted.", "accept", `{"job_id":1}`); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.AddNotification(ctx, applicant.ID, "New shift", "Nearby.", "match", "{}"); err != nil {
+	if err := st.AddNotification(ctx, applicant.ID, "New shift", "Nearby.", "match", `{"job_id":2}`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -95,8 +94,9 @@ func TestDispatch(t *testing.T) {
 	}
 
 	livePath := "/fcm/send/" + live.Endpoint[len("https://fcm.googleapis.com/fcm/send/"):]
-	if hits[livePath] != 1 || hits["/fcm/send/gone"] != 1 || len(hits) != 2 {
-		t.Fatalf("push requests = %v, want one each to the employer's two devices", hits)
+	applicantPath := "/fcm/send/" + applicantSub.Endpoint[len("https://fcm.googleapis.com/fcm/send/"):]
+	if hits[livePath] != 1 || hits["/fcm/send/gone"] != 1 || hits[applicantPath] != 1 || len(hits) != 3 {
+		t.Fatalf("push requests = %v, want one each to the employer's two devices and the applicant's device", hits)
 	}
 	subs, err := st.PushSubscriptions(ctx, employer.ID)
 	if err != nil {

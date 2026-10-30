@@ -418,15 +418,15 @@ h2 {
 }
 
 .db-cat-card:hover {
-    border-color: #D8D8DE;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
+    border-color: #F59E0B;
+    box-shadow: 0 4px 14px rgba(28, 28, 30, 0.09);
+    transform: translateY(-2px);
 }
 
 .db-cat-card[aria-pressed="true"] {
-    border-color: #0F172A;
+    border-color: var(--yellow);
     background: transparent;
-    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.28), 0 4px 14px rgba(28, 28, 30, 0.07);
 }
 
 .db-cat-icon {
@@ -444,8 +444,8 @@ h2 {
 }
 
 .db-cat-icon svg {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     color: var(--yellow);
     stroke: var(--yellow);
     transition: stroke var(--dur-fast), color var(--dur-fast);
@@ -466,6 +466,10 @@ h2 {
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--ink);
+}
+
+.db-cat-card[aria-pressed="true"] .db-cat-name {
+    font-weight: 700;
 }
 
 

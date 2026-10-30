@@ -51,7 +51,6 @@ func setupTestEnv(t *testing.T) *testEnv {
 	jobsH := &jobs.Handler{
 		Store:            st,
 		MatchFeeCentavos: 10000,
-		SearchWindow:     3 * time.Minute,
 	}
 
 	mux := http.NewServeMux()
@@ -244,80 +243,32 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		}
 	}
 
-	// 4. Employer pays search fee
+	// 4. The employer starts the search without paying.
+	req = httptest.NewRequest("POST", "/api/jobs/"+jsonNumber(jobID)+"/search", nil)
+	req.AddCookie(empCookie)
+	rec = httptest.NewRecorder()
+	env.mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	// 5. The fee can't be paid before a crew member accepts.
 	payPayload := map[string]any{
 		"method":      "gcash",
 		"details":     "GCash payment test",
 		"proof_image": "/uploads/proof_1700000000_abcdef0123456789.jpg",
 	}
 	body, _ = json.Marshal(payPayload)
-	req = httptest.NewRequest("POST", "/api/jobs/"+strings.TrimSpace(jsonNumber(jobID))+"/pay", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/api/jobs/"+jsonNumber(jobID)+"/pay", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(empCookie)
 	rec = httptest.NewRecorder()
 	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("pay job expected 200, got %d: %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("pay before a crew member accepted expected 409, got %d: %s", rec.Code, rec.Body.String())
 	}
-
-	// 5. Employer tries to start search -> Should fail with 402 Payment Required because pending admin verification
-	req = httptest.NewRequest("POST", "/api/jobs/"+jsonNumber(jobID)+"/search", nil)
-	req.AddCookie(empCookie)
-	rec = httptest.NewRecorder()
-	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusPaymentRequired {
-		t.Fatalf("search before verify expected 402, got %d: %s", rec.Code, rec.Body.String())
-	}
-
-	// 6. Admin checks payments list
-	req = httptest.NewRequest("GET", "/api/admin/payments", nil)
-	req.AddCookie(adminCookie)
-	rec = httptest.NewRecorder()
-	env.mux.ServeHTTP(rec, req)
 	var listRes struct {
 		Payments []store.AdminPaymentRecord `json:"payments"`
-	}
-	_ = json.Unmarshal(rec.Body.Bytes(), &listRes)
-	if len(listRes.Payments) == 0 {
-		t.Fatalf("expected payments in admin list")
-	}
-	var empPayID int64
-	for _, p := range listRes.Payments {
-		if p.Type == "employer" && p.UserID == env.employer.ID {
-			empPayID = p.RawID
-			if p.Status != "pending" {
-				t.Fatalf("expected pending status, got %s", p.Status)
-			}
-		}
-	}
-	if empPayID == 0 {
-		t.Fatalf("employer payment not found")
-	}
-
-	// 7. Admin verifies payment
-	verifyPayload := map[string]any{
-		"type":     "employer",
-		"id":       empPayID,
-		"status":   "verified",
-		"verified": true,
-	}
-	body, _ = json.Marshal(verifyPayload)
-	req = httptest.NewRequest("POST", "/api/admin/payments/verify", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.AddCookie(adminCookie)
-	rec = httptest.NewRecorder()
-	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("admin verify expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-
-	// 8. Now employer starts search -> Should succeed with 200 OK!
-	req = httptest.NewRequest("POST", "/api/jobs/"+jsonNumber(jobID)+"/search", nil)
-	req.AddCookie(empCookie)
-	rec = httptest.NewRecorder()
-	env.mux.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("search after verify expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
 	// 9. Applicant pays hiring pass (₱10 for 5 hires)
@@ -423,8 +374,26 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	if rec = do("POST", transit, appCookie, map[string]string{"status": "en_route"}); rec.Code != http.StatusConflict {
 		t.Fatalf("en_route before employer confirmation expected 409, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if rec = do("POST", "/api/jobs/"+jsonNumber(jobID)+"/confirm", empCookie, nil); rec.Code != http.StatusOK {
-		t.Fatalf("employer confirm expected 200, got %d: %s", rec.Code, rec.Body.String())
+	if rec = do("POST", "/api/jobs/"+jsonNumber(jobID)+"/confirm", empCookie, nil); rec.Code != http.StatusPaymentRequired {
+		t.Fatalf("employer confirm before paying expected 402, got %d: %s", rec.Code, rec.Body.String())
+	}
+	// The employer pays now that a crew member accepted; accounting verifying it confirms the booking.
+	if rec = do("POST", "/api/jobs/"+jsonNumber(jobID)+"/pay", empCookie, payPayload); rec.Code != http.StatusOK {
+		t.Fatalf("pay after accept expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	rec = do("GET", "/api/admin/payments", adminCookie, nil)
+	_ = json.Unmarshal(rec.Body.Bytes(), &listRes)
+	var empPayID int64
+	for _, p := range listRes.Payments {
+		if p.Type == "employer" && p.UserID == env.employer.ID && p.Status == "pending" {
+			empPayID = p.RawID
+		}
+	}
+	if empPayID == 0 {
+		t.Fatalf("pending employer payment not found in admin list")
+	}
+	if rec = do("POST", "/api/admin/payments/verify", adminCookie, map[string]any{"type": "employer", "id": empPayID, "status": "verified"}); rec.Code != http.StatusOK {
+		t.Fatalf("admin verify employer fee expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 	rec = do("GET", "/api/applicant/hiring-pass", appCookie, nil)
 	_ = json.Unmarshal(rec.Body.Bytes(), &passRes)
@@ -498,11 +467,7 @@ func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
 		EmploymentType: "full-time", RateCentavos: 15000, RatePeriod: "hour", City: "Cebu City",
 		MapLocation: "IT Park", MapsURL: "https://www.google.com/maps", Timing: "now", CrewNeeded: 1}
 	must("create job", env.st.CreateJob(ctx, job))
-	must("pay", env.st.RecordMatchFee(ctx, env.employer.ID, job.ID, "gcash", "", "/uploads/fee.jpg", 10000, "pay_x"))
-	pay, err := env.st.LatestJobPayment(ctx, job.ID)
-	must("latest payment", err)
-	must("verify fee", env.st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
-	must("start search", env.st.StartSearch(ctx, env.employer.ID, job.ID, env.jobsH.SearchWindow))
+	must("start search", env.st.StartSearch(ctx, env.employer.ID, job.ID))
 
 	cookies := map[int64]*http.Cookie{env.applicant.ID: env.createSessionCookie(t, env.applicant), other.ID: env.createSessionCookie(t, other)}
 	accept := func(u *store.User) int {
@@ -518,7 +483,7 @@ func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
 	if code := accept(env.applicant); code != http.StatusOK {
 		t.Fatalf("matching applicant: want 200, got %d", code)
 	}
-	if _, err := env.st.DeclineMatch(ctx, env.employer.ID, job.ID, env.jobsH.SearchWindow); err != nil {
+	if _, err := env.st.DeclineMatch(ctx, env.employer.ID, job.ID); err != nil {
 		t.Fatalf("decline: %v", err)
 	}
 	if code := accept(env.applicant); code != http.StatusNotFound {

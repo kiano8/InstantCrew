@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -244,13 +245,14 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 
 	// FOR UPDATE below makes a second concurrent verify wait and then see
 	// credits_granted=1, so hires and notifications are granted only once.
-	var userID int64
+	var userID, penalty int64
 	var jobID sql.NullInt64
 	var prevStatus string
 	var creditsGranted int
+	confirmed := false
 	switch strings.ToLower(pType) {
 	case "employer":
-		err = tx.QueryRowContext(ctx, `SELECT user_id, job_id, COALESCE(status,'') FROM payments WHERE id=$1 FOR UPDATE`, id).Scan(&userID, &jobID, &prevStatus)
+		err = tx.QueryRowContext(ctx, `SELECT user_id, job_id, COALESCE(status,''), penalty_centavos FROM payments WHERE id=$1 FOR UPDATE`, id).Scan(&userID, &jobID, &prevStatus, &penalty)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}
@@ -267,6 +269,20 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			}
 			if n, _ := res.RowsAffected(); n == 0 {
 				return ErrNotFound
+			}
+			if prevStatus != "verified" && jobID.Valid {
+				// Penalties added after this receipt was priced stay owed.
+				if _, err := tx.ExecContext(ctx, `UPDATE users SET search_penalty_centavos=GREATEST(0, search_penalty_centavos-$1) WHERE id=$2`, penalty, userID); err != nil {
+					return err
+				}
+				// The fee is what the waiting booking needed: confirm it now.
+				switch err := confirmJob(ctx, tx, userID, jobID.Int64, now); {
+				case err == nil:
+					confirmed = true
+				case !errors.Is(err, ErrBadState) && !errors.Is(err, ErrPaymentNotVerified) &&
+					!errors.Is(err, ErrPaymentRejected) && !errors.Is(err, ErrNotFound):
+					return err
+				}
 			}
 		} else {
 			res, err := tx.ExecContext(ctx, `UPDATE payments SET status=$1, verified_at=NULL, verified_by=$2, rejection_reason=$3 WHERE id=$4`, normStatus, vBy, reason, id)
@@ -328,7 +344,10 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	switch normStatus {
 	case "verified":
 		if strings.ToLower(pType) == "employer" {
-			title, message = "Search fee verified", "Accounting verified your receipt. Tap to start your crew search."
+			title, message = "Search fee verified", "Accounting verified your receipt."
+			if confirmed {
+				message += " Your crew booking is confirmed."
+			}
 		} else {
 			title, message = "Hiring pass verified", "Accounting verified your ₱10 receipt. Five hiring opportunities are now active."
 		}

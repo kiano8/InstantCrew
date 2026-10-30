@@ -20,6 +20,7 @@ var (
 	ErrHiringPassPending    = errors.New("your ₱10 receipt is awaiting verification; hires activate once accounting approves it")
 	ErrBetaFull             = errors.New("beta tester limit reached")
 	ErrNotConfirmed         = errors.New("the employer has not confirmed this booking yet")
+	ErrBookingPending       = errors.New("the employer is paying the search fee for this booking; you can leave it once it is confirmed or declined")
 	ErrPaymentNotVerified   = errors.New("accounting has not verified this payment yet")
 	ErrPaymentRejected      = errors.New("this payment receipt was rejected; please upload a new proof of payment")
 	ErrPaymentPendingExists = errors.New("a payment is already waiting for accounting verification")

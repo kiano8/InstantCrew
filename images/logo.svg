@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <title>Logo</title>
-  <path fill="#111318" stroke="#FFBE1A" stroke-width="16" d="M256 36C432 36 476 80 476 256S432 476 256 476 36 432 36 256 80 36 256 36Z"/>
+  <path fill="#111318" stroke="#111318" stroke-width="16" paint-order="stroke fill" d="M256 36C432 36 476 80 476 256S432 476 256 476 36 432 36 256 80 36 256 36Z"/>
   <g transform="translate(40 58) scale(0.7578125) translate(-4 -18)">
     <path fill="#FFBE1A" d="M130 146L260.7 137A9 9 0 0 1 260.7 155Z"/>
     <path fill="#FFBE1A" d="M60 180L252 168A12 12 0 0 1 252 192Z"/>

@@ -127,7 +127,7 @@
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                     </button>
-                    <img src="images/logo.svg" alt="Instant Crew" class="install-modal-app-icon">
+                    <img src="images/logo.svg?v=20261030-2" alt="Instant Crew" class="install-modal-app-icon">
                     <h2 class="install-modal-title" id="installModalTitle">Install Instant Crew</h2>
                     <p class="install-modal-subtitle" id="installModalSubtitle">Add to your Home Screen for fast, 1-tap access anytime.</p>
                     <div class="install-steps-list" id="installStepsList"></div>

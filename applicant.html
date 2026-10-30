@@ -11,11 +11,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261030-btnheight">
-    <link rel="stylesheet" href="css/applicant.css?v=20261029-deslop">
+    <link rel="stylesheet" href="css/employer.css?v=20261030-catselect">
+    <link rel="stylesheet" href="css/applicant.css?v=20261030-nodot">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
-    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png">
+    <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
+    <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png?v=20261030-2">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png?v=20261030-2">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f97316">
     <meta name="mobile-web-app-capable" content="yes">
@@ -52,27 +54,6 @@
                 <!-- Payment & Hires Log Button -->
                 <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payments &amp; hires
                     log</button>
-
-                <!-- Notification Bell -->
-                <div class="db-notif-wrap">
-                    <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
-                        title="Notifications">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                        </svg>
-                        <span class="db-notif-badge" id="notifBadge" style="display:none;">0</span>
-                    </button>
-                    <!-- Notification Dropdown -->
-                    <div class="db-notif-dropdown" id="notifDropdown" hidden>
-                        <div class="db-notif-dropdown-header">
-                            <h4>Notifications</h4>
-                            <button type="button" class="db-notif-clear-btn" id="clearNotifsBtn">Clear all</button>
-                        </div>
-                        <div class="db-notif-list" id="notifList"></div>
-                    </div>
-                </div>
 
                 <!-- Crew Profile Avatar (top-right) -->
                 <button type="button" class="db-profile-avatar-btn" id="openProfilePanel" aria-label="Open profile">
@@ -1462,7 +1443,6 @@
                                 aria-haspopup="listbox" aria-expanded="false"
                                 title="Click to change your work location">
                                 <div class="app-location-chip-left">
-                                    <span class="app-location-dot"></span>
                                     <svg class="app-location-pin-icon" width="14" height="14" viewBox="0 0 16 16"
                                         fill="none">
                                         <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z"
@@ -1640,18 +1620,7 @@
             </div>
     </main>
 
-    <!-- ── Toast Feedback ── -->
-    <div class="app-toast" id="appToast">
-        <span class="app-toast-icon" id="appToastIcon" style="display:inline-flex; align-items:center;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-                <path d="M9 12l2 2l4 -4" />
-            </svg>
-        </span>
-        <span id="appToastMsg">Accepted!</span>
-    </div>
+    <!-- In-app toast notifications removed; alerts use phone/desktop OS notifications -->
 
     <!-- ════ Footer (Matches Employer Footer) ════ -->
     <footer class="db-footer">
@@ -2154,7 +2123,7 @@
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js?v=20261030-saveqr"></script>
+    <script src="js/shared-data.js?v=20261030-extnotif"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -2342,16 +2311,8 @@
 
             let currentTimingPreference = session.timingPreference || 'instant';
 
-            const appToast = document.getElementById('appToast');
-            const appToastMsg = document.getElementById('appToastMsg');
             const logoutBtn = document.getElementById('logoutBtn');
-
-            // Notification refs
-            const notifBtn = document.getElementById('notifBtn');
-            const notifBadge = document.getElementById('notifBadge');
-            const notifDropdown = document.getElementById('notifDropdown');
-            const notifList = document.getElementById('notifList');
-            const clearNotifsBtn = document.getElementById('clearNotifsBtn');
+            const notifDropdown = null;
 
             // ════ Location Detail Modal (View Detail from Shift Card) ════
             const appLocationDetailModal = document.getElementById('appLocationDetailModal');
@@ -2638,60 +2599,19 @@
                 }
             });
 
-            // Helper for tracking push notification toasts in session
-            const TOASTED_NOTIFS_KEY = 'ic_toasted_worker_notifs';
-            function getToastedNotifIds() {
-                try {
-                    return JSON.parse(sessionStorage.getItem(TOASTED_NOTIFS_KEY)) || [];
-                } catch {
-                    return [];
-                }
+            // Register the service worker, request OS notification permission on first tap, and subscribe to Web Push
+            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications({ push: true });
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (!event.data || event.data.type !== 'notification-click' || !hasWorkerSession()) return;
+                    const jobId = new URL(event.data.url, window.location.origin).searchParams.get('job');
+                    if (jobId) openApplicantOffer(jobId);
+                });
             }
 
-            function markNotifToasted(id) {
-                try {
-                    const list = getToastedNotifIds();
-                    if (!list.includes(String(id))) {
-                        list.push(String(id));
-                        sessionStorage.setItem(TOASTED_NOTIFS_KEY, JSON.stringify(list.slice(-50)));
-                    }
-                } catch { }
-            }
-
-            // Audio unlock on first user gesture
-            let audioUnlocked = false;
-            function unlockAudio() {
-                if (audioUnlocked) return;
-                try {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (AudioCtx) {
-                        const ctx = new AudioCtx();
-                        ctx.resume().then(() => {
-                            audioUnlocked = true;
-                            ctx.close();
-                        }).catch(() => { });
-                    }
-                } catch { }
-            }
-            document.addEventListener('click', unlockAudio, { once: true });
-
-            // Register the service worker and ask for system notification permission on first tap
-            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications();
-
-            // Toast helper
-            function showToast(msg, isError = false) {
-                const toastIcon = document.getElementById('appToastIcon');
-                if (toastIcon && window.InstantCrewShared) {
-                    toastIcon.innerHTML = isError
-                        ? window.InstantCrewShared.ICONS.alert(20, '#F59E0B')
-                        : window.InstantCrewShared.ICONS.checkCircle(20, '#10B981');
-                }
-                appToastMsg.textContent = msg;
-                appToast.style.display = 'flex';
-                setTimeout(() => {
-                    appToast.style.display = 'none';
-                }, 3500);
-            }
+            // In-app toast helper disabled to prevent duplicate alerts alongside external OS notifications
+            function showToast() { }
 
             // Init User Profile View
             function renderProfileInfo() {
@@ -5061,9 +4981,9 @@
                             ${transitHtml}
                         </div>
                         <div class="app-contract-action-side">
-                            <button type="button" class="db-btn-end-contract" data-contract-id="${contract.id}">
+                            ${contract.confirmed ? `<button type="button" class="db-btn-end-contract" data-contract-id="${contract.id}">
                                 End Job
-                            </button>
+                            </button>` : ''}
                         </div>
                     `;
 
@@ -5083,7 +5003,7 @@
                         });
                     }
 
-                    item.querySelector('.db-btn-end-contract').addEventListener('click', () => {
+                    item.querySelector('.db-btn-end-contract')?.addEventListener('click', () => {
                         confirmAppJobAction('End this job?', `This will conclude your work contract for ${contract.title}.`)
                             .then(confirmed => { if (confirmed) endWorkerContract(contract.id); });
                     });
@@ -5638,7 +5558,6 @@
                     updateCapacityUI();
                     renderShiftsFeed();
                     renderAcceptedShiftsList();
-                    if (window.InstantCrewShared) InstantCrewShared.showPushToast('Shift Accepted!', `You accepted ${shift.title}.`, 'party');
                 }, 250);
             }
 
@@ -5746,7 +5665,7 @@
                                 <span>1-Hr Arrival Limit Expired &bull; Auto-Cancelling</span>
                             </span>
                             <div style="flex-basis:100%; font-size:0.75rem; color:#DC2626;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
-                        </div>` : (!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">Waiting for employer confirmation before starting.</span></div>` : item.transitStatus === 'on_the_way' ? `
+                        </div>` : (!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">The employer is paying the search fee. Your booking starts once accounting confirms it; if they don't pay within 3 minutes, you're released automatically.</span></div>` : item.transitStatus === 'on_the_way' ? `
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status on-the-way">
                                 <span class="app-transit-beacon"><span class="app-transit-ping"></span><span class="app-transit-dot"></span></span>
@@ -5764,7 +5683,7 @@
                         <div class="app-job-card-actions">
                             ${transitActionHtml}
                             ${viewDetailsBtnHtml}
-                            ${!isNoShowExpired ? `<button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">End Job</button>` : ''}
+                            ${!isNoShowExpired && item.confirmed ? `<button type="button" class="app-btn-end-contract-clean" data-id="${item.id}">End Job</button>` : ''}
                         </div>
                     </div>` : `
                     <div class="app-job-card-footer ended-footer">
@@ -6002,6 +5921,7 @@
             // Logout
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', async () => {
+                    if (window.InstantCrewShared) await window.InstantCrewShared.removePushSubscription();
                     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }); } catch (_) { }
                     sessionStorage.removeItem(SESSION_KEY_WORKER);
                     session = getWorkerSession();
@@ -6029,6 +5949,10 @@
             let applicantNotifications = null;
             let applicantNotificationsFetchedAt = 0;
             let applicantNotificationsPending = false;
+            let applicantNotificationsLoaded = false;
+            let applicantNotificationOwnerId = null;
+            let applicantNotificationsBaselineSet = false;
+            let lastApplicantNotificationId = 0;
             let highlightedOfferJobId = '';
             function notificationJobId(notification) {
                 try {
@@ -6070,10 +5994,18 @@
             function renderWorkerNotifications() {
                 if (!window.InstantCrewShared) return;
                 if (!hasWorkerSession()) return;
+                if (String(applicantNotificationOwnerId) !== String(session.id || '')) {
+                    applicantNotificationOwnerId = session.id || '';
+                    applicantNotifications = null;
+                    applicantNotificationsLoaded = false;
+                    applicantNotificationsFetchedAt = 0;
+                    applicantNotificationsBaselineSet = false;
+                    lastApplicantNotificationId = 0;
+                }
                 if (applicantNotifications === null || Date.now() - applicantNotificationsFetchedAt > 2500) {
                     if (!applicantNotificationsPending) {
                         applicantNotificationsPending = true;
-                        fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not load notifications.'); applicantNotifications = d.notifications || []; applicantNotificationsFetchedAt = Date.now(); renderWorkerNotifications(); }).catch(e => showToast(e.message, true)).finally(() => { applicantNotificationsPending = false; });
+                        fetch('/api/notifications', { credentials: 'same-origin' }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not load notifications.'); applicantNotifications = d.notifications || []; applicantNotificationsLoaded = true; applicantNotificationsFetchedAt = Date.now(); renderWorkerNotifications(); }).catch(e => console.warn(e.message)).finally(() => { applicantNotificationsPending = false; });
                     }
                     if (applicantNotifications === null) applicantNotifications = [];
                 }
@@ -6081,114 +6013,37 @@
                 const targetPref = session.employmentPreference || 'full-time';
                 const activeContracts = getActiveContractsList();
                 const isMaxCapacity = activeContracts.some(c => c.employmentType === 'full-time') || activeContracts.filter(c => c.employmentType === 'part-time').length >= 2;
-                const notifs = applicantNotifications.filter(n => {
+                const notifs = (applicantNotifications || []).filter(n => {
                     if (n.type === 'match') {
-                        if (isMaxCapacity) return false;
+                        if (!isOnline || isMaxCapacity) return false;
                         if (n.role && !workerServices.some(s => s.trim().toLowerCase() === n.role.trim().toLowerCase())) return false;
                         if (n.employmentType && n.employmentType.toLowerCase() !== targetPref.toLowerCase()) return false;
                     }
                     return true;
                 });
-                const unread = notifs.filter(n => !n.read).length;
 
-                if (notifBadge) {
-                    if (unread > 0) {
-                        notifBadge.textContent = unread > 9 ? '9+' : unread;
-                        notifBadge.style.display = 'flex';
-                    } else {
-                        notifBadge.style.display = 'none';
-                    }
-                }
-
-                if (notifList) {
-                    if (notifs.length === 0) {
-                        notifList.innerHTML = '<div class="db-notif-empty">No notifications yet.</div>';
-                    } else {
-                        notifList.innerHTML = '';
-                        notifs.forEach(n => {
-                            const el = document.createElement('div');
-                            el.className = `db-notif-item ${n.read ? '' : 'unread'}`;
-                            const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getNotificationIcon(n.type, 20) : '';
+                // Deliver newly created notifications exclusively via external phone/desktop
+                // system notifications (when Web Push is active, sw.js handles them).
+                if (applicantNotificationsLoaded) {
+                    const newestId = (applicantNotifications || []).reduce((max, n) => Math.max(max, Number(n.id) || 0), 0);
+                    if (!applicantNotificationsBaselineSet) {
+                        applicantNotificationsBaselineSet = true;
+                    } else if (newestId > lastApplicantNotificationId && !window.InstantCrewShared.isPushActive()) {
+                        const fresh = notifs
+                            .filter(n => (Number(n.id) || 0) > lastApplicantNotificationId)
+                            .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+                        fresh.forEach(n => {
                             const cleanMsg = (n.message || '').replace(/\s*\((Full-Time|Part-Time)\)/gi, '');
-                            el.innerHTML = `
-                                <span class="db-notif-icon">${iconSvg}</span>
-                                <div>
-                                    <p class="db-notif-title">${window.InstantCrewShared.escHtml(n.title)}</p>
-                                    <p class="db-notif-desc">${window.InstantCrewShared.escHtml(cleanMsg)}</p>
-                                <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
-                                </div>
-                            `;
                             const offerJobId = n.type === 'match' ? notificationJobId(n) : '';
-                            if (offerJobId) {
-                                el.style.cursor = 'pointer';
-                                el.title = 'Open this job offer';
-                                el.addEventListener('click', () => openApplicantOffer(offerJobId));
-                                const action = document.createElement('span');
-                                action.textContent = 'Open offer →';
-                                action.style.cssText = 'display:block;margin:6px 0 0 28px;color:#6D28D9;font-size:0.76rem;font-weight:700;';
-                                el.appendChild(action);
-                            }
-                            notifList.appendChild(el);
+                            window.InstantCrewShared.showSystemNotification(n.title, cleanMsg, {
+                                tag: `applicant-${n.id}`,
+                                url: offerJobId ? `/applicant.html?job=${encodeURIComponent(offerJobId)}` : '/applicant.html'
+                            });
                         });
                     }
-                }
-
-                // Show push toast for new / un-toasted notifications (only if Active / Online)
-                if (!isOnline) return;
-                const toastedIds = getToastedNotifIds();
-                const now = Date.now();
-
-                // Find any pending match or recent notification that hasn't toasted yet
-                const pending = notifs.find(n => {
-                    if (toastedIds.includes(String(n.id))) return false;
-                    // Recent within 5 minutes or unread match
-                    const isRecent = (now - Number(n.id)) < 300000;
-                    return (!n.read || isRecent);
-                });
-
-                if (pending) {
-                    markNotifToasted(pending.id);
-                    const cleanToastMsg = (pending.message || '').replace(/\s*\((Full-Time|Part-Time)\)/gi, '');
-
-                    // Show in-app push toast with chime & click action
-                    InstantCrewShared.showPushToast(pending.title, cleanToastMsg, pending.type, () => {
-                        const offerJobId = notificationJobId(pending);
-                        if (offerJobId) openApplicantOffer(offerJobId);
-                        else {
-                            const feed = document.getElementById('shiftsSection') || document.getElementById('shiftsListContainer');
-                            if (feed) feed.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    });
-
-                    // System notification (works on mobile through the service worker)
-                    InstantCrewShared.showSystemNotification(pending.title, cleanToastMsg, { tag: `applicant-${pending.id}` });
+                    lastApplicantNotificationId = Math.max(lastApplicantNotificationId, newestId);
                 }
             }
-
-            if (notifBtn) {
-                notifBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const isHidden = notifDropdown.hidden;
-                    notifDropdown.hidden = !isHidden;
-                    if (isHidden) {
-                        fetch('/api/notifications/read', { method: 'POST', credentials: 'same-origin' });
-                        applicantNotifications = (applicantNotifications || []).map(n => ({ ...n, read: true }));
-                        if (notifBadge) notifBadge.style.display = 'none';
-                    }
-                });
-            }
-
-            if (clearNotifsBtn) {
-                clearNotifsBtn.addEventListener('click', () => {
-                    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { applicantNotifications = []; applicantNotificationsFetchedAt = Date.now(); renderWorkerNotifications(); });
-                });
-            }
-
-            document.addEventListener('click', (e) => {
-                if (notifDropdown && !notifDropdown.hidden && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
-                    notifDropdown.hidden = true;
-                }
-            });
 
             /* ═══════════════════════════════════════════════════════════
                APPLICANT ONBOARDING STEPS & AUTH MODAL CONTROLLER
@@ -6442,9 +6297,6 @@
                             applySessionToDashboard(session);
                             updateViewMode();
                             renderShiftsFeed(true);
-                            showToast('✓ Your ₱10 payment was verified by accounting! 5 hires are active.');
-                        } else if (updated.pendingPayment?.status === 'rejected') {
-                            showToast('✕ Your ₱10 payment receipt was rejected by accounting.', true);
                         }
                     }
                 } catch (e) { }
@@ -7688,10 +7540,10 @@
                             sessionStorage.removeItem('ic_applicant_pending_pass');
                         }
                         await refreshHiringPass();
+                        if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast('Welcome back!');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
@@ -7796,10 +7648,10 @@
                         }
                         saveWorkerSession(newSession);
                         session = newSession;
+                        if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-                        showToast('Account created. Pay ₱10 to activate your first 5 hires.');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -7825,9 +7677,15 @@
                     return refreshHiringPass();
                 }).then(() => {
                     if (!hasWorkerSession()) return;
+                    if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
                     saveWorkerSession(session);
                     applySessionToDashboard(session);
                     updateViewMode();
+                    const linkedJobId = new URLSearchParams(window.location.search).get('job');
+                    if (linkedJobId) {
+                        history.replaceState(null, '', window.location.pathname);
+                        openApplicantOffer(linkedJobId);
+                    }
                 }).catch(() => { });
             }
 
@@ -7907,7 +7765,7 @@
     </script>
     <script src="js/email-code.js?v=20261030-login-code"></script>
     <script src="/js/session.js"></script>
-    <script src="js/payment-history.js?v=20261029-escape-user-text-merged"></script>
+    <script src="js/payment-history.js?v=20261030-extnotif"></script>
     <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>
 </body>
 

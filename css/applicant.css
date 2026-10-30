@@ -5205,15 +5205,6 @@ body.app-sheet-open {
     min-width: 0;
 }
 
-.app-location-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #D97706;
-    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
-    flex-shrink: 0;
-}
-
 .app-location-pin-icon {
     flex-shrink: 0;
     color: #64748B;

@@ -5,10 +5,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 )
+
+// TransitCancelPenaltyCentavos (₱50) is added to the employer's next search fee
+// for each crew member they end while that crew member is on the way.
+const TransitCancelPenaltyCentavos = 5000
+
+// PaymentDeadline is how long an employer has, after a crew member accepts, to
+// submit the search fee receipt before that crew member is released.
+const PaymentDeadline = 3 * time.Minute
 
 var (
 	ErrBadState        = errors.New("job is not in a valid state for this action")
@@ -27,13 +34,7 @@ type Job struct {
 	ScheduledAt                 *time.Time
 	CrewNeeded, AcceptedCount   int
 	Status                      string
-	SearchAttempts              int
-	SearchExpiresAt             *time.Time
-	CurrentTry                  int
-	MaxTries                    int
-	CurrentAttempt              int
-	MaxAttempts                 int
-	CurrentBatch                int
+	SearchAttempts              int // number of searches started; the current one's fee has search_attempt = SearchAttempts
 	CreatedAt, UpdatedAt        time.Time
 }
 
@@ -73,7 +74,7 @@ type JobPayment struct {
 
 const jobCols = `id, employer_id, category, role_id, role_label, employment_type, rate_centavos,
 	rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
-	accepted_count, status, search_attempts, search_expires_at, current_try, max_tries, current_attempt, max_attempts, current_batch, created_at, updated_at`
+	accepted_count, status, search_attempts, created_at, updated_at`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -84,13 +85,11 @@ type queryer interface {
 func scanJob(r rowScanner) (*Job, error) {
 	var j Job
 	var lat, lng sql.NullFloat64
-	var sched, exp sql.NullInt64
-	var curTry, maxTries, curAtt, maxAtt, curBatch sql.NullInt64
+	var sched sql.NullInt64
 	var created, updated int64
 	err := r.Scan(&j.ID, &j.EmployerID, &j.Category, &j.RoleID, &j.RoleLabel, &j.EmploymentType,
 		&j.RateCentavos, &j.RatePeriod, &j.City, &j.MapLocation, &j.MapsURL, &lat, &lng, &j.Timing,
-		&sched, &j.CrewNeeded, &j.AcceptedCount, &j.Status, &j.SearchAttempts, &exp,
-		&curTry, &maxTries, &curAtt, &maxAtt, &curBatch, &created, &updated)
+		&sched, &j.CrewNeeded, &j.AcceptedCount, &j.Status, &j.SearchAttempts, &created, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -103,30 +102,6 @@ func scanJob(r rowScanner) (*Job, error) {
 	if sched.Valid {
 		t := time.Unix(sched.Int64, 0)
 		j.ScheduledAt = &t
-	}
-	if exp.Valid {
-		t := time.Unix(exp.Int64, 0)
-		j.SearchExpiresAt = &t
-	}
-	j.CurrentTry = 1
-	if curTry.Valid && curTry.Int64 > 0 {
-		j.CurrentTry = int(curTry.Int64)
-	}
-	j.MaxTries = 3
-	if maxTries.Valid && maxTries.Int64 > 0 {
-		j.MaxTries = int(maxTries.Int64)
-	}
-	j.CurrentAttempt = 1
-	if curAtt.Valid && curAtt.Int64 > 0 {
-		j.CurrentAttempt = int(curAtt.Int64)
-	}
-	j.MaxAttempts = 3
-	if maxAtt.Valid && maxAtt.Int64 > 0 {
-		j.MaxAttempts = int(maxAtt.Int64)
-	}
-	j.CurrentBatch = 1
-	if curBatch.Valid && curBatch.Int64 > 0 {
-		j.CurrentBatch = int(curBatch.Int64)
 	}
 	j.CreatedAt, j.UpdatedAt = time.Unix(created, 0), time.Unix(updated, 0)
 	return &j, nil
@@ -245,56 +220,26 @@ func (s *Store) ListJobs(ctx context.Context, employerID int64, statuses []strin
 	return out, rows.Err()
 }
 
-// StartSearch opens a search window only after accounting has verified the fee.
+// StartSearch opens a search that stays open until a crew member accepts or the
+// employer cancels. The fee is paid later, once a crew member has accepted.
 // The status guard makes double-clicks and concurrent requests safe: only one wins.
-func (s *Store) StartSearch(ctx context.Context, employerID, id int64, window time.Duration) error {
+func (s *Store) StartSearch(ctx context.Context, employerID, id int64) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	var payStatus string
-	err = tx.QueryRowContext(ctx, `
-		SELECT p.status FROM jobs j
-		JOIN payments p ON p.job_id=j.id AND p.search_attempt=j.search_attempts+1
-		WHERE j.id=$1 AND j.employer_id=$2 AND j.status IN ('draft','unfulfilled')`,
-		id, employerID).Scan(&payStatus)
-	if errors.Is(err, sql.ErrNoRows) {
-		return ErrPaymentNotVerified
-	}
-	if err != nil {
-		return err
-	}
-	switch strings.ToLower(payStatus) {
-	case "verified":
-	case "rejected":
-		return ErrPaymentRejected
-	default:
-		return ErrPaymentNotVerified
-	}
-
 	now := time.Now()
 	res, err := tx.ExecContext(ctx, `
-		UPDATE jobs SET status='matching', search_attempts = search_attempts + 1,
-			current_try = 1, max_tries = 3, current_attempt = 1, max_attempts = 3, current_batch = 1,
-			search_expires_at = $1, updated_at = $2
-		WHERE id = $3 AND employer_id = $4 AND status IN ('draft','unfulfilled')
-		AND EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id
-			AND p.search_attempt=jobs.search_attempts+1 AND p.status='verified')`,
-		now.Add(window).Unix(), now.Unix(), id, employerID)
+		UPDATE jobs SET status='matching', search_attempts = search_attempts + 1, updated_at = $1
+		WHERE id = $2 AND employer_id = $3 AND status IN ('draft','unfulfilled')`,
+		now.Unix(), id, employerID)
 	if err != nil {
 		return err
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
-	}
-	var searchAttempt int
-	if err := tx.QueryRowContext(ctx, `SELECT search_attempts FROM jobs WHERE id=$1`, id).Scan(&searchAttempt); err != nil {
-		return err
-	}
-	if err := createMatchBatch(ctx, tx, id, searchAttempt, 1); err != nil {
-		return err
 	}
 	s.notifyMatchingCrew(ctx, tx, id, now)
 	return tx.Commit()
@@ -339,14 +284,12 @@ func (s *Store) LatestJobPayments(ctx context.Context, jobIDs []int64) (map[int6
 	return out, rows.Err()
 }
 
-func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
-	_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
-		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_build_object('job_id', j.id)::text,$1
-		FROM jobs j JOIN job_match_batch_members b ON b.job_id=j.id AND b.search_attempt=j.search_attempts AND b.batch_number=j.current_batch
-		JOIN applicant_profiles p ON p.user_id=b.applicant_id AND p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
-			AND `+eligibleCrew+`
+// matchingCrew selects the applicant profiles p who can take job j.id=$1.
+const matchingCrew = `FROM jobs j
+		JOIN applicant_profiles p ON p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
+			AND p.employment_type=j.employment_type AND ` + eligibleCrew + `
 		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
-		WHERE j.id=$2 AND p.employment_type=j.employment_type
+		WHERE j.id=$1
 		AND NOT EXISTS (
 			SELECT 1 FROM job_assignments active_assignment
 			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
@@ -362,121 +305,91 @@ func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64,
 				SELECT 1 FROM applicant_availability av
 				WHERE av.applicant_id=p.user_id AND av.status='available'
 				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
-			))))`, now.Unix(), jobID)
+			))))`
+
+func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
+	_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_build_object('job_id', j.id)::text,$2
+		`+matchingCrew, jobID, now.Unix())
 }
 
-// RecordMatchFee records the fee for the next search attempt before crew are notified.
-// Receipts start as pending until an admin verifies them. A rejected receipt can be replaced.
-func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method, details, proofImage string, feeCentavos int64, ref string) error {
+// EmployerSearchPenalty is the transit-cancel penalty the employer still owes.
+func (s *Store) EmployerSearchPenalty(ctx context.Context, employerID int64) (int64, error) {
+	var p int64
+	err := s.db.QueryRowContext(ctx, `SELECT search_penalty_centavos FROM users WHERE id=$1`, employerID).Scan(&p)
+	return p, err
+}
+
+// RecordMatchFee records the current search's fee once a crew member has accepted.
+// The fee is baseCentavos plus the employer's owed penalties. Receipts start as
+// pending until accounting verifies them; a rejected receipt can be replaced, and
+// is re-priced so penalties added since are included.
+func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method, details, proofImage string, baseCentavos int64, ref string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	var penalty int64
+	if err := tx.QueryRowContext(ctx, `SELECT search_penalty_centavos FROM users WHERE id=$1 FOR UPDATE`, employerID).Scan(&penalty); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	var attempt int
+	err = tx.QueryRowContext(ctx, `SELECT search_attempts FROM jobs WHERE id=$1 AND employer_id=$2 AND status='accepted' FOR UPDATE`,
+		id, employerID).Scan(&attempt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return missOrBadState(ctx, tx, employerID, id)
+	}
+	if err != nil {
+		return err
+	}
+
 	now := time.Now().Unix()
 	var paymentID int64
-	err = tx.QueryRowContext(ctx, `
-		INSERT INTO payments (job_id, user_id, amount_centavos, method, details, proof_image, search_attempt, status, provider_ref, created_at)
-		SELECT id, employer_id, $1::bigint, $2::text, $3::text, $4::text, search_attempts+1, 'pending', $5::text, $6::bigint FROM jobs
-		WHERE id=$7 AND employer_id=$8 AND status IN ('draft','unfulfilled')
-		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=jobs.id AND p.search_attempt=jobs.search_attempts+1)
-		RETURNING id`,
-		feeCentavos, method, details, proofImage, ref, now, id, employerID).Scan(&paymentID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	var status string
+	err = tx.QueryRowContext(ctx, `SELECT id, COALESCE(status,'') FROM payments WHERE job_id=$1 AND search_attempt=$2`, id, attempt).Scan(&paymentID, &status)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		err = tx.QueryRowContext(ctx, `
+			INSERT INTO payments (job_id, user_id, amount_centavos, penalty_centavos, method, details, proof_image, search_attempt, status, provider_ref, created_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending',$9,$10) RETURNING id`,
+			id, employerID, baseCentavos+penalty, penalty, method, details, proofImage, attempt, ref, now).Scan(&paymentID)
+	case err != nil:
 		return err
+	case status == "rejected":
+		_, err = tx.ExecContext(ctx, `
+			UPDATE payments SET amount_centavos=$1, penalty_centavos=$2, method=$3, details=$4, proof_image=$5, status='pending',
+				provider_ref=$6, created_at=$7, verified_at=NULL, verified_by='', rejection_reason=''
+			WHERE id=$8`,
+			baseCentavos+penalty, penalty, method, details, proofImage, ref, now, paymentID)
+	default:
+		return nil // already pending or verified: a repeated submit changes nothing
 	}
-	if err == nil {
-		jobID := id
-		if err := addPaymentSubmittedNotification(ctx, tx, employerID, paymentID, "employer", &jobID, now); err != nil {
-			return err
-		}
-		return tx.Commit()
-	}
-
-	// Replace a rejected receipt for the same attempt.
-	res, err := tx.ExecContext(ctx, `
-		UPDATE payments SET method=$1, details=$2, proof_image=$3, status='pending',
-			provider_ref=$4, created_at=$5, verified_at=NULL, verified_by='', rejection_reason=''
-		WHERE job_id=$6 AND search_attempt=(
-			SELECT search_attempts+1 FROM jobs WHERE id=$7 AND employer_id=$8 AND status IN ('draft','unfulfilled')
-		) AND status='rejected'`,
-		method, details, proofImage, ref, now, id, id, employerID)
 	if err != nil {
 		return err
 	}
-	if n, _ := res.RowsAffected(); n > 0 {
-		var paymentID int64
-		if err := tx.QueryRowContext(ctx, `SELECT id FROM payments WHERE job_id=$1 AND search_attempt=(SELECT search_attempts+1 FROM jobs WHERE id=$2)`, id, id).Scan(&paymentID); err != nil {
-			return err
-		}
-		jobID := id
-		if err := addPaymentSubmittedNotification(ctx, tx, employerID, paymentID, "employer", &jobID, now); err != nil {
-			return err
-		}
-		return tx.Commit()
-	}
-
-	var sameAttempt int
-	err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM jobs j JOIN payments p ON p.job_id=j.id
-		WHERE j.id=$1 AND j.employer_id=$2
-		AND ((j.status IN ('draft','unfulfilled') AND p.search_attempt=j.search_attempts+1)
-			OR (j.status='matching' AND p.search_attempt=j.search_attempts))
-		AND p.status IN ('paid', 'pending', 'verified') AND p.method=$3`,
-		id, employerID, method).Scan(&sameAttempt)
-	if err != nil {
+	jobID := id
+	if err := addPaymentSubmittedNotification(ctx, tx, employerID, paymentID, "employer", &jobID, now); err != nil {
 		return err
 	}
-	if sameAttempt > 0 {
-		return nil
-	}
-	return missOrBadState(ctx, tx, employerID, id)
+	return tx.Commit()
 }
 
-// MatchingApplicants returns the stable randomized batch selected for the current
-// three-minute window. Polling this endpoint never changes the batch.
+// MatchingApplicants returns the crew who can currently take this open search.
 func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedApplicant, error) {
-	// Backfill a batch for searches that were already active when this version deployed.
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	var attempt, batch int
-	if err := tx.QueryRowContext(ctx, `SELECT search_attempts,current_batch FROM jobs WHERE id=$1 AND status='matching'`, jobID).Scan(&attempt, &batch); err != nil {
-		tx.Rollback()
-		if errors.Is(err, sql.ErrNoRows) {
-			return []MatchedApplicant{}, nil
-		}
-		return nil, err
-	}
-	var existing int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM job_match_batch_members WHERE job_id=$1 AND search_attempt=$2 AND batch_number=$3`, jobID, attempt, batch).Scan(&existing); err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-	if existing == 0 {
-		if err := createMatchBatch(ctx, tx, jobID, attempt, batch); err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT u.name,p.expected_rate,p.rate_period,p.city,p.availability_mode
-		FROM job_match_batch_members b
-		JOIN jobs j ON j.id=b.job_id AND j.search_attempts=b.search_attempt AND j.current_batch=b.batch_number
-		JOIN applicant_profiles p ON p.user_id=b.applicant_id
-		JOIN users u ON u.id=p.user_id
-		WHERE b.job_id=$1 AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>$2)
-		AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=b.job_id AND a.applicant_id=b.applicant_id AND a.status='rejected')
-		ORDER BY b.slot`, jobID, time.Now().Unix())
+		`+matchingCrew+`
+		AND j.status='matching'
+		ORDER BY u.name`, jobID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	matches := make([]MatchedApplicant, 0, 5)
+	matches := make([]MatchedApplicant, 0)
 	for rows.Next() {
 		var applicant MatchedApplicant
 		if err := rows.Scan(&applicant.Name, &applicant.ExpectedRate, &applicant.RatePeriod, &applicant.City, &applicant.AvailabilityMode); err != nil {
@@ -487,264 +400,120 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 	return matches, rows.Err()
 }
 
-type matchBatchExecer interface {
-	ExecContext(context.Context, string, ...any) (sql.Result, error)
-	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
-	QueryRowContext(context.Context, string, ...any) *sql.Row
-}
-
-func createMatchBatch(ctx context.Context, q matchBatchExecer, jobID int64, searchAttempt, batch int) error {
-	rows, err := q.QueryContext(ctx, `
-		SELECT p.user_id FROM jobs j
-		JOIN applicant_profiles p ON p.is_active=true AND `+eligibleCrew+`
-		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
-		WHERE j.id=$1 AND j.status='matching' AND p.employment_type=j.employment_type
-		AND lower(trim(p.city))=lower(trim(j.city))
-		AND ((j.timing='now' AND p.availability_mode='now') OR (j.timing='later' AND (p.availability_mode='now' OR EXISTS (
-			SELECT 1 FROM applicant_availability av WHERE av.applicant_id=p.user_id AND av.status='available'
-			AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at))))
-		AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=p.user_id AND a.status IN ('pending','accepted','rejected'))
-		AND NOT EXISTS (SELECT 1 FROM job_assignments a JOIN jobs aj ON aj.id=a.job_id
-			WHERE a.applicant_id=p.user_id AND a.ended_at IS NULL AND aj.role_id=j.role_id)`, jobID)
+// DeclineMatch lets the employer turn down the crew member who accepted. The job
+// goes back to an open search, and that crew member is not offered it again.
+func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64) (*Job, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	var pool []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
-			return err
-		}
-		pool = append(pool, id)
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return err
-	}
-	rows.Close()
+	defer tx.Rollback()
 
-	seen := map[int64]bool{}
-	rows, err = q.QueryContext(ctx, `SELECT DISTINCT applicant_id FROM job_match_batch_members WHERE job_id=$1 AND search_attempt=$2`, jobID, searchAttempt)
-	if err != nil {
-		return err
-	}
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
-			return err
-		}
-		seen[id] = true
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return err
-	}
-	rows.Close()
-	if len(pool) == 0 {
-		return nil
-	}
-	rand.Shuffle(len(pool), func(i, j int) { pool[i], pool[j] = pool[j], pool[i] })
-	var fresh, chosen []int64
-	for _, id := range pool {
-		if !seen[id] {
-			fresh = append(fresh, id)
-		}
-	}
-	rand.Shuffle(len(fresh), func(i, j int) { fresh[i], fresh[j] = fresh[j], fresh[i] })
-	limit := 5
-	if len(pool) < limit {
-		limit = len(pool)
-	}
-	if len(fresh) > limit {
-		fresh = fresh[:limit]
-	}
-	chosen = append(chosen, fresh...)
-	if len(chosen) < limit {
-		selected := map[int64]bool{}
-		for _, id := range chosen {
-			selected[id] = true
-		}
-		var repeat []int64
-		for _, id := range pool {
-			if !selected[id] {
-				repeat = append(repeat, id)
-			}
-		}
-		rand.Shuffle(len(repeat), func(i, j int) { repeat[i], repeat[j] = repeat[j], repeat[i] })
-		chosen = append(chosen, repeat[:limit-len(chosen)]...)
-	}
-	for slot, id := range chosen {
-		if _, err := q.ExecContext(ctx, `INSERT INTO job_match_batch_members(job_id,search_attempt,batch_number,slot,applicant_id) VALUES($1,$2,$3,$4,$5)`, jobID, searchAttempt, batch, slot, id); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// ExpireSearches advances timed-out searches to the next attempt, next try, or unfulfilled.
-func (s *Store) ExpireSearches(ctx context.Context, window time.Duration) (int64, error) {
 	now := time.Now().Unix()
+	res, err := tx.ExecContext(ctx, `UPDATE jobs SET accepted_count = 0, status = 'matching', updated_at = $1
+		WHERE id = $2 AND employer_id = $3 AND status = 'accepted'`, now, id, employerID)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, missOrBadState(ctx, tx, employerID, id)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now, id); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE job_applications SET status = 'rejected', updated_at = $1 WHERE job_id = $2 AND status = 'accepted'`, now, id); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return s.GetJob(ctx, employerID, id)
+}
+
+// ReleaseUnpaidMatches frees crew whose employer submitted no search fee receipt
+// within PaymentDeadline of their acceptance: the job goes back to an open
+// search and both sides are told. It returns how many jobs it released.
+// shortcut: a rejected receipt keeps the crew member held until the employer
+// re-uploads or declines; add a rejection timestamp if that gets abused.
+func (s *Store) ReleaseUnpaidMatches(ctx context.Context) (int, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, employer_id FROM jobs
-		WHERE status='matching' AND search_expires_at IS NOT NULL AND search_expires_at <= $1`, now)
+		SELECT DISTINCT j.id FROM jobs j JOIN job_assignments a ON a.job_id=j.id AND a.ended_at IS NULL
+		WHERE j.status='accepted' AND a.accepted_at <= $1
+		AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id=j.id AND p.search_attempt=j.search_attempts)`,
+		time.Now().Add(-PaymentDeadline).Unix())
 	if err != nil {
 		return 0, err
 	}
-	defer rows.Close()
-
-	type refItem struct {
-		id, empID int64
-	}
-	var expired []refItem
+	var ids []int64
 	for rows.Next() {
-		var it refItem
-		if err := rows.Scan(&it.id, &it.empID); err == nil {
-			expired = append(expired, it)
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, err
 		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, err
 	}
 	rows.Close()
-
-	var count int64
-	for _, it := range expired {
-		if _, err := s.AdvanceSearchAttempt(ctx, it.empID, it.id, window); err == nil {
+	count := 0
+	for _, id := range ids {
+		ok, err := s.releaseUnpaidMatch(ctx, id)
+		if err != nil {
+			return count, err
+		}
+		if ok {
 			count++
 		}
 	}
 	return count, nil
 }
 
-// AdvanceSearchAttempt advances to the next attempt (within the try) or next try (up to 3 tries, 3 attempts each).
-// It only acts on a window that has really run out, so the background sweep and the
-// employer's own timeout call can race without skipping a batch.
-func (s *Store) AdvanceSearchAttempt(ctx context.Context, employerID, id int64, window time.Duration) (*Job, error) {
+func (s *Store) releaseUnpaidMatch(ctx context.Context, jobID int64) (bool, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	defer tx.Rollback()
-
-	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2 FOR UPDATE`, id, employerID))
+	// Lock first, then re-check in a fresh statement: a receipt submitted while we
+	// waited for the lock must keep the crew member.
+	var employerID int64
+	var roleLabel string
+	err = tx.QueryRowContext(ctx, `SELECT employer_id, role_label FROM jobs WHERE id=$1 AND status='accepted' FOR UPDATE`, jobID).Scan(&employerID, &roleLabel)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	now := time.Now()
-	if j.Status != "matching" || (j.SearchExpiresAt != nil && j.SearchExpiresAt.After(now)) {
-		return j, nil
-	}
-
-	if j.CurrentAttempt < j.MaxAttempts {
-		j.CurrentAttempt++
-		j.CurrentBatch++
-		newExpires := now.Add(window).Unix()
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE jobs SET current_attempt=$1, current_batch=$2, search_expires_at=$3, updated_at=$4
-			WHERE id=$5 AND employer_id=$6 AND status='matching'`,
-			j.CurrentAttempt, j.CurrentBatch, newExpires, now.Unix(), id, employerID); err != nil {
-			return nil, err
-		}
-		if err := createMatchBatch(ctx, tx, id, j.SearchAttempts, j.CurrentBatch); err != nil {
-			return nil, err
-		}
-		s.notifyMatchingCrew(ctx, tx, id, now)
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return s.GetJob(ctx, employerID, id)
+	var paid bool
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM payments p JOIN jobs j ON j.id=p.job_id
+		WHERE j.id=$1 AND p.search_attempt=j.search_attempts)`, jobID).Scan(&paid); err != nil || paid {
+		return false, err
 	}
 
-	// Current try's 3 attempts (9 mins max) have elapsed!
-	if j.CurrentTry < j.MaxTries {
-		j.CurrentTry++
-		j.CurrentAttempt = 1
-		j.CurrentBatch++
-		newExpires := now.Add(window).Unix()
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE jobs SET current_try=$1, current_attempt=$2, current_batch=$3, search_expires_at=$4, updated_at=$5
-			WHERE id=$6 AND employer_id=$7 AND status='matching'`,
-			j.CurrentTry, j.CurrentAttempt, j.CurrentBatch, newExpires, now.Unix(), id, employerID); err != nil {
-			return nil, err
-		}
-		if err := createMatchBatch(ctx, tx, id, j.SearchAttempts, j.CurrentBatch); err != nil {
-			return nil, err
-		}
-		s.notifyMatchingCrew(ctx, tx, id, now)
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return s.GetJob(ctx, employerID, id)
+	now := time.Now().Unix()
+	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT applicant_id,'Booking released',$1,'end','{}',$2 FROM job_assignments WHERE job_id=$3 AND ended_at IS NULL`,
+		"The employer didn't pay the search fee for the "+roleLabel+" shift in time, so you're free to take other shifts.", now, jobID); err != nil {
+		return false, err
 	}
-
-	// All 3 tries expired!
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE jobs SET status='unfulfilled', updated_at=$1
-		WHERE id=$2 AND employer_id=$3 AND status='matching'`,
-		now.Unix(), id, employerID); err != nil {
-		return nil, err
+	// The crew member can't accept this same job again (one assignment per job and crew member).
+	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at=$1 WHERE job_id=$2 AND ended_at IS NULL`, now, jobID); err != nil {
+		return false, err
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
+	if _, err := tx.ExecContext(ctx, `UPDATE jobs SET status='matching', accepted_count=0, updated_at=$1 WHERE id=$2`, now, jobID); err != nil {
+		return false, err
 	}
-	return s.GetJob(ctx, employerID, id)
-}
-
-// DeclineMatch handles employer declining the matched applicant.
-// The current try is used up, and the next try begins (if tries remain).
-func (s *Store) DeclineMatch(ctx context.Context, employerID, id int64, window time.Duration) (*Job, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
+	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		VALUES($1,'Crew released',$2,'match',json_build_object('job_id',$3::bigint)::text,$4)`,
+		employerID, "The search fee wasn't paid within 3 minutes, so your crew member was released. Your "+roleLabel+" search is open again.",
+		jobID, now); err != nil {
+		return false, err
 	}
-	defer tx.Rollback()
-
-	j, err := scanJob(tx.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs WHERE id=$1 AND employer_id=$2 FOR UPDATE`, id, employerID))
-	if err != nil {
-		return nil, err
-	}
-	if j.Status != "accepted" && j.Status != "matching" {
-		return nil, ErrBadState
-	}
-
-	now := time.Now()
-
-	// Clear assignments and mark application as rejected so they aren't immediately re-matched
-	_, _ = tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now.Unix(), id)
-	_, _ = tx.ExecContext(ctx, `UPDATE job_applications SET status = 'rejected', updated_at = $1 WHERE job_id = $2 AND status = 'accepted'`, now.Unix(), id)
-
-	// Use up the current try
-	if j.CurrentTry < j.MaxTries {
-		nextTry := j.CurrentTry + 1
-		nextBatch := j.CurrentBatch + 1
-		newExpires := now.Add(window).Unix()
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE jobs SET accepted_count = 0, status = 'matching',
-				current_try = $1, current_attempt = 1, current_batch = $2, search_expires_at = $3, updated_at = $4
-			WHERE id = $5 AND employer_id = $6`,
-			nextTry, nextBatch, newExpires, now.Unix(), id, employerID); err != nil {
-			return nil, err
-		}
-		if err := createMatchBatch(ctx, tx, id, j.SearchAttempts, nextBatch); err != nil {
-			return nil, err
-		}
-		s.notifyMatchingCrew(ctx, tx, id, now)
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return s.GetJob(ctx, employerID, id)
-	}
-
-	// All 3 tries used up!
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE jobs SET accepted_count = 0, status = 'unfulfilled', updated_at = $1
-		WHERE id = $2 AND employer_id = $3`,
-		now.Unix(), id, employerID); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return s.GetJob(ctx, employerID, id)
+	return true, tx.Commit()
 }
 
 // AcceptJob atomically gives the offer to the first applicant who accepts.
@@ -804,13 +573,13 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 		UPDATE jobs SET accepted_count = 1,
 			status = 'accepted',
 			updated_at = $1
-		WHERE id = $2 AND status = 'matching' AND (search_expires_at IS NULL OR search_expires_at > $3) AND accepted_count = 0
+		WHERE id = $2 AND status = 'matching' AND accepted_count = 0
 		AND NOT EXISTS (
 			SELECT 1 FROM job_assignments active_assignment
 			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
-			WHERE active_assignment.applicant_id=$4 AND active_assignment.ended_at IS NULL
+			WHERE active_assignment.applicant_id=$3 AND active_assignment.ended_at IS NULL
 			AND assigned_job.role_id=jobs.role_id
-		)`, now, jobID, now, applicantID)
+		)`, now, jobID, applicantID)
 	if err != nil {
 		return err
 	}
@@ -852,17 +621,42 @@ func (s *Store) transition(ctx context.Context, employerID, id int64, to string,
 	return nil
 }
 
-// ConfirmJob is the moment an employer secures the crew member. The job moves
-// accepted -> active and one hire is spent for each assigned crew member, in the
-// same transaction, so a hire is never charged for an unconfirmed or declined match.
+// ConfirmJob is the moment an employer secures the crew member, once accounting has
+// verified the current search's fee. Verifying the fee also confirms the job (see
+// SetPaymentStatus); this covers a fee verified before the current crew member accepted.
 func (s *Store) ConfirmJob(ctx context.Context, employerID, id int64) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	if err := confirmJob(ctx, tx, employerID, id, time.Now().Unix()); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
 
-	now := time.Now().Unix()
+// confirmJob moves accepted -> active and spends one hire per assigned crew member
+// in the caller's transaction, so a hire is never charged for an unconfirmed or
+// declined match. It needs the current search's fee to be verified.
+func confirmJob(ctx context.Context, tx *sql.Tx, employerID, id, now int64) error {
+	var payStatus string
+	err := tx.QueryRowContext(ctx, `SELECT COALESCE(p.status,'') FROM jobs j
+		JOIN payments p ON p.job_id=j.id AND p.search_attempt=j.search_attempts
+		WHERE j.id=$1 AND j.employer_id=$2`, id, employerID).Scan(&payStatus)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	switch payStatus {
+	case "verified":
+	case "rejected":
+		return ErrPaymentRejected
+	default:
+		if errors.Is(missOrBadState(ctx, tx, employerID, id), ErrNotFound) {
+			return ErrNotFound
+		}
+		return ErrPaymentNotVerified
+	}
 	res, err := tx.ExecContext(ctx,
 		`UPDATE jobs SET status='active', updated_at=$1 WHERE id=$2 AND employer_id=$3 AND status='accepted'`,
 		now, id, employerID)
@@ -871,6 +665,11 @@ func (s *Store) ConfirmJob(ctx context.Context, employerID, id int64) error {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT applicant_id,'Booking confirmed','The employer confirmed your shift booking.','accept','{}',$1
+		FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL`, now, id); err != nil {
+		return err
 	}
 	// The arrival clock starts now, or at the scheduled start for later shifts.
 	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments
@@ -884,7 +683,7 @@ func (s *Store) ConfirmJob(ctx context.Context, employerID, id int64) error {
 			SELECT applicant_id FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL)`, now, id); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
 func (s *Store) CancelJob(ctx context.Context, employerID, id int64) error {
@@ -907,6 +706,22 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return missOrBadState(ctx, tx, employerID, id)
+	}
+	// Ending crew who are already on the way adds a penalty per crew member to the next search fee.
+	res, err = tx.ExecContext(ctx, `UPDATE users SET search_penalty_centavos = search_penalty_centavos + $1 * (
+			SELECT COUNT(*) FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL AND transit_status='en_route')
+		WHERE id=$3 AND EXISTS (SELECT 1 FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL AND transit_status='en_route')`,
+		TransitCancelPenaltyCentavos, id, employerID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+			VALUES($1,'Cancellation penalty',$2,'payment',json_build_object('job_id',$3::bigint)::text,$4)`,
+			employerID, "You ended the contract while your crew was on the way. "+pesos(TransitCancelPenaltyCentavos)+" per crew member is added to your next crew search fee.",
+			id, now); err != nil {
+			return err
+		}
 	}
 	if _, err := tx.ExecContext(ctx,
 		`UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now, id); err != nil {

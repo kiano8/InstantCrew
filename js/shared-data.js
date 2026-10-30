@@ -372,88 +372,11 @@
     function markAllNotificationsRead() { /* use POST /api/notifications/read */ }
     function clearNotifications() { /* use DELETE /api/notifications */ }
 
-    // Push Toast Helper using pure SVG vector icons
-    function showPushToast(title, message, iconOrType, onClick) {
-        // Remove existing toast if any
+    // In-app push toasts are disabled so alerts are delivered exclusively via
+    // external phone/desktop system notifications without duplicate in-app popups.
+    function showPushToast() {
         const existing = document.querySelector('.db-push-toast');
         if (existing) existing.remove();
-
-        let iconMarkup = '';
-        if (typeof iconOrType === 'string' && iconOrType.trim().startsWith('<svg')) {
-            iconMarkup = iconOrType;
-        } else if (iconOrType === 'accept' || iconOrType === 'party') {
-            iconMarkup = ICONS.party(20, '#10B981');
-        } else if (iconOrType === 'end' || iconOrType === 'clipboard') {
-            iconMarkup = ICONS.clipboard(20);
-        } else if (iconOrType === 'match' || iconOrType === 'bolt') {
-            iconMarkup = ICONS.bolt(20, '#F59E0B');
-        } else if (iconOrType === 'transit' || iconOrType === 'on_the_way') {
-            iconMarkup = ICONS.delivery(20);
-        } else if (iconOrType === 'arrived') {
-            iconMarkup = ICONS.checkCircle(20, '#10B981');
-        } else if (iconOrType === 'check' || iconOrType === '✓') {
-            iconMarkup = ICONS.checkCircle(20, '#10B981');
-        } else if (iconOrType === 'alert') {
-            iconMarkup = ICONS.alert(20, '#F59E0B');
-        } else {
-            iconMarkup = ICONS.bell(20);
-        }
-
-        const toast = document.createElement('div');
-        toast.className = 'db-push-toast';
-        if (onClick) {
-            toast.style.cursor = 'pointer';
-            toast.setAttribute('title', 'Click to view offer');
-            toast.addEventListener('click', (e) => {
-                onClick(e);
-            });
-        }
-        toast.innerHTML = `
-            <span class="db-push-toast-icon">${iconMarkup}</span>
-            <div class="db-push-toast-body">
-                <p class="db-push-toast-title">${escHtml(title)}</p>
-                <p class="db-push-toast-msg">${escHtml(message)}</p>
-            </div>
-            <button type="button" class="db-push-toast-close" aria-label="Dismiss">&times;</button>
-        `;
-
-        toast.querySelector('.db-push-toast-close').addEventListener('click', (e) => {
-            e.stopPropagation();
-            toast.remove();
-        });
-
-        document.body.appendChild(toast);
-
-        // Play gentle notification chime
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) {
-                const ctx = new AudioCtx();
-                if (ctx.state === 'suspended') {
-                    ctx.resume().catch(() => { });
-                }
-                const now = ctx.currentTime;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, now); // D5
-                osc.frequency.setValueAtTime(880, now + 0.08); // A5
-                gain.gain.setValueAtTime(0.08, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            }
-        } catch { }
-
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.style.animation = 'pushToastIn 0.3s reverse forwards';
-                setTimeout(() => toast.remove(), 300);
-            }
-        }, 5000);
     }
 
     // System (OS-level) notifications. Mobile browsers reject `new Notification()`
@@ -504,12 +427,20 @@
         return current.length === bytes.length && current.every((b, i) => b === bytes[i]);
     }
 
+    function pushRoleQuery() {
+        const p = (window.location && window.location.pathname) || '';
+        if (/applicant\.html/i.test(p)) return '?role=applicant';
+        if (/employer\.html/i.test(p)) return '?role=employer';
+        return '';
+    }
+
     async function syncPushSubscription() {
         if (!('PushManager' in window) || !('Notification' in window) || Notification.permission !== 'granted') return false;
         try {
             const registration = await getNotificationRegistration();
             if (!registration || !registration.pushManager) return false;
-            const keyResponse = await fetch('/api/push/key', { credentials: 'same-origin' });
+            const roleQuery = pushRoleQuery();
+            const keyResponse = await fetch('/api/push/key' + roleQuery, { credentials: 'same-origin' });
             if (!keyResponse.ok) return false; // logged out, or push not configured on the server
             const { public_key: publicKey } = await keyResponse.json();
             const serverKey = base64UrlToBytes(publicKey);
@@ -523,7 +454,7 @@
             if (!subscription) {
                 subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: serverKey });
             }
-            const saved = await fetch('/api/push/subscribe', {
+            const saved = await fetch('/api/push/subscribe' + roleQuery, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
@@ -544,7 +475,7 @@
             const registration = await getNotificationRegistration();
             const subscription = registration && registration.pushManager && await registration.pushManager.getSubscription();
             if (!subscription) return;
-            await fetch('/api/push/unsubscribe', {
+            await fetch('/api/push/unsubscribe' + pushRoleQuery(), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
@@ -560,7 +491,7 @@
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         const options = {
             body,
-            icon: '/images/logo.png',
+            icon: '/images/icon-192.png',
             badge: '/images/Instalogo.png',
             tag: tag || undefined,
             renotify: Boolean(tag),

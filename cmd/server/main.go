@@ -181,7 +181,6 @@ func main() {
 	jobsH := &jobs.Handler{
 		Store:            st,
 		MatchFeeCentavos: 10000,
-		SearchWindow:     3 * time.Minute,
 	}
 
 	mux := http.NewServeMux()
@@ -217,6 +216,9 @@ func main() {
 	for _, p := range []string{"/sw.js", "/manifest.json"} {
 		mux.Handle("GET "+p, static)
 	}
+	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "images/icon-192.png")
+	})
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		servePage(w, r, "index.html")
 	})
@@ -288,11 +290,11 @@ func main() {
 		for {
 			select {
 			case <-t.C:
-				if _, err := st.ExpireSearches(context.Background(), jobsH.SearchWindow); err != nil {
-					log.Printf("expire searches: %v", err)
-				}
 				if _, err := st.ExpireArrivals(context.Background()); err != nil {
 					log.Printf("expire arrivals: %v", err)
+				}
+				if _, err := st.ReleaseUnpaidMatches(context.Background()); err != nil {
+					log.Printf("release unpaid matches: %v", err)
 				}
 			case <-ctx.Done():
 				return

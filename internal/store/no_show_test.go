@@ -50,26 +50,26 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 	grantHires()
 	grantHires() // 10 hires: one on-time shift plus five no-shows
 
-	// openShift creates a job with a verified fee and starts its crew search.
+	// openShift creates a job and starts its crew search.
 	openShift := func() int64 {
 		t.Helper()
 		j := &store.Job{EmployerID: employer.ID, Category: "kitchen", RoleID: "cook", RoleLabel: "Cook",
 			EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
 			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
 		must("create job", st.CreateJob(ctx, j))
-		must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
-		pay, err := st.LatestJobPayment(ctx, j.ID)
-		must("latest payment", err)
-		must("verify fee", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
-		must("start search", st.StartSearch(ctx, employer.ID, j.ID, 3*time.Minute))
+		must("start search", st.StartSearch(ctx, employer.ID, j.ID))
 		return j.ID
 	}
-	// bookShift opens a shift, has the crew accept it and the employer confirm it.
+	// bookShift opens a shift, has the crew accept it, and has accounting verify
+	// the employer's fee, which confirms the booking.
 	bookShift := func() int64 {
 		t.Helper()
 		id := openShift()
 		must("accept", st.AcceptJob(ctx, id, crew.ID))
-		must("confirm", st.ConfirmJob(ctx, employer.ID, id))
+		must("fee", st.RecordMatchFee(ctx, employer.ID, id, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
+		pay, err := st.LatestJobPayment(ctx, id)
+		must("latest payment", err)
+		must("verify fee", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
 		return id
 	}
 	expireDeadline := func(jobID int64) {

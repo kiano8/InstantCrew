@@ -86,89 +86,12 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("create job: %v", err)
 	}
 
-	// 3. Test Employer Search Fee Flow
-	// Try start search before payment -> should fail
-	err := st.StartSearch(ctx, employer.ID, job.ID, 3*time.Minute)
-	if !errors.Is(err, store.ErrPaymentNotVerified) {
-		t.Fatalf("expected ErrPaymentNotVerified, got %v", err)
+	// 3. The search starts without any fee; the fee is only due once crew accept.
+	if err := st.StartSearch(ctx, employer.ID, job.ID); err != nil {
+		t.Fatalf("StartSearch failed: %v", err)
 	}
-
-	// Submit payment (upload receipt)
-	err = st.RecordMatchFee(ctx, employer.ID, job.ID, "gcash", "Receipt 123", "/uploads/proof1.jpg", 10000, "pay_ref_1")
-	if err != nil {
-		t.Fatalf("RecordMatchFee failed: %v", err)
-	}
-
-	// Latest payment should be pending
-	pay, err := st.LatestJobPayment(ctx, job.ID)
-	if err != nil || pay == nil {
-		t.Fatalf("LatestJobPayment failed: %v", err)
-	}
-	if pay.Status != "pending" {
-		t.Fatalf("expected status pending, got %s", pay.Status)
-	}
-
-	// Start search should fail while pending
-	err = st.StartSearch(ctx, employer.ID, job.ID, 3*time.Minute)
-	if !errors.Is(err, store.ErrPaymentNotVerified) {
-		t.Fatalf("expected ErrPaymentNotVerified, got %v", err)
-	}
-
-	// Admin lists payments -> finds employer payment
-	allPayments, err := st.ListAllPayments(ctx)
-	if err != nil {
-		t.Fatalf("ListAllPayments failed: %v", err)
-	}
-	var empPayRecord *store.AdminPaymentRecord
-	for i := range allPayments {
-		if allPayments[i].Type == "employer" && allPayments[i].UserID == employer.ID {
-			empPayRecord = &allPayments[i]
-			break
-		}
-	}
-	if empPayRecord == nil {
-		t.Fatalf("employer payment record not found in admin list")
-	}
-	if empPayRecord.Status != "pending" {
-		t.Fatalf("expected admin record pending, got %s", empPayRecord.Status)
-	}
-
-	// Admin rejects with reason
-	err = st.SetPaymentStatus(ctx, "employer", empPayRecord.RawID, "rejected", "Admin Jane", "Receipt screenshot blurry")
-	if err != nil {
-		t.Fatalf("SetPaymentStatus reject failed: %v", err)
-	}
-
-	pay, err = st.LatestJobPayment(ctx, job.ID)
-	if err != nil || pay == nil || pay.Status != "rejected" || pay.RejectionReason != "Receipt screenshot blurry" {
-		t.Fatalf("expected rejected with reason, got: %+v", pay)
-	}
-
-	err = st.StartSearch(ctx, employer.ID, job.ID, 3*time.Minute)
-	if !errors.Is(err, store.ErrPaymentRejected) {
-		t.Fatalf("expected ErrPaymentRejected, got %v", err)
-	}
-
-	// Employer re-uploads receipt
-	err = st.RecordMatchFee(ctx, employer.ID, job.ID, "gcash", "Receipt 456", "/uploads/proof2.jpg", 10000, "pay_ref_2")
-	if err != nil {
-		t.Fatalf("re-upload RecordMatchFee failed: %v", err)
-	}
-	pay, err = st.LatestJobPayment(ctx, job.ID)
-	if err != nil || pay.Status != "pending" {
-		t.Fatalf("expected pending after re-upload, got: %+v", pay)
-	}
-
-	// Admin verifies payment
-	err = st.SetPaymentStatus(ctx, "employer", empPayRecord.RawID, "verified", "Admin Jane", "")
-	if err != nil {
-		t.Fatalf("SetPaymentStatus verify failed: %v", err)
-	}
-
-	// Now StartSearch should succeed!
-	err = st.StartSearch(ctx, employer.ID, job.ID, 3*time.Minute)
-	if err != nil {
-		t.Fatalf("StartSearch failed after verification: %v", err)
+	if err := st.RecordMatchFee(ctx, employer.ID, job.ID, "gcash", "early", "/uploads/early.jpg", 10000, "pay_early"); !errors.Is(err, store.ErrBadState) {
+		t.Fatalf("expected ErrBadState paying before a crew member accepted, got %v", err)
 	}
 
 	// 4. Test Applicant Hiring Pass Flow
@@ -218,7 +141,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Admin finds applicant payment in admin list
-	allPayments, err = st.ListAllPayments(ctx)
+	allPayments, err := st.ListAllPayments(ctx)
 	if err != nil {
 		t.Fatalf("ListAllPayments failed: %v", err)
 	}
@@ -292,13 +215,127 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("expected 5 remaining hires before employer confirmation, got %d", pass.RemainingHires)
 	}
 
-	// Employer confirms the booking -> the hire is spent now.
-	if err := st.ConfirmJob(ctx, employer.ID, job.ID); err != nil {
-		t.Fatalf("ConfirmJob failed: %v", err)
+	// 5. Employer Search Fee Flow, now that a crew member accepted.
+	// The crew member can't walk away while the employer is paying for them.
+	if err := st.EndApplicantAssignment(ctx, job.ID, applicant.ID); !errors.Is(err, store.ErrBookingPending) {
+		t.Fatalf("expected ErrBookingPending ending before confirmation, got %v", err)
+	}
+	if err := st.ConfirmJob(ctx, employer.ID, job.ID); !errors.Is(err, store.ErrPaymentNotVerified) {
+		t.Fatalf("expected ErrPaymentNotVerified confirming before paying, got %v", err)
+	}
+	if err := st.RecordMatchFee(ctx, employer.ID, job.ID, "gcash", "Receipt 123", "/uploads/proof1.jpg", 10000, "pay_ref_1"); err != nil {
+		t.Fatalf("RecordMatchFee failed: %v", err)
+	}
+	pay, err := st.LatestJobPayment(ctx, job.ID)
+	if err != nil || pay == nil || pay.Status != "pending" {
+		t.Fatalf("expected pending fee, got %+v (%v)", pay, err)
+	}
+	if err := st.ConfirmJob(ctx, employer.ID, job.ID); !errors.Is(err, store.ErrPaymentNotVerified) {
+		t.Fatalf("expected ErrPaymentNotVerified while pending, got %v", err)
+	}
+	if err := st.SetPaymentStatus(ctx, "employer", pay.ID, "rejected", "Admin Jane", "Receipt screenshot blurry"); err != nil {
+		t.Fatalf("SetPaymentStatus reject failed: %v", err)
+	}
+	pay, err = st.LatestJobPayment(ctx, job.ID)
+	if err != nil || pay.Status != "rejected" || pay.RejectionReason != "Receipt screenshot blurry" {
+		t.Fatalf("expected rejected with reason, got: %+v", pay)
+	}
+	if err := st.ConfirmJob(ctx, employer.ID, job.ID); !errors.Is(err, store.ErrPaymentRejected) {
+		t.Fatalf("expected ErrPaymentRejected, got %v", err)
+	}
+	if err := st.RecordMatchFee(ctx, employer.ID, job.ID, "gcash", "Receipt 456", "/uploads/proof2.jpg", 10000, "pay_ref_2"); err != nil {
+		t.Fatalf("re-upload RecordMatchFee failed: %v", err)
+	}
+	// Verifying the fee confirms the booking and spends the crew member's hire.
+	if err := st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin Jane", ""); err != nil {
+		t.Fatalf("SetPaymentStatus verify failed: %v", err)
+	}
+	got, err := st.GetJob(ctx, employer.ID, job.ID)
+	if err != nil || got.Status != "active" {
+		t.Fatalf("expected active job after fee verification, got %+v (%v)", got, err)
 	}
 	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
 	if err != nil || pass.RemainingHires != 4 || pass.UsedHires != 1 {
 		t.Fatalf("expected 4 remaining / 1 used after confirmation, got %+v", pass)
+	}
+}
+
+// Ending crew who are on the way adds ₱50 each to the employer's next search fee,
+// cleared once that fee is verified. Ending crew who haven't left costs nothing.
+func TestStore_TransitCancelPenalty(t *testing.T) {
+	st, raw := storetest.Open(t)
+	ctx := context.Background()
+	must := func(what string, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+	}
+	must("catalog", jobs.SyncCatalog(ctx, st))
+	employer := &store.User{Email: "e@test.com", PasswordHash: "x", Role: "employer", Name: "Emp", Company: "Co"}
+	crew := &store.User{Email: "c@test.com", PasswordHash: "x", Role: "applicant", Name: "Crew"}
+	must("employer", st.CreateUser(ctx, employer))
+	must("crew", st.CreateUser(ctx, crew))
+	active := true
+	must("profile", st.SaveApplicantProfile(ctx, crew.ID, store.ApplicantProfile{EmploymentType: "full-time", ExpectedRate: 100,
+		RatePeriod: "hour", City: "Cebu City", Availability: "now", Active: &active, Roles: []string{"cook"}}))
+	_, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=10, remaining_hires=10 WHERE applicant_id=$1`, crew.ID)
+	must("hires", err)
+
+	penalty := func() int64 {
+		t.Helper()
+		p, err := st.EmployerSearchPenalty(ctx, employer.ID)
+		must("penalty", err)
+		return p
+	}
+	// book searches, gets an acceptance and pays; verify=true also verifies the fee.
+	book := func(verify bool) (jobID int64, pay *store.JobPayment) {
+		t.Helper()
+		j := &store.Job{EmployerID: employer.ID, Category: "kitchen", RoleID: "cook", RoleLabel: "Cook",
+			EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
+			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
+		must("create job", st.CreateJob(ctx, j))
+		must("search", st.StartSearch(ctx, employer.ID, j.ID))
+		must("accept", st.AcceptJob(ctx, j.ID, crew.ID))
+		must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
+		pay, err := st.LatestJobPayment(ctx, j.ID)
+		must("latest payment", err)
+		if verify {
+			must("verify", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
+		}
+		return j.ID, pay
+	}
+	amount := func(paymentID int64) (total, pen int64) {
+		t.Helper()
+		must("amount", raw.QueryRow(`SELECT amount_centavos, penalty_centavos FROM payments WHERE id=$1`, paymentID).Scan(&total, &pen))
+		return
+	}
+
+	// Ending before the crew left: no penalty.
+	id, _ := book(true)
+	must("end", st.EndJob(ctx, employer.ID, id))
+	if p := penalty(); p != 0 {
+		t.Fatalf("ending crew who hadn't left must not add a penalty, got %d", p)
+	}
+
+	// Ending twice while the crew is on the way: ₱50 each, adding up.
+	for i := 0; i < 2; i++ {
+		id, _ = book(true)
+		must("en route", st.UpdateApplicantTransit(ctx, id, crew.ID, "en_route", "t", "m", "transit"))
+		must("end", st.EndJob(ctx, employer.ID, id))
+	}
+	if p := penalty(); p != 2*store.TransitCancelPenaltyCentavos {
+		t.Fatalf("want penalty %d, got %d", 2*store.TransitCancelPenaltyCentavos, p)
+	}
+
+	// The next fee includes the penalty (₱200), and verifying it clears the penalty.
+	_, pay := book(false)
+	if total, pen := amount(pay.ID); total != 20000 || pen != 10000 {
+		t.Fatalf("want fee 20000 incl. 10000 penalty, got %d incl. %d", total, pen)
+	}
+	must("verify", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
+	if p := penalty(); p != 0 {
+		t.Fatalf("verified fee must clear its penalty, got %d", p)
 	}
 }
 
@@ -352,5 +389,61 @@ func TestStore_ConcurrentHiringPassVerifyGrantsOnce(t *testing.T) {
 	}
 	if got := after.RemainingHires - before.RemainingHires; got != 5 {
 		t.Fatalf("concurrent verifies added %d hires, want 5", got)
+	}
+}
+
+// A crew member whose employer submits no receipt within PaymentDeadline is
+// released and the search reopens; a submitted receipt keeps them booked.
+func TestStore_ReleaseUnpaidMatches(t *testing.T) {
+	st, raw := storetest.Open(t)
+	ctx := context.Background()
+	must := func(what string, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+	}
+	must("catalog", jobs.SyncCatalog(ctx, st))
+	employer := &store.User{Email: "e@test.com", PasswordHash: "x", Role: "employer", Name: "Emp", Company: "Co"}
+	must("employer", st.CreateUser(ctx, employer))
+	accepted := func(email string) int64 {
+		t.Helper()
+		crew := &store.User{Email: email, PasswordHash: "x", Role: "applicant", Name: "Crew"}
+		must("crew", st.CreateUser(ctx, crew))
+		active := true
+		must("profile", st.SaveApplicantProfile(ctx, crew.ID, store.ApplicantProfile{EmploymentType: "full-time", ExpectedRate: 100,
+			RatePeriod: "hour", City: "Cebu City", Availability: "now", Active: &active, Roles: []string{"cook"}}))
+		_, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=5, remaining_hires=5 WHERE applicant_id=$1`, crew.ID)
+		must("hires", err)
+		j := &store.Job{EmployerID: employer.ID, Category: "kitchen", RoleID: "cook", RoleLabel: "Cook",
+			EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
+			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
+		must("create job", st.CreateJob(ctx, j))
+		must("search", st.StartSearch(ctx, employer.ID, j.ID))
+		must("accept", st.AcceptJob(ctx, j.ID, crew.ID))
+		return j.ID
+	}
+	unpaid, paid, fresh := accepted("a@test.com"), accepted("b@test.com"), accepted("c@test.com")
+	must("fee", st.RecordMatchFee(ctx, employer.ID, paid, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
+	_, err := raw.Exec(`UPDATE job_assignments SET accepted_at=$1 WHERE job_id IN ($2,$3)`,
+		time.Now().Add(-store.PaymentDeadline-time.Minute).Unix(), unpaid, paid)
+	must("backdate", err)
+
+	n, err := st.ReleaseUnpaidMatches(ctx)
+	must("release", err)
+	if n != 1 {
+		t.Fatalf("want 1 released job, got %d", n)
+	}
+	for id, want := range map[int64]string{unpaid: "matching", paid: "accepted", fresh: "accepted"} {
+		j, err := st.GetJob(ctx, employer.ID, id)
+		must("get job", err)
+		if j.Status != want {
+			t.Fatalf("job %d: want %s, got %s", id, want, j.Status)
+		}
+	}
+	var open int
+	must("assignments", raw.QueryRow(`SELECT COUNT(*) FROM job_assignments WHERE job_id=$1 AND ended_at IS NULL`, unpaid).Scan(&open))
+	if open != 0 {
+		t.Fatalf("released crew member must be unassigned, %d still assigned", open)
 	}
 }

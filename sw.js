@@ -1,9 +1,10 @@
 // Instant Crew - Service Worker for PWA Add-to-Home-Screen Support
-const CACHE_NAME = 'instantcrew-v2';
+const CACHE_NAME = 'instantcrew-v5';
 const CORE_ASSETS = [
     './',
     './index.html',
     './css/styles.css',
+    './images/icon-180.png',
     './images/icon-192.png',
     './images/icon-512.png',
     './images/icon-maskable-192.png',
@@ -49,7 +50,7 @@ self.addEventListener('push', (event) => {
     event.waitUntil(
         self.registration.showNotification(data.title || 'Instant Crew', {
             body: data.body || '',
-            icon: '/images/logo.png',
+            icon: '/images/icon-192.png',
             badge: '/images/Instalogo.png',
             tag: data.tag || undefined,
             renotify: Boolean(data.tag),

@@ -12,8 +12,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css?v=20261029-deslop">
-    <link rel="icon" type="image/png" sizes="192x192" href="images/Instalogo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png">
+    <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
+    <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
+    <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png?v=20261030-2">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/icon-180.png?v=20261030-2">
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -241,8 +243,8 @@
         </div>
     </div>
 
-    <!-- ════ Toast Feedback ════ -->
-    <div class="adm-toast" id="admToast" role="status"></div>
+    <!-- In-app toast notifications removed; alerts use phone/desktop OS notifications -->
+    <script src="js/shared-data.js?v=20261030-extnotif"></script>
 
     <!-- ════ Accounting Client Script ════ -->
     <script>
@@ -309,16 +311,10 @@
             const modalCloseBtn = document.getElementById('modalCloseBtn');
             const modalRejectBtn = document.getElementById('modalRejectBtn');
             const modalVerifyBtn = document.getElementById('modalVerifyBtn');
-            const admToast = document.getElementById('admToast');
+            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications();
 
-            // Show Toast Notification
-            function showToast(msg, isSuccess = true) {
-                admToast.textContent = msg;
-                admToast.className = 'adm-toast show' + (isSuccess ? ' success' : '');
-                setTimeout(() => {
-                    admToast.className = 'adm-toast';
-                }, 3500);
-            }
+            // In-app toast helper disabled to prevent duplicate alerts alongside external OS notifications
+            function showToast() { }
 
             // Format Date Helper
             function formatDate(ts) {
@@ -358,9 +354,15 @@
                     try { localStorage.removeItem('ic_local_payments'); } catch (e) { } // purge caches older builds wrote
                     if (fresh.length) {
                         highlightIds = new Set(fresh.map(p => p.id));
-                        showToast(fresh.length === 1
-                            ? `New payment verification request from ${fresh[0].user_name || 'a user'}`
-                            : `${fresh.length} new payment verification requests`, true);
+                        if (window.InstantCrewShared) {
+                            const body = fresh.length === 1
+                                ? `New payment verification request from ${fresh[0].user_name || 'a user'}`
+                                : `${fresh.length} new payment verification requests`;
+                            window.InstantCrewShared.showSystemNotification('Payment Verification Request', body, {
+                                tag: `admin-payment-${fresh[fresh.length - 1].id}`,
+                                url: '/admin.html'
+                            });
+                        }
                     }
                     renderAll();
                 } catch (err) {

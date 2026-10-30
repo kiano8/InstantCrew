@@ -76,10 +76,10 @@ func pesos(centavos int64) string { return fmt.Sprintf("₱%.2f", float64(centav
 // EmployerPaymentHistory lists every search fee the employer has paid or submitted, newest first.
 func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([]PaymentLogEntry, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT p.id, p.job_id, p.amount_centavos, p.method, COALESCE(p.details,''),
+		SELECT p.id, p.job_id, p.amount_centavos, p.method,
 			COALESCE(p.proof_image,''), COALESCE(p.status,''), p.verified_at,
 			COALESCE(p.rejection_reason,''), p.provider_ref, p.created_at,
-			COALESCE(j.role_label,''), p.search_attempt
+			COALESCE(j.role_label,'')
 		FROM payments p LEFT JOIN jobs j ON j.id = p.job_id
 		WHERE ($1 <= 0 OR p.user_id = $2) AND COALESCE(p.status, '') != 'pending'
 		ORDER BY p.created_at DESC, p.id DESC`, employerID, employerID)
@@ -91,13 +91,12 @@ func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([
 	out := make([]PaymentLogEntry, 0)
 	for rows.Next() {
 		var (
-			id, jobID, amount, created                      int64
-			attempt                                         int
-			method, details, proof, status, reason, ref, rl string
-			verifiedAt                                      sql.NullInt64
+			id, jobID, amount, created             int64
+			method, proof, status, reason, ref, rl string
+			verifiedAt                             sql.NullInt64
 		)
-		if err := rows.Scan(&id, &jobID, &amount, &method, &details, &proof, &status, &verifiedAt,
-			&reason, &ref, &created, &rl, &attempt); err != nil {
+		if err := rows.Scan(&id, &jobID, &amount, &method, &proof, &status, &verifiedAt,
+			&reason, &ref, &created, &rl); err != nil {
 			return nil, err
 		}
 		e := PaymentLogEntry{
@@ -109,16 +108,7 @@ func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([
 		}
 		jid := jobID
 		e.JobID = &jid
-		e.Description = "Job #" + fmt.Sprint(jobID)
-		if rl != "" {
-			e.Description = rl + " (job #" + fmt.Sprint(jobID) + ")"
-		}
-		if attempt > 1 {
-			e.Description += fmt.Sprintf(", search %d", attempt)
-		}
-		if details != "" {
-			e.Description += " · " + details
-		}
+		e.Description = rl
 		switch {
 		case verifiedAt.Valid && verifiedAt.Int64 > 0:
 			v := verifiedAt.Int64

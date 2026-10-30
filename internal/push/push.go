@@ -1,4 +1,4 @@
-// Package push delivers employer notifications to their devices through Web Push,
+// Package push delivers employer and applicant notifications to their devices through Web Push,
 // so they arrive while the app or browser is closed.
 package push
 
@@ -52,10 +52,19 @@ func New(st *store.Store, cfg Config) *Service {
 func (s *Service) Enabled() bool { return s.cfg.PublicKey != "" && s.cfg.PrivateKey != "" }
 
 func (s *Service) Register(mux *http.ServeMux, a *auth.Handler) {
-	emp := func(f http.HandlerFunc) http.Handler { return a.RequireRole("employer", f) }
-	mux.Handle("GET /api/push/key", emp(s.Key))
-	mux.Handle("POST /api/push/subscribe", emp(s.Subscribe))
-	mux.Handle("POST /api/push/unsubscribe", emp(s.Unsubscribe))
+	pushAuth := func(f http.HandlerFunc) http.Handler {
+		return a.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			u, _ := auth.UserFrom(r.Context())
+			if u == nil || (u.Role != "employer" && u.Role != "applicant" && u.Role != "admin") {
+				httpx.Error(w, http.StatusForbidden, "forbidden")
+				return
+			}
+			f(w, r)
+		}))
+	}
+	mux.Handle("GET /api/push/key", pushAuth(s.Key))
+	mux.Handle("POST /api/push/subscribe", pushAuth(s.Subscribe))
+	mux.Handle("POST /api/push/unsubscribe", pushAuth(s.Unsubscribe))
 }
 
 // GET /api/push/key returns the VAPID public key the browser subscribes with.
@@ -146,7 +155,7 @@ func ValidEndpoint(endpoint string) error {
 	return errors.New("unsupported push service")
 }
 
-// Run sends newly created employer notifications until ctx is cancelled.
+// Run sends newly created notifications until ctx is cancelled.
 func (s *Service) Run(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
@@ -168,7 +177,7 @@ func (s *Service) dispatch(ctx context.Context) error {
 		return err
 	}
 	for _, n := range pending {
-		if n.Role != "employer" || time.Since(time.Unix(n.CreatedAt, 0)) > maxAge {
+		if (n.Role != "employer" && n.Role != "applicant") || time.Since(time.Unix(n.CreatedAt, 0)) > maxAge {
 			continue
 		}
 		subs, err := s.Store.PushSubscriptions(ctx, n.UserID)
@@ -192,7 +201,12 @@ func (s *Service) dispatch(ctx context.Context) error {
 // message is what sw.js's push handler shows. The tag matches the one the open
 // page uses, so the two never stack up as duplicate notifications.
 func message(n store.PendingPush) map[string]string {
+	role := "employer"
 	link := "/employer.html"
+	if n.Role == "applicant" {
+		role = "applicant"
+		link = "/applicant.html"
+	}
 	var payload struct {
 		JobID *int64 `json:"job_id"`
 	}
@@ -202,7 +216,7 @@ func message(n store.PendingPush) map[string]string {
 	return map[string]string{
 		"title": n.Title,
 		"body":  n.Message,
-		"tag":   fmt.Sprintf("employer-%d", n.ID),
+		"tag":   fmt.Sprintf("%s-%d", role, n.ID),
 		"url":   link,
 	}
 }

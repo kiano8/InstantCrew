@@ -90,13 +90,16 @@
         bodyEl.innerHTML = list.map(function (e) {
             var proof = safeProof(e.proof_image);
             var amount = e.amount_centavos > 0 ? esc(e.amount_pesos) : (e.kind === 'free_hires' ? 'Free' : '');
-            var method = e.method ? ' · ' + esc(e.method.toUpperCase()) : '';
-            var ref = e.ref ? ' · ' + esc(e.ref) : '';
+            var desc = e.description || '';
+            if (e.kind === 'search_fee') {
+                desc = desc.split(' · ')[0].replace(/\s*\(job\s*#\d+\)(?:,\s*search\s*\d+)?/i, '').replace(/^Job\s*#\d+$/i, '').trim();
+            }
+            var descHtml = desc ? '<div class="ph-desc">' + esc(desc) + '</div>' : '';
             var reason = e.status === 'rejected' && e.rejection_reason ? '<div class="ph-desc ph-reason">Reason: ' + esc(e.rejection_reason) + '</div>' : '';
             return '<div class="ph-row"><div class="ph-main">' +
                 '<div class="ph-title">' + esc(e.title) + '</div>' +
-                '<div class="ph-desc">' + esc(e.description) + '</div>' + reason +
-                '<div class="ph-meta">' + esc(when(e.created_at)) + method + ref +
+                descHtml + reason +
+                '<div class="ph-meta">' + esc(when(e.created_at)) +
                 (proof ? '<a class="ph-link" href="' + esc(proof) + '" target="_blank" rel="noopener">View receipt</a>' : '') +
                 '</div></div>' +
                 '<div class="ph-side"><div class="ph-amt">' + amount + '</div>' +
@@ -147,7 +150,7 @@
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
         var btn = document.getElementById('phHeaderBtn');
-        var notifWrap = document.querySelector('.db-notif-wrap, #headerNotifWrap');
+        var profileBtn = document.getElementById('openProfilePanel');
 
         if (!btn) {
             btn = document.createElement('button');
@@ -155,8 +158,8 @@
             btn.className = 'ph-btn';
             btn.id = 'phHeaderBtn';
             btn.textContent = TITLE;
-            if (notifWrap && notifWrap.parentNode) {
-                notifWrap.parentNode.insertBefore(btn, notifWrap);
+            if (profileBtn && profileBtn.parentNode) {
+                profileBtn.parentNode.insertBefore(btn, profileBtn);
             } else {
                 var headerRight = document.querySelector('.db-header-inner > div:last-child, .app-header-inner > div:last-child');
                 if (headerRight) headerRight.insertBefore(btn, headerRight.firstChild);
@@ -175,9 +178,9 @@
             btn.title = label;
         }
 
-        // Synchronize initial visibility with notifWrap (hidden if user is logged out)
-        if (notifWrap) {
-            var isHidden = notifWrap.style.display === 'none' || window.getComputedStyle(notifWrap).display === 'none';
+        // Synchronize initial visibility with profileBtn (hidden if user is logged out)
+        if (profileBtn) {
+            var isHidden = profileBtn.style.display === 'none' || window.getComputedStyle(profileBtn).display === 'none';
             if (isHidden) {
                 btn.style.display = 'none';
             }

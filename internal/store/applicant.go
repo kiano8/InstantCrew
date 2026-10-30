@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -234,6 +235,16 @@ func (s *Store) EndApplicantAssignment(ctx context.Context, jobID, applicantID i
 	}
 	defer tx.Rollback()
 	now := time.Now().Unix()
+	// Lock the job: while it is 'accepted' the employer is paying for this crew
+	// member, so they can't walk away until the booking is confirmed or declined.
+	var jobStatus string
+	err = tx.QueryRowContext(ctx, `SELECT status FROM jobs WHERE id=$1 FOR UPDATE`, jobID).Scan(&jobStatus)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
 	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at=$1 WHERE job_id=$2 AND applicant_id=$3 AND ended_at IS NULL`, now, jobID, applicantID)
 	if err != nil {
 		return err
@@ -241,6 +252,9 @@ func (s *Store) EndApplicantAssignment(ctx context.Context, jobID, applicantID i
 	n, _ := res.RowsAffected()
 	if n == 0 {
 		return ErrNotFound
+	}
+	if jobStatus == "accepted" {
+		return ErrBookingPending
 	}
 	var left int
 	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM job_assignments WHERE job_id=$1 AND ended_at IS NULL`, jobID).Scan(&left); err != nil {
@@ -363,9 +377,9 @@ func (s *Store) SaveApplicantProfile(ctx context.Context, id int64, p ApplicantP
 
 func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+jobCols+` FROM jobs j
-		WHERE j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>$1)
+		WHERE j.status='matching'
 		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
-			WHERE p.user_id=$2 AND p.is_active=true AND p.employment_type=j.employment_type AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
+			WHERE p.user_id=$1 AND p.is_active=true AND p.employment_type=j.employment_type AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
 			AND NOT EXISTS (SELECT 1 FROM job_assignments active_assignment
 				JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
 				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
@@ -376,8 +390,8 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 					WHERE av.applicant_id=p.user_id AND av.status='available'
 					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
 				)))))
-		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$3 AND a.status IN ('pending','accepted','rejected'))
-		ORDER BY j.created_at DESC`, time.Now().Unix(), applicantID, applicantID)
+		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$1 AND a.status IN ('pending','accepted','rejected'))
+		ORDER BY j.created_at DESC`, applicantID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,9 +410,9 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 // ApplicantJob returns a single open offer only when the applicant profile matches it.
 func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Job, error) {
 	return scanJob(s.db.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs j
-		WHERE j.id=$1 AND j.status='matching' AND (j.search_expires_at IS NULL OR j.search_expires_at>$2)
+		WHERE j.id=$1 AND j.status='matching'
 		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
-			WHERE p.user_id=$3 AND p.is_active=true AND p.employment_type=j.employment_type
+			WHERE p.user_id=$2 AND p.is_active=true AND p.employment_type=j.employment_type
 			AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
 			AND NOT EXISTS (SELECT 1 FROM job_assignments active_assignment
 				JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
@@ -408,20 +422,8 @@ func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Jo
 				(j.timing='later' AND (p.availability_mode='now' OR EXISTS (SELECT 1 FROM applicant_availability av
 					WHERE av.applicant_id=p.user_id AND av.status='available'
 					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at)))))
-		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$3 AND a.status='rejected')`,
-		jobID, time.Now().Unix(), applicantID))
-}
-
-func (s *Store) ApplyForJob(ctx context.Context, jobID, applicantID int64) error {
-	res, err := s.db.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status) SELECT id,$1::bigint,'pending' FROM jobs WHERE id=$2 AND status='matching' AND (search_expires_at IS NULL OR search_expires_at>$3)`, applicantID, jobID, time.Now().Unix())
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return ErrBadState
-	}
-	return nil
+		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$2 AND a.status='rejected')`,
+		jobID, applicantID))
 }
 
 func (s *Store) RejectJob(ctx context.Context, jobID, applicantID int64) error {
