@@ -629,6 +629,32 @@
         };
     }
 
+    // In the installed (standalone) app, following a download link opens the
+    // image full-screen with no way back, so save the QR without leaving the page.
+    document.addEventListener('click', async (e) => {
+        const link = e.target.closest && e.target.closest('.db-gcash-actions a[download]');
+        if (!link) return;
+        e.preventDefault();
+        try {
+            const blob = await (await fetch(link.href)).blob();
+            const file = new File([blob], link.getAttribute('download'), { type: blob.type || 'image/png' });
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (isIOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file] }); // iOS share sheet offers "Save Image"
+                return;
+            }
+            const url = URL.createObjectURL(blob);
+            const a = Object.assign(document.createElement('a'), { href: url, download: file.name });
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            if (err && err.name === 'AbortError') return; // user closed the share sheet
+            console.warn('Save QR failed', err);
+        }
+    });
+
     function escHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
