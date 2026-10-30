@@ -5245,6 +5245,7 @@ h2 {
     line-height: 1.2;
     border-radius: 12px;
     white-space: nowrap;
+    margin: 0; /* .db-btn-end-contract adds margin-top, which unevens the row */
 }
 
 /* Primary transit action takes its own full-width row above the secondary pair */
