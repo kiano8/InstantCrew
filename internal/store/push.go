@@ -19,6 +19,7 @@ type PendingPush struct {
 	ID        int64
 	UserID    int64
 	Role      string
+	Type      string
 	Title     string
 	Message   string
 	Payload   string
@@ -81,7 +82,7 @@ func (s *Store) ClaimPushNotifications(ctx context.Context, limit int) ([]Pendin
 		FROM users u
 		WHERE u.id=n.user_id AND n.id IN (
 			SELECT id FROM notifications WHERE pushed_at IS NULL ORDER BY id LIMIT $2 FOR UPDATE SKIP LOCKED)
-		RETURNING n.id, n.user_id, u.role, n.title, n.message, n.payload, n.created_at`,
+		RETURNING n.id, n.user_id, u.role, n.type, n.title, n.message, n.payload, n.created_at`,
 		time.Now().Unix(), limit)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func (s *Store) ClaimPushNotifications(ctx context.Context, limit int) ([]Pendin
 	var out []PendingPush
 	for rows.Next() {
 		var p PendingPush
-		if err := rows.Scan(&p.ID, &p.UserID, &p.Role, &p.Title, &p.Message, &p.Payload, &p.CreatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.UserID, &p.Role, &p.Type, &p.Title, &p.Message, &p.Payload, &p.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, p)

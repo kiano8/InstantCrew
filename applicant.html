@@ -2676,7 +2676,7 @@
             document.addEventListener('click', unlockAudio, { once: true });
 
             // Register the service worker and ask for system notification permission on first tap
-            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications();
+            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications({ push: true });
 
             // Toast helper
             function showToast(msg, isError = false) {
@@ -6002,6 +6002,7 @@
             // Logout
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', async () => {
+                    if (window.InstantCrewShared) await window.InstantCrewShared.removePushSubscription();
                     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }); } catch (_) { }
                     sessionStorage.removeItem(SESSION_KEY_WORKER);
                     session = getWorkerSession();
@@ -6035,6 +6036,14 @@
                     const payload = typeof notification.payload === 'string' ? JSON.parse(notification.payload || '{}') : (notification.payload || {});
                     return payload.job_id ? String(payload.job_id) : '';
                 } catch (_) { return ''; }
+            }
+            // A tapped push notification for an already-open tab arrives as a message.
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (!event.data || event.data.type !== 'notification-click' || !hasWorkerSession()) return;
+                    const jobId = new URL(event.data.url, window.location.origin).searchParams.get('job');
+                    if (jobId) openApplicantOffer(jobId);
+                });
             }
             async function openApplicantOffer(jobId) {
                 if (notifDropdown) notifDropdown.hidden = true;
@@ -6161,7 +6170,10 @@
                     });
 
                     // System notification (works on mobile through the service worker)
-                    InstantCrewShared.showSystemNotification(pending.title, cleanToastMsg, { tag: `applicant-${pending.id}` });
+                    // Web Push already delivered matches to this device.
+                    if (pending.type !== 'match' || !InstantCrewShared.isPushActive()) {
+                        InstantCrewShared.showSystemNotification(pending.title, cleanToastMsg, { tag: `applicant-${pending.id}` });
+                    }
                 }
             }
 
@@ -7684,6 +7696,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
+                        if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
                         showToast('Welcome back!');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
@@ -7792,6 +7805,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
+                        if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
                         showToast('Account created. Pay ₱10 to activate your first 5 hires.');
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
@@ -7821,6 +7835,12 @@
                     saveWorkerSession(session);
                     applySessionToDashboard(session);
                     updateViewMode();
+                    // A push notification opens applicant.html?job=<id> to show that offer.
+                    const linkedJobId = new URLSearchParams(window.location.search).get('job');
+                    if (linkedJobId) {
+                        history.replaceState(null, '', window.location.pathname);
+                        openApplicantOffer(linkedJobId);
+                    }
                 }).catch(() => { });
             }
 

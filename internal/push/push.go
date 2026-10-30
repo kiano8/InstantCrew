@@ -1,4 +1,4 @@
-// Package push delivers employer notifications to their devices through Web Push,
+// Package push delivers employer notifications and applicant job matches to their devices through Web Push,
 // so they arrive while the app or browser is closed.
 package push
 
@@ -52,10 +52,11 @@ func New(st *store.Store, cfg Config) *Service {
 func (s *Service) Enabled() bool { return s.cfg.PublicKey != "" && s.cfg.PrivateKey != "" }
 
 func (s *Service) Register(mux *http.ServeMux, a *auth.Handler) {
-	emp := func(f http.HandlerFunc) http.Handler { return a.RequireRole("employer", f) }
-	mux.Handle("GET /api/push/key", emp(s.Key))
-	mux.Handle("POST /api/push/subscribe", emp(s.Subscribe))
-	mux.Handle("POST /api/push/unsubscribe", emp(s.Unsubscribe))
+	// RequireAuth picks the employer or applicant session from the calling page.
+	user := func(f http.HandlerFunc) http.Handler { return a.RequireAuth(f) }
+	mux.Handle("GET /api/push/key", user(s.Key))
+	mux.Handle("POST /api/push/subscribe", user(s.Subscribe))
+	mux.Handle("POST /api/push/unsubscribe", user(s.Unsubscribe))
 }
 
 // GET /api/push/key returns the VAPID public key the browser subscribes with.
@@ -146,7 +147,7 @@ func ValidEndpoint(endpoint string) error {
 	return errors.New("unsupported push service")
 }
 
-// Run sends newly created employer notifications until ctx is cancelled.
+// Run sends newly created notifications until ctx is cancelled.
 func (s *Service) Run(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
@@ -168,7 +169,7 @@ func (s *Service) dispatch(ctx context.Context) error {
 		return err
 	}
 	for _, n := range pending {
-		if n.Role != "employer" || time.Since(time.Unix(n.CreatedAt, 0)) > maxAge {
+		if !pushable(n) || time.Since(time.Unix(n.CreatedAt, 0)) > maxAge {
 			continue
 		}
 		subs, err := s.Store.PushSubscriptions(ctx, n.UserID)
@@ -189,10 +190,19 @@ func (s *Service) dispatch(ctx context.Context) error {
 	return nil
 }
 
+// pushable limits applicants to job matches; other roles' kinds stay in-app only.
+func pushable(n store.PendingPush) bool {
+	return n.Role == "employer" || (n.Role == "applicant" && n.Type == "match")
+}
+
 // message is what sw.js's push handler shows. The tag matches the one the open
 // page uses, so the two never stack up as duplicate notifications.
 func message(n store.PendingPush) map[string]string {
-	link := "/employer.html"
+	page := "employer"
+	if n.Role == "applicant" {
+		page = "applicant"
+	}
+	link := "/" + page + ".html"
 	var payload struct {
 		JobID *int64 `json:"job_id"`
 	}
@@ -202,7 +212,7 @@ func message(n store.PendingPush) map[string]string {
 	return map[string]string{
 		"title": n.Title,
 		"body":  n.Message,
-		"tag":   fmt.Sprintf("employer-%d", n.ID),
+		"tag":   fmt.Sprintf("%s-%d", page, n.ID),
 		"url":   link,
 	}
 }
