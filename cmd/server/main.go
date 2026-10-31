@@ -173,7 +173,7 @@ func main() {
 	if googleErr != nil {
 		log.Printf("Google SSO disabled: %v", googleErr)
 	}
-	if err := authH.ConfigureFacebook(os.Getenv("FACEBOOK_APP_ID"), os.Getenv("FACEBOOK_APP_SECRET"), os.Getenv("FACEBOOK_REDIRECT_URL")); err != nil {
+	if err := authH.ConfigureFacebook(os.Getenv("FACEBOOK_APP_ID"), os.Getenv("FACEBOOK_APP_SECRET"), os.Getenv("FACEBOOK_REDIRECT_URL"), os.Getenv("FACEBOOK_CONFIG_ID")); err != nil {
 		log.Printf("Facebook SSO disabled: %v", err)
 	}
 	// Development mode must not create implicit accounts. Authentication always
