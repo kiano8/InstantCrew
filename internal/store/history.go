@@ -92,6 +92,14 @@ type PaymentLogEntry struct {
 
 func pesos(centavos int64) string { return fmt.Sprintf("₱%.2f", float64(centavos)/100) }
 
+// hiresText is "1 hire" or "n hires".
+func hiresText(n int64) string {
+	if n == 1 {
+		return "1 hire"
+	}
+	return fmt.Sprintf("%d hires", n)
+}
+
 // EmployerPaymentHistory lists every search fee the employer has paid or submitted, newest first.
 func (s *Store) EmployerPaymentHistory(ctx context.Context, employerID int64) ([]PaymentLogEntry, error) {
 	rows, err := s.db.QueryContext(ctx, `
@@ -183,7 +191,7 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 		}
 		e := PaymentLogEntry{
 			ID: fmt.Sprintf("app_%d", id), Kind: "hiring_pass", Title: "Hiring pass top-up",
-			Description:    "5 more hires",
+			Description:    hiresText(amount / HirePriceCentavos),
 			AmountCentavos: amount, AmountPesos: pesos(amount),
 			Method: method, ProofImage: proof, RejectionReason: reason,
 			Ref: fmt.Sprintf("PASS-%d", id), CreatedAt: createdAt,
@@ -207,11 +215,12 @@ func (s *Store) ApplicantPaymentHistory(ctx context.Context, applicantID int64) 
 	}
 	rows.Close()
 
-	// Hires used: one per shift the employer confirmed (that is when a hire is spent).
+	// Hires used: one per shift the employer confirmed (that is when a hire is spent),
+	// except shifts whose hire was returned.
 	used, err := s.db.QueryContext(ctx, `
 		SELECT a.job_id, a.accepted_at, COALESCE(j.role_label,'')
 		FROM job_assignments a JOIN jobs j ON j.id = a.job_id
-		WHERE a.applicant_id = $1 AND j.status IN ('active','completed')`, applicantID)
+		WHERE a.applicant_id = $1 AND j.status IN ('active','completed') AND NOT a.hire_refunded`, applicantID)
 	if err != nil {
 		return nil, err
 	}

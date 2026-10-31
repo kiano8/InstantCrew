@@ -6,7 +6,7 @@ import (
 )
 
 func addPaymentSubmittedNotification(ctx context.Context, tx *sql.Tx, userID, paymentID int64, paymentType string, jobID *int64, now int64) error {
-	title, message := "Hiring pass payment submitted", "Your ₱10 receipt was submitted and is waiting for accounting verification."
+	title, message := "Hiring pass payment submitted", "Your hiring pass receipt was submitted and is waiting for accounting verification."
 	if paymentType == "employer" {
 		title = "Search fee payment submitted"
 		message = "Your search fee receipt was submitted and is waiting for accounting verification."

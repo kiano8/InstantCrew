@@ -203,13 +203,23 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("expected 403 forbidden for employer, got %d", rec.Code)
 	}
 
-	// 2. Admin accessing /api/admin/payments -> 200 OK
+	// 2. Admin accessing /api/admin/payments -> 200 OK with employer & applicant counts
 	req = httptest.NewRequest("GET", "/api/admin/payments", nil)
 	req.AddCookie(adminCookie)
 	rec = httptest.NewRecorder()
 	env.mux.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK for admin, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var initialCounts struct {
+		EmployerCount  int64 `json:"employer_count"`
+		ApplicantCount int64 `json:"applicant_count"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &initialCounts); err != nil {
+		t.Fatalf("unmarshal admin payments counts: %v", err)
+	}
+	if initialCounts.EmployerCount != 1 || initialCounts.ApplicantCount != 1 {
+		t.Fatalf("expected 1 employer and 1 applicant, got %+v", initialCounts)
 	}
 
 	// 3. Employer creates a job
@@ -477,7 +487,7 @@ func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
 		}
 	}
 	givePass := func(u *store.User) {
-		pass, err := env.st.AddApplicantHiringPass(ctx, u.ID, "gcash", "/uploads/pass.jpg")
+		pass, err := env.st.AddApplicantHiringPass(ctx, u.ID, "gcash", "/uploads/pass.jpg", 0)
 		must("add pass", err)
 		must("verify pass", env.st.SetPaymentStatus(ctx, "applicant", pass.PendingPayment.ID, "verified", "Admin", ""))
 	}

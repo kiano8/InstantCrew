@@ -586,6 +586,136 @@
         }
     });
 
+    // After a contract ends, each side rates the other once (1-5 stars) or skips
+    // it for good. The pages turn this on with startReviewPrompts().
+    let reviewQueue = [];
+    let reviewModal = null;
+    let reviewCheckedAt = 0;
+    let reviewCheckPending = false;
+
+    function buildReviewModal() {
+        const overlay = document.createElement('div');
+        overlay.className = 'db-modal-overlay db-job-action-confirm-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.setAttribute('aria-labelledby', 'icReviewTitle');
+        overlay.innerHTML = `
+            <div class="db-modal-card ic-review-card">
+                <div class="db-modal-header">
+                    <h3 class="db-modal-title" id="icReviewTitle">Rate your shift</h3>
+                    <p class="db-modal-sub" id="icReviewSub"></p>
+                </div>
+                <div class="ic-review-stars" role="radiogroup" aria-label="Rating"></div>
+                <p class="ic-review-error" role="alert" hidden></p>
+                <div class="db-modal-actions">
+                    <button type="button" class="db-modal-cancel-btn" data-review="skip">Skip</button>
+                    <button type="button" class="db-modal-confirm-btn" data-review="submit" disabled>Submit</button>
+                </div>
+            </div>`;
+        const stars = overlay.querySelector('.ic-review-stars');
+        for (let n = 1; n <= 5; n++) {
+            const star = document.createElement('button');
+            star.type = 'button';
+            star.className = 'ic-review-star';
+            star.textContent = '★';
+            star.dataset.stars = String(n);
+            star.setAttribute('role', 'radio');
+            star.setAttribute('aria-checked', 'false');
+            star.setAttribute('aria-label', `${n} star${n === 1 ? '' : 's'}`);
+            stars.appendChild(star);
+        }
+        stars.addEventListener('click', (e) => {
+            const star = e.target.closest('.ic-review-star');
+            if (!star) return;
+            overlay.dataset.stars = star.dataset.stars;
+            stars.querySelectorAll('.ic-review-star').forEach(s => {
+                const on = Number(s.dataset.stars) <= Number(star.dataset.stars);
+                s.classList.toggle('on', on);
+                s.setAttribute('aria-checked', String(s === star));
+            });
+            overlay.querySelector('[data-review="submit"]').disabled = false;
+        });
+        overlay.querySelector('[data-review="skip"]').addEventListener('click', () => sendReview(0));
+        overlay.querySelector('[data-review="submit"]').addEventListener('click', () => sendReview(Number(overlay.dataset.stars) || 0));
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    function showNextReview() {
+        const next = reviewQueue[0];
+        if (!reviewModal) reviewModal = buildReviewModal();
+        if (!next) {
+            reviewModal.classList.remove('open');
+            reviewModal.setAttribute('aria-hidden', 'true');
+            return;
+        }
+        const who = next.name || (next.rates === 'crew' ? 'your crew member' : 'the employer');
+        reviewModal.querySelector('#icReviewTitle').textContent = `Rate ${who}`;
+        reviewModal.querySelector('#icReviewSub').textContent = next.rates === 'crew'
+            ? `How did ${who} do on your ${next.role_label || 'shift'}?`
+            : `How was working the ${next.role_label || 'shift'} for ${who}?`;
+        delete reviewModal.dataset.stars;
+        reviewModal.querySelectorAll('.ic-review-star').forEach(s => { s.classList.remove('on'); s.setAttribute('aria-checked', 'false'); });
+        reviewModal.querySelector('[data-review="submit"]').disabled = true;
+        reviewModal.querySelector('.ic-review-error').hidden = true;
+        reviewModal.classList.add('open');
+        reviewModal.setAttribute('aria-hidden', 'false');
+        reviewModal.querySelector('.ic-review-star').focus();
+    }
+
+    async function sendReview(stars) {
+        const current = reviewQueue[0];
+        if (!current) return;
+        const buttons = reviewModal.querySelectorAll('.db-modal-actions button');
+        buttons.forEach(b => { b.disabled = true; });
+        try {
+            const res = await fetch('/api/reviews', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_id: current.job_id, stars })
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Could not save your rating.');
+            }
+            reviewQueue.shift();
+            showNextReview();
+        } catch (err) {
+            const error = reviewModal.querySelector('.ic-review-error');
+            error.textContent = err.message;
+            error.hidden = false;
+        } finally {
+            buttons.forEach(b => { b.disabled = false; });
+            if (!reviewModal.dataset.stars) reviewModal.querySelector('[data-review="submit"]').disabled = true;
+        }
+    }
+
+    // checkPendingReviews asks the server for contracts to rate; force skips the 20s throttle.
+    async function checkPendingReviews(force = false) {
+        if (reviewCheckPending || (reviewModal && reviewModal.classList.contains('open'))) return;
+        if (!force && Date.now() - reviewCheckedAt < 20000) return;
+        reviewCheckPending = true;
+        reviewCheckedAt = Date.now();
+        try {
+            const res = await fetch('/api/reviews/pending', { credentials: 'same-origin', cache: 'no-store' });
+            if (!res.ok) return; // signed out
+            const data = await res.json();
+            reviewQueue = data.pending || [];
+            if (reviewQueue.length) showNextReview();
+        } catch (_) { /* the next check retries */ } finally {
+            reviewCheckPending = false;
+        }
+    }
+
+    let reviewPromptTimer = null;
+    function startReviewPrompts() {
+        if (reviewPromptTimer) return;
+        checkPendingReviews(true);
+        reviewPromptTimer = setInterval(checkPendingReviews, 20000);
+    }
+
     function escHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -595,6 +725,8 @@
     // Export to global window object
     window.InstantCrewShared = {
         escHtml,
+        checkPendingReviews,
+        startReviewPrompts,
         watchGcashReturn,
         formatArrivalCountdown,
         arrivalDeadlineFromSeconds,

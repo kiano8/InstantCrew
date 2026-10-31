@@ -55,6 +55,27 @@
                 <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payments &amp; hires
                     log</button>
 
+                <!-- Notification Bell -->
+                <div class="db-notif-wrap">
+                    <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
+                        title="Notifications">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
+                        <span class="db-notif-badge" id="notifBadge" style="display:none;">0</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div class="db-notif-dropdown" id="notifDropdown" hidden>
+                        <div class="db-notif-dropdown-header">
+                            <h4>Notifications</h4>
+                            <button type="button" class="db-notif-clear-btn" id="clearNotifsBtn">Clear all</button>
+                        </div>
+                        <div class="db-notif-list" id="notifList"></div>
+                    </div>
+                </div>
+
                 <!-- Crew Profile Avatar (top-right) -->
                 <button type="button" class="db-profile-avatar-btn" id="openProfilePanel" aria-label="Open profile">
                     <span class="db-profile-initials" id="profileInitials">AL</span>
@@ -1563,12 +1584,11 @@
                             </svg>
                         </div>
                         <div class="app-quota-warning-content">
-                            <h4>Hiring Limit Reached (5 of 5 Hires Achieved)</h4>
-                            <p>You have reached your limit of 5 hires. To continue having hiring opportunities and
-                                accepting shifts, please add ₱10 for 5 more hires (₱2 per hire).</p>
+                            <h4>No Hires Left</h4>
+                            <p>To keep receiving and accepting shifts, add hires at ₱2 each. You can hold up to 5
+                                hires at a time.</p>
                         </div>
-                        <button type="button" class="app-btn-topup-now" id="appQuotaTopupNowBtn">Add ₱10 for 5
-                            Hires</button>
+                        <button type="button" class="app-btn-topup-now" id="appQuotaTopupNowBtn">Add Hires</button>
                     </div>
 
                     <!-- Quota Pending Verification Alert -->
@@ -1582,9 +1602,9 @@
                             </svg>
                         </div>
                         <div class="app-quota-warning-content">
-                            <h4 style="color:#1E40AF;">₱10 Receipt Awaiting Admin Verification</h4>
+                            <h4 style="color:#1E40AF;">Receipt Awaiting Admin Verification</h4>
                             <p style="color:#1E3A8A;">Your proof of payment has been uploaded. Instant Crew accounting
-                                will verify your receipt shortly to activate your 5 new hiring opportunities.</p>
+                                will verify your receipt shortly to activate your new hiring opportunities.</p>
                         </div>
                         <button type="button" class="app-btn-topup-now" id="appQuotaPendingRefreshBtn"
                             style="background:#2563EB;">Check Status</button>
@@ -1999,7 +2019,7 @@
         </div>
     </div>
 
-    <!-- ── Applicant Top-Up Payment Modal (Add ₱10 for 5 Hires) ── -->
+    <!-- ── Applicant Top-Up Payment Modal (hires at ₱2 each, up to 5 held) ── -->
     <div class="db-modal-overlay" id="applicantTopupModal" aria-hidden="true" role="dialog" aria-modal="true"
         aria-labelledby="appTopupModalTitle">
         <div class="db-modal-card db-payment-modal-card">
@@ -2011,9 +2031,8 @@
 
             <div class="db-payment-modal-body" id="appTopupModalBody">
                 <div class="db-modal-header db-payment-header">
-                    <h3 class="db-modal-title" id="appTopupModalTitle">Add ₱10 for 5 Hires</h3>
-                    <p class="db-modal-sub">Each hire is ₱2.00. Add ₱10 to continue receiving and accepting shift
-                        opportunities.</p>
+                    <h3 class="db-modal-title" id="appTopupModalTitle">Add Hires</h3>
+                    <p class="db-modal-sub">Each hire is ₱2.00. You can hold up to 5 hires at a time.</p>
                 </div>
 
                 <!-- Pass Package Box -->
@@ -2023,14 +2042,13 @@
                     </div>
                     <div class="app-pass-package-main">
                         <div>
-                            <h4 class="app-pass-package-title" style="font-size:1.1rem; margin:0 0 4px 0;">5 Hiring
-                                Opportunities</h4>
-                            <p class="app-pass-package-desc" style="margin:0; font-size:0.82rem; color:#64748B;">Unlock
-                                instant job match acceptances</p>
+                            <label class="app-pass-package-title" for="appTopupHires" style="display:block; font-size:1.1rem; margin:0 0 4px 0;">Hires to add</label>
+                            <select id="appTopupHires" class="app-topup-hires-select" aria-describedby="appTopupHiresHelp"></select>
+                            <p class="app-pass-package-desc" id="appTopupHiresHelp" style="margin:4px 0 0; font-size:0.82rem; color:#64748B;">You can hold up to 5 hires.</p>
                         </div>
                         <div class="app-pass-package-price">
                             <span class="app-pass-currency">₱</span>
-                            <span class="app-pass-amount">10</span>
+                            <span class="app-pass-amount" id="appTopupAmount">10</span>
                             <span class="app-pass-decimal">.00</span>
                         </div>
                     </div>
@@ -2040,7 +2058,7 @@
                 <div class="db-payment-breakdown" style="margin-bottom:14px;">
                     <div class="db-breakdown-row db-breakdown-total">
                         <span class="db-breakdown-total-label">Total Amount Due</span>
-                        <span class="db-breakdown-total-val" style="color:#10B981;">₱10.00</span>
+                        <span class="db-breakdown-total-val" style="color:#10B981;" id="appTopupTotal">₱10.00</span>
                     </div>
                 </div>
 
@@ -2052,17 +2070,17 @@
                     <div class="db-pay-method-details" id="appTopupGcashWrap">
                         <div class="db-qr-container">
                             <div class="db-qr-card">
-                                <img src="images/payment_qr_10.png" alt="GCash InstaPay QR Code" class="db-qr-image">
-                                <span class="db-qr-caption">₱10.00 pre-filled • Scan or upload in GCash</span>
+                                <img src="images/payment_qr_10.png" alt="GCash InstaPay QR Code" class="db-qr-image" id="appTopupQrImg">
+                                <span class="db-qr-caption" id="appTopupQrCaption">₱10.00 pre-filled • Scan or upload in GCash</span>
                             </div>
                             <div class="db-gcash-actions">
-                                <a href="images/payment_qr_10.png" download="instantcrew-gcash-10.png" class="db-gcash-btn db-gcash-btn-ghost">Save QR</a>
+                                <a href="images/payment_qr_10.png" download="instantcrew-gcash-10.png" class="db-gcash-btn db-gcash-btn-ghost" id="appTopupQrSave">Save QR</a>
                                 <a href="gcash://" class="db-gcash-btn">Open GCash</a>
                             </div>
                             <div class="db-qr-instructions">
                                 <ol>
                                     <li>Tap <strong>Save QR</strong>, then choose <strong>Save Image</strong> (or long-press the QR and choose <strong>Save to Photos</strong>).</li>
-                                    <li>Tap <strong>Open GCash</strong>, go to <strong>QR</strong> → <strong>Upload QR</strong> and pick the saved image. <strong>₱10.00</strong> is filled in for you.</li>
+                                    <li>Tap <strong>Open GCash</strong>, go to <strong>QR</strong> → <strong>Upload QR</strong> and pick the saved image. <strong id="appTopupQrAmount">₱10.00</strong> is filled in for you.</li>
                                     <li>Take a screenshot of the completed payment receipt.</li>
                                     <li>Switch back to Instant Crew and upload it below. Your payment is sent for verification right away.</li>
                                 </ol>
@@ -2112,7 +2130,7 @@
                 <button type="button" class="db-btn-primary" id="appConfirmTopupBtn"
                     style="margin-top: 18px; width: 100%; opacity: 0.5; cursor: not-allowed;" disabled
                     title="Please upload your proof of payment screenshot to continue">
-                    <span>Confirm ₱10.00 (+5 Hires)</span>
+                    <span id="appConfirmTopupText">Confirm ₱10.00 (+5 Hires)</span>
                 </button>
                 <button type="button" id="appTopupLogoutBtn"
                     style="display:none; margin-top:12px; width:100%; background:none; border:0; color:#64748B; font-size:0.82rem; text-decoration:underline; cursor:pointer;">
@@ -2312,7 +2330,11 @@
             let currentTimingPreference = session.timingPreference || 'instant';
 
             const logoutBtn = document.getElementById('logoutBtn');
-            const notifDropdown = null;
+            const notifBtn = document.getElementById('notifBtn');
+            const notifBadge = document.getElementById('notifBadge');
+            const notifDropdown = document.getElementById('notifDropdown');
+            const notifList = document.getElementById('notifList');
+            const clearNotifsBtn = document.getElementById('clearNotifsBtn');
 
             // ════ Location Detail Modal (View Detail from Shift Card) ════
             const appLocationDetailModal = document.getElementById('appLocationDetailModal');
@@ -2610,55 +2632,8 @@
                 });
             }
 
-<<<<<<< HEAD
             // In-app toast helper disabled to prevent duplicate alerts alongside external OS notifications
             function showToast() { }
-=======
-            function markNotifToasted(id) {
-                try {
-                    const list = getToastedNotifIds();
-                    if (!list.includes(String(id))) {
-                        list.push(String(id));
-                        sessionStorage.setItem(TOASTED_NOTIFS_KEY, JSON.stringify(list.slice(-50)));
-                    }
-                } catch { }
-            }
-
-            // Audio unlock on first user gesture
-            let audioUnlocked = false;
-            function unlockAudio() {
-                if (audioUnlocked) return;
-                try {
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    if (AudioCtx) {
-                        const ctx = new AudioCtx();
-                        ctx.resume().then(() => {
-                            audioUnlocked = true;
-                            ctx.close();
-                        }).catch(() => { });
-                    }
-                } catch { }
-            }
-            document.addEventListener('click', unlockAudio, { once: true });
-
-            // Register the service worker and ask for system notification permission on first tap
-            if (window.InstantCrewShared) window.InstantCrewShared.enableSystemNotifications({ push: true });
-
-            // Toast helper
-            function showToast(msg, isError = false) {
-                const toastIcon = document.getElementById('appToastIcon');
-                if (toastIcon && window.InstantCrewShared) {
-                    toastIcon.innerHTML = isError
-                        ? window.InstantCrewShared.ICONS.alert(20, '#F59E0B')
-                        : window.InstantCrewShared.ICONS.checkCircle(20, '#10B981');
-                }
-                appToastMsg.textContent = msg;
-                appToast.style.display = 'flex';
-                setTimeout(() => {
-                    appToast.style.display = 'none';
-                }, 3500);
-            }
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 
             // Init User Profile View
             function renderProfileInfo() {
@@ -5071,8 +5046,10 @@
                     const r = await fetch(`/api/applicant/assignments/${contractId}/end`, { method: 'POST', credentials: 'same-origin' });
                     const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Could not end this contract.');
                     serverAssignments = null; assignmentFetchedAt = 0; await refreshApplicantAssignments(true); renderShiftsFeed(true); renderAcceptedShiftsList(true); showToast('Contract ended.');
+                    window.InstantCrewShared?.checkPendingReviews(true);
                 } catch (err) { showToast(err.message, true); }
             }
+            window.InstantCrewShared?.startReviewPrompts();
 
             /* ═══════════════════════════════════════════════════════════
                LIVE SHIFTS FEED WITH VANISHING & CAPACITY CHECKS
@@ -5336,7 +5313,7 @@
                         lockedReason = 'Locked (5-Day Suspension)';
                     } else if (remainingHires <= 0) {
                         canAccept = false;
-                        lockedReason = 'Locked (5/5 Hires - Add ₱10)';
+                        lockedReason = 'Locked (No Hires Left - Add Hires)';
                     } else if (hasFullTime) {
                         canAccept = false;
                         lockedReason = 'Locked (Full-Time Active)';
@@ -5373,6 +5350,7 @@
                                     <span class="app-shift-emoji">${shiftIcon}</span>
                                     <span class="app-shift-role">${cleanShiftTitle}</span>
                                     ${empBadge}
+                                    ${shift.employer_rating ? `<span class="app-employer-rating" title="Employer rating from crew reviews">${shift.employer_rating.reviews ? `★ ${Number(shift.employer_rating.rating).toFixed(1)} (${shift.employer_rating.reviews})` : 'New employer'}</span>` : ''}
                                     <span class="app-badge-location-match">
                                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="display:inline-block; vertical-align:middle;">
                                             <path d="M8 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S3 9.5 3 6a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -5588,7 +5566,7 @@
                 updateHiringPassUI();
 
                 if (session.hiringQuota.remainingHires === 0) {
-                    showToast('You have achieved your 5 hires! Add ₱10 to continue receiving opportunities.', true);
+                    showToast('You have no hires left. Add hires (₱2 each) to keep receiving opportunities.', true);
                 }
 
                 serverAssignments = null;
@@ -6007,14 +5985,6 @@
                     return payload.job_id ? String(payload.job_id) : '';
                 } catch (_) { return ''; }
             }
-            // A tapped push notification for an already-open tab arrives as a message.
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.addEventListener('message', (event) => {
-                    if (!event.data || event.data.type !== 'notification-click' || !hasWorkerSession()) return;
-                    const jobId = new URL(event.data.url, window.location.origin).searchParams.get('job');
-                    if (jobId) openApplicantOffer(jobId);
-                });
-            }
             async function openApplicantOffer(jobId) {
                 if (notifDropdown) notifDropdown.hidden = true;
                 try {
@@ -6077,7 +6047,51 @@
                     return true;
                 });
 
-                // Deliver newly created notifications exclusively via external phone/desktop
+                const unread = notifs.filter(n => !n.read).length;
+
+                if (notifBadge) {
+                    if (unread > 0) {
+                        notifBadge.textContent = unread > 9 ? '9+' : unread;
+                        notifBadge.style.display = 'flex';
+                    } else {
+                        notifBadge.style.display = 'none';
+                    }
+                }
+
+                if (notifList) {
+                    if (notifs.length === 0) {
+                        notifList.innerHTML = '<div class="db-notif-empty">No notifications yet.</div>';
+                    } else {
+                        notifList.innerHTML = '';
+                        notifs.forEach(n => {
+                            const el = document.createElement('div');
+                            el.className = `db-notif-item ${n.read ? '' : 'unread'}`;
+                            const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getNotificationIcon(n.type, 20) : '';
+                            const cleanMsg = (n.message || '').replace(/\s*\((Full-Time|Part-Time)\)/gi, '');
+                            el.innerHTML = `
+                                <span class="db-notif-icon">${iconSvg}</span>
+                                <div>
+                                    <p class="db-notif-title">${window.InstantCrewShared.escHtml(n.title)}</p>
+                                    <p class="db-notif-desc">${window.InstantCrewShared.escHtml(cleanMsg)}</p>
+                                    <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : (n.time || '')}</span>
+                                </div>
+                            `;
+                            const offerJobId = n.type === 'match' ? notificationJobId(n) : '';
+                            if (offerJobId) {
+                                el.style.cursor = 'pointer';
+                                el.title = 'Open this job offer';
+                                el.addEventListener('click', () => openApplicantOffer(offerJobId));
+                                const action = document.createElement('span');
+                                action.textContent = 'Open offer →';
+                                action.style.cssText = 'display:block;margin:6px 0 0 28px;color:#6D28D9;font-size:0.76rem;font-weight:700;';
+                                el.appendChild(action);
+                            }
+                            notifList.appendChild(el);
+                        });
+                    }
+                }
+
+                // Deliver newly created alerts via external phone/desktop
                 // system notifications (when Web Push is active, sw.js handles them).
                 if (applicantNotificationsLoaded) {
                     const newestId = (applicantNotifications || []).reduce((max, n) => Math.max(max, Number(n.id) || 0), 0);
@@ -6096,46 +6110,34 @@
                             });
                         });
                     }
-<<<<<<< HEAD
                     lastApplicantNotificationId = Math.max(lastApplicantNotificationId, newestId);
-=======
-                }
-
-                // Show push toast for new / un-toasted notifications (only if Active / Online)
-                if (!isOnline) return;
-                const toastedIds = getToastedNotifIds();
-                const now = Date.now();
-
-                // Find any pending match or recent notification that hasn't toasted yet
-                const pending = notifs.find(n => {
-                    if (toastedIds.includes(String(n.id))) return false;
-                    // Recent within 5 minutes or unread match
-                    const isRecent = (now - Number(n.id)) < 300000;
-                    return (!n.read || isRecent);
-                });
-
-                if (pending) {
-                    markNotifToasted(pending.id);
-                    const cleanToastMsg = (pending.message || '').replace(/\s*\((Full-Time|Part-Time)\)/gi, '');
-
-                    // Show in-app push toast with chime & click action
-                    InstantCrewShared.showPushToast(pending.title, cleanToastMsg, pending.type, () => {
-                        const offerJobId = notificationJobId(pending);
-                        if (offerJobId) openApplicantOffer(offerJobId);
-                        else {
-                            const feed = document.getElementById('shiftsSection') || document.getElementById('shiftsListContainer');
-                            if (feed) feed.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    });
-
-                    // System notification (works on mobile through the service worker)
-                    // Web Push already delivered matches to this device.
-                    if (pending.type !== 'match' || !InstantCrewShared.isPushActive()) {
-                        InstantCrewShared.showSystemNotification(pending.title, cleanToastMsg, { tag: `applicant-${pending.id}` });
-                    }
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
                 }
             }
+
+            if (notifBtn) {
+                notifBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isHidden = notifDropdown.hidden;
+                    notifDropdown.hidden = !isHidden;
+                    if (isHidden) {
+                        fetch('/api/notifications/read', { method: 'POST', credentials: 'same-origin' });
+                        applicantNotifications = (applicantNotifications || []).map(n => ({ ...n, read: true }));
+                        if (notifBadge) notifBadge.style.display = 'none';
+                    }
+                });
+            }
+
+            if (clearNotifsBtn) {
+                clearNotifsBtn.addEventListener('click', () => {
+                    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { applicantNotifications = []; applicantNotificationsFetchedAt = Date.now(); renderWorkerNotifications(); });
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (notifDropdown && !notifDropdown.hidden && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
+                    notifDropdown.hidden = true;
+                }
+            });
 
             /* ═══════════════════════════════════════════════════════════
                APPLICANT ONBOARDING STEPS & AUTH MODAL CONTROLLER
@@ -6320,8 +6322,8 @@
 
                 const quota = session.hiringQuota;
                 const remaining = Math.max(0, quota.remainingHires !== undefined ? quota.remainingHires : 5);
-                const total = quota.totalHires || 5;
-                const used = Math.max(0, total - remaining);
+                const total = 5; // the most hires anyone can hold
+                const used = Math.max(0, quota.usedHires || 0);
                 const pct = Math.max(0, Math.min(100, Math.round((remaining / total) * 100)));
 
                 const countText = document.getElementById('appPassCountText');
@@ -6337,7 +6339,7 @@
 
                 if (countText) {
                     if (isPending) {
-                        countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining <span style="color:#2563EB; font-weight:600;">(₱10 top-up awaiting admin verification)</span>`;
+                        countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining <span style="color:#2563EB; font-weight:600;">(top-up awaiting admin verification)</span>`;
                     } else if (isRejected) {
                         countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining <span style="color:#DC2626; font-weight:600;">(Receipt rejected — re-upload needed)</span>`;
                     } else {
@@ -6415,7 +6417,7 @@
                 return session?.hiringQuota;
             }
 
-            // The first ₱10 pass is required: an applicant who has never had hires and
+            // A first purchase is required: an applicant who has never had hires and
             // has no receipt on file must submit one before entering the portal. Until
             // the server has answered, the cached quota may be stale, so it never gates.
             let hiringPassChecked = false;
@@ -6430,13 +6432,44 @@
                     const logoutLink = document.getElementById('appTopupLogoutBtn');
                     if (logoutLink) logoutLink.style.display = required ? 'block' : 'none';
                     const title = document.getElementById('appTopupModalTitle');
-                    if (title) title.textContent = required ? 'Activate Your First 5 Hires' : 'Add ₱10 for 5 Hires';
+                    if (title) title.textContent = required ? 'Activate Your First Hires' : 'Add Hires';
+                    // Crew hold at most 5 hires; offer 1 up to what fits, the most selected.
+                    const held = Math.max(0, Number(session?.hiringQuota?.remainingHires) || 0);
+                    const free = Math.max(0, 5 - held);
+                    if (free === 0 && !session?.hiringQuota?.pendingPayment) {
+                        showToast('You already hold 5 hires, the most you can have at once.');
+                        return;
+                    }
+                    const hiresSelect = document.getElementById('appTopupHires');
+                    if (hiresSelect) {
+                        hiresSelect.replaceChildren(...Array.from({ length: Math.max(1, free) }, (_, i) => new Option(`${i + 1} hire${i ? 's' : ''} · ₱${(i + 1) * 2}.00`, String(i + 1))));
+                        hiresSelect.value = String(Math.max(1, free));
+                    }
+                    updateTopupAmount();
                     applicantTopupModal.classList.add('open');
                     applicantTopupModal.style.display = 'flex';
                     applicantTopupModal.setAttribute('aria-hidden', 'false');
                     if (typeof updateTopupConfirmBtn === 'function') updateTopupConfirmBtn();
                 }
             }
+
+            // updateTopupAmount shows the price, QR and button for the selected number of hires.
+            function updateTopupAmount() {
+                const hires = Number(document.getElementById('appTopupHires')?.value) || 1;
+                const pesos = `₱${(hires * 2).toFixed(2)}`;
+                const qr = `/api/applicant/hiring-pass/qr?hires=${hires}`;
+                const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+                set('appTopupAmount', String(hires * 2));
+                set('appTopupTotal', pesos);
+                set('appTopupQrCaption', `${pesos} pre-filled • Scan or upload in GCash`);
+                set('appTopupQrAmount', pesos);
+                set('appConfirmTopupText', `Confirm ${pesos} (+${hires} Hire${hires === 1 ? '' : 's'})`);
+                const img = document.getElementById('appTopupQrImg');
+                if (img) img.src = qr;
+                const save = document.getElementById('appTopupQrSave');
+                if (save) { save.href = qr; save.setAttribute('download', `instantcrew-gcash-${hires * 2}.png`); }
+            }
+            document.getElementById('appTopupHires')?.addEventListener('change', updateTopupAmount);
 
             function closeApplicantTopupModal() {
                 if (applicantTopupModal) {
@@ -7388,7 +7421,7 @@
                     () => { topupProofFile = null; topupProofDataUrl = ''; updateTopupConfirmBtn(); }
                 );
 
-                // Confirm Top-Up Button (Add ₱10 for 5 Hires)
+                // Confirm Top-Up Button (selected hires at ₱2 each)
                 if (appConfirmTopupBtn) {
                     appConfirmTopupBtn.addEventListener('click', async () => {
                         if (!topupProofFile && !topupProofDataUrl) {
@@ -7397,7 +7430,8 @@
                         }
 
                         appConfirmTopupBtn.disabled = true;
-                        appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Adding ₱10 (+5 Hires)…';
+                        const topupHires = Number(document.getElementById('appTopupHires')?.value) || 0;
+                        appConfirmTopupBtn.innerHTML = '<span class="db-btn-spinner"></span> Submitting receipt…';
 
                         try {
                             // Upload after disabling the button so a double-click cannot submit twice.
@@ -7406,7 +7440,7 @@
                                 method: 'POST',
                                 credentials: 'same-origin',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ method: 'gcash', proof_image: proofUrl })
+                                body: JSON.stringify({ method: 'gcash', proof_image: proofUrl, hires: topupHires })
                             });
                             const data = await response.json().catch(() => ({}));
                             if (!response.ok) throw new Error(data.error || 'Payment could not be completed.');
@@ -7417,12 +7451,13 @@
                             if (wasGated && session) { applySessionToDashboard(session); updateViewMode(); }
                             renderShiftsFeed();
                             showToast(data.pending
-                                ? 'Receipt submitted! Awaiting accounting verification to activate your 5 hires.'
-                                : 'Success! ₱10 added for 5 new hiring opportunities (₱2/hire).');
+                                ? 'Receipt submitted! Awaiting accounting verification to activate your hires.'
+                                : 'Success! Your new hiring opportunities are active (₱2/hire).');
                         } catch (err) { showToast(err.message, true); }
                         finally {
                             appConfirmTopupBtn.disabled = false;
-                            appConfirmTopupBtn.innerHTML = '<span>Confirm ₱10.00 (+5 Hires)</span>';
+                            appConfirmTopupBtn.innerHTML = '<span id="appConfirmTopupText"></span>';
+                            updateTopupAmount();
                         }
                     });
                 }
@@ -7436,7 +7471,7 @@
                             if (updated?.pendingPayment?.status === 'pending') {
                                 showToast('Receipt is still awaiting accounting verification. Please allow a few moments.');
                             } else if (updated?.remainingHires > 0) {
-                                showToast('✓ Payment verified! 5 hires are active.');
+                                showToast('✓ Payment verified! Your hires are active.');
                             }
                         } catch (e) {
                             showToast('Could not check status right now.', true);
@@ -7629,11 +7664,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-<<<<<<< HEAD
-=======
-                        if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
-                        showToast('Welcome back!');
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
+
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Log In &amp; View Shifts</span>'; } }
                 }
@@ -7742,11 +7773,7 @@
                         closeApplicantAuthModal();
                         applySessionToDashboard(newSession);
                         updateViewMode();
-<<<<<<< HEAD
-=======
-                        if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
-                        showToast('Account created. Pay ₱10 to activate your first 5 hires.');
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
+
                     } catch (err) { showApplicantAuthError(err.message); }
                     finally { if (btn) { btn.disabled = false; btn.innerHTML = '<span>Create Account &amp; View Shifts</span>'; } }
                 }
@@ -7776,10 +7803,7 @@
                     saveWorkerSession(session);
                     applySessionToDashboard(session);
                     updateViewMode();
-<<<<<<< HEAD
-=======
                     // A push notification opens applicant.html?job=<id> to show that offer.
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
                     const linkedJobId = new URLSearchParams(window.location.search).get('job');
                     if (linkedJobId) {
                         history.replaceState(null, '', window.location.pathname);

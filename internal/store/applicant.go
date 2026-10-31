@@ -88,14 +88,37 @@ func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (Hir
 	return p, err
 }
 
-// AddApplicantHiringPass records a ₱10 receipt as pending. Hires are granted only after admin verification.
-func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method, proofImage string) (HiringPass, error) {
+const (
+	// MaxHeldHires is the most hires a crew member can hold at once.
+	MaxHeldHires = 5
+	// HirePriceCentavos is the price of one hire (₱2).
+	HirePriceCentavos = 200
+)
+
+// AddApplicantHiringPass records a receipt for buying hires (₱2 each) as pending;
+// hires 0 means as many as fit. Crew hold at most MaxHeldHires, so buying more
+// than fits is refused. Hires are granted only after admin verification.
+func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method, proofImage string, hires int) (HiringPass, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return HiringPass{}, err
 	}
 	defer tx.Rollback()
 	now := time.Now().Unix()
+
+	// Locking the pass also makes a double-submitted receipt wait for the first.
+	var remaining int
+	if err := tx.QueryRowContext(ctx, `SELECT remaining_hires FROM applicant_hiring_passes WHERE applicant_id=$1 FOR UPDATE`, applicantID).Scan(&remaining); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return HiringPass{}, err
+	}
+	free := MaxHeldHires - remaining
+	if hires == 0 {
+		hires = free
+	}
+	if hires < 1 || hires > free {
+		return HiringPass{}, ErrHiringPassFull
+	}
+	amount := int64(hires) * HirePriceCentavos
 
 	var existingID int64
 	var existingStatus string
@@ -113,13 +136,13 @@ func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, m
 	if scanErr == nil && existingStatus == "rejected" {
 		if _, err = tx.ExecContext(ctx, `
 			UPDATE applicant_hiring_pass_payments
-			SET method=$1, proof_image=$2, status='pending', verified_at=NULL, verified_by='', rejection_reason='', created_at=$3
-			WHERE id=$4 AND applicant_id=$5`, method, proofImage, now, existingID, applicantID); err != nil {
+			SET method=$1, proof_image=$2, status='pending', verified_at=NULL, verified_by='', rejection_reason='', created_at=$3, amount_centavos=$6
+			WHERE id=$4 AND applicant_id=$5`, method, proofImage, now, existingID, applicantID, amount); err != nil {
 			return HiringPass{}, err
 		}
 		paymentID = existingID
 	} else {
-		if err = tx.QueryRowContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,credits_granted,created_at) VALUES($1,1000,$2,$3,'pending',0,$4) RETURNING id`, applicantID, method, proofImage, now).Scan(&paymentID); err != nil {
+		if err = tx.QueryRowContext(ctx, `INSERT INTO applicant_hiring_pass_payments(applicant_id,amount_centavos,method,proof_image,status,credits_granted,created_at) VALUES($1,$5,$2,$3,'pending',0,$4) RETURNING id`, applicantID, method, proofImage, now, amount).Scan(&paymentID); err != nil {
 			return HiringPass{}, err
 		}
 	}

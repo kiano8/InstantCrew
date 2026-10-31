@@ -44,6 +44,7 @@ type Assignment struct {
 	AcceptedAt  time.Time
 	EndedAt     *time.Time
 	Transit     string
+	Rating      float64 // the crew member's rating, 1-5
 	// ArrivalDeadlineAt is set once the employer confirms; nil before that.
 	ArrivalDeadlineAt *time.Time
 }
@@ -55,11 +56,12 @@ const eligibleCrew = `NOT p.is_permanently_deactivated
 // MatchedApplicant contains only the profile details employers need to identify
 // a crew member while a matching search is open. Contact information is omitted.
 type MatchedApplicant struct {
-	Name             string `json:"name"`
-	ExpectedRate     int64  `json:"expected_rate"`
-	RatePeriod       string `json:"rate_period"`
-	City             string `json:"city"`
-	AvailabilityMode string `json:"availability_mode"`
+	Name             string  `json:"name"`
+	ExpectedRate     int64   `json:"expected_rate"`
+	RatePeriod       string  `json:"rate_period"`
+	City             string  `json:"city"`
+	AvailabilityMode string  `json:"availability_mode"`
+	Rating           float64 `json:"rating"`
 }
 
 type JobPayment struct {
@@ -381,7 +383,7 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 // MatchingApplicants returns the crew who can currently take this open search.
 func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedApplicant, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT u.name,p.expected_rate,p.rate_period,p.city,p.availability_mode
+		SELECT u.name,p.expected_rate,p.rate_period,p.city,p.availability_mode,p.rating_hundredths/100.0
 		`+matchingCrew+`
 		AND j.status='matching'
 		ORDER BY u.name`, jobID)
@@ -392,7 +394,7 @@ func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedA
 	matches := make([]MatchedApplicant, 0)
 	for rows.Next() {
 		var applicant MatchedApplicant
-		if err := rows.Scan(&applicant.Name, &applicant.ExpectedRate, &applicant.RatePeriod, &applicant.City, &applicant.AvailabilityMode); err != nil {
+		if err := rows.Scan(&applicant.Name, &applicant.ExpectedRate, &applicant.RatePeriod, &applicant.City, &applicant.AvailabilityMode, &applicant.Rating); err != nil {
 			return nil, err
 		}
 		matches = append(matches, applicant)
@@ -723,6 +725,22 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 			return err
 		}
 	}
+	// Crew ended while on the way didn't cause it, so they get their hire back.
+	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments SET hire_refunded=true
+		WHERE job_id=$1 AND ended_at IS NULL AND transit_status='en_route'`, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_passes
+		SET remaining_hires=remaining_hires+1, used_hires=used_hires-1, updated_at=$1
+		WHERE used_hires>0 AND applicant_id IN (
+			SELECT applicant_id FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL AND hire_refunded)`, now, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
+		SELECT applicant_id,'Hire returned','The employer ended the shift while you were on the way, so your hiring opportunity was returned.','end','{}',$1
+		FROM job_assignments WHERE job_id=$2 AND ended_at IS NULL AND hire_refunded`, now, id); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx,
 		`UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now, id); err != nil {
 		return err
@@ -744,8 +762,10 @@ func (s *Store) AssignmentsForJobs(ctx context.Context, jobIDs []int64) (map[int
 		return out, nil
 	}
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT a.job_id, a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status, a.arrival_deadline_at
+		SELECT a.job_id, a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status, a.arrival_deadline_at,
+			COALESCE(p.rating_hundredths, 0)/100.0
 		FROM job_assignments a JOIN users u ON u.id = a.applicant_id
+		LEFT JOIN applicant_profiles p ON p.user_id = a.applicant_id
 		WHERE a.job_id = ANY($1) ORDER BY a.accepted_at`, jobIDs)
 	if err != nil {
 		return nil, err
@@ -755,7 +775,7 @@ func (s *Store) AssignmentsForJobs(ctx context.Context, jobIDs []int64) (map[int
 		var a Assignment
 		var jobID, acc int64
 		var ended, deadline sql.NullInt64
-		if err := rows.Scan(&jobID, &a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline); err != nil {
+		if err := rows.Scan(&jobID, &a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline, &a.Rating); err != nil {
 			return nil, err
 		}
 		a.AcceptedAt = time.Unix(acc, 0)

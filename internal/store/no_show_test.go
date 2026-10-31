@@ -37,7 +37,7 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 
 	grantHires := func() {
 		t.Helper()
-		_, err := st.AddApplicantHiringPass(ctx, crew.ID, "gcash", "/uploads/pass.jpg")
+		_, err := st.AddApplicantHiringPass(ctx, crew.ID, "gcash", "/uploads/pass.jpg", 0)
 		must("hiring pass", err)
 		all, err := st.ListAllPayments(ctx)
 		must("list payments", err)
@@ -48,7 +48,9 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 		}
 	}
 	grantHires()
-	grantHires() // 10 hires: one on-time shift plus five no-shows
+	// 10 hires: one on-time shift plus five no-shows. Purchases stop at 5 held, so add the rest directly.
+	_, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=total_hires+5, remaining_hires=remaining_hires+5 WHERE applicant_id=$1`, crew.ID)
+	must("extra hires", err)
 
 	// openShift creates a job and starts its crew search.
 	openShift := func() int64 {

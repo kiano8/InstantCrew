@@ -3,13 +3,16 @@ package jobs
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	qrcode "github.com/skip2/go-qrcode"
 
 	"instantcrew/internal/auth"
+	"instantcrew/internal/httpx"
+	"instantcrew/internal/store"
 )
 
-// The QR Ph (InstaPay) payload of the GCash account that receives search fees,
+// The QR Ph (InstaPay) payload of the GCash account that receives fees,
 // split around tag 54 (amount). Taken from images/payment_qr_100.png.
 const (
 	gcashQRHead = "00020101021227830012com.p2pqrpay0111GXCHPHM2XXX02089996440303152170200000006560417DWQM4TK3JDNX06S0K52046016" + "5303608"
@@ -44,7 +47,21 @@ func (h *Handler) FeeQR(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
-	png, err := qrcode.Encode(qrPhPayload(h.MatchFeeCentavos+penalty), qrcode.Medium, 512)
+	h.writeQR(w, h.MatchFeeCentavos+penalty)
+}
+
+// GET /api/applicant/hiring-pass/qr?hires=N is a GCash QR pre-filled with N hires at ₱2 each.
+func (h *Handler) HiringPassQR(w http.ResponseWriter, r *http.Request) {
+	hires, err := strconv.Atoi(r.URL.Query().Get("hires"))
+	if err != nil || hires < 1 || hires > store.MaxHeldHires {
+		httpx.Error(w, http.StatusBadRequest, "hires must be 1 to 5")
+		return
+	}
+	h.writeQR(w, int64(hires)*store.HirePriceCentavos)
+}
+
+func (h *Handler) writeQR(w http.ResponseWriter, centavos int64) {
+	png, err := qrcode.Encode(qrPhPayload(centavos), qrcode.Medium, 512)
 	if err != nil {
 		h.fail(w, err)
 		return

@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/admin.css?v=20261029-deslop">
+    <link rel="stylesheet" href="css/admin.css?v=20261031-usercounts">
     <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
     <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
     <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png?v=20261030-2">
@@ -65,6 +65,34 @@
 
         <!-- Metrics KPI Cards -->
         <div class="adm-metrics-grid">
+            <div class="adm-metric-card employers">
+                <div class="adm-metric-label">
+                    <span>Employers</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                </div>
+                <div class="adm-metric-val" id="kpiEmployers">0</div>
+                <div class="adm-metric-sub">Registered employers</div>
+            </div>
+
+            <div class="adm-metric-card applicants">
+                <div class="adm-metric-label">
+                    <span>Applicants</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <div class="adm-metric-val" id="kpiApplicants">0</div>
+                <div class="adm-metric-sub">Registered applicants</div>
+            </div>
+
             <div class="adm-metric-card total">
                 <div class="adm-metric-label">
                     <span>Total Processed</span>
@@ -126,8 +154,8 @@
             <div class="adm-filter-group">
                 <select class="adm-select" id="filterParty" aria-label="Filter by Party">
                     <option value="all">All Parties</option>
-                    <option value="employer">Employers (₱100 Search Fee)</option>
-                    <option value="applicant">Applicants (₱10 Hiring Pass)</option>
+                    <option value="employer">Employers (Search Fee)</option>
+                    <option value="applicant">Applicants (Hiring Pass, ₱2/hire)</option>
                 </select>
 
                 <select class="adm-select" id="filterMethod" aria-label="Filter by Method">
@@ -252,6 +280,8 @@
             'use strict';
 
             let paymentsData = [];
+            let employerUserCount = 0;
+            let applicantUserCount = 0;
             let activeTab = 'all'; // 'all', 'pending', 'verified'
             let activeParty = 'all'; // 'all', 'employer', 'applicant'
             let activeMethod = 'all'; // 'all', 'gcash', 'maya', 'card'
@@ -292,6 +322,8 @@
             const statusTabs = document.querySelectorAll('.adm-tab-btn');
 
             // KPI Elements
+            const kpiEmployers = document.getElementById('kpiEmployers');
+            const kpiApplicants = document.getElementById('kpiApplicants');
             const kpiRevenue = document.getElementById('kpiRevenue');
             const kpiRevenueSub = document.getElementById('kpiRevenueSub');
             const kpiPending = document.getElementById('kpiPending');
@@ -346,6 +378,12 @@
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     const data = await res.json();
                     const serverRecords = data && Array.isArray(data.payments) ? data.payments : [];
+                    if (data && typeof data.employer_count === 'number') {
+                        employerUserCount = data.employer_count;
+                    }
+                    if (data && typeof data.applicant_count === 'number') {
+                        applicantUserCount = data.applicant_count;
+                    }
                     const isFirstLoad = knownPaymentIds === null;
                     const prevIds = knownPaymentIds || new Set();
                     knownPaymentIds = new Set(serverRecords.map(p => p.id));
@@ -399,6 +437,8 @@
                     else appCount++;
                 });
 
+                if (kpiEmployers) kpiEmployers.textContent = employerUserCount.toLocaleString('en-US');
+                if (kpiApplicants) kpiApplicants.textContent = applicantUserCount.toLocaleString('en-US');
                 kpiRevenue.textContent = `₱${(totalCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 kpiRevenueSub.textContent = `${verifiedCount} verified transaction${verifiedCount === 1 ? '' : 's'}`;
                 if (kpiPending) kpiPending.textContent = pendingCount;

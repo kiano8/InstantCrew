@@ -20,17 +20,18 @@ import (
 const CookieName = "ic_session"
 
 type Handler struct {
-	Store        *store.Store
-	SessionTTL   time.Duration
-	IdleTimeout  time.Duration // sign out after this long without user activity; 0 = off
-	MaxUsers     int           // beta cap on distinct testers; 0 = unlimited
-	CookieSecure bool
-	Mail         Mailer // sends signup and password reset codes
-	DevLogCodes  bool   // dev only: log codes instead of failing when Mail is unset
-	google       *googleOAuth
-	facebook     *facebookOAuth
-	codeMail     mailLimiter
-	loginFails   loginLimiter
+	Store         *store.Store
+	SessionTTL    time.Duration
+	IdleTimeout   time.Duration // sign out after this long without user activity; 0 = off
+	MaxUsers      int           // beta cap on distinct testers; 0 = unlimited
+	CookieSecure  bool
+	Mail          Mailer            // sends signup and password reset codes
+	DevLogCodes   bool              // dev only: log codes instead of failing when Mail is unset
+	OnUserCreated func(role string) // optional hook invoked after a new user registers
+	google        *googleOAuth
+	facebook      *facebookOAuth
+	codeMail      mailLimiter
+	loginFails    loginLimiter
 }
 
 const (
@@ -234,6 +235,9 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		}
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 		return
+	}
+	if h.OnUserCreated != nil {
+		h.OnUserCreated(u.Role)
 	}
 	if err := h.startSession(w, r, u); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")

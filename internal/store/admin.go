@@ -172,7 +172,7 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 			ID:              fmt.Sprintf("app_%d", rawID),
 			RawID:           rawID,
 			Type:            "applicant",
-			TypeLabel:       "Applicant Hiring Pass (5 Hires)",
+			TypeLabel:       "Applicant Hiring Pass",
 			UserID:          applicantID,
 			UserName:        userName,
 			UserEmail:       userEmail,
@@ -181,7 +181,7 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 			AmountCentavos:  amountCentavos,
 			AmountPesos:     fmt.Sprintf("₱%.2f", float64(amountCentavos)/100),
 			Method:          method,
-			Details:         "Hiring Pass Batch (5 hires)",
+			Details:         hiresText(amountCentavos/HirePriceCentavos),
 			ProofImage:      proofImage,
 			Status:          displayStatus,
 			IsVerified:      isVerified,
@@ -249,6 +249,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	var jobID sql.NullInt64
 	var prevStatus string
 	var creditsGranted int
+	var passAmount int64 // a hiring pass receipt buys passAmount / HirePriceCentavos hires
 	confirmed := false
 	switch strings.ToLower(pType) {
 	case "employer":
@@ -294,7 +295,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			}
 		}
 	case "applicant":
-		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0) FROM applicant_hiring_pass_payments WHERE id=$1 FOR UPDATE`, id).Scan(&userID, &prevStatus, &creditsGranted)
+		err = tx.QueryRowContext(ctx, `SELECT applicant_id, COALESCE(status,''), COALESCE(credits_granted,0), amount_centavos FROM applicant_hiring_pass_payments WHERE id=$1 FOR UPDATE`, id).Scan(&userID, &prevStatus, &creditsGranted, &passAmount)
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		}
@@ -316,11 +317,11 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 			if creditsGranted == 0 && prevStatus != "verified" {
 				if _, err = tx.ExecContext(ctx, `
 					INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at)
-					VALUES($1,5,5,0,1000,1,$2)
+					VALUES($1,$3,$3,0,$4,1,$2)
 					ON CONFLICT(applicant_id) DO UPDATE SET
-						total_hires=applicant_hiring_passes.total_hires+5, remaining_hires=applicant_hiring_passes.remaining_hires+5,
-						amount_centavos=applicant_hiring_passes.amount_centavos+1000, batches_paid=applicant_hiring_passes.batches_paid+1, updated_at=excluded.updated_at`,
-					userID, now); err != nil {
+						total_hires=applicant_hiring_passes.total_hires+$3, remaining_hires=applicant_hiring_passes.remaining_hires+$3,
+						amount_centavos=applicant_hiring_passes.amount_centavos+$4, batches_paid=applicant_hiring_passes.batches_paid+1, updated_at=excluded.updated_at`,
+					userID, now, passAmount/HirePriceCentavos, passAmount); err != nil {
 					return err
 				}
 				if _, err = tx.ExecContext(ctx, `UPDATE applicant_hiring_pass_payments SET credits_granted=1 WHERE id=$1`, id); err != nil {
@@ -349,7 +350,7 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 				message += " Your crew booking is confirmed."
 			}
 		} else {
-			title, message = "Hiring pass verified", "Accounting verified your ₱10 receipt. Five hiring opportunities are now active."
+			title, message = "Hiring pass verified", fmt.Sprintf("Accounting verified your %s receipt. %s now active.", pesos(passAmount), hiresText(passAmount/HirePriceCentavos))
 		}
 	case "rejected":
 		if strings.ToLower(pType) == "employer" {
@@ -406,4 +407,18 @@ func (s *Store) EnsureAdminUser(ctx context.Context, email, password, name strin
 		VALUES ($1, $2, 'admin', $3, 'Instant Crew Accounting', $4)
 	`, normEmail, string(hash), name, now)
 	return insertErr
+}
+
+// CountUsersByRole returns the total number of registered employers and applicants.
+func (s *Store) CountUsersByRole(ctx context.Context) (employers int64, applicants int64, err error) {
+	err = s.db.QueryRowContext(ctx, `
+		SELECT
+			COALESCE(SUM(CASE WHEN role = 'employer' THEN 1 ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN role = 'applicant' THEN 1 ELSE 0 END), 0)
+		FROM users
+	`).Scan(&employers, &applicants)
+	if err != nil {
+		return 0, 0, fmt.Errorf("count users by role: %w", err)
+	}
+	return employers, applicants, nil
 }

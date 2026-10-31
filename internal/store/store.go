@@ -16,8 +16,9 @@ import (
 var (
 	ErrNotFound             = errors.New("not found")
 	ErrEmailTaken           = errors.New("email already registered")
-	ErrHiringPassEmpty      = errors.New("hiring pass exhausted; add ₱10 for 5 hires")
-	ErrHiringPassPending    = errors.New("your ₱10 receipt is awaiting verification; hires activate once accounting approves it")
+	ErrHiringPassEmpty      = errors.New("no hires left; add hires at ₱2 each (up to 5)")
+	ErrHiringPassPending    = errors.New("your hiring pass receipt is awaiting verification; hires activate once accounting approves it")
+	ErrHiringPassFull       = errors.New("you can hold at most 5 hires at a time")
 	ErrBetaFull             = errors.New("beta tester limit reached")
 	ErrNotConfirmed         = errors.New("the employer has not confirmed this booking yet")
 	ErrBookingPending       = errors.New("the employer is paying the search fee for this booking; you can leave it once it is confirmed or declined")

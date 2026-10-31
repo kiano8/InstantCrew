@@ -200,8 +200,8 @@ func ensureUser(ctx context.Context, st *store.Store, u *store.User) (*store.Use
 	return existing, false, err
 }
 
-// ensureHires gives crew with no hiring-pass history one verified ₱10 pass
-// (5 hires) through the normal receipt flow, so they can accept shifts.
+// ensureHires gives crew with no hiring-pass history 5 verified hires (₱10)
+// through the normal receipt flow, so they can accept shifts.
 func ensureHires(ctx context.Context, st *store.Store, applicantID int64) (bool, error) {
 	pass, err := st.ApplicantHiringPass(ctx, applicantID)
 	if err != nil {
@@ -210,7 +210,7 @@ func ensureHires(ctx context.Context, st *store.Store, applicantID int64) (bool,
 	if pass.BatchesPaid > 0 || pass.RemainingHires > 0 || pass.PendingPayment != nil {
 		return false, nil
 	}
-	pass, err = st.AddApplicantHiringPass(ctx, applicantID, "card", "")
+	pass, err = st.AddApplicantHiringPass(ctx, applicantID, "card", "", 0)
 	if err != nil {
 		return false, err
 	}

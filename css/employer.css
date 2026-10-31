@@ -7371,3 +7371,43 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .db-proof-attention { animation: none; outline: 2px solid #007DFE; outline-offset: 4px; }
 }
+
+/* Post-contract rating popup (js/shared-data.js) */
+.ic-review-stars {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 14px 0 6px;
+}
+
+.ic-review-star {
+    background: none;
+    border: none;
+    padding: 4px;
+    font-size: 2.2rem;
+    line-height: 1;
+    color: #D1D5DB;
+    cursor: pointer;
+    transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.ic-review-star.on {
+    color: #F4C430;
+}
+
+.ic-review-star:hover {
+    transform: scale(1.12);
+}
+
+.ic-review-star:focus-visible {
+    outline: 2px solid #111827;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.ic-review-error {
+    margin: 0 0 10px;
+    text-align: center;
+    color: #DC2626;
+    font-size: 0.85rem;
+}

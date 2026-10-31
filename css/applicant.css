@@ -7250,3 +7250,29 @@ body.app-sheet-open {
 .app-btn-topup-now:active {
     transform: translateY(0);
 }
+
+/* Employer review average on shift offers */
+.app-employer-rating {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #FEF9C3;
+    color: #854D0E;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Number of hires to buy in the top-up modal */
+.app-topup-hires-select {
+    min-width: 170px;
+    padding: 8px 10px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    background: #FFFFFF;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #111827;
+}

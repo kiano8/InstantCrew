@@ -119,7 +119,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Applicant pays ₱10 for hiring pass (uploads proof)
-	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof1.jpg")
+	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof1.jpg", 0)
 	if err != nil {
 		t.Fatalf("AddApplicantHiringPass failed: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("expected 0 remaining hires before verification, got %d", pass.RemainingHires)
 	}
 	// A second receipt while the first is pending must not overwrite it.
-	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof_dup.jpg"); !errors.Is(err, store.ErrPaymentPendingExists) {
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof_dup.jpg", 0); !errors.Is(err, store.ErrPaymentPendingExists) {
 		t.Fatalf("expected ErrPaymentPendingExists, got %v", err)
 	}
 
@@ -168,7 +168,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Applicant re-uploads
-	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof2.jpg")
+	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof2.jpg", 0)
 	if err != nil {
 		t.Fatalf("AddApplicantHiringPass re-upload failed: %v", err)
 	}
@@ -258,6 +258,26 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	if err != nil || pass.RemainingHires != 4 || pass.UsedHires != 1 {
 		t.Fatalf("expected 4 remaining / 1 used after confirmation, got %+v", pass)
 	}
+
+	// 6. Crew hold at most 5 hires and pay ₱2 per hire: with 4 held only 1 more fits.
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof3.jpg", 2); !errors.Is(err, store.ErrHiringPassFull) {
+		t.Fatalf("buying past 5 held hires: want ErrHiringPassFull, got %v", err)
+	}
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof3.jpg", 0); err != nil {
+		t.Fatalf("filling up to 5: %v", err)
+	}
+	var amount int64
+	var topupID int64
+	if err := raw.QueryRow(`SELECT id, amount_centavos FROM applicant_hiring_pass_payments WHERE applicant_id=$1 AND status='pending'`, applicant.ID).Scan(&topupID, &amount); err != nil || amount != 200 {
+		t.Fatalf("1 hire should cost ₱2.00 (200), got %d (%v)", amount, err)
+	}
+	if err := st.SetPaymentStatus(ctx, "applicant", topupID, "verified", "Admin Jane", ""); err != nil {
+		t.Fatalf("verify top-up: %v", err)
+	}
+	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
+	if err != nil || pass.RemainingHires != 5 {
+		t.Fatalf("expected 5 held after a 1-hire top-up, got %+v", pass)
+	}
 }
 
 // Ending crew who are on the way adds ₱50 each to the employer's next search fee,
@@ -327,6 +347,13 @@ func TestStore_TransitCancelPenalty(t *testing.T) {
 	if p := penalty(); p != 2*store.TransitCancelPenaltyCentavos {
 		t.Fatalf("want penalty %d, got %d", 2*store.TransitCancelPenaltyCentavos, p)
 	}
+	// The first booking's crew hadn't left, so its hire stays spent (10 -> 9); the
+	// two ended on the way got theirs back.
+	pass, err := st.ApplicantHiringPass(ctx, crew.ID)
+	must("hiring pass", err)
+	if pass.RemainingHires != 9 || pass.UsedHires != 1 {
+		t.Fatalf("want 9 remaining / 1 used after transit refunds, got %d / %d", pass.RemainingHires, pass.UsedHires)
+	}
 
 	// The next fee includes the penalty (₱200), and verifying it clears the penalty.
 	_, pay := book(false)
@@ -352,7 +379,7 @@ func TestStore_ConcurrentHiringPassVerifyGrantsOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pass, err := st.AddApplicantHiringPass(ctx, app.ID, "gcash", "/uploads/proof_1_ab.jpg")
+	pass, err := st.AddApplicantHiringPass(ctx, app.ID, "gcash", "/uploads/proof_1_ab.jpg", 0)
 	if err != nil || pass.PendingPayment == nil {
 		t.Fatalf("AddApplicantHiringPass: %v %+v", err, pass)
 	}
@@ -445,5 +472,87 @@ func TestStore_ReleaseUnpaidMatches(t *testing.T) {
 	must("assignments", raw.QueryRow(`SELECT COUNT(*) FROM job_assignments WHERE job_id=$1 AND ended_at IS NULL`, unpaid).Scan(&open))
 	if open != 0 {
 		t.Fatalf("released crew member must be unassigned, %d still assigned", open)
+	}
+}
+
+// After a contract ends both sides are asked to rate each other once. The
+// employer's stars move the crew member's rating; the crew's stars average into
+// the employer's rating; a skip is never asked again.
+func TestStore_Reviews(t *testing.T) {
+	st, raw := storetest.Open(t)
+	ctx := context.Background()
+	must := func(what string, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+	}
+	must("catalog", jobs.SyncCatalog(ctx, st))
+	employer := &store.User{Email: "e@test.com", PasswordHash: "x", Role: "employer", Name: "Emp", Company: "Co"}
+	crew := &store.User{Email: "c@test.com", PasswordHash: "x", Role: "applicant", Name: "Crew"}
+	must("employer", st.CreateUser(ctx, employer))
+	must("crew", st.CreateUser(ctx, crew))
+	active := true
+	must("profile", st.SaveApplicantProfile(ctx, crew.ID, store.ApplicantProfile{EmploymentType: "full-time", ExpectedRate: 100,
+		RatePeriod: "hour", City: "Cebu City", Availability: "now", Active: &active, Roles: []string{"cook"}}))
+	_, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=5, remaining_hires=5 WHERE applicant_id=$1`, crew.ID)
+	must("hires", err)
+	finished := func() int64 {
+		t.Helper()
+		j := &store.Job{EmployerID: employer.ID, Category: "kitchen", RoleID: "cook", RoleLabel: "Cook",
+			EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
+			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
+		must("create job", st.CreateJob(ctx, j))
+		must("search", st.StartSearch(ctx, employer.ID, j.ID))
+		must("accept", st.AcceptJob(ctx, j.ID, crew.ID))
+		must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
+		pay, err := st.LatestJobPayment(ctx, j.ID)
+		must("latest payment", err)
+		must("verify", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
+		return j.ID
+	}
+	pending := func(userID int64) int {
+		t.Helper()
+		p, err := st.PendingReviews(ctx, userID)
+		must("pending", err)
+		return len(p)
+	}
+	rating := func() float64 {
+		t.Helper()
+		p, err := st.ApplicantProfile(ctx, crew.ID)
+		must("profile", err)
+		return p.Rating
+	}
+
+	id := finished()
+	if pending(employer.ID) != 0 || pending(crew.ID) != 0 {
+		t.Fatal("a contract still running must not ask for a rating")
+	}
+	if err := st.SubmitReview(ctx, employer.ID, id, 5); !errors.Is(err, store.ErrNotFound) {
+		t.Fatalf("rating a running contract: want ErrNotFound, got %v", err)
+	}
+	must("end", st.EndJob(ctx, employer.ID, id))
+	if pending(employer.ID) != 1 || pending(crew.ID) != 1 {
+		t.Fatalf("both sides must be asked once, got employer %d crew %d", pending(employer.ID), pending(crew.ID))
+	}
+
+	before := rating()
+	must("employer rates", st.SubmitReview(ctx, employer.ID, id, 5))
+	must("employer rates again", st.SubmitReview(ctx, employer.ID, id, 1))
+	if got := rating(); got < before+0.099 || got > before+0.101 {
+		t.Fatalf("5 stars once should add 0.10 to %v, got %v", before, got)
+	}
+	must("crew skips", st.SubmitReview(ctx, crew.ID, id, 0))
+	if pending(employer.ID) != 0 || pending(crew.ID) != 0 {
+		t.Fatal("rated and skipped contracts must not be asked again")
+	}
+
+	id = finished()
+	must("end", st.EndJob(ctx, employer.ID, id))
+	must("crew rates", st.SubmitReview(ctx, crew.ID, id, 4))
+	m, err := st.EmployerRatings(ctx, []int64{employer.ID})
+	must("employer ratings", err)
+	if r := m[employer.ID]; r.Reviews != 1 || r.Rating != 4 {
+		t.Fatalf("skip must not count: want 4.0 from 1 review, got %+v", r)
 	}
 }

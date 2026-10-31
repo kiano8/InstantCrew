@@ -52,6 +52,27 @@
                 <!-- Payment History Button -->
                 <button type="button" class="ph-btn" id="phHeaderBtn" style="display:none;">Payment history</button>
 
+                <!-- Notification Bell -->
+                <div class="db-notif-wrap" id="headerNotifWrap">
+                    <button type="button" class="db-notif-btn" id="notifBtn" aria-label="Notifications"
+                        title="Notifications">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                        </svg>
+                        <span class="db-notif-badge" id="notifBadge" style="display:none;">0</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div class="db-notif-dropdown" id="notifDropdown" hidden>
+                        <div class="db-notif-dropdown-header">
+                            <h4>Crew Activity</h4>
+                            <button type="button" class="db-notif-clear-btn" id="clearNotifsBtn">Clear all</button>
+                        </div>
+                        <div class="db-notif-list" id="notifList"></div>
+                    </div>
+                </div>
+
                 <!-- Employer Profile Avatar (top-right) -->
                 <button type="button" class="db-profile-avatar-btn" id="openProfilePanel" aria-label="Open profile">
                     <span class="db-profile-initials" id="profileInitials">SE</span>
@@ -72,6 +93,7 @@
                     <div class="db-profile-header-info">
                         <h2 class="db-profile-header-name" id="panelUserName"></h2>
                         <p class="db-profile-header-email" id="panelUserEmail"></p>
+                        <p class="db-profile-header-email" id="panelUserRating" title="Average of the stars crew gave you"></p>
                     </div>
                 </div>
                 <div class="db-profile-header-actions">
@@ -1576,7 +1598,7 @@
     <script src="js/location.js"></script>
     <script src="js/email-code.js?v=20261030-login-code"></script>
     <script src="js/shared-data.js?v=20261030-saveqr"></script>
-    <script src="js/employer.js?v=20261030-modal-close"></script>
+    <script src="js/employer.js?v=20261031-bell"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261030-extnotif"></script>
     <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>

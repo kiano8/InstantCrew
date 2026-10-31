@@ -172,6 +172,9 @@ func (h *Handler) finishSSO(ctx context.Context, w http.ResponseWriter, r *http.
 			ssoFail(w, r, provider, "server_error", role, mode)
 			return
 		}
+		if h.OnUserCreated != nil {
+			h.OnUserCreated(u.Role)
+		}
 	}
 	if err := h.startSession(w, r, u); err != nil {
 		ssoFail(w, r, provider, "server_error", role, mode)

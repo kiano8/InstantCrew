@@ -71,10 +71,20 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/upload-proof", a.RequireAuth(http.HandlerFunc(h.UploadProof)))
 	mux.Handle("GET /api/employer/payments", emp(h.EmployerPaymentHistory))
 	mux.Handle("GET /api/employer/fee-qr", emp(h.FeeQR))
+	mux.Handle("GET /api/applicant/hiring-pass/qr", app(h.HiringPassQR))
+	mux.Handle("GET /api/employer/rating", emp(h.EmployerRating))
+	mux.Handle("GET /api/reviews/pending", a.RequireAuth(http.HandlerFunc(h.PendingReviews)))
+	mux.Handle("POST /api/reviews", a.RequireAuth(http.HandlerFunc(h.SubmitReview)))
 	mux.Handle("GET /api/applicant/payments", app(h.ApplicantPaymentHistory))
 	mux.Handle("GET /api/admin/payments", adm(h.AdminPayments))
 	mux.Handle("POST /api/admin/payments/verify", adm(h.AdminVerifyPayment))
 	mux.Handle("GET /api/admin/payments/stream", adm(h.AdminPaymentStream))
+
+	if a.OnUserCreated == nil {
+		a.OnUserCreated = func(role string) {
+			h.payments.publish(paymentEvent{Kind: "user", Type: role})
+		}
+	}
 }
 
 func (h *Handler) assignmentID(w http.ResponseWriter, r *http.Request) (*store.User, int64, bool) {
@@ -243,8 +253,13 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		Method     string `json:"method"`
 		ProofImage string `json:"proof_image"`
+		Hires      int    `json:"hires"` // 1-5, ₱2 each; 0 buys as many as fit
 	}
 	if !httpx.Decode(w, r, &req) {
+		return
+	}
+	if req.Hires < 0 || req.Hires > store.MaxHeldHires {
+		httpx.Error(w, http.StatusBadRequest, "hires must be 1 to 5")
 		return
 	}
 	method := strings.ToLower(strings.TrimSpace(req.Method))
@@ -261,7 +276,7 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		httpx.Error(w, http.StatusBadRequest, "proof of payment is required")
 		return
 	}
-	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage)
+	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage, req.Hires)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -274,7 +289,6 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		"paid":        !pending && !rejected,
 		"pending":     pending,
 		"rejected":    rejected,
-		"amount":      10,
 	})
 }
 
@@ -467,11 +481,12 @@ type crewDTO struct {
 	Transit           string     `json:"transit_status"`
 	ArrivalDeadlineAt *time.Time `json:"arrival_deadline_at,omitempty"`
 	// ArrivalSecondsRemaining uses the server clock, like seconds_remaining.
-	ArrivalSecondsRemaining int64 `json:"arrival_seconds_remaining"`
+	ArrivalSecondsRemaining int64   `json:"arrival_seconds_remaining"`
+	Rating                  float64 `json:"rating"`
 }
 
 func toCrewDTO(c store.Assignment) crewDTO {
-	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c)}
+	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c), c.Rating}
 }
 
 // arrivalSecondsRemaining is the time left to mark arrival, or 0 when no limit applies.
@@ -486,28 +501,29 @@ func arrivalSecondsRemaining(a store.Assignment) int64 {
 }
 
 type jobDTO struct {
-	ID             int64             `json:"id"`
-	Category       string            `json:"category"`
-	Role           string            `json:"role"`
-	RoleLabel      string            `json:"role_label"`
-	EmploymentType string            `json:"employment_type"`
-	Rate           float64           `json:"rate"`
-	RatePeriod     string            `json:"rate_period"`
-	City           string            `json:"city"`
-	MapLocation    string            `json:"map_location"`
-	MapsURL        string            `json:"maps_url"`
-	Lat            *float64          `json:"lat,omitempty"`
-	Lng            *float64          `json:"lng,omitempty"`
-	Timing         string            `json:"timing"`
-	ScheduledAt    *time.Time        `json:"scheduled_at,omitempty"`
-	CrewNeeded     int               `json:"crew_needed"`
-	AcceptedCount  int               `json:"accepted_count"`
-	Status         string            `json:"status"`
-	SearchAttempts int               `json:"search_attempts"`
-	MatchFee       float64           `json:"match_fee"` // base fee plus owed penalties; set for the employer's own views
-	Crew           []crewDTO         `json:"crew,omitempty"`
-	Payment        *store.JobPayment `json:"payment,omitempty"`
-	CreatedAt      time.Time         `json:"created_at"`
+	ID             int64                 `json:"id"`
+	Category       string                `json:"category"`
+	Role           string                `json:"role"`
+	RoleLabel      string                `json:"role_label"`
+	EmploymentType string                `json:"employment_type"`
+	Rate           float64               `json:"rate"`
+	RatePeriod     string                `json:"rate_period"`
+	City           string                `json:"city"`
+	MapLocation    string                `json:"map_location"`
+	MapsURL        string                `json:"maps_url"`
+	Lat            *float64              `json:"lat,omitempty"`
+	Lng            *float64              `json:"lng,omitempty"`
+	Timing         string                `json:"timing"`
+	ScheduledAt    *time.Time            `json:"scheduled_at,omitempty"`
+	CrewNeeded     int                   `json:"crew_needed"`
+	AcceptedCount  int                   `json:"accepted_count"`
+	Status         string                `json:"status"`
+	SearchAttempts int                   `json:"search_attempts"`
+	MatchFee       float64               `json:"match_fee"`                 // base fee plus owed penalties; set for the employer's own views
+	EmployerRating *store.EmployerRating `json:"employer_rating,omitempty"` // set for crew's views
+	Crew           []crewDTO             `json:"crew,omitempty"`
+	Payment        *store.JobPayment     `json:"payment,omitempty"`
+	CreatedAt      time.Time             `json:"created_at"`
 }
 
 func (h *Handler) toDTO(j *store.Job) jobDTO {
@@ -545,7 +561,7 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
 	case errors.Is(err, store.ErrPaymentNotVerified), errors.Is(err, store.ErrPaymentRejected):
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
-	case errors.Is(err, store.ErrPaymentPendingExists):
+	case errors.Is(err, store.ErrPaymentPendingExists), errors.Is(err, store.ErrHiringPassFull):
 		httpx.Error(w, http.StatusConflict, err.Error())
 	case errors.Is(err, store.ErrAccountSuspended), errors.Is(err, store.ErrAccountDeactivated):
 		httpx.Error(w, http.StatusForbidden, err.Error())
@@ -625,8 +641,17 @@ func (h *Handler) jobDTOs(r *http.Request, jobs []*store.Job, withPayment bool) 
 		return nil, err
 	}
 	var pays map[int64]*store.JobPayment
+	var ratings map[int64]store.EmployerRating
 	if withPayment {
 		if pays, err = h.Store.LatestJobPayments(r.Context(), ids); err != nil {
+			return nil, err
+		}
+	} else {
+		employers := make([]int64, len(jobs))
+		for i, j := range jobs {
+			employers[i] = j.EmployerID
+		}
+		if ratings, err = h.Store.EmployerRatings(r.Context(), employers); err != nil {
 			return nil, err
 		}
 	}
@@ -648,6 +673,10 @@ func (h *Handler) jobDTOs(r *http.Request, jobs []*store.Job, withPayment bool) 
 			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
 		d.Payment = pays[j.ID]
+		if !withPayment {
+			rating := ratings[j.EmployerID]
+			d.EmployerRating = &rating
+		}
 		out = append(out, d)
 	}
 	return out, nil
@@ -1068,9 +1097,16 @@ func (h *Handler) AdminPayments(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	employerCount, applicantCount, err := h.Store.CountUsersByRole(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	httpx.JSON(w, http.StatusOK, map[string]any{
-		"payments": records,
-		"count":    len(records),
+		"payments":        records,
+		"count":           len(records),
+		"employer_count":  employerCount,
+		"applicant_count": applicantCount,
 	})
 }
 

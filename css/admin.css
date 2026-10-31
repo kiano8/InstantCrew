@@ -206,7 +206,7 @@ body {
 /* ── Metrics Cards Grid ── */
 .adm-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -1046,6 +1046,16 @@ body {
 }
 
 /* Responsive */
+@media (max-width: 1080px) {
+    .adm-metrics-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .adm-metric-card.revenue {
+        grid-column: 1 / -1;
+    }
+}
+
 @media (max-width: 768px) {
     .adm-controls-bar {
         flex-direction: column;

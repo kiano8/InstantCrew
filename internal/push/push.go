@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 // Package push delivers employer and applicant notifications to their devices through Web Push,
-=======
-// Package push delivers employer notifications and applicant job matches to their devices through Web Push,
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 // so they arrive while the app or browser is closed.
 package push
 
@@ -56,7 +52,7 @@ func New(st *store.Store, cfg Config) *Service {
 func (s *Service) Enabled() bool { return s.cfg.PublicKey != "" && s.cfg.PrivateKey != "" }
 
 func (s *Service) Register(mux *http.ServeMux, a *auth.Handler) {
-<<<<<<< HEAD
+	// RequireAuth picks the employer or applicant session from the calling page.
 	pushAuth := func(f http.HandlerFunc) http.Handler {
 		return a.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			u, _ := auth.UserFrom(r.Context())
@@ -70,13 +66,6 @@ func (s *Service) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("GET /api/push/key", pushAuth(s.Key))
 	mux.Handle("POST /api/push/subscribe", pushAuth(s.Subscribe))
 	mux.Handle("POST /api/push/unsubscribe", pushAuth(s.Unsubscribe))
-=======
-	// RequireAuth picks the employer or applicant session from the calling page.
-	user := func(f http.HandlerFunc) http.Handler { return a.RequireAuth(f) }
-	mux.Handle("GET /api/push/key", user(s.Key))
-	mux.Handle("POST /api/push/subscribe", user(s.Subscribe))
-	mux.Handle("POST /api/push/unsubscribe", user(s.Unsubscribe))
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 }
 
 // GET /api/push/key returns the VAPID public key the browser subscribes with.
@@ -189,11 +178,7 @@ func (s *Service) dispatch(ctx context.Context) error {
 		return err
 	}
 	for _, n := range pending {
-<<<<<<< HEAD
-		if (n.Role != "employer" && n.Role != "applicant") || time.Since(time.Unix(n.CreatedAt, 0)) > maxAge {
-=======
 		if !pushable(n) || time.Since(time.Unix(n.CreatedAt, 0)) > maxAge {
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 			continue
 		}
 		subs, err := s.Store.PushSubscriptions(ctx, n.UserID)
@@ -214,28 +199,19 @@ func (s *Service) dispatch(ctx context.Context) error {
 	return nil
 }
 
-// pushable limits applicants to job matches; other roles' kinds stay in-app only.
+// pushable allows external Web Push delivery for employer and applicant notifications.
 func pushable(n store.PendingPush) bool {
-	return n.Role == "employer" || (n.Role == "applicant" && n.Type == "match")
+	return n.Role == "employer" || n.Role == "applicant"
 }
 
 // message is what sw.js's push handler shows. The tag matches the one the open
 // page uses, so the two never stack up as duplicate notifications.
 func message(n store.PendingPush) map[string]string {
-<<<<<<< HEAD
-	role := "employer"
-	link := "/employer.html"
-	if n.Role == "applicant" {
-		role = "applicant"
-		link = "/applicant.html"
-	}
-=======
 	page := "employer"
 	if n.Role == "applicant" {
 		page = "applicant"
 	}
 	link := "/" + page + ".html"
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 	var payload struct {
 		JobID *int64 `json:"job_id"`
 	}
@@ -245,11 +221,7 @@ func message(n store.PendingPush) map[string]string {
 	return map[string]string{
 		"title": n.Title,
 		"body":  n.Message,
-<<<<<<< HEAD
-		"tag":   fmt.Sprintf("%s-%d", role, n.ID),
-=======
 		"tag":   fmt.Sprintf("%s-%d", page, n.ID),
->>>>>>> 6508ca08ecd791ae7b4ae7e042a36b0f54fecad4
 		"url":   link,
 	}
 }

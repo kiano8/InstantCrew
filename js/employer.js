@@ -1976,7 +1976,7 @@ function refreshMatchedCrew(force = false) {
         const rate = document.createElement('p');
         rate.className = 'db-crew-meta';
         const period = ({ hour: 'hour', day: 'day', week: 'week', month: 'month' })[candidate.rate_period] || candidate.rate_period || 'hour';
-        rate.textContent = `Expected rate ₱${Number(candidate.expected_rate || 0).toLocaleString()} / ${period} · ${candidate.city || ''}`;
+        rate.textContent = `★ ${Number(candidate.rating || 0).toFixed(1)} · Expected rate ₱${Number(candidate.expected_rate || 0).toLocaleString()} / ${period} · ${candidate.city || ''}`;
         info.append(name, rate);
         const status = document.createElement('span');
         status.className = 'db-crew-role-tag';
@@ -2063,6 +2063,7 @@ function renderCrewResults(acceptedCrew = [], job = null) {
   // Render crew cards
   crewList.innerHTML = '';
   const listToRender = acceptedCrew || [];
+  const activeCrew = (job?.crew || []).filter(member => !member.ended_at);
 
   listToRender.forEach((workerName, i) => {
     const initials = workerName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'CW';
@@ -2079,7 +2080,7 @@ function renderCrewResults(acceptedCrew = [], job = null) {
                     <p class="db-crew-name">${window.InstantCrewShared.escHtml(workerName)}</p>
                     <span class="db-crew-offered-rate"${i === 0 ? ' id="rateAmount"' : ''}>${rateHtml}</span>
                 </div>
-                <p class="db-crew-meta">Accepted this shift</p>
+                <p class="db-crew-meta">${activeCrew[i]?.rating ? `★ ${Number(activeCrew[i].rating).toFixed(1)} · ` : ''}Accepted this shift</p>
             </div>
             <span class="db-crew-role-tag" style="color:#15803D; font-weight:700;">Accepted</span>
         `;
@@ -2490,6 +2491,13 @@ function openProfilePanel() {
   profileOverlay.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   populateProfile();
+  const ratingEl = document.getElementById('panelUserRating');
+  if (ratingEl && authUser) {
+    fetch('/api/employer/rating', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(r => { if (r) ratingEl.textContent = r.reviews ? `★ ${r.rating.toFixed(1)} from ${r.reviews} crew review${r.reviews === 1 ? '' : 's'}` : 'No crew reviews yet'; })
+      .catch(() => {});
+  }
   switchBookingTab('active');
   renderBookings();
 }
@@ -3134,6 +3142,7 @@ async function endEmployerBooking(bookingId, button) {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
     }
     if (window.InstantCrewShared) window.InstantCrewShared.showPushToast('Job Ended', `The ${booking ? (booking.roleLabel || booking.role || 'crew') : 'job'} was marked complete.`, 'end');
+    window.InstantCrewShared?.checkPendingReviews(true);
     employerBookingsFetchedAt = 0;
     renderBookings(true);
     refreshEmployerBookings(true);
@@ -3297,7 +3306,11 @@ if (logoutBtn) {
    EMPLOYER NOTIFICATIONS SYSTEM
    ═══════════════════════════════════════════════════════════ */
 
-const notifDropdown = null;
+const notifBtn = document.getElementById('notifBtn');
+const notifBadge = document.getElementById('notifBadge');
+const notifDropdown = document.getElementById('notifDropdown');
+const notifList = document.getElementById('notifList');
+const clearNotifsBtn = document.getElementById('clearNotifsBtn');
 
 let employerNotifications = null;
 let employerNotificationsFetchedAt = 0;
@@ -3501,11 +3514,63 @@ function renderEmployerNotifications() {
     }
     if (employerNotifications === null) employerNotifications = [];
   }
-  // Deliver newly created crew activity notifications exclusively via external
-  // phone/desktop system notifications (when Web Push is active, sw.js handles them).
+  // Employer notifications are crew activity on their bookings. Shift offers
+  // belong in the applicant inbox and should never appear in this panel.
   const crewActivityTypes = new Set(['accept', 'transit', 'arrived', 'end', 'payment']);
   const notifs = (employerNotifications || []).filter(n => crewActivityTypes.has(n.type));
+  const unread = notifs.filter(n => !n.read).length;
 
+  if (notifBadge) {
+    if (unread > 0) {
+      notifBadge.textContent = unread > 9 ? '9+' : unread;
+      notifBadge.style.display = 'flex';
+    } else {
+      notifBadge.style.display = 'none';
+    }
+  }
+
+  if (notifList) {
+    if (notifs.length === 0) {
+      notifList.innerHTML = '<div class="db-notif-empty">No crew activity yet.</div>';
+    } else {
+      notifList.innerHTML = '';
+      notifs.forEach(n => {
+        const el = document.createElement('div');
+        el.className = `db-notif-item ${n.read ? '' : 'unread'}`;
+        const iconSvg = window.InstantCrewShared ? window.InstantCrewShared.getNotificationIcon(n.type, 20) : '';
+        const jobId = notificationJobId(n);
+        el.innerHTML = `
+                    <span class="db-notif-icon">${iconSvg}</span>
+                    <div>
+                        <p class="db-notif-title">${window.InstantCrewShared.escHtml(n.title)}</p>
+                        <p class="db-notif-desc">${window.InstantCrewShared.escHtml(n.message)}</p>
+                        <span class="db-notif-time">${n.created_at ? new Date(n.created_at * 1000).toLocaleString() : window.InstantCrewShared.escHtml(n.time || '')}</span>
+                    </div>
+                `;
+        if (jobId) {
+          el.style.cursor = 'pointer';
+          el.setAttribute('role', 'button');
+          el.setAttribute('tabindex', '0');
+          el.title = 'Open this shift';
+          const action = document.createElement('span');
+          action.textContent = 'View shift →';
+          action.style.cssText = 'display:block;margin:6px 0 0 30px;color:#92400E;font-size:0.76rem;font-weight:700;';
+          el.querySelector('div').appendChild(action);
+          el.addEventListener('click', () => openEmployerJobNotification(jobId));
+          el.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              openEmployerJobNotification(jobId);
+            }
+          });
+        }
+        notifList.appendChild(el);
+      });
+    }
+  }
+
+  // Deliver newly created crew activity alerts via external phone/desktop
+  // system notifications (when Web Push is active, sw.js handles them).
   if (employerNotificationsLoaded) {
     const newestId = notifs.reduce((max, notification) => Math.max(max, Number(notification.id) || 0), 0);
     if (!employerNotificationsBaselineSet) {
@@ -3525,6 +3590,31 @@ function renderEmployerNotifications() {
     lastEmployerNotificationId = Math.max(lastEmployerNotificationId, newestId);
   }
 }
+
+if (notifBtn) {
+  notifBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = notifDropdown.hidden;
+    notifDropdown.hidden = !isHidden;
+    if (isHidden) {
+      fetch('/api/notifications/read', { method: 'POST', credentials: 'same-origin' });
+      employerNotifications = (employerNotifications || []).map(n => ({ ...n, read: true }));
+      if (notifBadge) notifBadge.style.display = 'none';
+    }
+  });
+}
+
+if (clearNotifsBtn) {
+  clearNotifsBtn.addEventListener('click', () => {
+    fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' }).then(() => { employerNotifications = []; employerNotificationsFetchedAt = Date.now(); renderEmployerNotifications(); });
+  });
+}
+
+document.addEventListener('click', (e) => {
+  if (notifDropdown && !notifDropdown.hidden && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
+    notifDropdown.hidden = true;
+  }
+});
 
 function updateStep5TransitLiveStatus() {
   const box = document.getElementById('step5TransitBox');
@@ -3936,3 +4026,6 @@ window.addEventListener('beforeunload', (e) => {
     return e.returnValue;
   }
 });
+
+// Ask to rate crew from finished contracts (see shared-data.js).
+window.InstantCrewShared?.startReviewPrompts();
