@@ -55,7 +55,8 @@
 
     function isInAppBrowser() {
         const ua = getUA();
-        return /fban|fbav|instagram|messenger|line|micromessenger|tiktok|snapchat|gsa\/|twitter|threads|linkedin/i.test(ua);
+        // "; wv)" is any Android WebView (Viber, Telegram, Gmail, ...), which can never install a PWA.
+        return /fban|fbav|instagram|messenger|line|micromessenger|tiktok|snapchat|gsa\/|twitter|threads|linkedin|; wv\)/i.test(ua);
     }
 
     function isStandaloneMode() {
@@ -303,11 +304,11 @@
                     const androidSteps = `
                         <div class="install-step-item">
                             <span class="install-step-num">1</span>
-                            <div>Tap the <strong>menu icon (⋮)</strong> at the top right of Chrome</div>
+                            <div>Open your browser's <strong>menu (⋮ or ☰)</strong></div>
                         </div>
                         <div class="install-step-item">
                             <span class="install-step-num">2</span>
-                            <div>Tap <strong>'Install app'</strong> or <strong>'Add to Home screen'</strong></div>
+                            <div>Tap <strong>'Install app'</strong>, <strong>'Install'</strong> or <strong>'Add to Home screen'</strong> (in Samsung Internet: <strong>'Add page to'</strong> → <strong>'Home screen'</strong>)</div>
                         </div>
                         <div class="install-step-item">
                             <span class="install-step-num">3</span>
