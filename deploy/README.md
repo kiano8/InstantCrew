@@ -76,6 +76,13 @@ through Caddy's TLS. Keep `COOKIE_SECURE=true` and `ENV=prod`.
 - Nightly backup, kept off the droplet:
   `pg_dump -Fc instantcrew > /var/backups/instantcrew-$(date +%F).dump` → DO Spaces.
 
+## Monitoring
+
+Sign in as admin and open `/telemetry`: traffic, errors, response times, uptime and
+activity, stored in Postgres for 35 days. Uptime comes from a per-minute heartbeat, so
+outages shorter than about 2 minutes don't appear, and an outage only appears once the
+app is back. Nothing can alert you while the droplet itself is down.
+
 ## Verify
 
 ```sh

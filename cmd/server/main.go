@@ -18,6 +18,7 @@ import (
 	"instantcrew/internal/mailer"
 	"instantcrew/internal/push"
 	"instantcrew/internal/store"
+	"instantcrew/internal/telemetry"
 )
 
 func getenv(k, def string) string {
@@ -82,7 +83,7 @@ func googleCredentialsPath() string {
 var pages = map[string]bool{
 	"index.html": true, "login.html": true,
 	"employer.html": true, "applicant.html": true,
-	"admin.html": true, "accounting.html": true,
+	"admin.html": true, "accounting.html": true, "telemetry.html": true,
 	"privacy.html": true, "terms.html": true,
 }
 
@@ -192,6 +193,8 @@ func main() {
 		Subject:    getenv("VAPID_SUBJECT", adminEmail),
 	})
 	pushH.Register(mux, authH)
+	telemetryR := telemetry.New(st)
+	telemetryR.Register(mux, authH)
 	// API
 	mux.HandleFunc("POST /api/auth/signup-code", authH.SignupCode)
 	mux.HandleFunc("POST /api/auth/signup", authH.Signup)
@@ -224,6 +227,9 @@ func main() {
 	})
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
 		servePage(w, r, "admin.html")
+	})
+	mux.HandleFunc("GET /telemetry", func(w http.ResponseWriter, r *http.Request) {
+		servePage(w, r, "telemetry.html")
 	})
 	mux.HandleFunc("GET /accounting", func(w http.ResponseWriter, r *http.Request) {
 		servePage(w, r, "admin.html")
@@ -259,7 +265,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              getenv("HOST", "") + ":" + port, // HOST=127.0.0.1 behind a reverse proxy
-		Handler:           logRequests(mux),
+		Handler:           telemetryR.Middleware(logRequests(mux)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -302,6 +308,8 @@ func main() {
 		}
 	}()
 
+	go telemetryR.Run(ctx)
+
 	if pushH.Enabled() {
 		go pushH.Run(ctx)
 	} else {
@@ -319,6 +327,9 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+	if err := telemetryR.Flush(shutdownCtx); err != nil {
+		log.Printf("telemetry flush: %v", err)
+	}
 }
 
 // noDirListing hides directory indexes so /uploads/ cannot enumerate payment proofs.
