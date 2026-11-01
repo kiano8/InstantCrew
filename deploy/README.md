@@ -59,7 +59,7 @@ and restarts the service. It must never write a `.env` there. It stops before to
 the live app if the backup or tests fail, and updates `~/deploy.sh` from the repo after
 each success. Settings go in `~/.instantcrew-deploy.env` (chmod 600): `DB_USER`,
 `DB_NAME`, `APP_PORT` and `TEST_DATABASE_URL`. Point that last one at its own database,
-never the live one; without it the database tests are skipped.
+never the live one; without it the tests are skipped. Add swap first on a 1 GB droplet.
 
 ## 5. HTTPS — Cloudflare and nginx
 
