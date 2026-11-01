@@ -1743,15 +1743,16 @@ if (payNowBtn) {
           credentials: 'same-origin',
           body: formData
         });
-        if (upRes.ok) {
-          const upData = await upRes.json();
-          if (upData && upData.url) {
-            proofImageUrl = upData.url;
-            state.selectedPaymentProof = proofImageUrl;
-          }
-        }
+        const upData = await upRes.json().catch(() => ({}));
+        if (!upRes.ok || !upData.url) throw new Error(upData.error || 'Could not upload your receipt. Please try again.');
+        proofImageUrl = upData.url;
+        state.selectedPaymentProof = proofImageUrl;
       } catch (e) {
-        console.warn('Upload API fallback to data URL', e);
+        if (paymentError) {
+          paymentError.textContent = e.message;
+          paymentError.style.display = 'block';
+        }
+        return;
       }
     }
 

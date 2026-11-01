@@ -211,7 +211,7 @@ func main() {
 
 	// Frontend
 	static := noDirListing(http.FileServer(http.Dir(".")))
-	for _, p := range []string{"/css/", "/js/", "/images/", "/uploads/"} {
+	for _, p := range []string{"/css/", "/js/", "/images/"} {
 		mux.Handle("GET "+p, static)
 	}
 	// The service worker must be served from the root so it can control every
@@ -263,8 +263,13 @@ func main() {
 		servePage(w, r, p)
 	})
 
+	// Outside dev, only the reverse proxy on this machine may reach the app.
+	bindHost := os.Getenv("HOST")
+	if bindHost == "" && env != "dev" {
+		bindHost = "127.0.0.1"
+	}
 	srv := &http.Server{
-		Addr:              getenv("HOST", "") + ":" + port, // HOST=127.0.0.1 behind a reverse proxy
+		Addr:              bindHost + ":" + port,
 		Handler:           telemetryR.Middleware(logRequests(mux)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -332,7 +337,7 @@ func main() {
 	}
 }
 
-// noDirListing hides directory indexes so /uploads/ cannot enumerate payment proofs.
+// noDirListing hides directory indexes.
 func noDirListing(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/") {

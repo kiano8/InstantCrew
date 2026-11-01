@@ -130,7 +130,7 @@ func (t *Recorder) record(r *http.Request, start time.Time, status int) {
 // visitorHash identifies a browser for one process lifetime. The salt is never
 // stored, so no IP can be recovered from it.
 func (t *Recorder) visitorHash(r *http.Request) [32]byte {
-	// The app listens on localhost only and Caddy overwrites X-Forwarded-For.
+	// The app listens on localhost only, behind Cloudflare and nginx.
 	ip, _, _ := strings.Cut(r.Header.Get("X-Forwarded-For"), ",")
 	if ip == "" {
 		ip, _, _ = net.SplitHostPort(r.RemoteAddr)

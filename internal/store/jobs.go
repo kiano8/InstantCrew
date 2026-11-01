@@ -286,12 +286,11 @@ func (s *Store) LatestJobPayments(ctx context.Context, jobIDs []int64) (map[int6
 	return out, rows.Err()
 }
 
-// matchingCrew selects the applicant profiles p who can take job j.id=$1.
-const matchingCrew = `FROM jobs j
-		JOIN applicant_profiles p ON p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
-			AND p.employment_type=j.employment_type AND ` + eligibleCrew + `
-		JOIN applicant_roles ar ON ar.applicant_id=p.user_id AND ar.role_id=j.role_id
-		WHERE j.id=$1
+// crewCanTake is the one rule for whether profile p can take job j. Crew who were
+// on this job before (accepted then released, or declined) can't take it again.
+const crewCanTake = `p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
+		AND p.employment_type=j.employment_type AND ` + eligibleCrew + `
+		AND EXISTS (SELECT 1 FROM applicant_roles ar WHERE ar.applicant_id=p.user_id AND ar.role_id=j.role_id)
 		AND NOT EXISTS (
 			SELECT 1 FROM job_assignments active_assignment
 			JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
@@ -300,7 +299,7 @@ const matchingCrew = `FROM jobs j
 		)
 		AND NOT EXISTS (
 			SELECT 1 FROM job_applications ja
-			WHERE ja.job_id=j.id AND ja.applicant_id=p.user_id AND ja.status='rejected'
+			WHERE ja.job_id=j.id AND ja.applicant_id=p.user_id AND ja.status IN ('pending','accepted','rejected')
 		)
 		AND ((j.timing='now' AND p.availability_mode='now') OR
 			(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
@@ -309,16 +308,28 @@ const matchingCrew = `FROM jobs j
 				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
 			))))`
 
+// matchingCrew selects the applicant profiles p (and users u) who can take job j.id=$1.
+const matchingCrew = `FROM jobs j
+		JOIN applicant_profiles p ON ` + crewCanTake + `
+		JOIN users u ON u.id=p.user_id
+		WHERE j.id=$1`
+
 func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
 	_, _ = tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
 		SELECT p.user_id,'New shift available',j.role_label || ' in ' || j.city,'match',json_build_object('job_id', j.id)::text,$2
 		`+matchingCrew, jobID, now.Unix())
 }
 
-// EmployerSearchPenalty is the transit-cancel penalty the employer still owes.
+// unbilledPenalty is what a users row still owes beyond penalties already priced
+// into pending receipts, so two open receipts can't both charge the same penalty.
+const unbilledPenalty = `GREATEST(0, search_penalty_centavos - COALESCE((
+	SELECT SUM(pending.penalty_centavos) FROM payments pending
+	WHERE pending.user_id=users.id AND pending.status='pending'), 0))::bigint`
+
+// EmployerSearchPenalty is the transit-cancel penalty the next receipt must include.
 func (s *Store) EmployerSearchPenalty(ctx context.Context, employerID int64) (int64, error) {
 	var p int64
-	err := s.db.QueryRowContext(ctx, `SELECT search_penalty_centavos FROM users WHERE id=$1`, employerID).Scan(&p)
+	err := s.db.QueryRowContext(ctx, `SELECT `+unbilledPenalty+` FROM users WHERE id=$1`, employerID).Scan(&p)
 	return p, err
 }
 
@@ -333,7 +344,7 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 	}
 	defer tx.Rollback()
 	var penalty int64
-	if err := tx.QueryRowContext(ctx, `SELECT search_penalty_centavos FROM users WHERE id=$1 FOR UPDATE`, employerID).Scan(&penalty); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT `+unbilledPenalty+` FROM users WHERE id=$1 FOR UPDATE`, employerID).Scan(&penalty); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}

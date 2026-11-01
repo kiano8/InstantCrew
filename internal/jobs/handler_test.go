@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -131,7 +133,7 @@ func TestUploadProof(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateFormFile: %v", err)
 	}
-	_, _ = part.Write([]byte("fake image content for test"))
+	_, _ = part.Write([]byte(pngHead + "rest of the image"))
 	_ = w.Close()
 
 	req := httptest.NewRequest("POST", "/api/upload-proof", &buf)
@@ -158,33 +160,111 @@ func TestUploadProof(t *testing.T) {
 	t.Cleanup(func() { _ = os.Remove(filepath.Join(".", strings.TrimPrefix(res.URL, "/"))) })
 }
 
-func TestUploadProofKeepsJPEGExtension(t *testing.T) {
+const pngHead = "\x89PNG\r\n\x1a\n"
+
+// uploadProof uploads a small PNG as the cookie's user and returns its URL.
+func uploadProof(t *testing.T, env *testEnv, cookie *http.Cookie, content string) *httptest.ResponseRecorder {
+	t.Helper()
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
-	part, err := w.CreateFormFile("proof", "receipt.JPEG")
+	part, err := w.CreateFormFile("proof", "receipt.png")
 	if err != nil {
 		t.Fatalf("CreateFormFile: %v", err)
 	}
-	_, _ = part.Write([]byte("fake image content for test"))
+	_, _ = part.Write([]byte(content))
 	_ = w.Close()
-
 	req := httptest.NewRequest("POST", "/api/upload-proof", &buf)
 	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.AddCookie(cookie)
 	rec := httptest.NewRecorder()
-	(&jobs.Handler{}).UploadProof(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	env.mux.ServeHTTP(rec, req)
+	if rec.Code == http.StatusOK {
+		var res struct {
+			URL string `json:"url"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &res)
+		t.Cleanup(func() { _ = os.Remove(strings.TrimPrefix(res.URL, "/")) })
 	}
+	return rec
+}
 
+func proofURL(t *testing.T, env *testEnv, cookie *http.Cookie) string {
+	t.Helper()
+	rec := uploadProof(t, env, cookie, pngHead+"rest of the image")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("upload: %d %s", rec.Code, rec.Body)
+	}
 	var res struct {
 		URL string `json:"url"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
-		t.Fatalf("json unmarshal: %v", err)
+		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.Remove(filepath.Join(".", strings.TrimPrefix(res.URL, "/"))) })
-	if !strings.HasSuffix(res.URL, ".jpeg") {
-		t.Fatalf("expected a .jpeg URL, got %q", res.URL)
+	return res.URL
+}
+
+// A receipt is private to its payer and admins, must be an image, and works once.
+func TestProofIsPrivateAndSingleUse(t *testing.T) {
+	env := setupTestEnv(t)
+	emp, app, adm := env.createSessionCookie(t, env.employer), env.createSessionCookie(t, env.applicant), env.createSessionCookie(t, env.admin)
+
+	if rec := uploadProof(t, env, emp, "<html>not an image</html>"); rec.Code != http.StatusBadRequest {
+		t.Fatalf("non-image upload: want 400, got %d", rec.Code)
+	}
+	url := proofURL(t, env, emp)
+
+	view := func(c *http.Cookie) int {
+		req := httptest.NewRequest("GET", url, nil)
+		if c != nil {
+			req.AddCookie(c)
+		}
+		rec := httptest.NewRecorder()
+		env.mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, tc := range []struct {
+		name string
+		c    *http.Cookie
+		want int
+	}{{"nobody", nil, 401}, {"another user", app, 403}, {"payer", emp, 200}, {"admin", adm, 200}} {
+		if got := view(tc.c); got != tc.want {
+			t.Fatalf("%s viewing a receipt: want %d, got %d", tc.name, tc.want, got)
+		}
+	}
+
+	ctx := context.Background()
+	if err := env.st.ClaimProof(ctx, url, env.applicant.ID); !errors.Is(err, store.ErrProofInvalid) {
+		t.Fatalf("someone else's receipt: want ErrProofInvalid, got %v", err)
+	}
+	if err := env.st.ClaimProof(ctx, url, env.employer.ID); err != nil {
+		t.Fatalf("own receipt: %v", err)
+	}
+	if err := env.st.ClaimProof(ctx, url, env.employer.ID); !errors.Is(err, store.ErrProofInvalid) {
+		t.Fatalf("reused receipt: want ErrProofInvalid, got %v", err)
+	}
+}
+
+func TestUploadProofAllows15MB(t *testing.T) {
+	env := setupTestEnv(t)
+	emp := env.createSessionCookie(t, env.employer)
+	if rec := uploadProof(t, env, emp, pngHead+strings.Repeat("x", 15<<20-len(pngHead))); rec.Code != http.StatusOK {
+		t.Fatalf("exactly 15MB: want 200, got %d: %s", rec.Code, rec.Body)
+	}
+	if rec := uploadProof(t, env, emp, pngHead+strings.Repeat("x", 15<<20)); rec.Code != http.StatusBadRequest {
+		t.Fatalf("over 15MB: want 400, got %d", rec.Code)
+	}
+}
+
+func TestUploadProofIsRateLimited(t *testing.T) {
+	env := setupTestEnv(t)
+	emp := env.createSessionCookie(t, env.employer)
+	for i := 0; i < 20; i++ {
+		if err := env.st.SaveProofUpload(context.Background(), fmt.Sprintf("/uploads/proof_%d_ab.png", i), env.employer.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if rec := uploadProof(t, env, emp, pngHead); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("want 429, got %d", rec.Code)
 	}
 }
 
@@ -296,7 +376,7 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	payPayload := map[string]any{
 		"method":      "gcash",
 		"details":     "GCash payment test",
-		"proof_image": "/uploads/proof_1700000000_abcdef0123456789.jpg",
+		"proof_image": proofURL(t, env, empCookie),
 	}
 	body, _ = json.Marshal(payPayload)
 	req = httptest.NewRequest("POST", "/api/jobs/"+jsonNumber(jobID)+"/pay", bytes.NewReader(body))
@@ -314,7 +394,7 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 	// 9. Applicant pays hiring pass (₱10 for 5 hires)
 	appPayPayload := map[string]any{
 		"method":      "gcash",
-		"proof_image": "/uploads/proof_1700000001_abcdef0123456789.png",
+		"proof_image": proofURL(t, env, appCookie),
 	}
 	body, _ = json.Marshal(appPayPayload)
 	req = httptest.NewRequest("POST", "/api/applicant/hiring-pass/pay", bytes.NewReader(body))
@@ -418,6 +498,7 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		t.Fatalf("employer confirm before paying expected 402, got %d: %s", rec.Code, rec.Body.String())
 	}
 	// The employer pays now that a crew member accepted; accounting verifying it confirms the booking.
+	payPayload["proof_image"] = proofURL(t, env, empCookie) // the refused try above used its receipt
 	if rec = do("POST", "/api/jobs/"+jsonNumber(jobID)+"/pay", empCookie, payPayload); rec.Code != http.StatusOK {
 		t.Fatalf("pay after accept expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}

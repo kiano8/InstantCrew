@@ -69,6 +69,7 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("DELETE /api/notifications", a.RequireAuth(http.HandlerFunc(h.ClearNotifications)))
 
 	mux.Handle("POST /api/upload-proof", a.RequireAuth(http.HandlerFunc(h.UploadProof)))
+	mux.HandleFunc("GET /uploads/{name}", func(w http.ResponseWriter, r *http.Request) { h.Proof(w, r, a.SessionUsers(r)) })
 	mux.Handle("GET /api/employer/payments", emp(h.EmployerPaymentHistory))
 	mux.Handle("GET /api/employer/fee-qr", emp(h.FeeQR))
 	mux.Handle("GET /api/applicant/hiring-pass/qr", app(h.HiringPassQR))
@@ -238,6 +239,14 @@ func (h *Handler) ApplicantRating(w http.ResponseWriter, r *http.Request) {
 // proofPath matches only filenames UploadProof creates, so a payer cannot inject markup or an outside URL.
 var proofPath = regexp.MustCompile(`^/uploads/proof_[0-9]+_[0-9a-f]+\.(jpg|jpeg|png|webp|gif)$`)
 
+const (
+	maxProofBytes          = 15 << 20
+	maxProofUploadsPerHour = 20
+)
+
+// proofExt is the stored extension per detected type; anything else isn't an accepted image.
+var proofExt = map[string]string{"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}
+
 func (h *Handler) ApplicantHiringPass(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
 	p, err := h.Store.ApplicantHiringPass(r.Context(), u.ID)
@@ -274,6 +283,10 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 	}
 	if proofImage == "" {
 		httpx.Error(w, http.StatusBadRequest, "proof of payment is required")
+		return
+	}
+	if err := h.Store.ClaimProof(r.Context(), proofImage, u.ID); err != nil {
+		h.fail(w, err)
 		return
 	}
 	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage, req.Hires)
@@ -360,10 +373,6 @@ func (h *Handler) ApplicantJobs(w http.ResponseWriter, r *http.Request) {
 	u, _ := auth.UserFrom(r.Context())
 	jobs, err := h.Store.ApplicantJobs(r.Context(), u.ID)
 	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	if err := h.Store.RecordApplicantOfferViews(r.Context(), u.ID, jobs); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -567,6 +576,8 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusForbidden, err.Error())
 	case errors.Is(err, store.ErrArrivalExpired):
 		httpx.Error(w, http.StatusConflict, err.Error())
+	case errors.Is(err, store.ErrProofInvalid):
+		httpx.Error(w, http.StatusBadRequest, err.Error())
 	default:
 		log.Printf("jobs: %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
@@ -927,7 +938,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 // POST /api/jobs/{id}/pay body: {"method":"gcash", "proof_image":"..."} records the search fee
 // after a crew member accepted. Accounting verifying it confirms the booking.
 func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
-	_, id, empID, ok := h.ids(w, r)
+	u, id, empID, ok := h.ids(w, r)
 	if !ok {
 		return
 	}
@@ -956,6 +967,11 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.ProofImage == "" {
 		httpx.Error(w, http.StatusBadRequest, "proof of payment screenshot is required")
+		return
+	}
+
+	if err := h.Store.ClaimProof(r.Context(), req.ProofImage, u.ID); err != nil {
+		h.fail(w, err)
 		return
 	}
 
@@ -1000,6 +1016,9 @@ func (h *Handler) End(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, c := range crew {
+		if c.EndedAt != nil {
+			continue // released or declined earlier; this contract was never theirs to end
+		}
 		if err := h.Store.AddNotification(r.Context(), c.ApplicantID, "Contract ended", "The employer ended your shift contract.", "end", "{}"); err != nil {
 			log.Printf("notification: %v", err)
 		}
@@ -1036,16 +1055,22 @@ func (h *Handler) DeclineMatch(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/upload-proof
 func (h *Handler) UploadProof(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		httpx.Error(w, http.StatusMethodNotAllowed, "method not allowed")
+	u, _ := auth.UserFrom(r.Context())
+	recent, err := h.Store.RecentProofUploads(r.Context(), u.ID, time.Now().Add(-time.Hour))
+	if err != nil {
+		h.fail(w, err)
 		return
 	}
-	// Limit to 15MB
-	r.Body = http.MaxBytesReader(w, r.Body, 15<<20)
-	if err := r.ParseMultipartForm(15 << 20); err != nil {
+	if recent >= maxProofUploadsPerHour {
+		httpx.Error(w, http.StatusTooManyRequests, "too many uploads; please try again in an hour")
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxProofBytes+1<<20) // room for the multipart wrapping
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "invalid file upload or file too large (max 15MB)")
 		return
 	}
+	defer r.MultipartForm.RemoveAll()
 	file, header, err := r.FormFile("proof")
 	if err != nil {
 		file, header, err = r.FormFile("file")
@@ -1055,10 +1080,26 @@ func (h *Handler) UploadProof(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+	if header.Size > maxProofBytes {
+		httpx.Error(w, http.StatusBadRequest, "file too large (max 15MB)")
+		return
+	}
 
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" && ext != ".gif" {
-		ext = ".jpg"
+	// Trust the bytes, not the name the browser sent.
+	head := make([]byte, 512)
+	n, err := io.ReadFull(file, head)
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
+		httpx.Error(w, http.StatusBadRequest, "could not read the file")
+		return
+	}
+	ext, ok := proofExt[http.DetectContentType(head[:n])]
+	if !ok {
+		httpx.Error(w, http.StatusBadRequest, "please upload a PNG, JPG, WebP or GIF image")
+		return
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "failed to read file")
+		return
 	}
 
 	if err := os.MkdirAll("uploads", 0o755); err != nil {
@@ -1076,9 +1117,16 @@ func (h *Handler) UploadProof(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "failed to save uploaded file")
 		return
 	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, file); err != nil {
+	_, err = io.Copy(dst, file)
+	if cerr := dst.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = h.Store.SaveProofUpload(r.Context(), "/uploads/"+filename, u.ID)
+	}
+	if err != nil {
+		_ = os.Remove(dstPath)
+		log.Printf("save proof: %v", err)
 		httpx.Error(w, http.StatusInternalServerError, "failed to write file")
 		return
 	}
@@ -1088,6 +1136,40 @@ func (h *Handler) UploadProof(w http.ResponseWriter, r *http.Request) {
 		"url":      "/uploads/" + filename,
 		"filename": filename,
 	})
+}
+
+// GET /uploads/{name} serves a receipt only to its payer and to admins. It takes
+// every session in the browser: opened in a new tab there's no page to tell which
+// of a person's roles is asking.
+func (h *Handler) Proof(w http.ResponseWriter, r *http.Request, users []*store.User) {
+	path := "/uploads/" + r.PathValue("name")
+	if !proofPath.MatchString(path) {
+		http.NotFound(w, r)
+		return
+	}
+	if len(users) == 0 {
+		httpx.Error(w, http.StatusUnauthorized, "not logged in")
+		return
+	}
+	allowed := false
+	for _, u := range users {
+		ok := u.Role == "admin"
+		if !ok {
+			var err error
+			if ok, err = h.Store.CanViewProof(r.Context(), path, u.ID); err != nil {
+				h.fail(w, err)
+				return
+			}
+		}
+		allowed = allowed || ok
+	}
+	if !allowed {
+		httpx.Error(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	http.ServeFile(w, r, filepath.Join("uploads", r.PathValue("name")))
 }
 
 // GET /api/admin/payments

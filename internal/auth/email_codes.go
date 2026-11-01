@@ -276,5 +276,6 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 		return
 	}
+	h.loginFails.reset(email, clientIP(r)) // the lockout message promises a reset gets you back in
 	w.WriteHeader(http.StatusNoContent)
 }

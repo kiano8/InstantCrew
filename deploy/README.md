@@ -54,27 +54,45 @@ Creates the `instantcrew-app` system user (no shell, no login), installs
 syscall filter) and lets `instantcrew` restart only this service without a password.
 Check the sandbox with `systemd-analyze security instantcrew`.
 
-`~/deploy.sh` should copy the new binary and static files into `/opt/instantcrew`
-and run `sudo systemctl restart instantcrew`. It must never write a `.env` there.
+`deploy.sh` backs up the database, runs the tests, publishes into `/opt/instantcrew`
+and restarts the service. It must never write a `.env` there. It stops before touching
+the live app if the backup or tests fail, and updates `~/deploy.sh` from the repo after
+each success. Settings go in `~/.instantcrew-deploy.env` (chmod 600): `DB_USER`,
+`DB_NAME`, `APP_PORT` and `TEST_DATABASE_URL`. Point that last one at its own database,
+never the live one; without it the database tests are skipped.
 
-## 5. HTTPS — Caddy
+## 5. HTTPS — Cloudflare and nginx
 
-```sh
-sudo apt install caddy
-sudo cp Caddyfile /etc/caddy/Caddyfile   # set your domain first
-sudo systemctl reload caddy
-```
+Traffic goes Cloudflare → nginx on the droplet → the app on `127.0.0.1:3000`. The live
+config is `/etc/nginx/sites-enabled/instant-crew.com.conf`. Keep backup copies of it
+out of `sites-enabled`, because nginx may load them too.
 
-The app only listens on `127.0.0.1:8080` (`HOST=127.0.0.1`), so all traffic goes
-through Caddy's TLS. Keep `COOKIE_SECURE=true` and `ENV=prod`.
+Outside `ENV=dev` the app only listens on `127.0.0.1` unless `HOST` says otherwise.
+Keep `COOKIE_SECURE=true`. In the DigitalOcean firewall, limit ports 80 and 443 to
+[Cloudflare's IP ranges](https://www.cloudflare.com/ips/), so login limits can't be
+dodged by reaching the droplet directly.
 
 ## 6. Postgres
 
 - In `postgresql.conf`: `listen_addresses = 'localhost'`.
 - In `pg_hba.conf`: only `host … 127.0.0.1/32 scram-sha-256` lines; no `trust`.
 - Give `instantcrew` its own DB role that owns only its database (not a superuser).
-- Nightly backup, kept off the droplet:
-  `pg_dump -Fc instantcrew > /var/backups/instantcrew-$(date +%F).dump` → DO Spaces.
+
+## 7. Backups
+
+`deploy.sh` keeps a dump on the droplet from before each deploy. That doesn't survive
+losing the droplet, so also run `backup.sh` nightly: it encrypts the database and
+receipts and copies them off the server. See the top of the script for its settings.
+
+```sh
+sudo apt install age rclone && sudo rclone config     # create the off-site remote
+sudo install -m 700 backup.sh /usr/local/sbin/instantcrew-backup
+sudo /usr/local/sbin/instantcrew-backup               # check the files reach the bucket
+echo '30 18 * * * root /usr/local/sbin/instantcrew-backup' | sudo tee /etc/cron.d/instantcrew-backup
+```
+
+Keep the `age` private key off the droplet. To test a restore on your own machine:
+`age -d -i key.txt db-DATE.dump.age | pg_restore --no-owner -d instantcrew_restore`.
 
 ## Monitoring
 
@@ -86,10 +104,10 @@ app is back. Nothing can alert you while the droplet itself is down.
 ## Verify
 
 ```sh
-sudo ss -ltnp                       # only :30022, :80, :443 on 0.0.0.0; 8080/5432 on 127.0.0.1
+sudo ss -ltnp                       # only :30022, :80, :443 on 0.0.0.0; 3000/5432 on 127.0.0.1
 sudo ufw status verbose
 sudo fail2ban-client status sshd
 sudo -u instantcrew cat /etc/instantcrew/instantcrew.env   # must say Permission denied
 curl -I https://<domain>/.env       # 404
-curl -I https://<domain>/uploads/   # 404 (no directory listing)
+curl -I https://<domain>/uploads/   # 404 (no directory listing; a receipt without login is 401)
 ```
