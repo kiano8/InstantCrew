@@ -53,17 +53,6 @@ type Assignment struct {
 const eligibleCrew = `NOT p.is_permanently_deactivated
 	AND (p.deactivated_until IS NULL OR p.deactivated_until <= extract(epoch from now())::bigint)`
 
-// MatchedApplicant contains only the profile details employers need to identify
-// a crew member while a matching search is open. Contact information is omitted.
-type MatchedApplicant struct {
-	Name             string  `json:"name"`
-	ExpectedRate     int64   `json:"expected_rate"`
-	RatePeriod       string  `json:"rate_period"`
-	City             string  `json:"city"`
-	AvailabilityMode string  `json:"availability_mode"`
-	Rating           float64 `json:"rating"`
-}
-
 type JobPayment struct {
 	ID              int64  `json:"id"`
 	Status          string `json:"status"` // pending | verified | rejected
@@ -308,10 +297,9 @@ const crewCanTake = `p.is_active=true AND lower(trim(p.city))=lower(trim(j.city)
 				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
 			))))`
 
-// matchingCrew selects the applicant profiles p (and users u) who can take job j.id=$1.
+// matchingCrew selects the applicant profiles p who can take job j.id=$1.
 const matchingCrew = `FROM jobs j
 		JOIN applicant_profiles p ON ` + crewCanTake + `
-		JOIN users u ON u.id=p.user_id
 		WHERE j.id=$1`
 
 func (s *Store) notifyMatchingCrew(ctx context.Context, tx *sql.Tx, jobID int64, now time.Time) {
@@ -389,28 +377,6 @@ func (s *Store) RecordMatchFee(ctx context.Context, employerID, id int64, method
 		return err
 	}
 	return tx.Commit()
-}
-
-// MatchingApplicants returns the crew who can currently take this open search.
-func (s *Store) MatchingApplicants(ctx context.Context, jobID int64) ([]MatchedApplicant, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT u.name,p.expected_rate,p.rate_period,p.city,p.availability_mode,p.rating_hundredths/100.0
-		`+matchingCrew+`
-		AND j.status='matching'
-		ORDER BY u.name`, jobID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	matches := make([]MatchedApplicant, 0)
-	for rows.Next() {
-		var applicant MatchedApplicant
-		if err := rows.Scan(&applicant.Name, &applicant.ExpectedRate, &applicant.RatePeriod, &applicant.City, &applicant.AvailabilityMode, &applicant.Rating); err != nil {
-			return nil, err
-		}
-		matches = append(matches, applicant)
-	}
-	return matches, rows.Err()
 }
 
 // DeclineMatch lets the employer turn down the crew member who accepted. The job

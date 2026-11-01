@@ -135,9 +135,6 @@ const step4BackBtn = document.getElementById('step4BackBtn');
 const crewList = document.getElementById('crewList');
 const matchLoading = document.getElementById('matchLoading');
 const matchResults = document.getElementById('matchResults');
-const matchedCrewCount = document.getElementById('matchedCrewCount');
-const matchedCrewMessage = document.getElementById('matchedCrewMessage');
-const matchedCrewList = document.getElementById('matchedCrewList');
 const cancelCrewSearchBtn = document.getElementById('cancelCrewSearchBtn');
 const rateAmount = document.getElementById('rateAmount');
 const confirmBooking = document.getElementById('confirmBooking');
@@ -1790,10 +1787,6 @@ function showSearchingView() {
   if (cancelCrewSearchBtn) { cancelCrewSearchBtn.disabled = false; cancelCrewSearchBtn.textContent = 'Cancel Search'; }
   goStep(4);
   updateStep4BackButton();
-  matchedCrewFetchedAt = 0;
-  if (matchedCrewCount) matchedCrewCount.textContent = '0';
-  if (matchedCrewMessage) matchedCrewMessage.textContent = 'Checking the database for available crew…';
-  if (matchedCrewList) matchedCrewList.replaceChildren();
   state.acceptanceHandled = false;
   startCheckingForAcceptance();
 }
@@ -1934,7 +1927,6 @@ async function checkCrewAcceptance() {
   try {
     const response = await fetch(`/api/jobs/${state.currentJobId}`, { credentials: 'same-origin' });
     if (!response.ok) return;
-    refreshMatchedCrew();
     const { job } = await response.json();
     const activeCrew = (job.crew || []).filter(member => !member.ended_at);
     const crew = activeCrew.map(member => member.name);
@@ -1942,54 +1934,6 @@ async function checkCrewAcceptance() {
       onCrewAccepted({ ...job, acceptedCrew: crew, role: job.role_label });
     }
   } catch (_) { /* the next poll retries */ } finally { crewCheckPending = false; }
-}
-
-let matchedCrewFetchedAt = 0;
-let matchedCrewFetchPending = false;
-function refreshMatchedCrew(force = false) {
-  if (!state.currentJobId || !matchedCrewList || matchedCrewFetchPending) return;
-  if (!force && Date.now() - matchedCrewFetchedAt < 5000) return;
-  matchedCrewFetchPending = true;
-  fetch(`/api/jobs/${state.currentJobId}/matches`, { credentials: 'same-origin' })
-    .then(async response => {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Could not load matching crew.');
-      const matches = Array.isArray(data.matches) ? data.matches : [];
-      matchedCrewFetchedAt = Date.now();
-      matchedCrewList.replaceChildren();
-      if (matchedCrewCount) matchedCrewCount.textContent = String(matches.length);
-      if (matchedCrewMessage) {
-        matchedCrewMessage.textContent = matches.length
-          ? 'Crew match found. Your offer is waiting for an acceptance.'
-          : 'No active crew match yet. The search stays open until a crew member accepts.';
-      }
-      matches.forEach(candidate => {
-        const card = document.createElement('div');
-        card.className = 'db-crew-card';
-        const avatar = document.createElement('span');
-        avatar.className = 'db-avatar';
-        avatar.textContent = String(candidate.name || 'Crew').trim().split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
-        const info = document.createElement('div');
-        info.className = 'db-crew-info';
-        const name = document.createElement('p');
-        name.className = 'db-crew-name';
-        name.textContent = candidate.name || 'Crew member';
-        const rate = document.createElement('p');
-        rate.className = 'db-crew-meta';
-        const period = ({ hour: 'hour', day: 'day', week: 'week', month: 'month' })[candidate.rate_period] || candidate.rate_period || 'hour';
-        rate.textContent = `★ ${Number(candidate.rating || 0).toFixed(1)} · Expected rate ₱${Number(candidate.expected_rate || 0).toLocaleString()} / ${period} · ${candidate.city || ''}`;
-        info.append(name, rate);
-        const status = document.createElement('span');
-        status.className = 'db-crew-role-tag';
-        status.textContent = 'Notified';
-        card.append(avatar, info, status);
-        matchedCrewList.appendChild(card);
-      });
-    })
-    .catch(err => {
-      if (matchedCrewMessage) matchedCrewMessage.textContent = err.message;
-    })
-    .finally(() => { matchedCrewFetchPending = false; });
 }
 
 function startCheckingForAcceptance() {

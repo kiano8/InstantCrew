@@ -39,7 +39,6 @@ func (h *Handler) Register(mux *http.ServeMux, a *auth.Handler) {
 	mux.Handle("POST /api/jobs", emp(h.Create))
 	mux.Handle("GET /api/jobs", emp(h.List))
 	mux.Handle("GET /api/jobs/{id}", emp(h.Get))
-	mux.Handle("GET /api/jobs/{id}/matches", emp(h.Matches))
 	mux.Handle("PUT /api/jobs/{id}", emp(h.Update))
 	mux.Handle("POST /api/jobs/{id}/pay", emp(h.Pay))
 	mux.Handle("POST /api/jobs/{id}/search", emp(h.Search))
@@ -901,25 +900,6 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.writeJob(w, r, http.StatusOK, empID, id)
-}
-
-// GET /api/jobs/{id}/matches returns limited profile data for active crew who
-// match this employer's currently open search. The job lookup enforces ownership.
-func (h *Handler) Matches(w http.ResponseWriter, r *http.Request) {
-	_, id, empID, ok := h.ids(w, r)
-	if !ok {
-		return
-	}
-	if _, err := h.Store.GetJob(r.Context(), empID, id); err != nil {
-		h.fail(w, err)
-		return
-	}
-	matches, err := h.Store.MatchingApplicants(r.Context(), id)
-	if err != nil {
-		h.fail(w, err)
-		return
-	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"matches": matches})
 }
 
 // POST /api/jobs/{id}/search opens a crew search. The fee is paid once a crew member accepts.
