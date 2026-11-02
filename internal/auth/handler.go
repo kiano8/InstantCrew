@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -32,15 +34,19 @@ type Handler struct {
 	facebook      *facebookOAuth
 	codeMail      mailLimiter
 	loginFails    loginLimiter
+	crewSignups   loginLimiter // no code to slow them, so limit how fast accounts can be made
 }
 
 const (
-	maxLoginFailures = 10
-	loginLockout     = 15 * time.Minute
+	maxLoginFailures = 10 // per email and client IP
+	// The same email across all IPs. Ordinary locks come from one IP long before
+	// this, so a stranger can't lock someone out without many addresses.
+	maxLoginFailuresPerEmail = 100
+	loginLockout             = 15 * time.Minute
 )
 
-// loginLimiter counts failed password logins per email, so passwords (the admin's
-// included, which has no emailed code) can't be guessed by a script.
+// loginLimiter counts failed password logins, so passwords (the admin's included,
+// which has no emailed code) can't be guessed by a script.
 // shortcut: in-memory, so it only works with one server process; move to the DB if we run several.
 type loginLimiter struct {
 	mu    sync.Mutex
@@ -48,28 +54,29 @@ type loginLimiter struct {
 }
 
 // recent drops failures older than loginLockout and returns what is left. Caller holds mu.
-func (l *loginLimiter) recent(email string, now time.Time) []time.Time {
-	kept := l.fails[email][:0]
-	for _, t := range l.fails[email] {
+func (l *loginLimiter) recent(key string, now time.Time) []time.Time {
+	kept := l.fails[key][:0]
+	for _, t := range l.fails[key] {
 		if now.Sub(t) < loginLockout {
 			kept = append(kept, t)
 		}
 	}
 	if len(kept) == 0 {
-		delete(l.fails, email)
+		delete(l.fails, key)
 	} else {
-		l.fails[email] = kept
+		l.fails[key] = kept
 	}
 	return kept
 }
 
-func (l *loginLimiter) blocked(email string) bool {
+func (l *loginLimiter) blocked(email, ip string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return len(l.recent(email, time.Now())) >= maxLoginFailures
+	now := time.Now()
+	return len(l.recent(email+"|"+ip, now)) >= maxLoginFailures || len(l.recent(email, now)) >= maxLoginFailuresPerEmail
 }
 
-func (l *loginLimiter) fail(email string) {
+func (l *loginLimiter) fail(email, ip string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := time.Now()
@@ -77,17 +84,34 @@ func (l *loginLimiter) fail(email string) {
 		l.fails = make(map[string][]time.Time)
 	}
 	if len(l.fails) > 10000 { // keep a flood of made-up emails from growing the map forever
-		for e := range l.fails {
-			l.recent(e, now)
+		for key := range l.fails {
+			l.recent(key, now)
 		}
 	}
-	l.fails[email] = append(l.recent(email, now), now)
+	for _, key := range []string{email, email + "|" + ip} {
+		l.fails[key] = append(l.recent(key, now), now)
+	}
 }
 
-func (l *loginLimiter) reset(email string) {
+func (l *loginLimiter) reset(email, ip string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	delete(l.fails, email)
+	delete(l.fails, email+"|"+ip)
+}
+
+// clientIP is the visitor's address behind Cloudflare and nginx.
+// shortcut: anyone reaching the droplet directly can fake this header (the per-email
+// cap still bounds them); limit ports 80/443 to Cloudflare's IP ranges to close that.
+func clientIP(r *http.Request) string {
+	if ip := net.ParseIP(r.Header.Get("CF-Connecting-IP")); ip != nil {
+		return ip.String()
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 // Compared against when the email doesn't exist, so response time doesn't reveal valid emails.
@@ -108,6 +132,26 @@ func toDTO(u *store.User) userDTO {
 func validRole(r string) bool { return r == "employer" || r == "applicant" || r == "admin" }
 
 func normalizeEmail(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
+
+var phMobile = regexp.MustCompile(`^(?:0|63)?(9\d{9})$`)
+
+// normalizePHMobile turns 0917 123 4567, +63917... or 917... into +639171234567.
+func normalizePHMobile(s string) (string, bool) {
+	m := phMobile.FindStringSubmatch(strings.NewReplacer(" ", "", "-", "", "(", "", ")", "", "+", "").Replace(s))
+	if m == nil {
+		return "", false
+	}
+	return "+63" + m[1], true
+}
+
+// normalizeLogin accepts what a person signed up with: a contact number or an email.
+// Contact numbers live in users.email, the column every account is looked up by.
+func normalizeLogin(s string) string {
+	if phone, ok := normalizePHMobile(s); ok {
+		return phone
+	}
+	return normalizeEmail(s)
+}
 
 func hashToken(t string) string {
 	sum := sha256.Sum256([]byte(t))
@@ -156,8 +200,8 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, u *store.
 }
 
 // POST /api/auth/signup
-// Employers must use a Gmail address and the code SignupCode emailed to them;
-// applicants can sign up with any email and no code.
+// Employers sign up with a Gmail address and the code SignupCode emailed to them.
+// Applicants sign up with a Philippine mobile number, sent as "email", and no code.
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Role     string `json:"role"`
@@ -179,13 +223,22 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "invalid role")
 		return
 	}
-	if !validEmail(email) {
-		httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
-		return
-	}
-	if !isGmail(email) {
-		httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
-		return
+	if req.Role == "applicant" {
+		phone, ok := normalizePHMobile(req.Email)
+		if !ok {
+			httpx.Error(w, http.StatusBadRequest, "please enter a valid mobile number, like 09171234567")
+			return
+		}
+		email = phone
+	} else {
+		if !validEmail(email) {
+			httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
+			return
+		}
+		if !isGmail(email) {
+			httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
+			return
+		}
 	}
 	// bcrypt only uses the first 72 bytes, so reject anything longer.
 	if len(req.Password) < 8 || len(req.Password) > 72 {
@@ -203,18 +256,27 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "applicant" {
 		company = ""
 	}
-	if strings.TrimSpace(req.Code) == "" {
-		httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
-		return
-	}
-	purpose := "signup:" + req.Role
-	if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
-		if errors.Is(err, store.ErrCodeInvalid) {
-			httpx.Error(w, http.StatusBadRequest, err.Error())
+	if req.Role == "applicant" {
+		ip := clientIP(r)
+		if h.crewSignups.blocked("signup", ip) {
+			httpx.Error(w, http.StatusTooManyRequests, "too many sign-ups from this connection; please try again in 15 minutes")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
-		return
+		h.crewSignups.fail("signup", ip)
+	} else {
+		if strings.TrimSpace(req.Code) == "" {
+			httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
+			return
+		}
+		purpose := "signup:" + req.Role
+		if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
+			if errors.Is(err, store.ErrCodeInvalid) {
+				httpx.Error(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+			return
+		}
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -259,8 +321,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	normEmail := normalizeEmail(req.Email)
-	if h.loginFails.blocked(normEmail) {
+	normEmail := normalizeLogin(req.Email)
+	ip := clientIP(r)
+	if h.loginFails.blocked(normEmail, ip) {
 		httpx.Error(w, http.StatusTooManyRequests, "too many failed logins; please wait 15 minutes or reset your password")
 		return
 	}
@@ -290,22 +353,33 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 		pwErr := bcrypt.CompareHashAndPassword(hash, []byte(req.Password))
 		if u == nil || pwErr != nil {
-			h.loginFails.fail(normEmail)
+			h.loginFails.fail(normEmail, ip)
 			httpx.Error(w, http.StatusUnauthorized, "invalid email or password")
 			return
 		}
 	} else if u == nil {
-		h.loginFails.fail(normEmail)
+		h.loginFails.fail(normEmail, ip)
 		httpx.Error(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
-	h.loginFails.reset(normEmail)
+	h.loginFails.reset(normEmail, ip)
 
 	if err := h.startSession(w, r, u); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"user": toDTO(u)})
+}
+
+// SessionUsers returns everyone signed in on this browser.
+func (h *Handler) SessionUsers(r *http.Request) []*store.User {
+	var out []*store.User
+	for _, c := range sessionCookies(r) {
+		if u, err := h.Store.UserBySession(r.Context(), hashToken(c.Value)); err == nil && u != nil {
+			out = append(out, u)
+		}
+	}
+	return out
 }
 
 // POST /api/auth/logout

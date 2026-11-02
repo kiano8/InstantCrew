@@ -20,18 +20,18 @@ import (
 const facebookGraph = "v23.0"
 
 type facebookOAuth struct {
-	AppID, AppSecret, RedirectURL string
+	AppID, AppSecret, RedirectURL, ConfigID string
 }
 
 // ConfigureFacebook enables "Continue with Facebook" with the Meta app's credentials.
-func (h *Handler) ConfigureFacebook(appID, appSecret, redirectURL string) error {
+func (h *Handler) ConfigureFacebook(appID, appSecret, redirectURL, configID string) error {
 	if appID == "" || appSecret == "" {
 		return errors.New("Facebook login requires FACEBOOK_APP_ID and FACEBOOK_APP_SECRET")
 	}
 	if redirectURL == "" {
 		return errors.New("set FACEBOOK_REDIRECT_URL, e.g. https://your-domain/api/auth/facebook/callback")
 	}
-	h.facebook = &facebookOAuth{appID, appSecret, redirectURL}
+	h.facebook = &facebookOAuth{appID, appSecret, redirectURL, configID}
 	return nil
 }
 
@@ -40,7 +40,14 @@ func (h *Handler) FacebookStart(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	q := url.Values{"client_id": {h.facebook.AppID}, "redirect_uri": {h.facebook.RedirectURL}, "response_type": {"code"}, "scope": {"email,public_profile"}, "state": {state}}
+	q := url.Values{"client_id": {h.facebook.AppID}, "redirect_uri": {h.facebook.RedirectURL}, "response_type": {"code"}, "state": {state}}
+	// Facebook Login for Business sets its permissions in a configuration; regular Facebook Login asks here.
+	if h.facebook.ConfigID != "" {
+		q.Set("config_id", h.facebook.ConfigID)
+		q.Set("override_default_response_type", "true")
+	} else {
+		q.Set("scope", "email,public_profile")
+	}
 	http.Redirect(w, r, "https://www.facebook.com/"+facebookGraph+"/dialog/oauth?"+q.Encode(), http.StatusFound)
 }
 

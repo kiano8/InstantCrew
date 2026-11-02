@@ -7,7 +7,7 @@
 Connect employers with people ready to work, from job posting and matching through booking and payment review.
 
 <p>
-  <img src="https://skillicons.dev/icons?i=go,html,css,js,sqlite&theme=light" alt="Go, HTML, CSS, JavaScript, and SQLite" />
+  <img src="https://skillicons.dev/icons?i=go,html,css,js,postgres&theme=light" alt="Go, HTML, CSS, JavaScript, and PostgreSQL" />
 </p>
 
 </div>
@@ -37,7 +37,7 @@ InstantCrew helps employers find short-term and shift-based workers. Employers c
 
 ## Technology
 
-The app uses a Go API, SQLite database, and a browser frontend built with HTML, CSS, and JavaScript. The frontend has no separate build step.
+The app uses a Go API, PostgreSQL database, and a browser frontend built with HTML, CSS, and JavaScript. The frontend has no separate build step.
 
 ## API overview
 

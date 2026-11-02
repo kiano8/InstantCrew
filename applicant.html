@@ -142,6 +142,7 @@
                         <option value="Iloilo City">Iloilo City</option>
                         <option value="Bacolod">Bacolod</option>
                         <option value="Cagayan de Oro">Cagayan de Oro</option>
+                        <option value="Zamboanga City">Zamboanga City</option>
                     </select>
                     <button type="button" id="workerLocationTrigger"></button>
                     <div id="workerLocationDropdown"></div>
@@ -1868,7 +1869,7 @@
                 <!-- ── Applicant Log In Form ── -->
                 <form id="applicantModalLoginForm" class="db-auth-form">
                     <div class="db-auth-field">
-                        <label for="appModalLoginEmail" class="db-field-label">Email Address</label>
+                        <label for="appModalLoginEmail" class="db-field-label">Contact Number or Email</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -1876,8 +1877,8 @@
                                 </path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
-                            <input type="email" id="appModalLoginEmail" class="db-auth-input"
-                                placeholder="applicant@gmail.com" required autocomplete="email">
+                            <input type="text" id="appModalLoginEmail" class="db-auth-input"
+                                placeholder="09171234567" required autocomplete="username">
                         </div>
                     </div>
 
@@ -1940,7 +1941,7 @@
                     </div>
 
                     <div class="db-auth-field">
-                        <label for="appModalSignupEmail" class="db-field-label">Email Address</label>
+                        <label for="appModalSignupEmail" class="db-field-label">Contact Number</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -1948,8 +1949,8 @@
                                 </path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
-                            <input type="email" id="appModalSignupEmail" class="db-auth-input"
-                                placeholder="name@example.com" required autocomplete="email">
+                            <input type="tel" id="appModalSignupEmail" class="db-auth-input"
+                                placeholder="09171234567" required autocomplete="tel">
                         </div>
                     </div>
 
@@ -2006,6 +2007,11 @@
                                     d="M5.6 14.8c-.3-.8-.4-1.8-.4-2.8s.2-2 .4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z" />
                                 <path fill="#34A853"
                                     d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.4 7.5 23 12 23z" />
+                            </svg>
+                        </button>
+                        <button type="button" class="db-auth-social-btn" aria-label="Continue with Facebook" data-sso="facebook" style="display:none">
+                            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.03 4.39 11.03 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.03 1.79-4.7 4.53-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/>
                             </svg>
                         </button>
                     </div>
@@ -2168,8 +2174,12 @@
                 }
                 return out;
             }
+<<<<<<< HEAD
             fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
                 for (const doc of requirement_docs || []) REQ_DOC_LABELS[doc.id] = doc.label;
+=======
+            const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
+>>>>>>> 9c83f236cd2edac5950412243803e975acbe357d
                 for (const category of categories || []) {
                     SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
                     for (const role of category.roles || []) ROLE_LABELS_BY_ID[role.id] = role.label;
@@ -4229,7 +4239,7 @@
                 const PHILIPPINES_CITIES = [
                     'Cebu City', 'Manila', 'Davao City', 'Quezon City', 'Makati City',
                     'Taguig', 'Pasig', 'Mandaluyong', 'Pasay', 'Iloilo City',
-                    'Bacolod', 'Cagayan de Oro'
+                    'Bacolod', 'Cagayan de Oro', 'Zamboanga City'
                 ];
 
                 function renderFeedLocationItems(query = '') {
@@ -6298,7 +6308,7 @@
             const CITIES_LIST = [
                 'Cebu City', 'Manila', 'Davao City', 'Quezon City',
                 'Makati City', 'Taguig', 'Pasig', 'Mandaluyong',
-                'Pasay', 'Iloilo City', 'Bacolod', 'Cagayan de Oro'
+                'Pasay', 'Iloilo City', 'Bacolod', 'Cagayan de Oro', 'Zamboanga City'
             ];
 
             // Map a geocoder city name (e.g. "Cebu", "City of Cebu") onto your city list
@@ -7429,22 +7439,16 @@
                 // Helper to upload proof file to server
                 async function uploadProofImage(file, fallbackUrl) {
                     if (!file) return fallbackUrl || '';
-                    try {
-                        const formData = new FormData();
-                        formData.append('proof', file);
-                        const res = await fetch('/api/upload-proof', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            body: formData
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data && data.url) return data.url;
-                        }
-                    } catch (err) {
-                        console.warn('Upload API failed, falling back to data URL', err);
-                    }
-                    return fallbackUrl || '';
+                    const formData = new FormData();
+                    formData.append('proof', file);
+                    const res = await fetch('/api/upload-proof', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        body: formData
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.url) throw new Error(data.error || 'Could not upload your receipt. Please try again.');
+                    return data.url;
                 }
 
                 // Step 3 CTA: the sign-up modal is the last step; the applicant lands in the portal after it.
@@ -7641,6 +7645,7 @@
                 document.querySelectorAll('#applicantAuthModal [data-sso]').forEach((button) => {
                     button.addEventListener('click', () => {
                         const mode = tabApplicantSignup && tabApplicantSignup.classList.contains('active') ? 'signup' : 'login';
+                        saveSignupDraft();
                         const params = new URLSearchParams({ role: 'applicant', mode });
                         window.location.assign(`/api/auth/${button.dataset.sso}?` + params.toString());
                     });
@@ -7685,7 +7690,7 @@
                     const btn = document.getElementById('btnSubmitAppModalLogin');
 
                     if (!email || !pass) {
-                        showApplicantAuthError('Please enter your email and password.');
+                        showApplicantAuthError('Please enter your contact number or email, and your password.');
                         return;
                     }
 
@@ -7697,7 +7702,7 @@
                     try {
                         const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
-                        if (!response.ok) throw new Error(data.error || 'Invalid email or password.');
+                        if (!response.ok) throw new Error(data.error || 'Invalid login or password.');
                         if (data.user && data.user.role === 'admin') {
                             sessionStorage.setItem('ic_admin_session', JSON.stringify({ ...data.user, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }));
                             window.location.href = 'admin.html';
@@ -7753,6 +7758,56 @@
                     applicantModalLoginForm.addEventListener('submit', handleApplicantModalLogin);
                 }
 
+                // The wizard lives in memory, so it needs a draft to survive leaving the page for SSO.
+                const SIGNUP_DRAFT_KEY = 'ic_applicant_signup_draft';
+                const SIGNUP_DRAFT_TTL = 30 * 60 * 1000;
+
+                function saveSignupDraft() {
+                    try { sessionStorage.setItem(SIGNUP_DRAFT_KEY, JSON.stringify({ ...appState, savedAt: Date.now() })); } catch (e) { }
+                }
+
+                document.getElementById('applicantFullLoginLink')?.addEventListener('click', saveSignupDraft);
+
+                async function saveWizardProfile(wizard) {
+                    const categoryRoles = SERVICES_CATALOG[wizard.category] || [];
+                    const roleId = categoryRoles.includes(wizard.role) ? wizard.role : (categoryRoles[0] || '');
+                    const period = String(wizard.ratePeriod || 'per hour').replace(/^per\s+/, '').replace(/s$/, '');
+                    const response = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: wizard.workType || 'full-time', expected_rate: Number(wizard.rate) || 95, rate_period: period, city: wizard.location || 'Cebu City', location_address: wizard.mapLocation || '', maps_url: wizard.googleMapsUrl || '', lat: wizard.geo?.lat || null, lng: wizard.geo?.lng || null, availability_mode: (wizard.timing === 'later' || wizard.timing === 'scheduled') ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
+                    if (!response.ok) { const profileErr = await response.json().catch(() => ({})); throw new Error(profileErr.error || 'Account created, but the applicant profile could not be saved. Please log in and try again.'); }
+                    return (await response.json()).profile;
+                }
+
+                async function saveWizardAvailability(wizard) {
+                    if (wizard.timing !== 'later' && wizard.timing !== 'scheduled') return;
+                    const selD = new Date(wizard.scheduledDate || Date.now());
+                    const parts = (wizard.scheduledTime || '09:00').split(':');
+                    const startH = parseInt(parts[0], 10) || 9;
+                    const startM = parseInt(parts[1], 10) || 0;
+                    const schedDateObj = new Date(selD.getFullYear(), selD.getMonth(), selD.getDate(), startH, startM, 0);
+                    const startsAt = Math.floor(schedDateObj.getTime() / 1000);
+                    const availabilityResponse = await fetch('/api/applicant/availability', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ availability: [{ starts_at: startsAt, ends_at: startsAt + 8 * 3600, status: 'available' }] }) });
+                    if (!availabilityResponse.ok) throw new Error('Account created, but scheduled availability could not be saved.');
+                }
+
+                // A new SSO applicant has no profile yet: save what they picked before leaving.
+                async function profileFromSignupDraft() {
+                    let draft = null;
+                    try { draft = JSON.parse(sessionStorage.getItem(SIGNUP_DRAFT_KEY)); } catch (e) { }
+                    if (!draft || Date.now() - draft.savedAt > SIGNUP_DRAFT_TTL) return null;
+                    await catalogReady;
+                    if (!(SERVICES_CATALOG[draft.category] || []).length) return null; // catalog down: keep the draft for the next load
+                    let profile;
+                    try {
+                        profile = await saveWizardProfile(draft);
+                    } catch (err) {
+                        console.error(err.message);
+                        return null;
+                    }
+                    sessionStorage.removeItem(SIGNUP_DRAFT_KEY);
+                    await saveWizardAvailability(draft).catch(err => console.error(err.message));
+                    return profile;
+                }
+
                 // Modal Sign Up Form Submission
                 async function handleApplicantModalSignup(e) {
                     if (e) e.preventDefault();
@@ -7765,18 +7820,9 @@
                     const btn = document.getElementById('btnSubmitAppModalSignup');
 
                     if (!name || !email || pass.length < 8) {
-                        showApplicantAuthError('Please fill in your name, valid email, and password (minimum 8 characters).');
+                        showApplicantAuthError('Please fill in your name, contact number, and password (minimum 8 characters).');
                         return;
                     }
-
-                    // The first submit emails a code to the Gmail address; the next one sends it.
-                    let code = '';
-                    try {
-                        code = await window.ICEmailCode.signupCode({ form: btn.form, email, role: 'applicant', before: btn, inputClass: 'db-auth-input' });
-                    } catch (err) {
-                        showApplicantAuthError(err.message);
-                    }
-                    if (!code) return;
 
                     if (btn) {
                         btn.disabled = true;
@@ -7784,15 +7830,10 @@
                     }
 
                     try {
-                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass, code }) });
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
-                        const categoryRoles = SERVICES_CATALOG[appState.category] || [];
-                        const roleId = categoryRoles.includes(appState.role) ? appState.role : (categoryRoles[0] || '');
-                        const period = String(appState.ratePeriod || 'per hour').replace(/^per\s+/, '').replace(/s$/, '');
-                        const profileResponse = await fetch('/api/applicant/profile', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employment_type: appState.workType || 'full-time', expected_rate: Number(appState.rate) || 95, rate_period: period, city: appState.location || 'Cebu City', location_address: (getAppMapFields().mapLocation || ''), maps_url: (getAppMapFields().googleMapsUrl || ''), lat: (getAppMapFields().geo || {}).lat || null, lng: (getAppMapFields().geo || {}).lng || null, availability_mode: (appState.timing === 'later' || appState.timing === 'scheduled') ? 'later' : 'now', is_active: true, roles: roleId ? [roleId] : [] }) });
-                        if (!profileResponse.ok) { const profileErr = await profileResponse.json().catch(() => ({})); throw new Error(profileErr.error || 'Account created, but the applicant profile could not be saved. Please log in and try again.'); }
-                        const profileData = await profileResponse.json();
+                        const profile = await saveWizardProfile(appState);
 
                         // Check if pending pass from Step 4 exists
                         let pendingPassQuota = null;
@@ -7817,13 +7858,13 @@
 
                         const newSession = {
                             ...data.user,
-                            services: normalizeServices(profileData.profile?.roles),
+                            services: normalizeServices(profile?.roles),
                             active: true,
-                            employmentPreference: profileData.profile?.employment_type || appState.workType || 'full-time',
-                            location: profileData.profile?.city || appState.location || 'Cebu City',
-                            offeredRate: profileData.profile?.expected_rate ?? Number(appState.rate) ?? 95,
-                            ratePeriod: `per ${profileData.profile?.rate_period || period}`,
-                            timingPreference: profileData.profile?.availability_mode || ((appState.timing === 'later' || appState.timing === 'scheduled') ? 'later' : 'now'),
+                            employmentPreference: profile?.employment_type || appState.workType || 'full-time',
+                            location: profile?.city || appState.location || 'Cebu City',
+                            offeredRate: profile?.expected_rate ?? Number(appState.rate) ?? 95,
+                            ratePeriod: `per ${profile.rate_period}`,
+                            timingPreference: profile?.availability_mode || ((appState.timing === 'later' || appState.timing === 'scheduled') ? 'later' : 'now'),
                             acceptedShifts: [],
                             hiringQuota: { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 }
                         };
@@ -7837,16 +7878,7 @@
                         await refreshHiringPass();
                         saveWorkerSession(newSession);
 
-                        if (appState.timing === 'later' || appState.timing === 'scheduled') {
-                            const selD = appState.scheduledDate || new Date();
-                            const parts = (appState.scheduledTime || '09:00').split(':');
-                            const startH = parseInt(parts[0], 10) || 9;
-                            const startM = parseInt(parts[1], 10) || 0;
-                            const schedDateObj = new Date(selD.getFullYear(), selD.getMonth(), selD.getDate(), startH, startM, 0);
-                            const startsAt = Math.floor(schedDateObj.getTime() / 1000);
-                            const availabilityResponse = await fetch('/api/applicant/availability', { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ availability: [{ starts_at: startsAt, ends_at: startsAt + 8 * 3600, status: 'available' }] }) });
-                            if (!availabilityResponse.ok) throw new Error('Account created, but scheduled availability could not be saved.');
-                        }
+                        await saveWizardAvailability(appState);
                         saveWorkerSession(newSession);
                         session = newSession;
                         if (window.InstantCrewShared) window.InstantCrewShared.syncPushSubscription();
@@ -7871,8 +7903,11 @@
                     if (!data || !data.user || data.user.role !== 'applicant') return;
                     const prevQuota = session?.hiringQuota || (getWorkerSession()?.hiringQuota);
                     session = { ...data.user, services: [], active: false, acceptedShifts: [], hiringQuota: prevQuota || { totalHires: 0, remainingHires: 0, usedHires: 0, paidAmount: 0, batchesPaid: 0 } };
-                    return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(profileData => {
-                        if (profileData?.profile) Object.assign(session, { rating: profileData.profile.rating ?? 4.9, standing: profileData.profile.standing || null, services: normalizeServices(profileData.profile.roles), employmentPreference: profileData.profile.employment_type, location: profileData.profile.city, offeredRate: profileData.profile.expected_rate, ratePeriod: `per ${profileData.profile.rate_period}`, active: profileData.profile.is_active !== false, timingPreference: profileData.profile.availability_mode });
+                    return fetch('/api/applicant/profile', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).then(async profileData => {
+                        // Only a confirmed missing profile takes the draft, never a failed read of an existing one.
+                        const profile = profileData && !profileData.profile ? await profileFromSignupDraft() : profileData?.profile;
+                        if (profileData?.profile) sessionStorage.removeItem(SIGNUP_DRAFT_KEY);
+                        if (profile) Object.assign(session, { rating: profile.rating ?? 4.9, standing: profile.standing || null, services: normalizeServices(profile.roles), employmentPreference: profile.employment_type, location: profile.city, offeredRate: profile.expected_rate, ratePeriod: `per ${profile.rate_period}`, active: profile.is_active !== false, timingPreference: profile.availability_mode });
                     }).then(() => loadApplicantAvailability(session));
                 }).then(() => {
                     if (!hasWorkerSession()) return;
@@ -7966,10 +8001,9 @@
             initApplicantStepsListeners();
         })();
     </script>
-    <script src="js/email-code.js?v=20261030-no-login-code"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261030-extnotif"></script>
-    <script src="js/pwa-install.js?v=20261028-closefix-merged"></script>
+    <script src="js/pwa-install.js?v=20261101-android"></script>
 </body>
 
 </html>

@@ -18,6 +18,7 @@ import (
 	"instantcrew/internal/mailer"
 	"instantcrew/internal/push"
 	"instantcrew/internal/store"
+	"instantcrew/internal/telemetry"
 )
 
 func getenv(k, def string) string {
@@ -82,7 +83,7 @@ func googleCredentialsPath() string {
 var pages = map[string]bool{
 	"index.html": true, "login.html": true,
 	"employer.html": true, "applicant.html": true,
-	"admin.html": true, "accounting.html": true,
+	"admin.html": true, "accounting.html": true, "telemetry.html": true,
 	"privacy.html": true, "terms.html": true,
 }
 
@@ -172,7 +173,7 @@ func main() {
 	if googleErr != nil {
 		log.Printf("Google SSO disabled: %v", googleErr)
 	}
-	if err := authH.ConfigureFacebook(os.Getenv("FACEBOOK_APP_ID"), os.Getenv("FACEBOOK_APP_SECRET"), os.Getenv("FACEBOOK_REDIRECT_URL")); err != nil {
+	if err := authH.ConfigureFacebook(os.Getenv("FACEBOOK_APP_ID"), os.Getenv("FACEBOOK_APP_SECRET"), os.Getenv("FACEBOOK_REDIRECT_URL"), os.Getenv("FACEBOOK_CONFIG_ID")); err != nil {
 		log.Printf("Facebook SSO disabled: %v", err)
 	}
 	// Development mode must not create implicit accounts. Authentication always
@@ -192,6 +193,8 @@ func main() {
 		Subject:    getenv("VAPID_SUBJECT", adminEmail),
 	})
 	pushH.Register(mux, authH)
+	telemetryR := telemetry.New(st)
+	telemetryR.Register(mux, authH)
 	// API
 	mux.HandleFunc("POST /api/auth/signup-code", authH.SignupCode)
 	mux.HandleFunc("POST /api/auth/signup", authH.Signup)
@@ -208,7 +211,7 @@ func main() {
 
 	// Frontend
 	static := noDirListing(http.FileServer(http.Dir(".")))
-	for _, p := range []string{"/css/", "/js/", "/images/", "/uploads/"} {
+	for _, p := range []string{"/css/", "/js/", "/images/"} {
 		mux.Handle("GET "+p, static)
 	}
 	// The service worker must be served from the root so it can control every
@@ -224,6 +227,9 @@ func main() {
 	})
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
 		servePage(w, r, "admin.html")
+	})
+	mux.HandleFunc("GET /telemetry", func(w http.ResponseWriter, r *http.Request) {
+		servePage(w, r, "telemetry.html")
 	})
 	mux.HandleFunc("GET /accounting", func(w http.ResponseWriter, r *http.Request) {
 		servePage(w, r, "admin.html")
@@ -257,9 +263,14 @@ func main() {
 		servePage(w, r, p)
 	})
 
+	// Outside dev, only the reverse proxy on this machine may reach the app.
+	bindHost := os.Getenv("HOST")
+	if bindHost == "" && env != "dev" {
+		bindHost = "127.0.0.1"
+	}
 	srv := &http.Server{
-		Addr:              getenv("HOST", "") + ":" + port, // HOST=127.0.0.1 behind a reverse proxy
-		Handler:           logRequests(mux),
+		Addr:              bindHost + ":" + port,
+		Handler:           telemetryR.Middleware(logRequests(mux)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -302,6 +313,8 @@ func main() {
 		}
 	}()
 
+	go telemetryR.Run(ctx)
+
 	if pushH.Enabled() {
 		go pushH.Run(ctx)
 	} else {
@@ -319,9 +332,12 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+	if err := telemetryR.Flush(shutdownCtx); err != nil {
+		log.Printf("telemetry flush: %v", err)
+	}
 }
 
-// noDirListing hides directory indexes so /uploads/ cannot enumerate payment proofs.
+// noDirListing hides directory indexes.
 func noDirListing(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/") {

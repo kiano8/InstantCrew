@@ -401,19 +401,7 @@ func (s *Store) SaveApplicantProfile(ctx context.Context, id int64, p ApplicantP
 func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+jobCols+` FROM jobs j
 		WHERE j.status='matching'
-		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
-			WHERE p.user_id=$1 AND p.is_active=true AND p.employment_type=j.employment_type AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
-			AND NOT EXISTS (SELECT 1 FROM job_assignments active_assignment
-				JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
-				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
-				AND assigned_job.role_id=j.role_id)
-			AND ((j.timing='now' AND p.availability_mode='now') OR
-				(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
-					SELECT 1 FROM applicant_availability av
-					WHERE av.applicant_id=p.user_id AND av.status='available'
-					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
-				)))))
-		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$1 AND a.status IN ('pending','accepted','rejected'))
+		AND EXISTS(SELECT 1 FROM applicant_profiles p WHERE p.user_id=$1 AND `+crewCanTake+`)
 		ORDER BY j.created_at DESC`, applicantID)
 	if err != nil {
 		return nil, err
@@ -434,18 +422,7 @@ func (s *Store) ApplicantJobs(ctx context.Context, applicantID int64) ([]*Job, e
 func (s *Store) ApplicantJob(ctx context.Context, applicantID, jobID int64) (*Job, error) {
 	return scanJob(s.db.QueryRowContext(ctx, `SELECT `+jobCols+` FROM jobs j
 		WHERE j.id=$1 AND j.status='matching'
-		AND EXISTS(SELECT 1 FROM applicant_profiles p JOIN applicant_roles ar ON ar.applicant_id=p.user_id
-			WHERE p.user_id=$2 AND p.is_active=true AND p.employment_type=j.employment_type
-			AND lower(trim(p.city))=lower(trim(j.city)) AND ar.role_id=j.role_id
-			AND NOT EXISTS (SELECT 1 FROM job_assignments active_assignment
-				JOIN jobs assigned_job ON assigned_job.id=active_assignment.job_id
-				WHERE active_assignment.applicant_id=p.user_id AND active_assignment.ended_at IS NULL
-				AND assigned_job.role_id=j.role_id)
-			AND ((j.timing='now' AND p.availability_mode='now') OR
-				(j.timing='later' AND (p.availability_mode='now' OR EXISTS (SELECT 1 FROM applicant_availability av
-					WHERE av.applicant_id=p.user_id AND av.status='available'
-					AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at)))))
-		AND NOT EXISTS(SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$2 AND a.status='rejected')`,
+		AND EXISTS(SELECT 1 FROM applicant_profiles p WHERE p.user_id=$2 AND `+crewCanTake+`)`,
 		jobID, applicantID))
 }
 
@@ -483,39 +460,6 @@ func (s *Store) AdjustApplicantRating(ctx context.Context, jobID, applicantID in
 		if err != nil {
 			return err
 		}
-	}
-	return tx.Commit()
-}
-
-// RecordApplicantOfferViews marks eligible offers shown to an online worker.
-// Unanswered offers that close with nobody hired lower the rating once; offers another
-// worker took, or the employer cancelled, do not.
-func (s *Store) RecordApplicantOfferViews(ctx context.Context, applicantID int64, jobs []*Job) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	for _, j := range jobs {
-		if _, err = tx.ExecContext(ctx, `INSERT INTO applicant_offer_impressions(job_id,applicant_id,shown_at) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`, j.ID, applicantID, time.Now().Unix()); err != nil {
-			return err
-		}
-	}
-	if _, err = tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=GREATEST(100,rating_hundredths-5*(
-		 SELECT COUNT(*) FROM applicant_offer_impressions i JOIN jobs j ON j.id=i.job_id
-		 WHERE i.applicant_id=$1 AND i.resolved=false AND j.status='unfulfilled'
-		 AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$2 AND a.status IN ('accepted','rejected'))
-		))
-		WHERE user_id=$3 AND is_active=true AND EXISTS (
-		 SELECT 1 FROM applicant_offer_impressions i JOIN jobs j ON j.id=i.job_id
-		 WHERE i.applicant_id=$4 AND i.resolved=false AND j.status='unfulfilled'
-		 AND NOT EXISTS (SELECT 1 FROM job_applications a WHERE a.job_id=j.id AND a.applicant_id=$5 AND a.status IN ('accepted','rejected'))
-		)`, applicantID, applicantID, applicantID, applicantID, applicantID); err != nil {
-		return err
-	}
-	if _, err = tx.ExecContext(ctx, `UPDATE applicant_offer_impressions SET resolved=true WHERE applicant_id=$1 AND resolved=false
-		AND EXISTS(SELECT 1 FROM jobs j WHERE j.id=applicant_offer_impressions.job_id AND j.status<>'matching')`, applicantID); err != nil {
-		return err
 	}
 	return tx.Commit()
 }

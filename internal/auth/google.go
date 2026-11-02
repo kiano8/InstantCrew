@@ -152,7 +152,8 @@ func (h *Handler) finishSSO(ctx context.Context, w http.ResponseWriter, r *http.
 			ssoFail(w, r, provider, "no_account", role, mode)
 			return
 		}
-		if !isGmail(email) {
+		// Facebook only returns emails the person has confirmed, on any provider.
+		if provider != "facebook" && !isGmail(email) {
 			ssoFail(w, r, provider, "gmail_only", role, mode)
 			return
 		}

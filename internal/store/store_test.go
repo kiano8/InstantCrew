@@ -338,14 +338,15 @@ func TestStore_TransitCancelPenalty(t *testing.T) {
 		t.Fatalf("ending crew who hadn't left must not add a penalty, got %d", p)
 	}
 
-	// Ending twice while the crew is on the way: ₱50 each, adding up.
+	// Ending twice while the crew is on the way: ₱50 each. The second booking's
+	// verified fee already paid the first penalty, so ₱50 is owed afterwards.
 	for i := 0; i < 2; i++ {
 		id, _ = book(true)
 		must("en route", st.UpdateApplicantTransit(ctx, id, crew.ID, "en_route", "t", "m", "transit"))
 		must("end", st.EndJob(ctx, employer.ID, id))
 	}
-	if p := penalty(); p != 2*store.TransitCancelPenaltyCentavos {
-		t.Fatalf("want penalty %d, got %d", 2*store.TransitCancelPenaltyCentavos, p)
+	if p := penalty(); p != store.TransitCancelPenaltyCentavos {
+		t.Fatalf("want penalty %d, got %d", store.TransitCancelPenaltyCentavos, p)
 	}
 	// The first booking's crew hadn't left, so its hire stays spent (10 -> 9); the
 	// two ended on the way got theirs back.
@@ -355,14 +356,42 @@ func TestStore_TransitCancelPenalty(t *testing.T) {
 		t.Fatalf("want 9 remaining / 1 used after transit refunds, got %d / %d", pass.RemainingHires, pass.UsedHires)
 	}
 
-	// The next fee includes the penalty (₱200), and verifying it clears the penalty.
+	// The next fee includes the penalty (₱150). A second receipt open at the same
+	// time must not charge that penalty again.
 	_, pay := book(false)
-	if total, pen := amount(pay.ID); total != 20000 || pen != 10000 {
-		t.Fatalf("want fee 20000 incl. 10000 penalty, got %d incl. %d", total, pen)
+	if total, pen := amount(pay.ID); total != 15000 || pen != 5000 {
+		t.Fatalf("want fee 15000 incl. 5000 penalty, got %d incl. %d", total, pen)
+	}
+	if p := penalty(); p != 0 {
+		t.Fatalf("a penalty on a pending receipt must not be quoted again, got %d", p)
+	}
+	crew2 := &store.User{Email: "c2@test.com", PasswordHash: "x", Role: "applicant", Name: "Crew Two"}
+	must("crew2", st.CreateUser(ctx, crew2))
+	must("profile2", st.SaveApplicantProfile(ctx, crew2.ID, store.ApplicantProfile{EmploymentType: "full-time", ExpectedRate: 100,
+		RatePeriod: "hour", City: "Cebu City", Availability: "now", Active: &active, Roles: []string{"cook"}}))
+	_, err = raw.Exec(`INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at)
+		VALUES($1,5,5,0,0,1,0) ON CONFLICT (applicant_id) DO UPDATE SET total_hires=5, remaining_hires=5, used_hires=0`, crew2.ID)
+	must("hires2", err)
+	second := &store.Job{EmployerID: employer.ID, Category: "kitchen", RoleID: "cook", RoleLabel: "Cook",
+		EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
+		MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
+	must("create second", st.CreateJob(ctx, second))
+	must("search second", st.StartSearch(ctx, employer.ID, second.ID))
+	must("accept second", st.AcceptJob(ctx, second.ID, crew2.ID))
+	must("fee second", st.RecordMatchFee(ctx, employer.ID, second.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref2"))
+	other, err := st.LatestJobPayment(ctx, second.ID)
+	must("second payment", err)
+	if total, pen := amount(other.ID); total != 10000 || pen != 0 {
+		t.Fatalf("second open receipt: want 10000 incl. 0 penalty, got %d incl. %d", total, pen)
 	}
 	must("verify", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
 	if p := penalty(); p != 0 {
 		t.Fatalf("verified fee must clear its penalty, got %d", p)
+	}
+	var owed int64
+	must("owed", raw.QueryRow(`SELECT search_penalty_centavos FROM users WHERE id=$1`, employer.ID).Scan(&owed))
+	if owed != 0 {
+		t.Fatalf("want nothing owed, got %d", owed)
 	}
 }
 
@@ -536,6 +565,9 @@ func TestStore_Reviews(t *testing.T) {
 		t.Fatalf("both sides must be asked once, got employer %d crew %d", pending(employer.ID), pending(crew.ID))
 	}
 
+	// Below the 5.00 ceiling, so the whole +0.10 shows.
+	_, err = raw.Exec(`UPDATE applicant_profiles SET rating_hundredths=450 WHERE user_id=$1`, crew.ID)
+	must("set rating", err)
 	before := rating()
 	must("employer rates", st.SubmitReview(ctx, employer.ID, id, 5))
 	must("employer rates again", st.SubmitReview(ctx, employer.ID, id, 1))

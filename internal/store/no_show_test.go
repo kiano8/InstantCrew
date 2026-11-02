@@ -178,8 +178,8 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 	if err := st.AcceptJob(ctx, blocked, crew.ID, nil); !errors.Is(err, store.ErrAccountSuspended) {
 		t.Fatalf("expected ErrAccountSuspended, got %v", err)
 	}
-	if m, err := st.MatchingApplicants(ctx, blocked); err != nil || len(m) != 0 {
-		t.Fatalf("suspended crew must not be matched: %v %v", m, err)
+	if feed, err := st.ApplicantJobs(ctx, crew.ID); err != nil || len(feed) != 0 {
+		t.Fatalf("suspended crew must not be offered shifts: %v %v", feed, err)
 	}
 	must("cancel blocked", st.CancelJob(ctx, employer.ID, blocked))
 

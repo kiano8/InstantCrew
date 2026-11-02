@@ -83,13 +83,13 @@ func main() {
 		signingKey:  os.Getenv("SIGNING_KEY"),
 		gcashNumber: os.Getenv("GCASH_NUMBER"),
 		ttl:         time.Duration(ttlMin) * time.Minute,
-		prod:        env == "prod",
+		prod:        env != "dev", // fail closed: the droplet uses ENV=production
 		corsOrigin:  getenv("CORS_ORIGIN", "http://localhost:3000"),
 	}
 
 	if a.signingKey == "" {
 		if a.prod {
-			log.Fatal("SIGNING_KEY is required when ENV=prod")
+			log.Fatal("SIGNING_KEY is required outside ENV=dev")
 		}
 		log.Println("WARNING: SIGNING_KEY not set - webhook signatures are NOT being checked (dev only!)")
 	}
@@ -288,7 +288,7 @@ func (a *app) webhook(w http.ResponseWriter, r *http.Request) {
 }
 
 // simulate feeds a fake SMS through the exact same pipeline as the webhook,
-// so you can test the website flow without sending real money. Disabled when ENV=prod.
+// so you can test the website flow without sending real money. Only enabled when ENV=dev.
 func (a *app) simulate(w http.ResponseWriter, r *http.Request) {
 	if a.prod {
 		writeErr(w, 404, "not found")
