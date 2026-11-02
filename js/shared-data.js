@@ -10,6 +10,9 @@
 
     /* ── Tabler / Heroicons Vector SVG Definitions ───────────── */
     const ICONS = {
+        personal: (size = 20) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /></svg>`,
+        education: (size = 20) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" /><path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" /></svg>`,
+        creative: (size = 20) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25" /><path d="M8.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>`,
         kitchen: (size = 20) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-chef-hat"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c1.918 0 3.52 1.35 3.91 3.151a4 4 0 0 1 2.09 7.723l0 7.126h-12v-7.126a4 4 0 1 1 2.092 -7.723a4 4 0 0 1 3.908 -3.151" /><path d="M6.161 17.009l11.839 -.009" /></svg>`,
         delivery: (size = 20) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moped"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 16v1a2 2 0 0 0 4 0v-5h-3a3 3 0 0 0 -3 3v1h10a6 6 0 0 1 5 -4v-5a2 2 0 0 0 -2 -2h-1" /><path d="M6 9l3 0" /></svg>`,
         helpers: (size = 20) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-users"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>`,
@@ -49,6 +52,10 @@
 
         const combined = `${cat} ${role} ${title}`;
 
+        if (EXTRA_CATEGORIES.some(c => c.id === cat)) {
+            return ICONS[cat](size);
+        }
+
         if (cat === 'kitchen' || combined.includes('cook') || combined.includes('prep') || combined.includes('dish') || combined.includes('chef') || combined.includes('kitchen') || combined.includes('server') || combined.includes('barista')) {
             return ICONS.kitchen(size);
         }
@@ -66,6 +73,38 @@
         }
 
         return ICONS.briefcase(size);
+    }
+
+    // Categories added after kitchen/delivery/helpers. Their cards are cloned from
+    // each page's existing cards (see addCategoryCards), so ids must match jobs.Catalog.
+    const EXTRA_CATEGORIES = [
+        { id: 'personal', label: 'Personal' },
+        { id: 'education', label: 'Education' },
+        { id: 'creative', label: 'Creative' },
+    ];
+
+    const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+    // addCategoryCards appends one card per extra category to a category grid by
+    // cloning its last card, so each grid keeps its own markup. Ids ending in the
+    // template's category ("stepCatHelpers") get the new one ("stepCatPersonal").
+    function addCategoryCards(grid) {
+        if (!grid) return [];
+        const template = grid.querySelector('.db-cat-card:last-of-type');
+        const from = capitalize(template.dataset.cat);
+        return EXTRA_CATEGORIES.map(cat => {
+            const card = template.cloneNode(true);
+            [card, ...card.querySelectorAll('[id]')].forEach(el => {
+                if (el.id) el.id = el.id.replace(from, capitalize(cat.id));
+            });
+            card.dataset.cat = cat.id;
+            card.classList.remove('active');
+            card.setAttribute('aria-pressed', 'false');
+            card.querySelector('.db-cat-icon').innerHTML = ICONS[cat.id](24);
+            card.querySelector('.db-cat-name').textContent = cat.label;
+            grid.appendChild(card);
+            return card;
+        });
     }
 
     function getNotificationIcon(type, size = 20) {
@@ -725,6 +764,8 @@
     // Export to global window object
     window.InstantCrewShared = {
         escHtml,
+        EXTRA_CATEGORIES,
+        addCategoryCards,
         checkPendingReviews,
         startReviewPrompts,
         watchGcashReturn,

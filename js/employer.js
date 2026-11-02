@@ -34,6 +34,20 @@ function updateReqDocsCount() {
 }
 reqDocsList.addEventListener('change', updateReqDocsCount);
 
+// The list floats over the page; open it upward when it would run past the bottom
+// of the screen, and never taller than the room it has.
+const reqDocsDetails = document.querySelector('.db-req-docs');
+reqDocsDetails.addEventListener('toggle', () => {
+  if (!reqDocsDetails.open) return;
+  const box = reqDocsDetails.getBoundingClientRect();
+  const headerBottom = document.querySelector('.db-header')?.getBoundingClientRect().bottom || 0;
+  const below = window.innerHeight - box.bottom - 16;
+  const above = box.top - headerBottom - 16;
+  const up = below < Math.min(reqDocsList.scrollHeight, 320) && above > below;
+  reqDocsDetails.classList.toggle('drop-up', up);
+  reqDocsList.style.maxHeight = `${Math.max(160, Math.min(320, up ? above : below))}px`;
+});
+
 const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
   for (const category of categories || []) {
     ROLES[category.id] = (category.roles || []).map(role => ({ id: role.id, label: role.label }));
@@ -110,6 +124,7 @@ const state = {
 const segs = document.querySelectorAll('.db-progress-seg');
 const steps = document.querySelectorAll('.db-step');
 const progress = document.getElementById('dbProgress');
+window.InstantCrewShared.addCategoryCards(document.getElementById('catGrid'));
 const catCards = document.querySelectorAll('.db-cat-card');
 const rolesWrap = document.getElementById('rolesWrap');
 const rolesSelect = document.getElementById('rolesSelect');
@@ -760,7 +775,7 @@ catCards.forEach(card => {
 
     // Show role panel
     rolesWrap.classList.add('open');
-    rolesLabel.textContent = `Choose a ${CAT_LABELS[cat]} role`;
+    rolesLabel.textContent = `Choose ${/^[aeiou]/i.test(CAT_LABELS[cat]) ? 'an' : 'a'} ${CAT_LABELS[cat]} role`;
 
     // Disable Next until role is picked
     toStep2Btn.disabled = true;
@@ -784,15 +799,8 @@ function renderRoles(cat) {
 
   // 2. Update category icon in trigger
   if (roleTriggerIcon && window.InstantCrewShared && window.InstantCrewShared.ICONS) {
-    if (cat === 'kitchen') {
-      roleTriggerIcon.innerHTML = window.InstantCrewShared.ICONS.kitchen(18);
-    } else if (cat === 'delivery') {
-      roleTriggerIcon.innerHTML = window.InstantCrewShared.ICONS.delivery(18);
-    } else if (cat === 'helpers') {
-      roleTriggerIcon.innerHTML = window.InstantCrewShared.ICONS.helpers(18);
-    } else {
-      roleTriggerIcon.innerHTML = window.InstantCrewShared.ICONS.briefcase(18);
-    }
+    const icons = window.InstantCrewShared.ICONS;
+    roleTriggerIcon.innerHTML = (icons[cat] || icons.briefcase)(18);
   }
 
   // 3. Update count pill

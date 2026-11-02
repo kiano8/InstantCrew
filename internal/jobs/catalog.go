@@ -48,6 +48,34 @@ var Catalog = []Category{
 		r("welder", "Welder"),
 		r("carpenter-painter", "Carpenter / Painter"),
 	}},
+	{"personal", "Personal", []Role{
+		r("caregiver", "Caregiver"),
+		r("house-helper", "House Helper"),
+		r("nutritionist", "Nutritionist"),
+		r("fitness-trainer", "Fitness Trainer"),
+		r("yoga-instructor", "Yoga Instructor"),
+		r("makeup-artist", "Make-up Artist"),
+		r("hair-stylist", "Hair Stylist"),
+		r("massage-therapist", "Massage Therapist"),
+		r("physical-therapist", "Physical Therapist"),
+	}},
+	{"education", "Education", []Role{
+		r("math-tutor-g1-g6", "Math Tutor (G1-G6)"),
+		r("math-tutor-h1-h4", "Math Tutor (H1-H4)"),
+		r("chinese-tutor-g1-g6", "Chinese Tutor (G1-G6)"),
+		r("chinese-tutor-h1-h4", "Chinese Tutor (H1-H4)"),
+		r("art-teacher-kids", "Art Teacher (5-14 yrs old)"),
+		r("music-teacher-kids", "Music Teacher (5-14 yrs old)"),
+	}},
+	{"creative", "Creative", []Role{
+		r("graphic-designer", "Graphic Designer"),
+		r("video-editor", "Video Editor"),
+		r("photographer", "Photographer"),
+		r("videographer", "Videographer"),
+		r("social-media-manager", "Social Media Manager"),
+		r("dj", "DJ"),
+		r("host", "Host"),
+	}},
 }
 
 type Doc struct {

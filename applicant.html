@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/employer.css?v=20261030-catselect">
-    <link rel="stylesheet" href="css/applicant.css?v=20261030-nodot">
+    <link rel="stylesheet" href="css/employer.css?v=20261102-dropup">
+    <link rel="stylesheet" href="css/applicant.css?v=20261102-dropup">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
     <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
     <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
@@ -2147,7 +2147,7 @@
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js?v=20261030-extnotif"></script>
+    <script src="js/shared-data.js?v=20261102-dropup"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -2174,12 +2174,8 @@
                 }
                 return out;
             }
-<<<<<<< HEAD
-            fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
+            const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
                 for (const doc of requirement_docs || []) REQ_DOC_LABELS[doc.id] = doc.label;
-=======
-            const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
->>>>>>> 9c83f236cd2edac5950412243803e975acbe357d
                 for (const category of categories || []) {
                     SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
                     for (const role of category.roles || []) ROLE_LABELS_BY_ID[role.id] = role.label;
@@ -2909,6 +2905,36 @@
             }
 
             // ── Alive Category Dropdown Config & Logic ───────────────────
+            window.InstantCrewShared.addCategoryCards(document.getElementById('appCatGrid'));
+            // Each extra category gets a copy of the Helpers role panel, with its ids renamed.
+            const extraServiceCategories = window.InstantCrewShared.EXTRA_CATEGORIES.map(({ id, label }) => {
+                const cap = id.charAt(0).toUpperCase() + id.slice(1);
+                const template = document.getElementById('catPanelHelpers');
+                const panel = template.cloneNode(true);
+                [panel, ...panel.querySelectorAll('[id]')].forEach(el => {
+                    el.id = el.id.replace('Helpers', cap).replace(/^helpers/, id);
+                });
+                panel.querySelectorAll('[data-category]').forEach(el => { el.dataset.category = id; });
+                panel.querySelector('.app-roles-panel-title svg').outerHTML = window.InstantCrewShared.ICONS[id](18);
+                panel.querySelector('.app-roles-panel-title span').textContent = label;
+                panel.querySelector('.alive-menu-title').textContent = label + ' Roles';
+                panel.querySelector('.alive-trigger-text').textContent = `Choose ${id} roles…`;
+                template.parentElement.appendChild(panel);
+                return {
+                    key: id,
+                    dropdownId: `${id}Dropdown`,
+                    triggerId: `${id}DropdownTrigger`,
+                    menuId: `${id}DropdownMenu`,
+                    textId: `${id}TriggerText`,
+                    miniPillId: `${id}MiniPill`,
+                    optionsListId: `${id}OptionsList`,
+                    badgeId: `${id}CountBadge`,
+                    cardBadgeId: `appCatBadge${cap}`,
+                    cardId: `appCat${cap}`,
+                    panelId: `catPanel${cap}`,
+                    placeholder: `Choose ${id} roles…`
+                };
+            });
             const SERVICE_CATEGORIES = [
                 {
                     key: 'kitchen',
@@ -2951,7 +2977,8 @@
                     cardId: 'appCatHelpers',
                     panelId: 'catPanelHelpers',
                     placeholder: 'Choose operations roles…'
-                }
+                },
+                ...extraServiceCategories
             ];
 
             let activeServiceCategory = null;
@@ -6265,9 +6292,8 @@
             const appQuotaTopupNowBtn = document.getElementById('appQuotaTopupNowBtn');
 
             // Step 1 category & role elements (using unique stepCat IDs to avoid collisions)
-            const stepCatKitchen = document.getElementById('stepCatKitchen');
-            const stepCatDelivery = document.getElementById('stepCatDelivery');
-            const stepCatHelpers = document.getElementById('stepCatHelpers');
+            window.InstantCrewShared.addCategoryCards(document.getElementById('step1CatGrid'));
+            const stepCatCards = document.querySelectorAll('#step1CatGrid .db-cat-card');
             const stepRolesWrap = document.getElementById('stepRolesWrap');
             const appRolesLabel = document.getElementById('appRolesLabel');
             const appRolesCountPill = document.getElementById('appRolesCountPill');
@@ -6643,8 +6669,7 @@
             function setAppCategory(catKey, autoOpen = false) {
                 appState.category = catKey;
 
-                [stepCatKitchen, stepCatDelivery, stepCatHelpers].forEach(btn => {
-                    if (!btn) return;
+                stepCatCards.forEach(btn => {
                     const isActive = btn.dataset.cat === catKey;
                     btn.classList.toggle('active', isActive);
                     btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -6653,7 +6678,7 @@
                 const roles = SERVICES_CATALOG[catKey] || [];
                 const catLabel = catKey === 'helpers' ? 'helper' : catKey;
                 if (appRolesLabel) {
-                    appRolesLabel.textContent = 'Choose a ' + catLabel + ' role';
+                    appRolesLabel.textContent = `Choose ${/^[aeiou]/.test(catLabel) ? 'an' : 'a'} ${catLabel} role`;
                 }
                 if (appRolesCountPill) {
                     appRolesCountPill.textContent = roles.length + ' roles available';
@@ -6852,17 +6877,11 @@
 
 
                 // Category clicks — clicking category switches category without dropping down right away
-                [
-                    { btn: stepCatKitchen, cat: 'kitchen' },
-                    { btn: stepCatDelivery, cat: 'delivery' },
-                    { btn: stepCatHelpers, cat: 'helpers' }
-                ].forEach(({ btn, cat }) => {
-                    if (btn) {
-                        btn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            setAppCategory(cat, false);
-                        });
-                    }
+                stepCatCards.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        setAppCategory(btn.dataset.cat, false);
+                    });
                 });
 
                 // Role dropdown trigger toggle

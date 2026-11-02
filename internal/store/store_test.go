@@ -377,7 +377,7 @@ func TestStore_TransitCancelPenalty(t *testing.T) {
 		MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
 	must("create second", st.CreateJob(ctx, second))
 	must("search second", st.StartSearch(ctx, employer.ID, second.ID))
-	must("accept second", st.AcceptJob(ctx, second.ID, crew2.ID))
+	must("accept second", st.AcceptJob(ctx, second.ID, crew2.ID, nil))
 	must("fee second", st.RecordMatchFee(ctx, employer.ID, second.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref2"))
 	other, err := st.LatestJobPayment(ctx, second.ID)
 	must("second payment", err)
