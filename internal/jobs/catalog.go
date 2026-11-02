@@ -32,6 +32,8 @@ var Catalog = []Category{
 		r("cashier", "Cashier"),
 		r("store-manager", "Store Manager"),
 		r("janitorial-cleaning-staff", "Janitorial / Cleaning Staff"),
+		r("housekeeping", "Housekeeping"),
+		r("receptionist", "Receptionist"),
 	}},
 	{"delivery", "Delivery", []Role{
 		r("2-wheel-driver", "2-Wheel Driver"),
