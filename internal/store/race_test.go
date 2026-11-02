@@ -65,7 +65,7 @@ func TestAcceptJob_OneHireCoversOneShift(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				<-start
-				errs[i] = st.AcceptJob(ctx, id, crewID)
+				errs[i] = st.AcceptJob(ctx, id, crewID, nil)
 			}()
 		}
 		close(start)

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -414,11 +415,27 @@ func (h *Handler) ApplicantAccept(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Only offers this applicant matches (and was not declined for) can be accepted.
-	if _, err = h.Store.ApplicantJob(r.Context(), u.ID, id); err != nil {
+	job, err := h.Store.ApplicantJob(r.Context(), u.ID, id)
+	if err != nil {
 		h.fail(w, err)
 		return
 	}
-	if err = h.Store.AcceptJob(r.Context(), id, u.ID); err != nil {
+	var req struct {
+		Requirements map[string]string `json:"requirements"`
+	}
+	if r.ContentLength != 0 && !httpx.Decode(w, r, &req) {
+		return
+	}
+	attached := map[string]string{}
+	for _, doc := range job.RequiredDocs {
+		url := strings.TrimSpace(req.Requirements[doc])
+		if !proofPath.MatchString(url) {
+			httpx.Error(w, http.StatusBadRequest, "attach every required document before accepting")
+			return
+		}
+		attached[doc] = url
+	}
+	if err = h.Store.AcceptJob(r.Context(), id, u.ID, attached); err != nil {
 		h.fail(w, err)
 		return
 	}
@@ -481,12 +498,13 @@ type crewDTO struct {
 	Transit           string     `json:"transit_status"`
 	ArrivalDeadlineAt *time.Time `json:"arrival_deadline_at,omitempty"`
 	// ArrivalSecondsRemaining uses the server clock, like seconds_remaining.
-	ArrivalSecondsRemaining int64   `json:"arrival_seconds_remaining"`
-	Rating                  float64 `json:"rating"`
+	ArrivalSecondsRemaining int64             `json:"arrival_seconds_remaining"`
+	Rating                  float64           `json:"rating"`
+	Requirements            map[string]string `json:"requirements,omitempty"` // only for the job's employer
 }
 
 func toCrewDTO(c store.Assignment) crewDTO {
-	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c), c.Rating}
+	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c), c.Rating, c.Requirements}
 }
 
 // arrivalSecondsRemaining is the time left to mark arrival, or 0 when no limit applies.
@@ -519,6 +537,7 @@ type jobDTO struct {
 	AcceptedCount  int                   `json:"accepted_count"`
 	Status         string                `json:"status"`
 	SearchAttempts int                   `json:"search_attempts"`
+	RequiredDocs   []string              `json:"required_docs"`
 	MatchFee       float64               `json:"match_fee"`                 // base fee plus owed penalties; set for the employer's own views
 	EmployerRating *store.EmployerRating `json:"employer_rating,omitempty"` // set for crew's views
 	Crew           []crewDTO             `json:"crew,omitempty"`
@@ -533,7 +552,7 @@ func (h *Handler) toDTO(j *store.Job) jobDTO {
 		City: j.City, MapLocation: j.MapLocation, MapsURL: j.MapsURL, Lat: j.Lat, Lng: j.Lng,
 		Timing: j.Timing, ScheduledAt: j.ScheduledAt, CrewNeeded: j.CrewNeeded,
 		AcceptedCount: j.AcceptedCount, Status: j.Status, SearchAttempts: j.SearchAttempts,
-		CreatedAt: j.CreatedAt,
+		RequiredDocs: j.RequiredDocs, CreatedAt: j.CreatedAt,
 	}
 }
 
@@ -670,6 +689,9 @@ func (h *Handler) jobDTOs(r *http.Request, jobs []*store.Job, withPayment bool) 
 			d.MatchFee = fee
 		}
 		for _, c := range crew[j.ID] {
+			if !withPayment {
+				c.Requirements = nil // crew views must not see each other's documents
+			}
 			d.Crew = append(d.Crew, toCrewDTO(c))
 		}
 		d.Payment = pays[j.ID]
@@ -697,6 +719,7 @@ type jobRequest struct {
 	Timing         string   `json:"timing"`
 	ScheduledAt    string   `json:"scheduled_at"`
 	CrewNeeded     int      `json:"crew_needed"`
+	RequiredDocs   []string `json:"required_docs"`
 }
 
 func (h *Handler) parse(w http.ResponseWriter, r *http.Request) (*store.Job, bool) {
@@ -768,8 +791,19 @@ func (h *Handler) parse(w http.ResponseWriter, r *http.Request) (*store.Job, boo
 		return bad("crew_needed must be between 1 and 20")
 	}
 
+	var docs []string
+	for _, id := range req.RequiredDocs {
+		if !slices.ContainsFunc(RequirementDocs, func(d Doc) bool { return d.ID == id }) {
+			return bad("unknown required document")
+		}
+		if !slices.Contains(docs, id) {
+			docs = append(docs, id)
+		}
+	}
+
 	return &store.Job{
-		Category: req.Category, RoleID: role.ID, RoleLabel: role.Label,
+		RequiredDocs: docs,
+		Category:     req.Category, RoleID: role.ID, RoleLabel: role.Label,
 		EmploymentType: req.EmploymentType, RateCentavos: int64(math.Round(req.Rate * 100)),
 		RatePeriod: period, City: city, MapLocation: loc, MapsURL: buildMapsURL(loc, req.Lat, req.Lng),
 		Lat: req.Lat, Lng: req.Lng, Timing: req.Timing, ScheduledAt: sched, CrewNeeded: crew,
@@ -802,7 +836,7 @@ func (h *Handler) Catalog(w http.ResponseWriter, r *http.Request) {
 			ordered = append(ordered, out)
 		}
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"categories": ordered})
+	httpx.JSON(w, http.StatusOK, map[string]any{"categories": ordered, "requirement_docs": RequirementDocs})
 }
 
 // POST /api/jobs  → creates a draft (the "Find a Crew" click, before payment)

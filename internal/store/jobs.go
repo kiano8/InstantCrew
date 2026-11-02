@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,17 +35,19 @@ type Job struct {
 	ScheduledAt                 *time.Time
 	CrewNeeded, AcceptedCount   int
 	Status                      string
-	SearchAttempts              int // number of searches started; the current one's fee has search_attempt = SearchAttempts
+	SearchAttempts              int      // number of searches started; the current one's fee has search_attempt = SearchAttempts
+	RequiredDocs                []string // document ids the crew must attach to accept
 	CreatedAt, UpdatedAt        time.Time
 }
 
 type Assignment struct {
-	ApplicantID int64
-	Name        string
-	AcceptedAt  time.Time
-	EndedAt     *time.Time
-	Transit     string
-	Rating      float64 // the crew member's rating, 1-5
+	ApplicantID  int64
+	Name         string
+	AcceptedAt   time.Time
+	EndedAt      *time.Time
+	Transit      string
+	Rating       float64           // the crew member's rating, 1-5
+	Requirements map[string]string // document id -> uploaded file URL
 	// ArrivalDeadlineAt is set once the employer confirms; nil before that.
 	ArrivalDeadlineAt *time.Time
 }
@@ -76,7 +79,7 @@ type JobPayment struct {
 
 const jobCols = `id, employer_id, category, role_id, role_label, employment_type, rate_centavos,
 	rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
-	accepted_count, status, search_attempts, created_at, updated_at`
+	accepted_count, status, search_attempts, created_at, updated_at, required_docs`
 
 type rowScanner interface{ Scan(dest ...any) error }
 
@@ -89,9 +92,10 @@ func scanJob(r rowScanner) (*Job, error) {
 	var lat, lng sql.NullFloat64
 	var sched sql.NullInt64
 	var created, updated int64
+	var docs string
 	err := r.Scan(&j.ID, &j.EmployerID, &j.Category, &j.RoleID, &j.RoleLabel, &j.EmploymentType,
 		&j.RateCentavos, &j.RatePeriod, &j.City, &j.MapLocation, &j.MapsURL, &lat, &lng, &j.Timing,
-		&sched, &j.CrewNeeded, &j.AcceptedCount, &j.Status, &j.SearchAttempts, &created, &updated)
+		&sched, &j.CrewNeeded, &j.AcceptedCount, &j.Status, &j.SearchAttempts, &created, &updated, &docs)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -106,6 +110,9 @@ func scanJob(r rowScanner) (*Job, error) {
 		j.ScheduledAt = &t
 	}
 	j.CreatedAt, j.UpdatedAt = time.Unix(created, 0), time.Unix(updated, 0)
+	if docs != "" {
+		j.RequiredDocs = strings.Split(docs, ",")
+	}
 	return &j, nil
 }
 
@@ -150,12 +157,12 @@ func (s *Store) CreateJob(ctx context.Context, j *Job) error {
 	return s.db.QueryRowContext(ctx, `
 		INSERT INTO jobs (employer_id, category, role_id, role_label, employment_type, rate_centavos,
 			rate_period, city, map_location, maps_url, lat, lng, timing, scheduled_at, crew_needed,
-			status, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'draft',$16,$17)
+			status, created_at, updated_at, required_docs)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'draft',$16,$17,$18)
 		RETURNING id`,
 		j.EmployerID, j.Category, j.RoleID, j.RoleLabel, j.EmploymentType, j.RateCentavos,
 		j.RatePeriod, j.City, j.MapLocation, j.MapsURL, nullF(j.Lat), nullF(j.Lng), j.Timing,
-		nullT(j.ScheduledAt), j.CrewNeeded, now, now).Scan(&j.ID)
+		nullT(j.ScheduledAt), j.CrewNeeded, now, now, strings.Join(j.RequiredDocs, ",")).Scan(&j.ID)
 }
 
 // UpdateJob edits details; only allowed before/after a search (draft, unfulfilled).
@@ -163,11 +170,11 @@ func (s *Store) UpdateJob(ctx context.Context, j *Job) error {
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE jobs SET category=$1, role_id=$2, role_label=$3, employment_type=$4, rate_centavos=$5,
 			rate_period=$6, city=$7, map_location=$8, maps_url=$9, lat=$10, lng=$11, timing=$12, scheduled_at=$13,
-			crew_needed=$14, updated_at=$15
+			crew_needed=$14, updated_at=$15, required_docs=$18
 		WHERE id=$16 AND employer_id=$17 AND status IN ('draft','unfulfilled')`,
 		j.Category, j.RoleID, j.RoleLabel, j.EmploymentType, j.RateCentavos, j.RatePeriod, j.City,
 		j.MapLocation, j.MapsURL, nullF(j.Lat), nullF(j.Lng), j.Timing, nullT(j.ScheduledAt),
-		j.CrewNeeded, time.Now().Unix(), j.ID, j.EmployerID)
+		j.CrewNeeded, time.Now().Unix(), j.ID, j.EmployerID, strings.Join(j.RequiredDocs, ","))
 	if err != nil {
 		return err
 	}
@@ -520,7 +527,8 @@ func (s *Store) releaseUnpaidMatch(ctx context.Context, jobID int64) (bool, erro
 
 // AcceptJob atomically gives the offer to the first applicant who accepts.
 // No later applicant can accept after the job leaves the matching state.
-func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
+// requirements are the documents the crew member attached (validated by the caller).
+func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64, requirements map[string]string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -588,9 +596,13 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrBadState // not found, expired, or already full
 	}
+	reqJSON, err := json.Marshal(requirements)
+	if err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO job_assignments (job_id, applicant_id, accepted_at) VALUES ($1, $2, $3)`,
-		jobID, applicantID, now); err != nil {
+		`INSERT INTO job_assignments (job_id, applicant_id, accepted_at, requirements) VALUES ($1, $2, $3, $4)`,
+		jobID, applicantID, now, string(reqJSON)); err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
 			return ErrAlreadyAccepted
 		}
@@ -763,7 +775,7 @@ func (s *Store) AssignmentsForJobs(ctx context.Context, jobIDs []int64) (map[int
 	}
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT a.job_id, a.applicant_id, u.name, a.accepted_at, a.ended_at, a.transit_status, a.arrival_deadline_at,
-			COALESCE(p.rating_hundredths, 0)/100.0
+			COALESCE(p.rating_hundredths, 0)/100.0, a.requirements
 		FROM job_assignments a JOIN users u ON u.id = a.applicant_id
 		LEFT JOIN applicant_profiles p ON p.user_id = a.applicant_id
 		WHERE a.job_id = ANY($1) ORDER BY a.accepted_at`, jobIDs)
@@ -775,7 +787,11 @@ func (s *Store) AssignmentsForJobs(ctx context.Context, jobIDs []int64) (map[int
 		var a Assignment
 		var jobID, acc int64
 		var ended, deadline sql.NullInt64
-		if err := rows.Scan(&jobID, &a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline, &a.Rating); err != nil {
+		var reqs string
+		if err := rows.Scan(&jobID, &a.ApplicantID, &a.Name, &acc, &ended, &a.Transit, &deadline, &a.Rating, &reqs); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(reqs), &a.Requirements); err != nil {
 			return nil, err
 		}
 		a.AcceptedAt = time.Unix(acc, 0)

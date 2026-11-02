@@ -15,11 +15,42 @@ const CAT_LABELS = {
   helpers: 'Helpers',
 };
 
-const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
+const REQ_DOC_LABELS = {};
+const reqDocsList = document.getElementById('reqDocsList');
+
+// requiredDocs reads the employer's ticked requirement checkboxes.
+function requiredDocs() {
+  return [...reqDocsList.querySelectorAll('input:checked')].map(input => input.value);
+}
+
+function setRequiredDocs(ids = []) {
+  reqDocsList.querySelectorAll('input').forEach(input => { input.checked = ids.includes(input.value); });
+  updateReqDocsCount();
+}
+
+function updateReqDocsCount() {
+  const n = requiredDocs().length;
+  document.getElementById('reqDocsCount').textContent = n ? `${n} selected` : 'None';
+}
+reqDocsList.addEventListener('change', updateReqDocsCount);
+
+const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
   for (const category of categories || []) {
     ROLES[category.id] = (category.roles || []).map(role => ({ id: role.id, label: role.label }));
     CAT_LABELS[category.id] = category.label;
   }
+  const esc = window.InstantCrewShared.escHtml;
+  const groups = {};
+  for (const doc of requirement_docs || []) {
+    REQ_DOC_LABELS[doc.id] = doc.label;
+    (groups[doc.group] ||= []).push(doc);
+  }
+  reqDocsList.innerHTML = Object.entries(groups).map(([group, docs]) => `
+    <fieldset class="db-req-group">
+      <legend>${esc(group)}</legend>
+      <div class="db-req-docs-list">${docs.map(doc =>
+        `<label class="db-req-doc"><input type="checkbox" class="db-terms-checkbox" value="${esc(doc.id)}"> ${esc(doc.label)}</label>`).join('')}</div>
+    </fieldset>`).join('');
   if (state.category) renderRoles(state.category);
 }).catch(err => console.error(err.message));
 
@@ -938,6 +969,8 @@ if (roleSearchClear) {
 
 // Close when clicking outside
 document.addEventListener('click', (e) => {
+  const reqDocs = document.querySelector('.db-req-docs');
+  if (reqDocs && !reqDocs.contains(e.target)) reqDocs.open = false;
   if (employerRoleDropdown && !employerRoleDropdown.contains(e.target)) {
     closeRoleDropdown();
   }
@@ -952,6 +985,11 @@ document.addEventListener('click', (e) => {
 // Escape key to close
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    const reqDocs = document.querySelector('.db-req-docs[open]');
+    if (reqDocs) {
+      reqDocs.open = false;
+      reqDocs.querySelector('summary').focus();
+    }
     if (employerRoleDropdown && employerRoleDropdown.classList.contains('open')) {
       closeRoleDropdown();
       if (roleDropdownTrigger) roleDropdownTrigger.focus();
@@ -1866,7 +1904,7 @@ async function startCrewSearch() {
   }
   const reusableStatus = state.currentBooking?.status;
   const reusingUnfulfilledJob = state.currentJobId && (reusableStatus === 'draft' || reusableStatus === 'unfulfilled');
-  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: 1 };
+  const jobPayload = { category: state.category, role: state.role, employment_type: state.employmentType, rate: Number(state.offeredRate), rate_period: String(state.ratePeriod).replace(/^per\s+/, ''), city: state.location, map_location: finalMapLoc, lat: state.geo?.lat ?? null, lng: state.geo?.lng ?? null, timing: timingMode, scheduled_at: scheduledAt, crew_needed: 1, required_docs: requiredDocs() };
   const createResponse = await fetch(reusingUnfulfilledJob ? `/api/jobs/${state.currentJobId}` : '/api/jobs', { method: reusingUnfulfilledJob ? 'PUT' : 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(jobPayload) });
   const createData = await createResponse.json().catch(() => ({}));
   if (!createResponse.ok) throw new Error(createData.error || 'Could not create the shift. Please try again.');
@@ -2066,6 +2104,9 @@ function renderCrewResults(acceptedCrew = [], job = null) {
   const activeCrew = (job?.crew || []).filter(member => !member.ended_at);
 
   listToRender.forEach((workerName, i) => {
+    const docs = Object.entries(activeCrew[i]?.requirements || {});
+    const docsHtml = docs.length ? `<p class="db-crew-docs">${docs.map(([id, url]) =>
+      `<a href="${window.InstantCrewShared.escHtml(url)}" target="_blank" rel="noopener">${window.InstantCrewShared.escHtml(REQ_DOC_LABELS[id] || id)}</a>`).join('')}</p>` : '';
     const initials = workerName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'CW';
 
     const card = document.createElement('div');
@@ -2081,6 +2122,7 @@ function renderCrewResults(acceptedCrew = [], job = null) {
                     <span class="db-crew-offered-rate"${i === 0 ? ' id="rateAmount"' : ''}>${rateHtml}</span>
                 </div>
                 <p class="db-crew-meta">${activeCrew[i]?.rating ? `★ ${Number(activeCrew[i].rating).toFixed(1)} · ` : ''}Accepted this shift</p>
+                ${docsHtml}
             </div>
             <span class="db-crew-role-tag" style="color:#15803D; font-weight:700;">Accepted</span>
         `;
@@ -2248,6 +2290,7 @@ if (detailsToggle) {
 
 bookAnother.addEventListener('click', () => {
   // Reset state
+  setRequiredDocs();
   state.category = null;
   state.role = null;
   state.roleLabel = null;
@@ -3368,6 +3411,7 @@ function loadEmployerJobIntoSearch(job) {
   state.category = job.category;
   state.role = job.role;
   state.roleLabel = job.role_label;
+  setRequiredDocs(job.required_docs || []);
   state.employmentType = job.employment_type || 'full-time';
   state.offeredRate = String(job.rate || 85);
   state.ratePeriod = `per ${job.rate_period || 'hour'}`;

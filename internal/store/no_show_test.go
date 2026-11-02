@@ -67,7 +67,7 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 	bookShift := func() int64 {
 		t.Helper()
 		id := openShift()
-		must("accept", st.AcceptJob(ctx, id, crew.ID))
+		must("accept", st.AcceptJob(ctx, id, crew.ID, nil))
 		must("fee", st.RecordMatchFee(ctx, employer.ID, id, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
 		pay, err := st.LatestJobPayment(ctx, id)
 		must("latest payment", err)
@@ -175,7 +175,7 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 		t.Fatalf("expected a 5-day suspension, got until %v", until)
 	}
 	blocked := openShift()
-	if err := st.AcceptJob(ctx, blocked, crew.ID); !errors.Is(err, store.ErrAccountSuspended) {
+	if err := st.AcceptJob(ctx, blocked, crew.ID, nil); !errors.Is(err, store.ErrAccountSuspended) {
 		t.Fatalf("expected ErrAccountSuspended, got %v", err)
 	}
 	if m, err := st.MatchingApplicants(ctx, blocked); err != nil || len(m) != 0 {
@@ -198,7 +198,7 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 		t.Fatalf("strike 5 must permanently deactivate: %+v", s)
 	}
 	final := openShift()
-	if err := st.AcceptJob(ctx, final, crew.ID); !errors.Is(err, store.ErrAccountDeactivated) {
+	if err := st.AcceptJob(ctx, final, crew.ID, nil); !errors.Is(err, store.ErrAccountDeactivated) {
 		t.Fatalf("expected ErrAccountDeactivated, got %v", err)
 	}
 }

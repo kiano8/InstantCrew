@@ -338,6 +338,20 @@
                             <select id="rolesSelect" style="display:none;" aria-hidden="true" tabindex="-1">
                                 <option value="" disabled selected>Select a role…</option>
                             </select>
+
+                            <!-- Documents the crew must attach before accepting (filled from /api/catalog) -->
+                            <details class="db-req-docs">
+                                <summary class="db-req-summary">
+                                    <span class="db-roles-label">Requirements needed <span class="db-req-optional">(optional)</span></span>
+                                    <span class="db-req-count" id="reqDocsCount">None</span>
+                                    <svg class="db-req-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                        stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </summary>
+                                <div class="db-req-groups" id="reqDocsList"></div>
+                            </details>
                         </div>
                     </div>
 

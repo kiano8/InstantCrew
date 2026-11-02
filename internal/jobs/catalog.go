@@ -50,6 +50,32 @@ var Catalog = []Category{
 	}},
 }
 
+type Doc struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Group string `json:"group"`
+}
+
+// RequirementDocs are the documents an employer can require; ids are stored on
+// jobs.required_docs, so never rename one. The employer picker groups by Group.
+var RequirementDocs = []Doc{
+	{"gov-id", "Government-issued ID", "Valid IDs"},
+	{"drivers-license", "Driver's License", "Valid IDs"},
+	{"passport", "Passport", "Valid IDs"},
+	{"nbi", "NBI Clearance", "Clearances"},
+	{"barangay-clearance", "Barangay Clearance", "Clearances"},
+	{"police-clearance", "Police Clearance", "Clearances"},
+	{"good-moral", "Certificate of Good Moral Character", "Clearances"},
+	{"health-card", "Health Certificate / Health Card", "Health"},
+	{"medical-cert", "Medical Certificate", "Health"},
+	{"resume", "Resume", "Work history & credentials"},
+	{"employment-cert", "Certificate of Previous Employment", "Work history & credentials"},
+	{"training-cert", "Training Certificate", "Work history & credentials"},
+	{"prc-license", "PRC Professional License", "Work history & credentials"},
+	{"pagibig", "Pag-IBIG", "Government benefits"},
+	{"philhealth", "PhilHealth", "Government benefits"},
+}
+
 func RoleByID(id string) (Role, bool) {
 	for _, c := range Catalog {
 		for _, role := range c.Roles {

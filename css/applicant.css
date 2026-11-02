@@ -7276,3 +7276,85 @@ body.app-sheet-open {
     font-weight: 600;
     color: #111827;
 }
+
+/* Documents the employer requires before a shift can be accepted */
+.app-shift-reqs {
+    margin: 10px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.app-shift-reqs-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6B7280;
+    margin: 0;
+}
+
+.app-shift-req {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 6px 6px 6px 12px;
+}
+
+.app-shift-req.done {
+    background: #F0FDF4;
+    border-color: #BBF7D0;
+}
+
+.app-shift-req-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1F2937;
+}
+
+.app-shift-req-btn {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid #FCD34D;
+    background: #FFFBEB;
+    color: #92400E;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.app-shift-req.done .app-shift-req-btn {
+    border-color: #BBF7D0;
+    background: #fff;
+    color: #15803D;
+}
+
+.app-shift-req-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.app-shift-req.missing {
+    background: #FEF2F2;
+    border-color: #FCA5A5;
+}
+
+.app-shift-req.missing .app-shift-req-btn {
+    border-color: #F87171;
+    background: #fff;
+    color: #B91C1C;
+}
+
+.app-shift-reqs-error {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #B91C1C;
+}

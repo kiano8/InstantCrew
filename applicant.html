@@ -2152,6 +2152,12 @@
             // Available services catalog matching employer.js ROLES
             const SERVICES_CATALOG = { kitchen: [], delivery: [], helpers: [] };
             const ROLE_LABELS_BY_ID = {};
+            const REQ_DOC_LABELS = {};
+            // Documents attached per offer ({jobId: {nbi: "/uploads/..."}}); kept outside the cards
+            // because the feed re-renders every few seconds.
+            const shiftDocs = {};
+            // Offers whose Accept was pressed with documents missing; their cards keep showing the error.
+            const docsPrompted = new Set();
             // The server stores role IDs (e.g. "cook") but the pickers work with labels ("Cook").
             // Map saved IDs back to labels so previously selected roles stay checked after a refresh.
             function normalizeServices(list) {
@@ -2162,7 +2168,8 @@
                 }
                 return out;
             }
-            fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
+            fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
+                for (const doc of requirement_docs || []) REQ_DOC_LABELS[doc.id] = doc.label;
                 for (const category of categories || []) {
                     SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
                     for (const role of category.roles || []) ROLE_LABELS_BY_ID[role.id] = role.label;
@@ -5392,6 +5399,21 @@
                             </div>
                         </div>
 
+                        ${(shift.required_docs || []).length ? `
+                        <div class="app-shift-reqs">
+                            <p class="app-shift-reqs-title">Requirements needed</p>
+                            ${shift.required_docs.map(doc => {
+                                const attached = shiftDocs[shift.id]?.[doc];
+                                return `
+                            <div class="app-shift-req${attached ? ' done' : ''}">
+                                <span class="app-shift-req-name">${window.InstantCrewShared.escHtml(REQ_DOC_LABELS[doc] || doc)}</span>
+                                <button type="button" class="app-shift-req-btn" data-doc="${window.InstantCrewShared.escHtml(doc)}">${attached ? '✓ Attached · Change' : 'Attach photo'}</button>
+                            </div>`;
+                            }).join('')}
+                            <input type="file" accept="image/*" class="app-shift-req-input" hidden>
+                            <p class="app-shift-reqs-error" role="alert" hidden></p>
+                        </div>` : ''}
+
                         <!-- Terms and Conditions Agreement -->
                         <div class="app-shift-terms-wrap" id="appShiftTermsWrap-${shift.id}">
                             <label class="app-shift-terms-label" for="appShiftTerms-${shift.id}">
@@ -5455,6 +5477,55 @@
                         });
                     }
 
+                    // Marks the documents still missing and says so under the list; returns them.
+                    const showMissingDocs = () => {
+                        const missing = (shift.required_docs || []).filter(doc => !shiftDocs[shift.id]?.[doc]);
+                        card.querySelectorAll('.app-shift-req-btn').forEach(btn => {
+                            btn.closest('.app-shift-req').classList.toggle('missing', missing.includes(btn.dataset.doc));
+                        });
+                        const error = card.querySelector('.app-shift-reqs-error');
+                        if (error) {
+                            error.hidden = !missing.length;
+                            error.textContent = missing.length
+                                ? `Add an attachment for ${missing.map(doc => REQ_DOC_LABELS[doc] || doc).join(', ')} to accept this job.`
+                                : '';
+                        }
+                        return missing;
+                    };
+                    if (docsPrompted.has(String(shift.id))) showMissingDocs();
+
+                    // Requirement uploads: one hidden file input serves every "Attach" button.
+                    const reqInput = card.querySelector('.app-shift-req-input');
+                    card.querySelectorAll('.app-shift-req-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            reqInput.dataset.doc = btn.dataset.doc;
+                            reqInput.click();
+                        });
+                    });
+                    if (reqInput) {
+                        reqInput.addEventListener('change', async () => {
+                            const file = reqInput.files[0];
+                            const doc = reqInput.dataset.doc;
+                            reqInput.value = '';
+                            if (!file) return;
+                            const btn = card.querySelector(`.app-shift-req-btn[data-doc="${doc}"]`);
+                            if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+                            try {
+                                const formData = new FormData();
+                                formData.append('proof', file);
+                                const res = await fetch('/api/upload-proof', { method: 'POST', credentials: 'same-origin', body: formData });
+                                const data = await res.json().catch(() => ({}));
+                                if (!res.ok || !data.url) throw new Error(data.error || 'Upload failed. Please try again.');
+                                (shiftDocs[shift.id] ||= {})[doc] = data.url;
+                                if (btn) btn.closest('.app-shift-req').classList.add('done');
+                                if (docsPrompted.has(String(shift.id))) showMissingDocs();
+                            } catch (err) {
+                                showToast(err.message, true);
+                            }
+                            if (btn) { btn.disabled = false; btn.textContent = shiftDocs[shift.id]?.[doc] ? '✓ Attached · Change' : 'Attach photo'; }
+                        });
+                    }
+
                     // Accept button
                     const acceptBtn = card.querySelector('.app-btn-accept');
 
@@ -5489,6 +5560,12 @@
                                 }
                                 termsCb.focus();
                                 showToast('Please agree to the Worker Terms & Conditions before accepting.', true);
+                                return;
+                            }
+                            docsPrompted.add(String(shift.id));
+                            if (showMissingDocs().length) {
+                                card.querySelector('.app-shift-reqs')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                                showToast('Add an attachment for every requirement before accepting this job.', true);
                                 return;
                             }
                             acceptWorkerShift(shift, card);
@@ -5548,7 +5625,10 @@
                 const button = cardEl.querySelector('.app-btn-accept');
                 if (button) button.disabled = true;
                 try {
-                    const response = await fetch(`/api/applicant/jobs/${shift.id}/accept`, { method: 'POST', credentials: 'same-origin' });
+                    const response = await fetch(`/api/applicant/jobs/${shift.id}/accept`, {
+                        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ requirements: shiftDocs[shift.id] || {} })
+                    });
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok) {
                         if (response.status === 403) refreshCrewRating();

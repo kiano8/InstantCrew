@@ -530,3 +530,58 @@ func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
 		t.Fatalf("declined applicant accepting again: want 404, got %d", code)
 	}
 }
+
+// A job that requires documents can only be accepted with every one attached,
+// and the employer then sees the attached files on the crew member.
+func TestApplicantAccept_RequiresDocuments(t *testing.T) {
+	env := setupTestEnv(t)
+	ctx := context.Background()
+	pass, err := env.st.AddApplicantHiringPass(ctx, env.applicant.ID, "gcash", "/uploads/pass.jpg", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := env.st.SetPaymentStatus(ctx, "applicant", pass.PendingPayment.ID, "verified", "Admin", ""); err != nil {
+		t.Fatal(err)
+	}
+	job := &store.Job{EmployerID: env.employer.ID, Category: "kitchen", RoleID: "waiter-server", RoleLabel: "Waiter",
+		EmploymentType: "full-time", RateCentavos: 15000, RatePeriod: "hour", City: "Cebu City",
+		MapLocation: "IT Park", MapsURL: "https://www.google.com/maps", Timing: "now", CrewNeeded: 1,
+		RequiredDocs: []string{"nbi", "philhealth"}}
+	if err := env.st.CreateJob(ctx, job); err != nil {
+		t.Fatal(err)
+	}
+	if err := env.st.StartSearch(ctx, env.employer.ID, job.ID); err != nil {
+		t.Fatal(err)
+	}
+	cookie := env.createSessionCookie(t, env.applicant)
+	accept := func(body string) int {
+		req := httptest.NewRequest("POST", "/api/applicant/jobs/"+jsonNumber(job.ID)+"/accept", strings.NewReader(body))
+		if body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		req.AddCookie(cookie)
+		rec := httptest.NewRecorder()
+		env.mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	nbi := "/uploads/proof_1_ab.jpg"
+	if code := accept(""); code != http.StatusBadRequest {
+		t.Fatalf("no documents: want 400, got %d", code)
+	}
+	if code := accept(`{"requirements":{"nbi":"` + nbi + `"}}`); code != http.StatusBadRequest {
+		t.Fatalf("missing philhealth: want 400, got %d", code)
+	}
+	if code := accept(`{"requirements":{"nbi":"` + nbi + `","philhealth":"https://evil.example/x.jpg"}}`); code != http.StatusBadRequest {
+		t.Fatalf("outside URL: want 400, got %d", code)
+	}
+	if code := accept(`{"requirements":{"nbi":"` + nbi + `","philhealth":"/uploads/proof_2_cd.png"}}`); code != http.StatusOK {
+		t.Fatalf("all documents: want 200, got %d", code)
+	}
+	crew, err := env.st.Assignments(ctx, job.ID)
+	if err != nil || len(crew) != 1 {
+		t.Fatalf("assignments: %v %+v", err, crew)
+	}
+	if got := crew[0].Requirements; got["nbi"] != nbi || got["philhealth"] != "/uploads/proof_2_cd.png" {
+		t.Fatalf("requirements not saved: %+v", got)
+	}
+}

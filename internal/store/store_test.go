@@ -113,7 +113,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Attempting AcceptJob fails with ErrHiringPassEmpty
-	err = st.AcceptJob(ctx, job.ID, applicant.ID)
+	err = st.AcceptJob(ctx, job.ID, applicant.ID, nil)
 	if !errors.Is(err, store.ErrHiringPassEmpty) {
 		t.Fatalf("expected ErrHiringPassEmpty, got %v", err)
 	}
@@ -135,7 +135,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Attempting AcceptJob now returns ErrHiringPassPending
-	err = st.AcceptJob(ctx, job.ID, applicant.ID)
+	err = st.AcceptJob(ctx, job.ID, applicant.ID, nil)
 	if !errors.Is(err, store.ErrHiringPassPending) {
 		t.Fatalf("expected ErrHiringPassPending, got %v", err)
 	}
@@ -162,7 +162,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("SetPaymentStatus reject applicant payment failed: %v", err)
 	}
 
-	err = st.AcceptJob(ctx, job.ID, applicant.ID)
+	err = st.AcceptJob(ctx, job.ID, applicant.ID, nil)
 	if !errors.Is(err, store.ErrPaymentRejected) {
 		t.Fatalf("expected ErrPaymentRejected, got %v", err)
 	}
@@ -206,7 +206,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Applicant accepts job -> succeeds, but NO hire is spent yet (employer has not confirmed).
-	err = st.AcceptJob(ctx, job.ID, applicant.ID)
+	err = st.AcceptJob(ctx, job.ID, applicant.ID, nil)
 	if err != nil {
 		t.Fatalf("AcceptJob failed after hiring pass verified: %v", err)
 	}
@@ -316,7 +316,7 @@ func TestStore_TransitCancelPenalty(t *testing.T) {
 			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
 		must("create job", st.CreateJob(ctx, j))
 		must("search", st.StartSearch(ctx, employer.ID, j.ID))
-		must("accept", st.AcceptJob(ctx, j.ID, crew.ID))
+		must("accept", st.AcceptJob(ctx, j.ID, crew.ID, nil))
 		must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
 		pay, err := st.LatestJobPayment(ctx, j.ID)
 		must("latest payment", err)
@@ -447,7 +447,7 @@ func TestStore_ReleaseUnpaidMatches(t *testing.T) {
 			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
 		must("create job", st.CreateJob(ctx, j))
 		must("search", st.StartSearch(ctx, employer.ID, j.ID))
-		must("accept", st.AcceptJob(ctx, j.ID, crew.ID))
+		must("accept", st.AcceptJob(ctx, j.ID, crew.ID, nil))
 		return j.ID
 	}
 	unpaid, paid, fresh := accepted("a@test.com"), accepted("b@test.com"), accepted("c@test.com")
@@ -504,7 +504,7 @@ func TestStore_Reviews(t *testing.T) {
 			MapLocation: "IT Park", Timing: "now", CrewNeeded: 1}
 		must("create job", st.CreateJob(ctx, j))
 		must("search", st.StartSearch(ctx, employer.ID, j.ID))
-		must("accept", st.AcceptJob(ctx, j.ID, crew.ID))
+		must("accept", st.AcceptJob(ctx, j.ID, crew.ID, nil))
 		must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
 		pay, err := st.LatestJobPayment(ctx, j.ID)
 		must("latest payment", err)
