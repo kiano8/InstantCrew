@@ -123,7 +123,7 @@
         if (locationStr && typeof locationStr === 'string' && (locationStr.startsWith('http://') || locationStr.startsWith('https://'))) {
             return locationStr;
         }
-        const query = (locationStr && typeof locationStr === 'string') ? locationStr.trim() : 'Cebu City';
+        const query = (locationStr && typeof locationStr === 'string') ? locationStr.trim() : 'Cebu';
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     }
 
@@ -139,7 +139,7 @@
         const roleName = booking.roleLabel || booking.role || 'Crew Member';
         const cleanTitle = (booking.roleLabel || booking.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
         const empType = booking.employmentType || 'full-time';
-        const loc = booking.location || 'Cebu City';
+        const loc = booking.location || 'Cebu';
         const mapLoc = booking.mapLocation || booking.mapAddress || `${loc} (Work Venue)`;
         const mapsUrl = formatGoogleMapsUrl(mapLoc, booking.googleMapsUrl);
 
@@ -761,9 +761,34 @@
         });
     }
 
+    // The one location list. "Cebu" and "Metro Manila" are whole regions; see locationRegion.
+    const LOCATIONS = [
+        'Cebu',
+        'Apas, Cebu City', 'Banilad, Cebu City', 'Basak Pardo, Cebu City', 'Basak San Nicolas, Cebu City', 'Busay, Cebu City', 'Camputhaw, Cebu City', 'Capitol Site, Cebu City', 'Carreta, Cebu City', 'Cogon Ramos, Cebu City', 'Ermita, Cebu City', 'Guadalupe, Cebu City', 'Inayawan, Cebu City', 'Kalunasan, Cebu City', 'Kasambagan, Cebu City', 'Labangon, Cebu City', 'Lahug, Cebu City', 'Lorega San Miguel, Cebu City', 'Luz, Cebu City', 'Mabolo, Cebu City', 'Mambaling, Cebu City', 'Pahina Central, Cebu City', 'Pardo, Cebu City', 'Parian, Cebu City', 'Pit-os, Cebu City', 'Punta Princesa, Cebu City', 'Quiot, Cebu City', 'Sambag I, Cebu City', 'Sambag II, Cebu City', 'San Nicolas, Cebu City', 'Santo Niño, Cebu City', 'Sirao, Cebu City', 'Talamban, Cebu City', 'Tejero, Cebu City', 'Tinago, Cebu City', 'Tisa, Cebu City', 'Zapatera, Cebu City',
+        'Alcantara, Cebu', 'Alcoy, Cebu', 'Alegria, Cebu', 'Aloguinsan, Cebu', 'Argao, Cebu', 'Asturias, Cebu', 'Badian, Cebu', 'Balamban, Cebu', 'Bantayan, Cebu', 'Barili, Cebu', 'Bogo, Cebu', 'Boljoon, Cebu', 'Borbon, Cebu', 'Carcar, Cebu', 'Carmen, Cebu', 'Catmon, Cebu', 'Compostela, Cebu', 'Consolacion, Cebu', 'Cordova, Cebu', 'Daanbantayan, Cebu', 'Dalaguete, Cebu', 'Danao, Cebu', 'Dumanjug, Cebu', 'Ginatilan, Cebu', 'Lapu-Lapu, Cebu', 'Liloan, Cebu', 'Madridejos, Cebu', 'Malabuyoc, Cebu', 'Mandaue, Cebu', 'Medellin, Cebu', 'Minglanilla, Cebu', 'Moalboal, Cebu', 'Naga, Cebu', 'Oslob, Cebu', 'Pilar, Cebu', 'Pinamungajan, Cebu', 'Poro, Cebu', 'Ronda, Cebu', 'Samboan, Cebu', 'San Fernando, Cebu', 'San Francisco, Cebu', 'San Remigio, Cebu', 'Santa Fe, Cebu', 'Santander, Cebu', 'Sibonga, Cebu', 'Sogod, Cebu', 'Tabogon, Cebu', 'Tabuelan, Cebu', 'Talisay, Cebu', 'Toledo, Cebu', 'Tuburan, Cebu', 'Tudela, Cebu',
+        'Metro Manila',
+        'Caloocan, Metro Manila', 'Las Piñas, Metro Manila', 'Makati, Metro Manila', 'Malabon, Metro Manila', 'Mandaluyong, Metro Manila', 'Marikina, Metro Manila', 'Muntinlupa, Metro Manila', 'Navotas, Metro Manila', 'Parañaque, Metro Manila', 'Pasay, Metro Manila', 'Pasig, Metro Manila', 'Pateros, Metro Manila', 'Quezon City, Metro Manila', 'San Juan, Metro Manila', 'Taguig, Metro Manila', 'Valenzuela, Metro Manila',
+        'Angeles City', 'Antipolo', 'Bacolod', 'Bacoor', 'Baguio City', 'Batangas City', 'Biñan', 'Butuan', 'Cabanatuan', 'Cagayan de Oro', 'Calamba', 'Cotabato City', 'Dasmariñas', 'Davao City', 'Dumaguete', 'General Santos', 'General Trias', 'Iligan', 'Iloilo City', 'Imus', 'Legazpi', 'Lipa', 'Lucena', 'Malolos', 'Meycauayan', 'Naga City', 'Olongapo', 'Ormoc', 'Puerto Princesa', 'Roxas City', 'San Fernando, La Union', 'San Fernando, Pampanga', 'San Jose del Monte', 'Santa Rosa', 'Tacloban', 'Tagum', 'Tarlac City', 'Tuguegarao', 'Zamboanga City'
+    ];
+
+    function fillLocationSelect(select) {
+        LOCATIONS.forEach(city => select.add(new Option(city, city)));
+    }
+
+    // Same rule as cityRegion in internal/store/jobs.go. Keep the two in step.
+    function locationRegion(city) {
+        const c = String(city || '').trim().toLowerCase();
+        if (/(^|, )cebu( city)?$/.test(c)) return 'cebu';
+        if (/(^|, )metro manila$|^manila$/.test(c)) return 'metro manila';
+        return c;
+    }
+
     // Export to global window object
     window.InstantCrewShared = {
         escHtml,
+        LOCATIONS,
+        fillLocationSelect,
+        locationRegion,
         EXTRA_CATEGORIES,
         addCategoryCards,
         checkPendingReviews,

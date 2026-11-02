@@ -97,7 +97,7 @@ const state = {
   employmentType: 'full-time',
   offeredRate: '85',
   ratePeriod: 'per hour',
-  location: 'Cebu City',
+  location: 'Cebu',
   mapLocation: '',
   googleMapsUrl: '',
   geo: null,
@@ -153,6 +153,7 @@ const ratePeriodTriggerText = document.getElementById('ratePeriodTriggerText');
 const ratePeriodMenu = document.getElementById('ratePeriodMenu');
 
 const workLocationSelect = document.getElementById('workLocation');
+window.InstantCrewShared.fillLocationSelect(workLocationSelect);
 const locationDropdown = document.getElementById('locationDropdown');
 const locationDropdownTrigger = document.getElementById('locationDropdownTrigger');
 const locationTriggerText = document.getElementById('locationTriggerText');
@@ -1241,7 +1242,7 @@ function applyDetectedLocation(geo) {
   // 1. City dropdown: match an existing option, otherwise add one
   if (geo.city) {
     // Whole-name match: a substring match would turn "San Jose" into "San Jose del Monte"
-    const norm = s => foldCity(s).replace(/^city of\s+/, '').replace(/\s+city$/, '').trim();
+    const norm = s => foldCity(s).replace(/, metro manila$/, '').replace(/^city of\s+/, '').replace(/\s+city$/, '').trim();
     let match = Array.from(workLocationSelect.options).find(o => norm(o.value) === norm(geo.city));
     if (!match) {
       match = document.createElement('option');
@@ -1298,7 +1299,7 @@ if (googleMapLocationInput) {
     const val = e.target.value.trim();
     state.mapLocation = val;
     state.geo = null; // user edited manually, so drop the GPS pin
-    state.googleMapsUrl = buildMapsUrlFor(val || state.location || 'Cebu City');
+    state.googleMapsUrl = buildMapsUrlFor(val || state.location || 'Cebu');
     if (clearMapLocationBtn) {
       clearMapLocationBtn.style.display = val ? 'block' : 'none';
     }
@@ -1332,7 +1333,7 @@ if (clearMapLocationBtn) {
 
 if (previewGoogleMapBtn) {
   previewGoogleMapBtn.addEventListener('click', () => {
-    const query = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.location || 'Cebu City';
+    const query = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.location || 'Cebu';
     const url = (state.geo && query === state.geo.label)
       ? state.geo.mapsUrl
       : buildMapsUrlFor(query);
@@ -1423,7 +1424,7 @@ function openPaymentModal() {
     timingText = `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
   }
 
-  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu');
 
   if (paySummaryRole) paySummaryRole.textContent = state.roleLabel || 'Crew Member';
   if (paySummaryCat) paySummaryCat.textContent = CAT_LABELS[state.category] || 'Kitchen';
@@ -1838,7 +1839,7 @@ function showSearchingView() {
 }
 
 function activateMatchingScreen(jobId, searchData, customMapLoc, customMapsUrl, customTiming) {
-  const finalMapLoc = customMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapLoc = customMapLoc || (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu');
   const finalMapsUrl = customMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
   const timingText = customTiming || (state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`);
 
@@ -1891,7 +1892,7 @@ async function beginCrewSearch() {
 
 async function startCrewSearch() {
   const timingText = state.timing === 'now' ? 'ASAP NOW' : `${formatDateShort(state.scheduledDate)} at ${format12Hour(state.scheduledTime)}`;
-  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu City');
+  const finalMapLoc = (googleMapLocationInput && googleMapLocationInput.value.trim()) || state.mapLocation || (state.location ? `${state.location}` : 'Cebu');
   const finalMapsUrl = (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(finalMapLoc) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalMapLoc)}`);
   state.mapLocation = finalMapLoc;
   state.googleMapsUrl = finalMapsUrl;
@@ -2197,7 +2198,7 @@ function finalizeConfirmedBooking() {
   document.getElementById('dRole').textContent = state.roleLabel || '—';
   document.getElementById('dEmp').textContent = state.employmentType === 'full-time' ? 'Full-time' : 'Part-time';
   document.getElementById('dOfferedRate').textContent = `₱${state.offeredRate || '85'} ${state.ratePeriod}`;
-  document.getElementById('dLocation').textContent = state.location || 'Cebu City';
+  document.getElementById('dLocation').textContent = state.location || 'Cebu';
   if (dMapLocation) {
     if (state.mapLocation) {
       dMapLocation.innerHTML = `<span style="font-weight:600;">${window.InstantCrewShared.escHtml(state.mapLocation)}</span> <a href="${window.InstantCrewShared.escHtml(state.googleMapsUrl || '#')}" target="_blank" rel="noopener noreferrer" style="color:#EA4335; font-size:0.8rem; margin-left:6px; font-weight:700; text-decoration:none;">Open Map ↗</a>`;
@@ -2250,7 +2251,7 @@ bookAnother.addEventListener('click', () => {
   state.employmentType = 'full-time';
   state.offeredRate = '85';
   state.ratePeriod = 'per hour';
-  state.location = 'Cebu City';
+  state.location = 'Cebu';
   state.mapLocation = '';
   state.googleMapsUrl = '';
   state.geo = null;
@@ -2293,7 +2294,7 @@ bookAnother.addEventListener('click', () => {
   empToggles.forEach(t => t.classList.toggle('active', t.dataset.emp === 'full-time'));
   offeredRateInput.value = '85';
   selectRatePeriod('per hour');
-  selectLocation('Cebu City');
+  selectLocation('Cebu');
 
   // Reset Step 3 UI
   document.querySelectorAll('.db-toggle').forEach(b => b.classList.remove('active'));
@@ -2893,7 +2894,7 @@ function buildBookingItem(b) {
   } else if (b.mapLocation) {
     displayLocation = b.mapLocation.replace(/\s*\(Current Venue\)/gi, '').trim();
   }
-  if (!displayLocation) displayLocation = 'Cebu City (Current)';
+  if (!displayLocation) displayLocation = 'Cebu (Current)';
 
   // Timing display
   const isAsap = !b.timing || /asap|instant|immediately|now/i.test(b.timing);
@@ -3014,7 +3015,7 @@ function buildBookingItem(b) {
 function openLocationDetailModal(shift) {
   const appLocationDetailModal = document.getElementById('appLocationDetailModal');
   if (!appLocationDetailModal) {
-    const address = shift.mapLocation || shift.location || 'Cebu City';
+    const address = shift.mapLocation || shift.location || 'Cebu';
     const mapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(address) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
     window.open(mapsUrl, '_blank', 'noopener,noreferrer');
     return;
@@ -3033,7 +3034,7 @@ function openLocationDetailModal(shift) {
         <span class="app-loc-badge-emp ${isPart ? 'part-time' : 'full-time'}">${empUpper}</span>
     `;
 
-  const address = shift.mapLocation || shift.location || 'Cebu City';
+  const address = shift.mapLocation || shift.location || 'Cebu';
   const mapsUrl = shift.googleMapsUrl || (window.InstantCrewShared ? window.InstantCrewShared.formatGoogleMapsUrl(address) : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
   const embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed`;
   const locModalVenueTitle = document.getElementById('locModalVenueTitle');
@@ -3368,7 +3369,7 @@ function loadEmployerJobIntoSearch(job) {
   state.employmentType = job.employment_type || 'full-time';
   state.offeredRate = String(job.rate || 85);
   state.ratePeriod = `per ${job.rate_period || 'hour'}`;
-  state.location = job.city || 'Cebu City';
+  state.location = job.city || 'Cebu';
   state.mapLocation = job.map_location || '';
   state.googleMapsUrl = job.maps_url || '';
   state.geo = booking.geo;

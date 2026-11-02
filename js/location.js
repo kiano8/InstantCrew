@@ -55,9 +55,12 @@
       const a = data.address || {};
 
       let city = a.city || a.town || a.municipality || a.city_district || a.county || a.state_district || '';
-      // The city lists name Cebu towns "Talisay, Cebu"; Cebu City, Mandaue and Lapu-Lapu stay plain.
-      if (a.state === 'Cebu' && city && !/^(city of )?(cebu|mandaue|lapu-?lapu)( city)?$/i.test(city)) {
-        city = city.replace(/^city of\s+/i, '').replace(/\s+city$/i, '').replace(/^Lilo-an$/i, 'Liloan') + ', Cebu';
+      // Match the location list: "Cebu" and "Metro Manila" are regions, places under them are "Talisay, Cebu".
+      if (a.state === 'Cebu' && city) {
+        city = /^(city of )?cebu( city)?$/i.test(city) ? 'Cebu'
+          : city.replace(/^city of\s+/i, '').replace(/\s+city$/i, '').replace(/^Lilo-an$/i, 'Liloan') + ', Cebu';
+      } else if (/metro manila|national capital region/i.test(a.state || a.region || '') && city) {
+        city = /^(city of )?manila$/i.test(city) ? 'Metro Manila' : city + ', Metro Manila';
       }
       const place = a.amenity || a.building || a.shop || a.road || '';
       const area = a.suburb || a.neighbourhood || a.quarter || a.village || '';

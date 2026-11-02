@@ -94,7 +94,7 @@ func generatedCrew() []seedCrew {
 // admin is the one seeded admin; it reviews and verifies payment records in admin.html.
 var admin = seedEmployer{"admin@seed.instantcrew.test", "Seed Administrator", "Instant Crew Accounting"}
 
-const city = "Cebu City"
+const city = "Cebu"
 
 func getenv(k, def string) string {
 	if v := os.Getenv(k); v != "" {
