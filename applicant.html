@@ -130,18 +130,63 @@
                 <div style="display:none;" aria-hidden="true" id="profileLocSection">
                     <span id="workerLocationText">Cebu City</span>
                     <select id="workerLocationSelect">
-                        <option value="Cebu City" selected>Cebu City</option>
-                        <option value="Manila">Manila</option>
-                        <option value="Davao City">Davao City</option>
-                        <option value="Quezon City">Quezon City</option>
-                        <option value="Makati City">Makati City</option>
-                        <option value="Taguig">Taguig</option>
-                        <option value="Pasig">Pasig</option>
-                        <option value="Mandaluyong">Mandaluyong</option>
-                        <option value="Pasay">Pasay</option>
-                        <option value="Iloilo City">Iloilo City</option>
+                        <option value="Angeles City">Angeles City</option>
+                        <option value="Antipolo">Antipolo</option>
                         <option value="Bacolod">Bacolod</option>
+                        <option value="Bacoor">Bacoor</option>
+                        <option value="Baguio City">Baguio City</option>
+                        <option value="Batangas City">Batangas City</option>
+                        <option value="Biñan">Biñan</option>
+                        <option value="Butuan">Butuan</option>
+                        <option value="Cabanatuan">Cabanatuan</option>
                         <option value="Cagayan de Oro">Cagayan de Oro</option>
+                        <option value="Calamba">Calamba</option>
+                        <option value="Caloocan">Caloocan</option>
+                        <option value="Cebu City" selected>Cebu City</option>
+                        <option value="Cotabato City">Cotabato City</option>
+                        <option value="Dasmariñas">Dasmariñas</option>
+                        <option value="Davao City">Davao City</option>
+                        <option value="Dumaguete">Dumaguete</option>
+                        <option value="General Santos">General Santos</option>
+                        <option value="General Trias">General Trias</option>
+                        <option value="Iligan">Iligan</option>
+                        <option value="Iloilo City">Iloilo City</option>
+                        <option value="Imus">Imus</option>
+                        <option value="Lapu-Lapu City">Lapu-Lapu City</option>
+                        <option value="Las Piñas">Las Piñas</option>
+                        <option value="Legazpi">Legazpi</option>
+                        <option value="Lipa">Lipa</option>
+                        <option value="Lucena">Lucena</option>
+                        <option value="Makati City">Makati City</option>
+                        <option value="Malabon">Malabon</option>
+                        <option value="Malolos">Malolos</option>
+                        <option value="Mandaluyong">Mandaluyong</option>
+                        <option value="Mandaue">Mandaue</option>
+                        <option value="Manila">Manila</option>
+                        <option value="Marikina">Marikina</option>
+                        <option value="Meycauayan">Meycauayan</option>
+                        <option value="Muntinlupa">Muntinlupa</option>
+                        <option value="Naga City">Naga City</option>
+                        <option value="Navotas">Navotas</option>
+                        <option value="Olongapo">Olongapo</option>
+                        <option value="Ormoc">Ormoc</option>
+                        <option value="Parañaque">Parañaque</option>
+                        <option value="Pasay">Pasay</option>
+                        <option value="Pasig">Pasig</option>
+                        <option value="Puerto Princesa">Puerto Princesa</option>
+                        <option value="Quezon City">Quezon City</option>
+                        <option value="Roxas City">Roxas City</option>
+                        <option value="San Fernando, La Union">San Fernando, La Union</option>
+                        <option value="San Fernando, Pampanga">San Fernando, Pampanga</option>
+                        <option value="San Jose del Monte">San Jose del Monte</option>
+                        <option value="San Juan">San Juan</option>
+                        <option value="Santa Rosa">Santa Rosa</option>
+                        <option value="Tacloban">Tacloban</option>
+                        <option value="Taguig">Taguig</option>
+                        <option value="Tagum">Tagum</option>
+                        <option value="Tarlac City">Tarlac City</option>
+                        <option value="Tuguegarao">Tuguegarao</option>
+                        <option value="Valenzuela">Valenzuela</option>
                         <option value="Zamboanga City">Zamboanga City</option>
                     </select>
                     <button type="button" id="workerLocationTrigger"></button>
@@ -4264,20 +4309,29 @@
                 const feedUseCurrentBtn = document.getElementById('feedUseCurrentBtn');
 
                 const PHILIPPINES_CITIES = [
-                    'Cebu City', 'Manila', 'Davao City', 'Quezon City', 'Makati City',
-                    'Taguig', 'Pasig', 'Mandaluyong', 'Pasay', 'Iloilo City',
-                    'Bacolod', 'Cagayan de Oro', 'Zamboanga City'
+                    'Angeles City', 'Antipolo', 'Bacolod', 'Bacoor', 'Baguio City',
+                    'Batangas City', 'Biñan', 'Butuan', 'Cabanatuan', 'Cagayan de Oro',
+                    'Calamba', 'Caloocan', 'Cebu City', 'Cotabato City', 'Dasmariñas',
+                    'Davao City', 'Dumaguete', 'General Santos', 'General Trias', 'Iligan',
+                    'Iloilo City', 'Imus', 'Lapu-Lapu City', 'Las Piñas', 'Legazpi',
+                    'Lipa', 'Lucena', 'Makati City', 'Malabon', 'Malolos',
+                    'Mandaluyong', 'Mandaue', 'Manila', 'Marikina', 'Meycauayan',
+                    'Muntinlupa', 'Naga City', 'Navotas', 'Olongapo', 'Ormoc',
+                    'Parañaque', 'Pasay', 'Pasig', 'Puerto Princesa', 'Quezon City',
+                    'Roxas City', 'San Fernando, La Union', 'San Fernando, Pampanga', 'San Jose del Monte', 'San Juan',
+                    'Santa Rosa', 'Tacloban', 'Taguig', 'Tagum', 'Tarlac City',
+                    'Tuguegarao', 'Valenzuela', 'Zamboanga City'
                 ];
 
                 function renderFeedLocationItems(query = '') {
                     if (!feedLocationOptionsList) return;
                     feedLocationOptionsList.innerHTML = '';
-                    const q = query.trim().toLowerCase();
+                    const q = foldCity(query.trim());
                     const currentCity = session.location || 'Cebu City';
                     let matchCount = 0;
 
                     PHILIPPINES_CITIES.forEach(city => {
-                        if (!q || city.toLowerCase().includes(q)) {
+                        if (!q || foldCity(city).includes(q)) {
                             matchCount++;
                             const isSelected = city.toLowerCase() === currentCity.toLowerCase();
                             const item = document.createElement('div');
@@ -4706,14 +4760,14 @@
                 if (!workerLocationOptionsList || !workerLocationSelect) return;
                 workerLocationOptionsList.innerHTML = '';
 
-                const q = query.trim().toLowerCase();
+                const q = foldCity(query.trim());
                 const opts = Array.from(workerLocationSelect.options);
                 let matchCount = 0;
 
                 opts.forEach(opt => {
                     const text = opt.textContent;
                     const val = opt.value;
-                    const matches = !q || text.toLowerCase().includes(q);
+                    const matches = !q || foldCity(text).includes(q);
 
                     if (matches) {
                         matchCount++;
@@ -6332,20 +6386,32 @@
             const summaryLocationText = document.getElementById('summaryLocationText');
 
             const CITIES_LIST = [
-                'Cebu City', 'Manila', 'Davao City', 'Quezon City',
-                'Makati City', 'Taguig', 'Pasig', 'Mandaluyong',
-                'Pasay', 'Iloilo City', 'Bacolod', 'Cagayan de Oro', 'Zamboanga City'
+                'Angeles City', 'Antipolo', 'Bacolod', 'Bacoor', 'Baguio City',
+                'Batangas City', 'Biñan', 'Butuan', 'Cabanatuan', 'Cagayan de Oro',
+                'Calamba', 'Caloocan', 'Cebu City', 'Cotabato City', 'Dasmariñas',
+                'Davao City', 'Dumaguete', 'General Santos', 'General Trias', 'Iligan',
+                'Iloilo City', 'Imus', 'Lapu-Lapu City', 'Las Piñas', 'Legazpi',
+                'Lipa', 'Lucena', 'Makati City', 'Malabon', 'Malolos',
+                'Mandaluyong', 'Mandaue', 'Manila', 'Marikina', 'Meycauayan',
+                'Muntinlupa', 'Naga City', 'Navotas', 'Olongapo', 'Ormoc',
+                'Parañaque', 'Pasay', 'Pasig', 'Puerto Princesa', 'Quezon City',
+                'Roxas City', 'San Fernando, La Union', 'San Fernando, Pampanga', 'San Jose del Monte', 'San Juan',
+                'Santa Rosa', 'Tacloban', 'Taguig', 'Tagum', 'Tarlac City',
+                'Tuguegarao', 'Valenzuela', 'Zamboanga City'
             ];
 
-            // Map a geocoder city name (e.g. "Cebu", "City of Cebu") onto your city list
+            // So "paranaque" finds "Parañaque"
+            function foldCity(s) {
+                return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            }
+
+            // Map a geocoder city name (e.g. "Cebu", "City of Cebu") onto your city list.
+            // Whole-name match: a substring match would turn "San Jose" into "San Jose del Monte".
             function resolveDetectedCity(raw) {
                 if (!raw) return '';
-                const norm = s => s.toLowerCase().replace(/^city of\s+/, '').trim();
+                const norm = s => foldCity(s).replace(/^city of\s+/, '').replace(/\s+city$/, '').trim();
                 const n = norm(raw);
-                const match = CITIES_LIST.find(c => {
-                    const cn = norm(c);
-                    return cn === n || cn.includes(n) || n.includes(cn);
-                });
+                const match = CITIES_LIST.find(c => norm(c) === n);
                 return match || raw.trim(); // unknown city: use as-is
             }
 
@@ -6729,7 +6795,7 @@
 
             function renderAppLocationDropdown(searchQuery = '') {
                 if (!appLocationOptionsScroll) return;
-                const filtered = CITIES_LIST.filter(c => c.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+                const filtered = CITIES_LIST.filter(c => foldCity(c).includes(foldCity(searchQuery).trim()));
                 appLocationOptionsScroll.innerHTML = '';
                 filtered.forEach(city => {
                     const isSelected = appState.location === city;
