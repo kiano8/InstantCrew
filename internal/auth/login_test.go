@@ -136,3 +136,51 @@ func TestResetPasswordClearsLockout(t *testing.T) {
 		t.Fatal("reset must clear the lockout")
 	}
 }
+
+func TestNormalizePHMobile(t *testing.T) {
+	for _, in := range []string{"09171234567", "0917 123 4567", "+63 917 123-4567", "639171234567", "9171234567"} {
+		if got, ok := normalizePHMobile(in); !ok || got != "+639171234567" {
+			t.Fatalf("%q: got %q %v", in, got, ok)
+		}
+	}
+	for _, in := range []string{"", "0917123456", "08171234567", "091712345678", "a@gmail.com", "+1 415 555 2671"} {
+		if got, ok := normalizePHMobile(in); ok {
+			t.Fatalf("%q must be refused, got %q", in, got)
+		}
+	}
+}
+
+// Crew sign up with a contact number and no code, then log in however they type it.
+func TestApplicantSignupWithContactNumber(t *testing.T) {
+	st, _ := storetest.Open(t)
+	h := &Handler{Store: st, SessionTTL: time.Hour}
+	post := func(f http.HandlerFunc, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("POST", "/", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		f(rec, req)
+		return rec
+	}
+	signup := `{"role":"applicant","name":"Crew","email":"0917 123 4567","password":"secret-pass"}`
+	if rec := post(h.Signup, signup); rec.Code != http.StatusCreated {
+		t.Fatalf("signup: %d %s", rec.Code, rec.Body)
+	}
+	if rec := post(h.Signup, `{"role":"applicant","name":"Twin","email":"+639171234567","password":"secret-pass"}`); rec.Code != http.StatusConflict {
+		t.Fatalf("same number in another format: want 409, got %d", rec.Code)
+	}
+	if rec := post(h.Login, `{"role":"applicant","email":"09171234567","password":"secret-pass"}`); rec.Code != http.StatusOK {
+		t.Fatalf("login: %d %s", rec.Code, rec.Body)
+	}
+	if rec := post(h.Signup, `{"role":"applicant","name":"Crew","email":"crew@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("email signup for crew: want 400, got %d", rec.Code)
+	}
+	if rec := post(h.Signup, `{"role":"employer","name":"Boss","company":"Co","email":"boss@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("employer without a code: want 400, got %d", rec.Code)
+	}
+	for i := 0; i < maxLoginFailures; i++ {
+		h.crewSignups.fail("signup", "192.0.2.1")
+	}
+	if rec := post(h.Signup, `{"role":"applicant","name":"Bot","email":"09181234567","password":"secret-pass"}`); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("signup flood: want 429, got %d", rec.Code)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ type Handler struct {
 	facebook      *facebookOAuth
 	codeMail      mailLimiter
 	loginFails    loginLimiter
+	crewSignups   loginLimiter // no code to slow them, so limit how fast accounts can be made
 }
 
 const (
@@ -131,6 +133,26 @@ func validRole(r string) bool { return r == "employer" || r == "applicant" || r 
 
 func normalizeEmail(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
 
+var phMobile = regexp.MustCompile(`^(?:0|63)?(9\d{9})$`)
+
+// normalizePHMobile turns 0917 123 4567, +63917... or 917... into +639171234567.
+func normalizePHMobile(s string) (string, bool) {
+	m := phMobile.FindStringSubmatch(strings.NewReplacer(" ", "", "-", "", "(", "", ")", "", "+", "").Replace(s))
+	if m == nil {
+		return "", false
+	}
+	return "+63" + m[1], true
+}
+
+// normalizeLogin accepts what a person signed up with: a contact number or an email.
+// Contact numbers live in users.email, the column every account is looked up by.
+func normalizeLogin(s string) string {
+	if phone, ok := normalizePHMobile(s); ok {
+		return phone
+	}
+	return normalizeEmail(s)
+}
+
 func hashToken(t string) string {
 	sum := sha256.Sum256([]byte(t))
 	return hex.EncodeToString(sum[:])
@@ -178,7 +200,8 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, u *store.
 }
 
 // POST /api/auth/signup
-// Everyone signs up with a Gmail address and the code SignupCode emailed to them.
+// Employers sign up with a Gmail address and the code SignupCode emailed to them.
+// Applicants sign up with a Philippine mobile number, sent as "email", and no code.
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Role     string `json:"role"`
@@ -200,13 +223,22 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "invalid role")
 		return
 	}
-	if !validEmail(email) {
-		httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
-		return
-	}
-	if !isGmail(email) {
-		httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
-		return
+	if req.Role == "applicant" {
+		phone, ok := normalizePHMobile(req.Email)
+		if !ok {
+			httpx.Error(w, http.StatusBadRequest, "please enter a valid mobile number, like 09171234567")
+			return
+		}
+		email = phone
+	} else {
+		if !validEmail(email) {
+			httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
+			return
+		}
+		if !isGmail(email) {
+			httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
+			return
+		}
 	}
 	// bcrypt only uses the first 72 bytes, so reject anything longer.
 	if len(req.Password) < 8 || len(req.Password) > 72 {
@@ -224,18 +256,27 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "applicant" {
 		company = ""
 	}
-	if strings.TrimSpace(req.Code) == "" {
-		httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
-		return
-	}
-	purpose := "signup:" + req.Role
-	if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
-		if errors.Is(err, store.ErrCodeInvalid) {
-			httpx.Error(w, http.StatusBadRequest, err.Error())
+	if req.Role == "applicant" {
+		ip := clientIP(r)
+		if h.crewSignups.blocked("signup", ip) {
+			httpx.Error(w, http.StatusTooManyRequests, "too many sign-ups from this connection; please try again in 15 minutes")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
-		return
+		h.crewSignups.fail("signup", ip)
+	} else {
+		if strings.TrimSpace(req.Code) == "" {
+			httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
+			return
+		}
+		purpose := "signup:" + req.Role
+		if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
+			if errors.Is(err, store.ErrCodeInvalid) {
+				httpx.Error(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+			return
+		}
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -280,7 +321,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	normEmail := normalizeEmail(req.Email)
+	normEmail := normalizeLogin(req.Email)
 	ip := clientIP(r)
 	if h.loginFails.blocked(normEmail, ip) {
 		httpx.Error(w, http.StatusTooManyRequests, "too many failed logins; please wait 15 minutes or reset your password")

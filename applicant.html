@@ -1868,7 +1868,7 @@
                 <!-- ── Applicant Log In Form ── -->
                 <form id="applicantModalLoginForm" class="db-auth-form">
                     <div class="db-auth-field">
-                        <label for="appModalLoginEmail" class="db-field-label">Email Address</label>
+                        <label for="appModalLoginEmail" class="db-field-label">Contact Number or Email</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -1876,8 +1876,8 @@
                                 </path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
-                            <input type="email" id="appModalLoginEmail" class="db-auth-input"
-                                placeholder="applicant@gmail.com" required autocomplete="email">
+                            <input type="text" id="appModalLoginEmail" class="db-auth-input"
+                                placeholder="09171234567" required autocomplete="username">
                         </div>
                     </div>
 
@@ -1940,7 +1940,7 @@
                     </div>
 
                     <div class="db-auth-field">
-                        <label for="appModalSignupEmail" class="db-field-label">Email Address</label>
+                        <label for="appModalSignupEmail" class="db-field-label">Contact Number</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -1948,8 +1948,8 @@
                                 </path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
-                            <input type="email" id="appModalSignupEmail" class="db-auth-input"
-                                placeholder="name@example.com" required autocomplete="email">
+                            <input type="tel" id="appModalSignupEmail" class="db-auth-input"
+                                placeholder="09171234567" required autocomplete="tel">
                         </div>
                     </div>
 
@@ -2008,7 +2008,7 @@
                                     d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.4 7.5 23 12 23z" />
                             </svg>
                         </button>
-                        <button type="button" class="db-auth-social-btn" aria-label="Continue with Facebook" data-sso="facebook">
+                        <button type="button" class="db-auth-social-btn" aria-label="Continue with Facebook" data-sso="facebook" style="display:none">
                             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                                 <path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.03 4.39 11.03 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.03 1.79-4.7 4.53-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/>
                             </svg>
@@ -7605,7 +7605,7 @@
                     const btn = document.getElementById('btnSubmitAppModalLogin');
 
                     if (!email || !pass) {
-                        showApplicantAuthError('Please enter your email and password.');
+                        showApplicantAuthError('Please enter your contact number or email, and your password.');
                         return;
                     }
 
@@ -7617,7 +7617,7 @@
                     try {
                         const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
-                        if (!response.ok) throw new Error(data.error || 'Invalid email or password.');
+                        if (!response.ok) throw new Error(data.error || 'Invalid login or password.');
                         if (data.user && data.user.role === 'admin') {
                             sessionStorage.setItem('ic_admin_session', JSON.stringify({ ...data.user, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }));
                             window.location.href = 'admin.html';
@@ -7735,18 +7735,9 @@
                     const btn = document.getElementById('btnSubmitAppModalSignup');
 
                     if (!name || !email || pass.length < 8) {
-                        showApplicantAuthError('Please fill in your name, valid email, and password (minimum 8 characters).');
+                        showApplicantAuthError('Please fill in your name, contact number, and password (minimum 8 characters).');
                         return;
                     }
-
-                    // The first submit emails a code to the Gmail address; the next one sends it.
-                    let code = '';
-                    try {
-                        code = await window.ICEmailCode.signupCode({ form: btn.form, email, role: 'applicant', before: btn, inputClass: 'db-auth-input' });
-                    } catch (err) {
-                        showApplicantAuthError(err.message);
-                    }
-                    if (!code) return;
 
                     if (btn) {
                         btn.disabled = true;
@@ -7754,7 +7745,7 @@
                     }
 
                     try {
-                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass, code }) });
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
                         const profile = await saveWizardProfile(appState);
@@ -7925,7 +7916,6 @@
             initApplicantStepsListeners();
         })();
     </script>
-    <script src="js/email-code.js?v=20261030-no-login-code"></script>
     <script src="/js/session.js"></script>
     <script src="js/payment-history.js?v=20261030-extnotif"></script>
     <script src="js/pwa-install.js?v=20261101-android"></script>
