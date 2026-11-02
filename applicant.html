@@ -2219,12 +2219,8 @@
                 }
                 return out;
             }
-<<<<<<< HEAD
-            fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
+            const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories, requirement_docs }) => {
                 for (const doc of requirement_docs || []) REQ_DOC_LABELS[doc.id] = doc.label;
-=======
-            const catalogReady = fetch('/api/catalog').then(r => r.ok ? r.json() : Promise.reject(new Error('Catalog unavailable'))).then(({ categories }) => {
->>>>>>> 9c83f236cd2edac5950412243803e975acbe357d
                 for (const category of categories || []) {
                     SERVICES_CATALOG[category.id] = (category.roles || []).map(role => role.label);
                     for (const role of category.roles || []) ROLE_LABELS_BY_ID[role.id] = role.label;
