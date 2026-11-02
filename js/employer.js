@@ -1122,18 +1122,21 @@ function selectLocation(val) {
   closeLocationDropdown();
 }
 
+// So "paranaque" finds "Parañaque"
+const foldCity = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 function renderLocationOptions(query = '') {
   if (!locationOptionsList || !workLocationSelect) return;
   locationOptionsList.innerHTML = '';
 
-  const q = query.trim().toLowerCase();
+  const q = foldCity(query.trim());
   const opts = Array.from(workLocationSelect.options);
   let matchCount = 0;
 
   opts.forEach(opt => {
     const text = opt.textContent;
     const val = opt.value;
-    const matches = !q || text.toLowerCase().includes(q);
+    const matches = !q || foldCity(text).includes(q);
 
     if (matches) {
       matchCount++;
@@ -1229,12 +1232,9 @@ function buildMapsUrlFor(query) {
 function applyDetectedLocation(geo) {
   // 1. City dropdown: match an existing option, otherwise add one
   if (geo.city) {
-    const norm = s => s.toLowerCase().trim();
-    let match = Array.from(workLocationSelect.options).find(o =>
-      norm(o.value) === norm(geo.city) ||
-      norm(geo.city).includes(norm(o.value)) ||
-      norm(o.value).includes(norm(geo.city))
-    );
+    // Whole-name match: a substring match would turn "San Jose" into "San Jose del Monte"
+    const norm = s => foldCity(s).replace(/^city of\s+/, '').replace(/\s+city$/, '').trim();
+    let match = Array.from(workLocationSelect.options).find(o => norm(o.value) === norm(geo.city));
     if (!match) {
       match = document.createElement('option');
       match.value = geo.city;
