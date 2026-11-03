@@ -391,6 +391,19 @@ func TestAdminPaymentsEndpoints(t *testing.T) {
 		Payments []store.AdminPaymentRecord `json:"payments"`
 	}
 
+	// 8b. Variable 1-4 hire top-ups (₱2, ₱4, ₱6, ₱8) are refused; only fixed ₱10 (5 hires) is accepted.
+	for _, badHires := range []int{1, 2, 3, 4} {
+		body, _ = json.Marshal(map[string]any{"method": "gcash", "proof_image": "/uploads/proof_1700000001_abcdef0123456789.png", "hires": badHires})
+		req = httptest.NewRequest("POST", "/api/applicant/hiring-pass/pay", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(appCookie)
+		rec = httptest.NewRecorder()
+		env.mux.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("hiring pass pay with hires=%d expected 400, got %d: %s", badHires, rec.Code, rec.Body.String())
+		}
+	}
+
 	// 9. Applicant pays hiring pass (₱10 for 5 hires)
 	appPayPayload := map[string]any{
 		"method":      "gcash",
@@ -568,7 +581,7 @@ func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
 		}
 	}
 	givePass := func(u *store.User) {
-		pass, err := env.st.AddApplicantHiringPass(ctx, u.ID, "gcash", "/uploads/pass.jpg", 0)
+		pass, err := env.st.AddApplicantHiringPass(ctx, u.ID, "gcash", "/uploads/pass.jpg")
 		must("add pass", err)
 		must("verify pass", env.st.SetPaymentStatus(ctx, "applicant", pass.PendingPayment.ID, "verified", "Admin", ""))
 	}
@@ -617,7 +630,7 @@ func TestApplicantAccept_RequiresMatchAndNoDecline(t *testing.T) {
 func TestApplicantAccept_RequiresDocuments(t *testing.T) {
 	env := setupTestEnv(t)
 	ctx := context.Background()
-	pass, err := env.st.AddApplicantHiringPass(ctx, env.applicant.ID, "gcash", "/uploads/pass.jpg", 0)
+	pass, err := env.st.AddApplicantHiringPass(ctx, env.applicant.ID, "gcash", "/uploads/pass.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}

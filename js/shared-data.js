@@ -413,9 +413,25 @@
 
     // In-app push toasts are disabled so alerts are delivered exclusively via
     // external phone/desktop system notifications without duplicate in-app popups.
-    function showPushToast() {
+    // Updates reach people as system notifications, so in-page toasts are only for
+    // errors ('alert'): those never come as a notification and must not fail silently.
+    function showPushToast(title, message, type) {
         const existing = document.querySelector('.db-push-toast');
         if (existing) existing.remove();
+        if (type !== 'alert') return;
+        const toast = document.createElement('div');
+        toast.className = 'db-push-toast';
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <span class="db-push-toast-icon">${ICONS.alert(20, '#F59E0B')}</span>
+            <div class="db-push-toast-body">
+                <p class="db-push-toast-title">${escHtml(title)}</p>
+                <p class="db-push-toast-msg">${escHtml(message)}</p>
+            </div>
+            <button type="button" class="db-push-toast-close" aria-label="Dismiss">&times;</button>`;
+        toast.querySelector('.db-push-toast-close').addEventListener('click', () => toast.remove());
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 6000);
     }
 
     // System (OS-level) notifications. Mobile browsers reject `new Notification()`
@@ -554,8 +570,16 @@
 
     // 1-hour arrival limit countdown. Elements with data-arrival-deadline (epoch ms,
     // derived from the server's seconds remaining) are refreshed every second.
+    const ARRIVAL_LIMIT_SECS = 3600; // matches store.ArrivalLimit
+
+    // formatArrivalCountdown counts down the 1-hour arrival limit. The deadline is the
+    // shift's start + 1 hour, so a scheduled shift's limit starts only at its start time.
     function formatArrivalCountdown(deadlineMs) {
         const left = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
+        if (left > ARRIVAL_LIMIT_SECS) {
+            const start = new Date(deadlineMs - ARRIVAL_LIMIT_SECS * 1000);
+            return `Shift starts ${start.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · 1-hr arrival limit starts then`;
+        }
         if (left === 0) return '1-Hr Arrival Limit: time is up';
         return `1-Hr Arrival Limit: ${Math.floor(left / 60)}m ${left % 60}s left`;
     }

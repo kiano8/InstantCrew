@@ -119,7 +119,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Applicant pays ₱10 for hiring pass (uploads proof)
-	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof1.jpg", 0)
+	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof1.jpg")
 	if err != nil {
 		t.Fatalf("AddApplicantHiringPass failed: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("expected 0 remaining hires before verification, got %d", pass.RemainingHires)
 	}
 	// A second receipt while the first is pending must not overwrite it.
-	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof_dup.jpg", 0); !errors.Is(err, store.ErrPaymentPendingExists) {
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof_dup.jpg"); !errors.Is(err, store.ErrPaymentPendingExists) {
 		t.Fatalf("expected ErrPaymentPendingExists, got %v", err)
 	}
 
@@ -168,7 +168,7 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 	}
 
 	// Applicant re-uploads
-	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof2.jpg", 0)
+	pass, err = st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof2.jpg")
 	if err != nil {
 		t.Fatalf("AddApplicantHiringPass re-upload failed: %v", err)
 	}
@@ -259,24 +259,28 @@ func TestStore_PaymentVerificationFlows(t *testing.T) {
 		t.Fatalf("expected 4 remaining / 1 used after confirmation, got %+v", pass)
 	}
 
-	// 6. Crew hold at most 5 hires and pay ₱2 per hire: with 4 held only 1 more fits.
-	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof3.jpg", 2); !errors.Is(err, store.ErrHiringPassFull) {
-		t.Fatalf("buying past 5 held hires: want ErrHiringPassFull, got %v", err)
+	// 6. Only the fixed ₱10 (5 hires) pass is sold: crew can't top up while hires remain,
+	// and once remaining hires reach 0 a top-up records ₱10.00 (1000 centavos) for 5 hires.
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof3.jpg"); !errors.Is(err, store.ErrHiringPassFull) {
+		t.Fatalf("buying while hires remain: want ErrHiringPassFull, got %v", err)
 	}
-	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof3.jpg", 0); err != nil {
-		t.Fatalf("filling up to 5: %v", err)
+	if _, err := raw.Exec(`UPDATE applicant_hiring_passes SET remaining_hires=0, used_hires=5 WHERE applicant_id=$1`, applicant.ID); err != nil {
+		t.Fatalf("exhaust remaining hires: %v", err)
+	}
+	if _, err := st.AddApplicantHiringPass(ctx, applicant.ID, "gcash", "/uploads/pass_proof3.jpg"); err != nil {
+		t.Fatalf("fixed ₱10 top-up: %v", err)
 	}
 	var amount int64
 	var topupID int64
-	if err := raw.QueryRow(`SELECT id, amount_centavos FROM applicant_hiring_pass_payments WHERE applicant_id=$1 AND status='pending'`, applicant.ID).Scan(&topupID, &amount); err != nil || amount != 200 {
-		t.Fatalf("1 hire should cost ₱2.00 (200), got %d (%v)", amount, err)
+	if err := raw.QueryRow(`SELECT id, amount_centavos FROM applicant_hiring_pass_payments WHERE applicant_id=$1 AND status='pending'`, applicant.ID).Scan(&topupID, &amount); err != nil || amount != 1000 {
+		t.Fatalf("fixed pass should cost ₱10.00 (1000), got %d (%v)", amount, err)
 	}
 	if err := st.SetPaymentStatus(ctx, "applicant", topupID, "verified", "Admin Jane", ""); err != nil {
 		t.Fatalf("verify top-up: %v", err)
 	}
 	pass, err = st.ApplicantHiringPass(ctx, applicant.ID)
 	if err != nil || pass.RemainingHires != 5 {
-		t.Fatalf("expected 5 held after a 1-hire top-up, got %+v", pass)
+		t.Fatalf("expected 5 held after ₱10 top-up, got %+v", pass)
 	}
 }
 
@@ -408,7 +412,7 @@ func TestStore_ConcurrentHiringPassVerifyGrantsOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pass, err := st.AddApplicantHiringPass(ctx, app.ID, "gcash", "/uploads/proof_1_ab.jpg", 0)
+	pass, err := st.AddApplicantHiringPass(ctx, app.ID, "gcash", "/uploads/proof_1_ab.jpg")
 	if err != nil || pass.PendingPayment == nil {
 		t.Fatalf("AddApplicantHiringPass: %v %+v", err, pass)
 	}
@@ -586,5 +590,68 @@ func TestStore_Reviews(t *testing.T) {
 	must("employer ratings", err)
 	if r := m[employer.ID]; r.Reviews != 1 || r.Rating != 4 {
 		t.Fatalf("skip must not count: want 4.0 from 1 review, got %+v", r)
+	}
+}
+
+// A scheduled shift matches crew whose availability is on that day (any hour),
+// and once booked the crew member can't set off before the shift's day.
+func TestStore_ScheduledShiftMatchesSameDayAndHolds(t *testing.T) {
+	st, raw := storetest.Open(t)
+	ctx := context.Background()
+	must := func(what string, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+	}
+	must("catalog", jobs.SyncCatalog(ctx, st))
+	employer := &store.User{Email: "e@test.com", PasswordHash: "x", Role: "employer", Name: "Emp", Company: "Co"}
+	must("employer", st.CreateUser(ctx, employer))
+	// Two days from now at 14:00 Manila.
+	day := store.ManilaDay(time.Now().Unix()) + 2*86400
+	shift := time.Unix(day+14*3600, 0)
+	crewFreeAt := func(email string, startsAt int64) int64 {
+		t.Helper()
+		c := &store.User{Email: email, PasswordHash: "x", Role: "applicant", Name: email}
+		must("crew", st.CreateUser(ctx, c))
+		active := true
+		must("profile", st.SaveApplicantProfile(ctx, c.ID, store.ApplicantProfile{EmploymentType: "full-time", ExpectedRate: 100,
+			RatePeriod: "hour", City: "Cebu City", Availability: "later", Active: &active, Roles: []string{"cook"}}))
+		must("availability", st.SaveApplicantAvailability(ctx, c.ID, []store.Availability{{StartsAt: startsAt, EndsAt: startsAt + 3600, Status: "available"}}))
+		_, err := raw.Exec(`UPDATE applicant_hiring_passes SET total_hires=5, remaining_hires=5 WHERE applicant_id=$1`, c.ID)
+		must("hires", err)
+		return c.ID
+	}
+	sameDay := crewFreeAt("same@test.com", day+6*3600) // 06:00-07:00, not covering 14:00
+	nextDay := crewFreeAt("next@test.com", day+86400+14*3600)
+
+	j := &store.Job{EmployerID: employer.ID, Category: "kitchen", RoleID: "cook", RoleLabel: "Cook",
+		EmploymentType: "full-time", RateCentavos: 10000, RatePeriod: "hour", City: "Cebu City",
+		MapLocation: "IT Park", Timing: "later", ScheduledAt: &shift, CrewNeeded: 1}
+	must("create job", st.CreateJob(ctx, j))
+	must("search", st.StartSearch(ctx, employer.ID, j.ID))
+	sees := func(crewID int64) bool {
+		t.Helper()
+		list, err := st.ApplicantJobs(ctx, crewID)
+		must("feed", err)
+		return len(list) == 1
+	}
+	if !sees(sameDay) {
+		t.Fatal("crew free earlier the same day must be matched to the scheduled shift")
+	}
+	if sees(nextDay) {
+		t.Fatal("crew free only on another day must not be matched")
+	}
+
+	must("accept", st.AcceptJob(ctx, j.ID, sameDay, nil))
+	must("fee", st.RecordMatchFee(ctx, employer.ID, j.ID, "gcash", "", "/uploads/fee.jpg", 10000, "ref"))
+	pay, err := st.LatestJobPayment(ctx, j.ID)
+	must("latest payment", err)
+	must("verify", st.SetPaymentStatus(ctx, "employer", pay.ID, "verified", "Admin", ""))
+	if err := st.UpdateApplicantTransit(ctx, j.ID, sameDay, "en_route", "t", "m", "transit"); !errors.Is(err, store.ErrBeforeShiftDay) {
+		t.Fatalf("setting off two days early: want ErrBeforeShiftDay, got %v", err)
+	}
+	if n, err := st.ExpireArrivals(ctx); err != nil || n != 0 {
+		t.Fatalf("a booking held for a later day must not be expired as a no-show: %d, %v", n, err)
 	}
 }

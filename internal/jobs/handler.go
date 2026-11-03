@@ -188,6 +188,10 @@ func (h *Handler) SaveApplicantAvailability(w http.ResponseWriter, r *http.Reque
 			httpx.Error(w, http.StatusBadRequest, "invalid availability range")
 			return
 		}
+		if a.Status == "available" && a.StartsAt < tomorrowManila() {
+			httpx.Error(w, http.StatusBadRequest, "scheduled availability must be from tomorrow on; for today, choose Instant Ready")
+			return
+		}
 	}
 	if _, err := h.Store.ApplicantProfile(r.Context(), u.ID); errors.Is(err, store.ErrNotFound) {
 		httpx.Error(w, http.StatusConflict, "create your applicant profile first")
@@ -262,13 +266,13 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 	var req struct {
 		Method     string `json:"method"`
 		ProofImage string `json:"proof_image"`
-		Hires      int    `json:"hires"` // 1-5, ₱2 each; 0 buys as many as fit
+		Hires      int    `json:"hires"`
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
 	}
-	if req.Hires < 0 || req.Hires > store.MaxHeldHires {
-		httpx.Error(w, http.StatusBadRequest, "hires must be 1 to 5")
+	if req.Hires != 0 && req.Hires != store.MaxHeldHires {
+		httpx.Error(w, http.StatusBadRequest, "only the ₱10 (5 hires) hiring pass is available")
 		return
 	}
 	method := strings.ToLower(strings.TrimSpace(req.Method))
@@ -289,7 +293,7 @@ func (h *Handler) PayApplicantHiringPass(w http.ResponseWriter, r *http.Request)
 		h.fail(w, err)
 		return
 	}
-	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage, req.Hires)
+	p, err := h.Store.AddApplicantHiringPass(r.Context(), u.ID, method, proofImage)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -572,13 +576,17 @@ func (h *Handler) matchFee(r *http.Request, employerID int64) (float64, error) {
 
 // ── helpers ──
 
+// tomorrowManila is the start of tomorrow in Manila: scheduling is for later days
+// only, since same-day work goes through an instant search.
+func tomorrowManila() int64 { return store.ManilaDay(time.Now().Unix()) + 86400 }
+
 func (h *Handler) fail(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 		httpx.Error(w, http.StatusNotFound, "job not found")
 	case errors.Is(err, store.ErrBadState):
 		httpx.Error(w, http.StatusConflict, "this action isn't allowed in the job's current status")
-	case errors.Is(err, store.ErrNotConfirmed), errors.Is(err, store.ErrBookingPending):
+	case errors.Is(err, store.ErrNotConfirmed), errors.Is(err, store.ErrBookingPending), errors.Is(err, store.ErrBeforeShiftDay):
 		httpx.Error(w, http.StatusConflict, err.Error())
 	case errors.Is(err, store.ErrAlreadyAccepted):
 		httpx.Error(w, http.StatusConflict, "already accepted")
@@ -785,8 +793,8 @@ func (h *Handler) parse(w http.ResponseWriter, r *http.Request) (*store.Job, boo
 		if err != nil {
 			return bad("scheduled_at must be an RFC 3339 timestamp, e.g. 2026-10-09T08:00:00+08:00")
 		}
-		if t.Before(time.Now()) || t.After(time.Now().AddDate(1, 0, 0)) {
-			return bad("scheduled_at must be in the future (within a year)")
+		if t.Unix() < tomorrowManila() || t.After(time.Now().AddDate(1, 0, 0)) {
+			return bad("a scheduled shift must be from tomorrow on (within a year); for today, find crew now")
 		}
 		sched = &t
 	default:

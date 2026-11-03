@@ -210,7 +210,7 @@ func ensureHires(ctx context.Context, st *store.Store, applicantID int64) (bool,
 	if pass.BatchesPaid > 0 || pass.RemainingHires > 0 || pass.PendingPayment != nil {
 		return false, nil
 	}
-	pass, err = st.AddApplicantHiringPass(ctx, applicantID, "card", "", 0)
+	pass, err = st.AddApplicantHiringPass(ctx, applicantID, "card", "")
 	if err != nil {
 		return false, err
 	}

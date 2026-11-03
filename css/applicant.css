@@ -7264,19 +7264,6 @@ body.app-sheet-open {
     white-space: nowrap;
 }
 
-/* Number of hires to buy in the top-up modal */
-.app-topup-hires-select {
-    min-width: 170px;
-    padding: 8px 10px;
-    border: 1.5px solid #E5E7EB;
-    border-radius: 10px;
-    background: #FFFFFF;
-    font: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #111827;
-}
-
 /* Documents the employer requires before a shift can be accepted */
 .app-shift-reqs {
     margin: 10px 0 0;

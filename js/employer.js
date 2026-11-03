@@ -75,9 +75,12 @@ const MONTH_NAMES = [
 
 /* ─── State ───────────────────────────────────────────────── */
 
-// Reference today as September 15, 2026
-const TODAY = new Date(2026, 8, 15);
+// Midnight today. Scheduled shifts start tomorrow at the earliest (EARLIEST_DAY);
+// same-day work goes through an instant search.
+const TODAY = new Date();
 TODAY.setHours(0, 0, 0, 0);
+const EARLIEST_DAY = new Date(TODAY);
+EARLIEST_DAY.setDate(EARLIEST_DAY.getDate() + 1);
 
 const BASE_MATCH_FEE = 100; // pesos; owed cancellation penalties are added on top
 const PAYMENT_DEADLINE_MS = 3 * 60 * 1000; // matches store.PaymentDeadline
@@ -102,7 +105,7 @@ const state = {
   googleMapsUrl: '',
   geo: null,
   timing: 'now',
-  scheduledDate: new Date(TODAY),
+  scheduledDate: new Date(EARLIEST_DAY),
   scheduledTime: '08:00',
   count: 1,
   currentJobId: null,
@@ -254,8 +257,8 @@ const editShiftFromFailedBtn = document.getElementById('editShiftFromFailedBtn')
 
 /* ─── Scheduler Modal State & Logic ───────────────────────── */
 
-let calViewYear = 2026;
-let calViewMonth = 8; // September (0-indexed)
+let calViewYear = EARLIEST_DAY.getFullYear();
+let calViewMonth = EARLIEST_DAY.getMonth(); // 0-indexed
 let tempSelectedDate = new Date(state.scheduledDate);
 let tempSelectedTime = state.scheduledTime;
 
@@ -271,6 +274,13 @@ function formatDateShort(d) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+// jobTimingText is a job's "When": "Wed, Nov 4, 2026 at 8:00 AM" for a scheduled shift, else ASAP NOW.
+function jobTimingText(job) {
+  const scheduled = job.scheduled_at ? new Date(job.scheduled_at) : null;
+  if (job.timing !== 'later' || !scheduled || Number.isNaN(scheduled.getTime())) return 'ASAP NOW';
+  return `${formatDateShort(scheduled)} at ${format12Hour(`${String(scheduled.getHours()).padStart(2, '0')}:${String(scheduled.getMinutes()).padStart(2, '0')}`)}`;
 }
 
 function formatDateFull(d) {
@@ -310,7 +320,7 @@ function renderCalendar() {
     const cellDate = new Date(calViewYear, calViewMonth, d);
     cellDate.setHours(0, 0, 0, 0);
 
-    const isPast = cellDate < TODAY;
+    const isPast = cellDate < EARLIEST_DAY; // today included: schedule from tomorrow
     const isToday = cellDate.getTime() === TODAY.getTime();
     const isSelected = cellDate.getTime() === tempSelectedDate.getTime();
 
@@ -335,6 +345,8 @@ function renderCalendar() {
 
 
 function openScheduleModal() {
+  // A date left over from an old draft can't be today or earlier.
+  if (state.scheduledDate < EARLIEST_DAY) state.scheduledDate = new Date(EARLIEST_DAY);
   tempSelectedDate = new Date(state.scheduledDate);
   tempSelectedTime = state.scheduledTime;
   calViewYear = tempSelectedDate.getFullYear();
@@ -375,8 +387,8 @@ function closeScheduleModal() {
 
 // Navigation buttons
 calPrevBtn.addEventListener('click', () => {
-  // Prevent navigating before September 2026
-  if (calViewYear === 2026 && calViewMonth <= 8) return;
+  // No navigating before the first schedulable month
+  if (calViewYear < EARLIEST_DAY.getFullYear() || (calViewYear === EARLIEST_DAY.getFullYear() && calViewMonth <= EARLIEST_DAY.getMonth())) return;
   calViewMonth--;
   if (calViewMonth < 0) {
     calViewMonth = 11;
@@ -2257,7 +2269,7 @@ bookAnother.addEventListener('click', () => {
   if (googleMapLocationInput) googleMapLocationInput.value = '';
   if (clearMapLocationBtn) clearMapLocationBtn.style.display = 'none';
   state.timing = 'now';
-  state.scheduledDate = new Date(TODAY);
+  state.scheduledDate = new Date(EARLIEST_DAY);
   state.scheduledTime = '08:00';
   state.count = 1;
   state.currentJobId = null;
@@ -2741,7 +2753,7 @@ function refreshEmployerBookings(force = false) {
       id: j.id, jobId: j.id, category: j.category, role: j.role,
       roleLabel: j.role_label, employmentType: j.employment_type, location: j.city,
       venue: j.venue, mapLocation: j.map_location, googleMapsUrl: j.maps_url,
-      timing: j.scheduled_at || j.timing, count: j.crew_needed,
+      timing: jobTimingText(j), count: j.crew_needed,
       acceptedCrew: (j.crew || []).map(c => c.name),
       workerName: (j.crew || []).find(c => !c.ended_at)?.name || '',
       transitStatus: ({ en_route: 'on_the_way', arrived: 'arrived' })[(j.crew || []).find(c => !c.ended_at)?.transit_status] || '',
@@ -3329,8 +3341,6 @@ function notificationJobId(notification) {
 function employerJobToBooking(job) {
   const crew = (job.crew || []).map(member => member.name);
   const assignedCrew = (job.crew || []).find(member => !member.ended_at);
-  const scheduled = job.scheduled_at ? new Date(job.scheduled_at) : null;
-  const isLater = job.timing === 'later' && scheduled && !Number.isNaN(scheduled.getTime());
   return {
     id: job.id,
     jobId: job.id,
@@ -3344,7 +3354,7 @@ function employerJobToBooking(job) {
     mapLocation: job.map_location,
     googleMapsUrl: job.maps_url,
     geo: job.lat != null && job.lng != null ? { lat: job.lat, lng: job.lng, label: job.map_location, mapsUrl: job.maps_url } : null,
-    timing: isLater ? `${formatDateShort(scheduled)} at ${format12Hour(`${String(scheduled.getHours()).padStart(2, '0')}:${String(scheduled.getMinutes()).padStart(2, '0')}`)}` : 'ASAP NOW',
+    timing: jobTimingText(job),
     scheduledAt: job.scheduled_at || null,
     count: job.crew_needed || 1,
     crewRate: `₱${job.rate}`,

@@ -37,7 +37,7 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 
 	grantHires := func() {
 		t.Helper()
-		_, err := st.AddApplicantHiringPass(ctx, crew.ID, "gcash", "/uploads/pass.jpg", 0)
+		_, err := st.AddApplicantHiringPass(ctx, crew.ID, "gcash", "/uploads/pass.jpg")
 		must("hiring pass", err)
 		all, err := st.ListAllPayments(ctx)
 		must("list payments", err)

@@ -3,7 +3,6 @@ package jobs
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	qrcode "github.com/skip2/go-qrcode"
 
@@ -50,14 +49,13 @@ func (h *Handler) FeeQR(w http.ResponseWriter, r *http.Request) {
 	h.writeQR(w, h.MatchFeeCentavos+penalty)
 }
 
-// GET /api/applicant/hiring-pass/qr?hires=N is a GCash QR pre-filled with N hires at ₱2 each.
+// GET /api/applicant/hiring-pass/qr is a GCash QR pre-filled with the fixed ₱10 (5 hires) pass.
 func (h *Handler) HiringPassQR(w http.ResponseWriter, r *http.Request) {
-	hires, err := strconv.Atoi(r.URL.Query().Get("hires"))
-	if err != nil || hires < 1 || hires > store.MaxHeldHires {
-		httpx.Error(w, http.StatusBadRequest, "hires must be 1 to 5")
+	if q := r.URL.Query().Get("hires"); q != "" && q != "5" {
+		httpx.Error(w, http.StatusBadRequest, "only the ₱10 (5 hires) hiring pass is available")
 		return
 	}
-	h.writeQR(w, int64(hires)*store.HirePriceCentavos)
+	h.writeQR(w, store.HiringPassCentavos)
 }
 
 func (h *Handler) writeQR(w http.ResponseWriter, centavos int64) {

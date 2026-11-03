@@ -299,9 +299,11 @@ const crewCanTake = `p.is_active=true AND lower(trim(p.city))=lower(trim(j.city)
 		)
 		AND ((j.timing='now' AND p.availability_mode='now') OR
 			(j.timing='later' AND (p.availability_mode='now' OR EXISTS (
+				-- availability that overlaps the shift's day (Manila, UTC+8)
 				SELECT 1 FROM applicant_availability av
 				WHERE av.applicant_id=p.user_id AND av.status='available'
-				AND av.starts_at<=j.scheduled_at AND av.ends_at>j.scheduled_at
+				AND av.starts_at < ((j.scheduled_at+28800)/86400)*86400-28800+86400
+				AND av.ends_at > ((j.scheduled_at+28800)/86400)*86400-28800
 			))))`
 
 // matchingCrew selects the applicant profiles p who can take job j.id=$1.

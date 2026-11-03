@@ -89,16 +89,17 @@ func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (Hir
 }
 
 const (
-	// MaxHeldHires is the most hires a crew member can hold at once.
+	// MaxHeldHires is the number of hires per Hiring Pass and the most a crew member can hold at once.
 	MaxHeldHires = 5
 	// HirePriceCentavos is the price of one hire (₱2).
 	HirePriceCentavos = 200
+	// HiringPassCentavos is the fixed ₱10.00 package price for 5 hires.
+	HiringPassCentavos = MaxHeldHires * HirePriceCentavos
 )
 
-// AddApplicantHiringPass records a receipt for buying hires (₱2 each) as pending;
-// hires 0 means as many as fit. Crew hold at most MaxHeldHires, so buying more
-// than fits is refused. Hires are granted only after admin verification.
-func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method, proofImage string, hires int) (HiringPass, error) {
+// AddApplicantHiringPass records a fixed ₱10 (5 hires) receipt as pending.
+// Hires are granted only after admin verification.
+func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, method, proofImage string) (HiringPass, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return HiringPass{}, err
@@ -111,14 +112,10 @@ func (s *Store) AddApplicantHiringPass(ctx context.Context, applicantID int64, m
 	if err := tx.QueryRowContext(ctx, `SELECT remaining_hires FROM applicant_hiring_passes WHERE applicant_id=$1 FOR UPDATE`, applicantID).Scan(&remaining); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return HiringPass{}, err
 	}
-	free := MaxHeldHires - remaining
-	if hires == 0 {
-		hires = free
-	}
-	if hires < 1 || hires > free {
+	if remaining > 0 {
 		return HiringPass{}, ErrHiringPassFull
 	}
-	amount := int64(hires) * HirePriceCentavos
+	amount := int64(HiringPassCentavos)
 
 	var existingID int64
 	var existingStatus string
@@ -206,6 +203,14 @@ func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID i
 	prev := "none"
 	if status == "arrived" {
 		prev = "en_route"
+	}
+	// A scheduled shift holds the crew member until its day: no setting off before it.
+	var sched sql.NullInt64
+	if err := tx.QueryRowContext(ctx, `SELECT scheduled_at FROM jobs WHERE id=$1`, jobID).Scan(&sched); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if status == "en_route" && sched.Valid && time.Now().Unix() < ManilaDay(sched.Int64) {
+		return ErrBeforeShiftDay
 	}
 	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status=$1 WHERE job_id=$2 AND applicant_id=$3 AND ended_at IS NULL
 		AND transit_status=$4
