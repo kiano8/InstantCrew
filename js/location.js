@@ -54,7 +54,11 @@
       const data = await res.json();
       const a = data.address || {};
 
-      const city = a.city || a.town || a.municipality || a.city_district || a.county || a.state_district || '';
+      let city = a.city || a.town || a.municipality || a.city_district || a.county || a.state_district || '';
+      // The city lists name Cebu towns "Talisay, Cebu"; Cebu City, Mandaue and Lapu-Lapu stay plain.
+      if (a.state === 'Cebu' && city && !/^(city of )?(cebu|mandaue|lapu-?lapu)( city)?$/i.test(city)) {
+        city = city.replace(/^city of\s+/i, '').replace(/\s+city$/i, '').replace(/^Lilo-an$/i, 'Liloan') + ', Cebu';
+      }
       const place = a.amenity || a.building || a.shop || a.road || '';
       const area = a.suburb || a.neighbourhood || a.quarter || a.village || '';
       const address = [place, area, city].filter(Boolean).join(', ') || data.display_name || '';
