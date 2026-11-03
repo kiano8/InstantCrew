@@ -282,19 +282,9 @@ func (s *Store) LatestJobPayments(ctx context.Context, jobIDs []int64) (map[int6
 	return out, rows.Err()
 }
 
-// cityRegion is the SQL for the area a city matches within: all of Cebu and all of
-// Metro Manila each count as one, anywhere else is its own city.
-// Same rule as locationRegion in js/shared-data.js. Keep the two in step.
-func cityRegion(col string) string {
-	c := "lower(trim(" + col + "))"
-	return "(CASE WHEN " + c + " ~ '(^|, )cebu( city)?$' THEN 'cebu'" +
-		" WHEN " + c + " ~ '(^|, )metro manila$|^manila$' THEN 'metro manila'" +
-		" ELSE " + c + " END)"
-}
-
 // crewCanTake is the one rule for whether profile p can take job j. Crew who were
 // on this job before (accepted then released, or declined) can't take it again.
-var crewCanTake = `p.is_active=true AND ` + cityRegion("p.city") + `=` + cityRegion("j.city") + `
+const crewCanTake = `p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
 		AND p.employment_type=j.employment_type AND ` + eligibleCrew + `
 		AND EXISTS (SELECT 1 FROM applicant_roles ar WHERE ar.applicant_id=p.user_id AND ar.role_id=j.role_id)
 		AND NOT EXISTS (
@@ -315,7 +305,7 @@ var crewCanTake = `p.is_active=true AND ` + cityRegion("p.city") + `=` + cityReg
 			))))`
 
 // matchingCrew selects the applicant profiles p who can take job j.id=$1.
-var matchingCrew = `FROM jobs j
+const matchingCrew = `FROM jobs j
 		JOIN applicant_profiles p ON ` + crewCanTake + `
 		WHERE j.id=$1`
 

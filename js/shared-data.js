@@ -123,7 +123,7 @@
         if (locationStr && typeof locationStr === 'string' && (locationStr.startsWith('http://') || locationStr.startsWith('https://'))) {
             return locationStr;
         }
-        const query = (locationStr && typeof locationStr === 'string') ? locationStr.trim() : 'Cebu';
+        const query = (locationStr && typeof locationStr === 'string') ? locationStr.trim() : 'Cebu City';
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     }
 
@@ -139,7 +139,7 @@
         const roleName = booking.roleLabel || booking.role || 'Crew Member';
         const cleanTitle = (booking.roleLabel || booking.role || 'Crew').replace(/\s*\((Full-Time|Part-Time)\)/gi, '').trim();
         const empType = booking.employmentType || 'full-time';
-        const loc = booking.location || 'Cebu';
+        const loc = booking.location || 'Cebu City';
         const mapLoc = booking.mapLocation || booking.mapAddress || `${loc} (Work Venue)`;
         const mapsUrl = formatGoogleMapsUrl(mapLoc, booking.googleMapsUrl);
 
@@ -761,35 +761,9 @@
         });
     }
 
-    // The one location list. "Cebu" and "Metro Manila" are whole regions; see locationRegion.
-    const LOCATIONS = [
-        'Cebu',
-        'Apas, Cebu City', 'Bacayan, Cebu City', 'Banilad, Cebu City', 'Basak Pardo, Cebu City', 'Basak San Nicolas, Cebu City', 'Binaliw, Cebu City', 'Bulacao, Cebu City', 'Busay, Cebu City', 'Camputhaw, Cebu City', 'Capitol Site, Cebu City', 'Carreta, Cebu City', 'Cebu Business Park, Cebu City', 'Cebu IT Park, Cebu City', 'Cogon Ramos, Cebu City', 'Colon, Cebu City', 'Ermita, Cebu City', 'Fuente Osmeña, Cebu City', 'Guadalupe, Cebu City', 'Hipodromo, Cebu City', 'Inayawan, Cebu City', 'Kalunasan, Cebu City', 'Kasambagan, Cebu City', 'Labangon, Cebu City', 'Lahug, Cebu City', 'Lorega San Miguel, Cebu City', 'Luz, Cebu City', 'Mabolo, Cebu City', 'Mambaling, Cebu City', 'Pahina Central, Cebu City', 'Pardo, Cebu City', 'Parian, Cebu City', 'Pasil, Cebu City', 'Pit-os, Cebu City', 'Punta Princesa, Cebu City', 'Quiot, Cebu City', 'Sambag I, Cebu City', 'Sambag II, Cebu City', 'San Nicolas, Cebu City', 'Santo Niño, Cebu City', 'Sirao, Cebu City', 'South Road Properties, Cebu City', 'Talamban, Cebu City', 'Tejero, Cebu City', 'Tinago, Cebu City', 'Tisa, Cebu City', 'Zapatera, Cebu City',
-        'Alcantara, Cebu', 'Alcoy, Cebu', 'Alegria, Cebu', 'Aloguinsan, Cebu', 'Argao, Cebu', 'Asturias, Cebu', 'Badian, Cebu', 'Balamban, Cebu', 'Bantayan, Cebu', 'Barili, Cebu', 'Bogo, Cebu', 'Boljoon, Cebu', 'Borbon, Cebu', 'Carcar, Cebu', 'Carmen, Cebu', 'Catmon, Cebu', 'Compostela, Cebu', 'Consolacion, Cebu', 'Cordova, Cebu', 'Daanbantayan, Cebu', 'Dalaguete, Cebu', 'Danao, Cebu', 'Dumanjug, Cebu', 'Ginatilan, Cebu', 'Lapu-Lapu, Cebu', 'Agus, Lapu-Lapu, Cebu', 'Basak, Lapu-Lapu, Cebu', 'Mactan, Lapu-Lapu, Cebu', 'Mactan Newtown, Lapu-Lapu, Cebu', 'Maribago, Lapu-Lapu, Cebu', 'Marigondon, Lapu-Lapu, Cebu', 'Pajo, Lapu-Lapu, Cebu', 'Punta Engaño, Lapu-Lapu, Cebu', 'Liloan, Cebu', 'Madridejos, Cebu', 'Malabuyoc, Cebu', 'Mandaue, Cebu', 'Bakilid, Mandaue, Cebu', 'Cabancalan, Mandaue, Cebu', 'Casuntingan, Mandaue, Cebu', 'Centro, Mandaue, Cebu', 'Maguikay, Mandaue, Cebu', 'Opao, Mandaue, Cebu', 'Subangdaku, Mandaue, Cebu', 'Tipolo, Mandaue, Cebu', 'Medellin, Cebu', 'Minglanilla, Cebu', 'Moalboal, Cebu', 'Naga, Cebu', 'Oslob, Cebu', 'Pilar, Cebu', 'Pinamungajan, Cebu', 'Poro, Cebu', 'Ronda, Cebu', 'Samboan, Cebu', 'San Fernando, Cebu', 'San Francisco, Cebu', 'San Remigio, Cebu', 'Santa Fe, Cebu', 'Santander, Cebu', 'Sibonga, Cebu', 'Sogod, Cebu', 'Tabogon, Cebu', 'Tabuelan, Cebu', 'Talisay, Cebu', 'Bulacao, Talisay, Cebu', 'Lawaan, Talisay, Cebu', 'Poblacion, Talisay, Cebu', 'Tabunok, Talisay, Cebu', 'Toledo, Cebu', 'Tuburan, Cebu', 'Tudela, Cebu',
-        'Metro Manila',
-        'Binondo, Manila, Metro Manila', 'Ermita, Manila, Metro Manila', 'Intramuros, Manila, Metro Manila', 'Malate, Manila, Metro Manila', 'Paco, Manila, Metro Manila', 'Pandacan, Manila, Metro Manila', 'Port Area, Manila, Metro Manila', 'Quiapo, Manila, Metro Manila', 'Sampaloc, Manila, Metro Manila', 'San Andres, Manila, Metro Manila', 'San Miguel, Manila, Metro Manila', 'Santa Ana, Manila, Metro Manila', 'Santa Cruz, Manila, Metro Manila', 'Santa Mesa, Manila, Metro Manila', 'Tondo, Manila, Metro Manila',
-        'Caloocan, Metro Manila', 'Bagong Silang, Caloocan, Metro Manila', 'Camarin, Caloocan, Metro Manila', 'Grace Park, Caloocan, Metro Manila', 'Monumento, Caloocan, Metro Manila', 'Las Piñas, Metro Manila', 'Almanza, Las Piñas, Metro Manila', 'Pamplona, Las Piñas, Metro Manila', 'Talon, Las Piñas, Metro Manila', 'Makati, Metro Manila', 'Ayala Center, Makati, Metro Manila', 'Bel-Air, Makati, Metro Manila', 'Legazpi Village, Makati, Metro Manila', 'Magallanes, Makati, Metro Manila', 'Poblacion, Makati, Metro Manila', 'Rockwell, Makati, Metro Manila', 'Salcedo Village, Makati, Metro Manila', 'San Antonio, Makati, Metro Manila', 'Malabon, Metro Manila', 'Potrero, Malabon, Metro Manila', 'Tinajeros, Malabon, Metro Manila', 'Mandaluyong, Metro Manila', 'Highway Hills, Mandaluyong, Metro Manila', 'Ortigas Center, Mandaluyong, Metro Manila', 'Shaw Boulevard, Mandaluyong, Metro Manila', 'Wack-Wack, Mandaluyong, Metro Manila', 'Marikina, Metro Manila', 'Concepcion, Marikina, Metro Manila', 'Marikina Heights, Marikina, Metro Manila', 'Parang, Marikina, Metro Manila', 'Muntinlupa, Metro Manila', 'Alabang, Muntinlupa, Metro Manila', 'Ayala Alabang, Muntinlupa, Metro Manila', 'Filinvest City, Muntinlupa, Metro Manila', 'Putatan, Muntinlupa, Metro Manila', 'Tunasan, Muntinlupa, Metro Manila', 'Navotas, Metro Manila', 'Navotas West, Navotas, Metro Manila', 'San Roque, Navotas, Metro Manila', 'Parañaque, Metro Manila', 'Baclaran, Parañaque, Metro Manila', 'BF Homes, Parañaque, Metro Manila', 'Entertainment City, Parañaque, Metro Manila', 'Sucat, Parañaque, Metro Manila', 'Pasay, Metro Manila', 'Libertad, Pasay, Metro Manila', 'Malibay, Pasay, Metro Manila', 'Mall of Asia Complex, Pasay, Metro Manila', 'Roxas Boulevard, Pasay, Metro Manila', 'Villamor, Pasay, Metro Manila', 'Pasig, Metro Manila', 'Bagong Ilog, Pasig, Metro Manila', 'Kapitolyo, Pasig, Metro Manila', 'Manggahan, Pasig, Metro Manila', 'Ortigas Center, Pasig, Metro Manila', 'Pinagbuhatan, Pasig, Metro Manila', 'Rosario, Pasig, Metro Manila', 'Ugong, Pasig, Metro Manila', 'Pateros, Metro Manila', 'Quezon City, Metro Manila', 'Batasan Hills, Quezon City, Metro Manila', 'Commonwealth, Quezon City, Metro Manila', 'Cubao, Quezon City, Metro Manila', 'Diliman, Quezon City, Metro Manila', 'Eastwood, Quezon City, Metro Manila', 'Fairview, Quezon City, Metro Manila', 'Kamuning, Quezon City, Metro Manila', 'Katipunan, Quezon City, Metro Manila', 'New Manila, Quezon City, Metro Manila', 'Novaliches, Quezon City, Metro Manila', 'Timog, Quezon City, Metro Manila', 'Tomas Morato, Quezon City, Metro Manila', 'San Juan, Metro Manila', 'Greenhills, San Juan, Metro Manila', 'Little Baguio, San Juan, Metro Manila', 'Taguig, Metro Manila', 'Bonifacio Global City (BGC), Taguig, Metro Manila', 'Lower Bicutan, Taguig, Metro Manila', 'McKinley Hill, Taguig, Metro Manila', 'Signal Village, Taguig, Metro Manila', 'Ususan, Taguig, Metro Manila', 'Western Bicutan, Taguig, Metro Manila', 'Valenzuela, Metro Manila', 'Dalandanan, Valenzuela, Metro Manila', 'Karuhatan, Valenzuela, Metro Manila', 'Malinta, Valenzuela, Metro Manila', 'Marulas, Valenzuela, Metro Manila',
-        'Angeles City', 'Antipolo', 'Bacolod', 'Bacoor', 'Baguio City', 'Batangas City', 'Biñan', 'Butuan', 'Cabanatuan', 'Cagayan de Oro', 'Calamba', 'Cotabato City', 'Dasmariñas', 'Davao City', 'Dumaguete', 'General Santos', 'General Trias', 'Iligan', 'Iloilo City', 'Imus', 'Legazpi', 'Lipa', 'Lucena', 'Malolos', 'Meycauayan', 'Naga City', 'Olongapo', 'Ormoc', 'Puerto Princesa', 'Roxas City', 'San Fernando, La Union', 'San Fernando, Pampanga', 'San Jose del Monte', 'Santa Rosa', 'Tacloban', 'Tagum', 'Tarlac City', 'Tuguegarao', 'Zamboanga City'
-    ];
-
-    function fillLocationSelect(select) {
-        LOCATIONS.forEach(city => select.add(new Option(city, city)));
-    }
-
-    // Same rule as cityRegion in internal/store/jobs.go. Keep the two in step.
-    function locationRegion(city) {
-        const c = String(city || '').trim().toLowerCase();
-        if (/(^|, )cebu( city)?$/.test(c)) return 'cebu';
-        if (/(^|, )metro manila$|^manila$/.test(c)) return 'metro manila';
-        return c;
-    }
-
     // Export to global window object
     window.InstantCrewShared = {
         escHtml,
-        LOCATIONS,
-        fillLocationSelect,
-        locationRegion,
         EXTRA_CATEGORIES,
         addCategoryCards,
         checkPendingReviews,
