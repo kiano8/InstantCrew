@@ -7360,17 +7360,31 @@ body.app-sheet-open {
 }
 
 /* ── Welcome / referral promo ── */
-.app-referral-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 3px; }
+/* Full-width row under the pass details (the widget is a wrapping flex row). */
+.app-referral-box {
+    flex-basis: 100%;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 12px;
+    display: grid;
+    gap: 8px;
+}
+.app-referral-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.app-referral-label { font-size: 0.78rem; font-weight: 700; color: #475569; }
 .app-referral-chip {
-    font-weight: 800; letter-spacing: 0.08em; color: var(--ink);
+    font-size: 0.9rem; font-weight: 800; letter-spacing: 0.1em; color: var(--ink);
     background: var(--yellow-tint); border: 1.5px dashed var(--yellow-dark);
-    border-radius: var(--radius-xs); padding: 1px 8px;
+    border-radius: var(--radius-xs); padding: 3px 10px;
 }
-.app-referral-link {
-    font: inherit; font-weight: 700; color: #B45309; background: none; border: 0;
-    padding: 2px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+.app-referral-desc { margin: 0; font-size: 0.78rem; line-height: 1.5; color: #64748B; }
+.app-referral-desc strong { color: #0F172A; font-weight: 700; }
+.app-referral-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.app-referral-btn {
+    min-height: 40px; padding: 8px 10px; border-radius: var(--radius-pill);
+    font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+    color: #FFFFFF; background: var(--ink); border: 1px solid var(--ink);
 }
-.app-referral-link:focus-visible { outline: 2px solid var(--yellow-dark); outline-offset: 2px; border-radius: 4px; }
+.app-referral-btn-alt { color: #92400E; background: var(--yellow-tint); border-color: var(--yellow-dark); }
+.app-referral-btn:focus-visible { outline: 2px solid var(--yellow-dark); outline-offset: 2px; }
 
 .app-promo-overlay { z-index: 2500; }
 .app-promo-card {

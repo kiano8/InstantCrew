@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css?v=20261104-safearea">
-    <link rel="stylesheet" href="css/applicant.css?v=20261104-promo">
+    <link rel="stylesheet" href="css/applicant.css?v=20261104-promo2">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
     <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
     <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
@@ -1609,9 +1609,9 @@
                                     <span class="app-pass-count-text" id="appPassCountText"><strong>5</strong> / 5 hires
                                         remaining (0 achieved)</span>
                                 </div>
-                                <div class="app-pass-count-text" id="appReferralText" style="display:none; margin-top:6px;"></div>
                             </div>
                         </div>
+                        <div class="app-referral-box" id="appReferralText" style="display:none;"></div>
                     </div>
 
                     <!-- Quota Exhausted Warning Alert (shown when remainingHires <= 0) -->
@@ -2065,6 +2065,19 @@
                                     <line x1="1" y1="1" x2="23" y2="23"></line>
                                 </svg>
                             </button>
+                        </div>
+                    </div>
+
+                    <div class="db-auth-field">
+                        <label for="appModalSignupReferral" class="db-field-label">Referral Code <span style="font-weight:500; color:var(--muted);">(optional)</span></label>
+                        <div class="db-auth-input-wrap">
+                            <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect>
+                                <line x1="12" y1="22" x2="12" y2="7"></line>
+                            </svg>
+                            <input type="text" id="appModalSignupReferral" class="db-auth-input" placeholder="e.g. IC2S"
+                                maxlength="16" autocomplete="off" autocapitalize="characters">
                         </div>
                     </div>
 
@@ -2560,6 +2573,7 @@
             const appPromoModal = document.getElementById('appPromoModal');
             let promoCode = '';
             let promoReturnFocus = null;
+            let promoPending = false;
 
             function inviteLink(code) {
                 return `${location.origin}/login.html?role=applicant&mode=signup&ref=${encodeURIComponent(code)}`;
@@ -2597,11 +2611,12 @@
 
             // Shown automatically once per crew member per device.
             function maybeShowWelcomePromo(code) {
+                // Don't stack on top of another open dialog; try again on the next UI update.
+                if (promoPending || document.querySelector('.db-modal-overlay.open, .app-modal-overlay.open')) return;
                 const key = 'ic_promo_seen_' + (session && session.id ? session.id : '');
                 try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { return; }
-                // Don't stack on top of another open dialog.
-                if (document.querySelector('.db-modal-overlay.open, .app-modal-overlay.open')) return;
-                setTimeout(() => openPromoModal(code), 700);
+                promoPending = true;
+                setTimeout(() => { promoPending = false; openPromoModal(code); }, 700);
             }
 
             if (appPromoModal) {
@@ -6570,11 +6585,18 @@
                 scheduledTime: '09:00'
             };
 
+            let starterPromptShown = false;
             function updateViewMode() {
-                // A new applicant stays out of the portal until the first ₱10 pass is submitted.
-                const gated = needsStarterPass();
-                const isLogged = hasWorkerSession() && !gated;
-                if (gated && applicantTopupModal && !applicantTopupModal.classList.contains('open')) openApplicantTopupModal();
+                // A new applicant is prompted once per browser session to activate their first hires,
+                // but can close the prompt and browse; accepting a shift with 0 hires re-opens it.
+                const isLogged = hasWorkerSession();
+                if (needsStarterPass() && applicantTopupModal && !applicantTopupModal.classList.contains('open')) {
+                    const key = 'ic_starter_prompted_' + (session && session.id ? session.id : '');
+                    let prompted = false;
+                    try { prompted = !!sessionStorage.getItem(key); sessionStorage.setItem(key, '1'); } catch (e) { prompted = starterPromptShown; }
+                    starterPromptShown = true;
+                    if (!prompted) openApplicantTopupModal();
+                }
                 if (appStepsWrap) appStepsWrap.style.display = isLogged ? 'none' : 'block';
                 if (appDashboardWrap) appDashboardWrap.style.display = isLogged ? 'block' : 'none';
                 const notifWrap = document.querySelector('.db-notif-wrap');
@@ -6656,7 +6678,16 @@
                 const referralEl = document.getElementById('appReferralText');
                 if (referralEl && quota.referralCode) {
                     referralEl.style.display = '';
-                    referralEl.innerHTML = `<div class="app-referral-row">Your referral code: <span class="app-referral-chip">${quota.referralCode}</span> <button type="button" class="app-referral-link" id="appReferralCopy">Copy invite link</button> <button type="button" class="app-referral-link" id="appReferralRewards">🎁 See rewards</button></div>Get +1 free hire for every crew member who signs up with it. New crew earn 5 free hires after their first 5 shifts.`;
+                    referralEl.innerHTML = `
+                        <div class="app-referral-head">
+                            <span class="app-referral-label">Your referral code</span>
+                            <span class="app-referral-chip">${quota.referralCode}</span>
+                        </div>
+                        <p class="app-referral-desc">Get <strong>+1 free hire</strong> for every crew member who signs up with it. New crew earn <strong>5 free hires</strong> after their first 5 shifts.</p>
+                        <div class="app-referral-actions">
+                            <button type="button" class="app-referral-btn" id="appReferralCopy">Copy invite link</button>
+                            <button type="button" class="app-referral-btn app-referral-btn-alt" id="appReferralRewards">🎁 See rewards</button>
+                        </div>`;
                     document.getElementById('appReferralCopy').onclick = (e) => copyInviteLink(quota.referralCode, e.target, 'Link copied!');
                     document.getElementById('appReferralRewards').onclick = () => openPromoModal(quota.referralCode);
                     maybeShowWelcomePromo(quota.referralCode);
@@ -6766,6 +6797,7 @@
                     applicantTopupModal.style.display = 'none';
                     applicantTopupModal.setAttribute('aria-hidden', 'true');
                 }
+                if (session?.hiringQuota?.referralCode) maybeShowWelcomePromo(session.hiringQuota.referralCode);
             }
 
             function updateStepSummary() {
@@ -8023,7 +8055,7 @@
                     }
 
                     try {
-                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass }) });
+                        const response = await fetch('/api/auth/signup', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'applicant', name, email, password: pass, referral: document.getElementById('appModalSignupReferral')?.value || '' }) });
                         const data = await response.json().catch(() => ({}));
                         if (!response.ok) throw new Error(data.error || 'Could not create your account.');
                         const profile = await saveWizardProfile(appState);
