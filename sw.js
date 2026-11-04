@@ -1,5 +1,5 @@
 // Instant Crew - Service Worker for PWA Add-to-Home-Screen Support
-const CACHE_NAME = 'instantcrew-v5';
+const CACHE_NAME = 'instantcrew-v6';
 const CORE_ASSETS = [
     './',
     './index.html',

@@ -17,7 +17,7 @@
 .ph-btn-icon{display:inline-flex;flex-shrink:0}\
 @media (max-width:520px){.ph-btn{height:34px;padding:0 12px 0 10px;font-size:.74rem;gap:5px}}\
 @media (max-width:420px){.ph-btn{width:38px;height:38px;padding:0;gap:0}.ph-btn-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}\
-.ph-overlay{position:fixed;inset:0;background:rgba(28,28,30,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}\
+.ph-overlay{position:fixed;inset:0;background:rgba(28,28,30,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:2000;padding:max(38px,calc(env(safe-area-inset-top,0px) + 16px)) 16px max(24px,calc(env(safe-area-inset-bottom,0px) + 16px))}\
 .ph-overlay.open{display:flex}\
 .ph-card{background:#FFFFFF;color:#1C1C1E;width:min(560px,100%);max-height:86vh;display:flex;flex-direction:column;border:1px solid #E5E5EA;border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);overflow:hidden;font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;animation:ph-pop .24s cubic-bezier(.16,1,.3,1)}\
 @keyframes ph-pop{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}\

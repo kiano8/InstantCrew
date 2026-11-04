@@ -51,10 +51,22 @@ body {
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--line-subtle);
-    padding-block: 16px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: 16px;
     position: sticky;
     top: 0;
     z-index: 50;
+}
+
+@media (max-width: 680px) {
+    .login-header {
+        padding-top: calc(max(26px, env(safe-area-inset-top, 0px)) + 10px);
+        padding-bottom: 12px;
+    }
+
+    .login-header-wrap {
+        padding-inline: max(16px, env(safe-area-inset-left, 0px));
+    }
 }
 
 .login-header-wrap {

@@ -100,7 +100,8 @@ button {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line-subtle);
-    padding-block: 16px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: 16px;
     transition: all 0.25s ease;
 }
 
@@ -885,6 +886,13 @@ button {
 
     .persona-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 680px) {
+    .site-header {
+        padding-top: calc(max(26px, env(safe-area-inset-top, 0px)) + 10px);
+        padding-bottom: 12px;
     }
 }
 
