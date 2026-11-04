@@ -1953,7 +1953,7 @@
                 <!-- ── Applicant Log In Form ── -->
                 <form id="applicantModalLoginForm" class="db-auth-form">
                     <div class="db-auth-field">
-                        <label for="appModalLoginEmail" class="db-field-label">Contact Number or Email</label>
+                        <label for="appModalLoginEmail" class="db-field-label">Email</label>
                         <div class="db-auth-input-wrap">
                             <svg class="db-input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2">
@@ -1962,7 +1962,7 @@
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                             <input type="text" id="appModalLoginEmail" class="db-auth-input"
-                                placeholder="09171234567" required autocomplete="username">
+                                placeholder="name@gmail.com" required autocomplete="username">
                         </div>
                     </div>
 
@@ -7916,7 +7916,7 @@
                     const btn = document.getElementById('btnSubmitAppModalLogin');
 
                     if (!email || !pass) {
-                        showApplicantAuthError('Please enter your contact number or email, and your password.');
+                        showApplicantAuthError('Please enter your email and your password.');
                         return;
                     }
 
