@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -79,5 +80,24 @@ func TestAcceptJob_OneHireCoversOneShift(t *testing.T) {
 		if accepted != 1 {
 			t.Fatalf("round %d: %d shifts accepted with one hire (errors: %v)", round, accepted, errs)
 		}
+	}
+}
+
+// A full-time applicant holds one full-time offer at a time, even across roles.
+func TestAcceptJob_OneFullTimeOfferAtATime(t *testing.T) {
+	st, openShift, _, crewID, exec := raceFixture(t)
+	ctx := context.Background()
+	exec(`INSERT INTO applicant_hiring_passes(applicant_id,total_hires,remaining_hires,used_hires,amount_centavos,batches_paid,updated_at)
+		VALUES($1,5,5,0,0,0,0) ON CONFLICT(applicant_id) DO UPDATE SET remaining_hires=5, total_hires=applicant_hiring_passes.used_hires+5`, crewID)
+	first, second := openShift("cook", "Cook", "kitchen"), openShift("waiter-server", "Waiter / Server", "hospitality")
+	if err := st.AcceptJob(ctx, first, crewID, nil); err != nil {
+		t.Fatalf("first accept: %v", err)
+	}
+	if err := st.AcceptJob(ctx, second, crewID, nil); !errors.Is(err, store.ErrFullTimeTaken) {
+		t.Fatalf("second full-time accept: want ErrFullTimeTaken, got %v", err)
+	}
+	exec(`UPDATE job_assignments SET ended_at=1 WHERE applicant_id=$1`, crewID)
+	if err := st.AcceptJob(ctx, second, crewID, nil); err != nil {
+		t.Fatalf("accept after the first ended: %v", err)
 	}
 }

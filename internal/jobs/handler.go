@@ -604,7 +604,7 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
 	case errors.Is(err, store.ErrPaymentNotVerified), errors.Is(err, store.ErrPaymentRejected):
 		httpx.Error(w, http.StatusPaymentRequired, err.Error())
-	case errors.Is(err, store.ErrPaymentPendingExists), errors.Is(err, store.ErrHiringPassFull):
+	case errors.Is(err, store.ErrPaymentPendingExists), errors.Is(err, store.ErrHiringPassFull), errors.Is(err, store.ErrFullTimeTaken):
 		httpx.Error(w, http.StatusConflict, err.Error())
 	case errors.Is(err, store.ErrAccountSuspended), errors.Is(err, store.ErrAccountDeactivated):
 		httpx.Error(w, http.StatusForbidden, err.Error())

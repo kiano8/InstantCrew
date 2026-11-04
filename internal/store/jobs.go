@@ -21,6 +21,7 @@ const PaymentDeadline = 3 * time.Minute
 var (
 	ErrBadState        = errors.New("job is not in a valid state for this action")
 	ErrAlreadyAccepted = errors.New("already accepted")
+	ErrFullTimeTaken   = errors.New("you already accepted a full-time offer; finish or leave it before accepting another")
 )
 
 type Job struct {
@@ -532,6 +533,19 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64, require
 	var locked int
 	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM applicant_hiring_passes WHERE applicant_id=$1 FOR UPDATE`, applicantID).Scan(&locked); err != nil && err != sql.ErrNoRows {
 		return err
+	}
+	// A full-time offer is exclusive: one at a time until it ends. Runs after the
+	// pass lock so two concurrent full-time accepts can't both pass.
+	var fullTimeTaken bool
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS (
+			SELECT 1 FROM jobs j, job_assignments a JOIN jobs held ON held.id=a.job_id
+			WHERE j.id=$1 AND j.employment_type='full-time'
+			AND a.applicant_id=$2 AND a.ended_at IS NULL AND held.employment_type='full-time')`,
+		jobID, applicantID).Scan(&fullTimeTaken); err != nil {
+		return err
+	}
+	if fullTimeTaken {
+		return ErrFullTimeTaken
 	}
 	var available int
 	err = tx.QueryRowContext(ctx, `SELECT p.remaining_hires - (
