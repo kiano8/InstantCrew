@@ -445,6 +445,14 @@ func (h *Handler) ApplicantAccept(w http.ResponseWriter, r *http.Request) {
 			httpx.Error(w, http.StatusBadRequest, "attach every required document before accepting")
 			return
 		}
+		// Only your own uploads: the employer gets to view whatever is attached.
+		if mine, err := h.Store.CanViewProof(r.Context(), url, u.ID); err != nil {
+			h.fail(w, err)
+			return
+		} else if !mine {
+			httpx.Error(w, http.StatusBadRequest, "please upload your documents again")
+			return
+		}
 		attached[doc] = url
 	}
 	if err = h.Store.AcceptJob(r.Context(), id, u.ID, attached); err != nil {

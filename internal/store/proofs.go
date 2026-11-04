@@ -35,13 +35,16 @@ func (s *Store) ClaimProof(ctx context.Context, path string, userID int64) error
 	return nil
 }
 
-// CanViewProof reports whether the user uploaded or paid with this receipt. The
-// payment tables cover receipts from before proof_uploads existed.
+// CanViewProof reports whether the user uploaded or paid with this file, or is
+// the employer of a job a crew member attached it to as a required document.
+// The payment tables cover receipts from before proof_uploads existed.
 func (s *Store) CanViewProof(ctx context.Context, path string, userID int64) (bool, error) {
 	var ok bool
 	err := s.db.QueryRowContext(ctx, `SELECT
 		EXISTS(SELECT 1 FROM proof_uploads WHERE path=$1 AND user_id=$2)
 		OR EXISTS(SELECT 1 FROM payments WHERE proof_image=$1 AND user_id=$2)
-		OR EXISTS(SELECT 1 FROM applicant_hiring_pass_payments WHERE proof_image=$1 AND applicant_id=$2)`, path, userID).Scan(&ok)
+		OR EXISTS(SELECT 1 FROM applicant_hiring_pass_payments WHERE proof_image=$1 AND applicant_id=$2)
+		OR EXISTS(SELECT 1 FROM job_assignments a JOIN jobs j ON j.id=a.job_id
+			WHERE j.employer_id=$2 AND strpos(a.requirements, '"' || $1 || '"') > 0)`, path, userID).Scan(&ok)
 	return ok, err
 }

@@ -658,7 +658,12 @@ func TestApplicantAccept_RequiresDocuments(t *testing.T) {
 		env.mux.ServeHTTP(rec, req)
 		return rec.Code
 	}
-	nbi := "/uploads/proof_1_ab.jpg"
+	nbi, philhealth := "/uploads/proof_1_ab.jpg", "/uploads/proof_2_cd.png"
+	for _, p := range []string{nbi, philhealth} {
+		if err := env.st.SaveProofUpload(ctx, p, env.applicant.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if code := accept(""); code != http.StatusBadRequest {
 		t.Fatalf("no documents: want 400, got %d", code)
 	}
@@ -668,14 +673,28 @@ func TestApplicantAccept_RequiresDocuments(t *testing.T) {
 	if code := accept(`{"requirements":{"nbi":"` + nbi + `","philhealth":"https://evil.example/x.jpg"}}`); code != http.StatusBadRequest {
 		t.Fatalf("outside URL: want 400, got %d", code)
 	}
-	if code := accept(`{"requirements":{"nbi":"` + nbi + `","philhealth":"/uploads/proof_2_cd.png"}}`); code != http.StatusOK {
+	if code := accept(`{"requirements":{"nbi":"` + nbi + `","philhealth":"/uploads/proof_3_ef.png"}}`); code != http.StatusBadRequest {
+		t.Fatalf("someone else's file: want 400, got %d", code)
+	}
+	if code := accept(`{"requirements":{"nbi":"` + nbi + `","philhealth":"` + philhealth + `"}}`); code != http.StatusOK {
 		t.Fatalf("all documents: want 200, got %d", code)
 	}
 	crew, err := env.st.Assignments(ctx, job.ID)
 	if err != nil || len(crew) != 1 {
 		t.Fatalf("assignments: %v %+v", err, crew)
 	}
-	if got := crew[0].Requirements; got["nbi"] != nbi || got["philhealth"] != "/uploads/proof_2_cd.png" {
+	if got := crew[0].Requirements; got["nbi"] != nbi || got["philhealth"] != philhealth {
 		t.Fatalf("requirements not saved: %+v", got)
+	}
+	// The job's employer may open the attached files; other users may not.
+	if ok, err := env.st.CanViewProof(ctx, nbi, env.employer.ID); err != nil || !ok {
+		t.Fatalf("employer viewing crew document: ok=%v err=%v", ok, err)
+	}
+	stranger := &store.User{Email: "other-boss@gmail.com", PasswordHash: "x", Role: "employer", Name: "Other", Company: "Co"}
+	if err := env.st.CreateUser(ctx, stranger); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := env.st.CanViewProof(ctx, nbi, stranger.ID); err != nil || ok {
+		t.Fatalf("other employer viewing crew document: ok=%v err=%v", ok, err)
 	}
 }

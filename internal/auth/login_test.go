@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,32 @@ import (
 )
 
 type fakeMail struct{ sent bool }
+
+// inbox keeps the last email so a test can read the code out of it.
+type inbox struct{ to, body string }
+
+func (m *inbox) Configured() bool { return true }
+func (m *inbox) Send(_ context.Context, to, _, body string) error {
+	m.to, m.body = to, body
+	return nil
+}
+
+func (m *inbox) code(t *testing.T) string {
+	t.Helper()
+	c := regexp.MustCompile(`\d{6}`).FindString(m.body)
+	if c == "" {
+		t.Fatalf("no code in email to %q: %q", m.to, m.body)
+	}
+	return c
+}
+
+func postTo(f http.HandlerFunc, body string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	f(rec, req)
+	return rec
+}
 
 func (m *fakeMail) Configured() bool { return true }
 func (m *fakeMail) Send(context.Context, string, string, string) error {
@@ -150,37 +177,84 @@ func TestNormalizePHMobile(t *testing.T) {
 	}
 }
 
-// Crew sign up with a contact number and no code, then log in however they type it.
-func TestApplicantSignupWithContactNumber(t *testing.T) {
+// Crew sign up with a Gmail address and the emailed code, like employers.
+func TestApplicantSignupWithEmail(t *testing.T) {
 	st, _ := storetest.Open(t)
-	h := &Handler{Store: st, SessionTTL: time.Hour}
-	post := func(f http.HandlerFunc, body string) *httptest.ResponseRecorder {
-		req := httptest.NewRequest("POST", "/", strings.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		rec := httptest.NewRecorder()
-		f(rec, req)
-		return rec
+	mail := &inbox{}
+	h := &Handler{Store: st, SessionTTL: time.Hour, Mail: mail}
+	signup := func(email, code string) int {
+		return postTo(h.Signup, `{"role":"applicant","name":"Crew","email":"`+email+`","password":"secret-pass","code":"`+code+`"}`).Code
 	}
-	signup := `{"role":"applicant","name":"Crew","email":"0917 123 4567","password":"secret-pass"}`
-	if rec := post(h.Signup, signup); rec.Code != http.StatusCreated {
-		t.Fatalf("signup: %d %s", rec.Code, rec.Body)
+	if code := signup("crew@gmail.com", ""); code != http.StatusBadRequest {
+		t.Fatalf("no code: want 400, got %d", code)
 	}
-	if rec := post(h.Signup, `{"role":"applicant","name":"Twin","email":"+639171234567","password":"secret-pass"}`); rec.Code != http.StatusConflict {
-		t.Fatalf("same number in another format: want 409, got %d", rec.Code)
+	if rec := postTo(h.SignupCode, `{"role":"applicant","email":"09171234567"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("contact number: want 400, got %d", rec.Code)
 	}
-	if rec := post(h.Login, `{"role":"applicant","email":"09171234567","password":"secret-pass"}`); rec.Code != http.StatusOK {
+	if rec := postTo(h.SignupCode, `{"role":"applicant","email":"Crew@Gmail.com"}`); rec.Code != http.StatusAccepted {
+		t.Fatalf("signup code: %d %s", rec.Code, rec.Body)
+	}
+	if mail.to != "crew@gmail.com" {
+		t.Fatalf("code emailed to %q", mail.to)
+	}
+	if got := signup("crew@gmail.com", mail.code(t)); got != http.StatusCreated {
+		t.Fatalf("signup: %d", got)
+	}
+	if rec := postTo(h.Login, `{"role":"applicant","email":"crew@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusOK {
 		t.Fatalf("login: %d %s", rec.Code, rec.Body)
 	}
-	if rec := post(h.Signup, `{"role":"applicant","name":"Crew","email":"crew@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusBadRequest {
-		t.Fatalf("email signup for crew: want 400, got %d", rec.Code)
+}
+
+// Crew accounts made earlier with a contact number still log in however the number is typed.
+func TestLegacyContactNumberLogin(t *testing.T) {
+	st, _ := storetest.Open(t)
+	h := &Handler{Store: st, SessionTTL: time.Hour}
+	hash, _ := bcrypt.GenerateFromPassword([]byte("secret-pass"), bcrypt.MinCost)
+	if err := st.CreateUser(context.Background(), &store.User{Email: "+639171234567", PasswordHash: string(hash), Role: "applicant", Name: "Crew"}); err != nil {
+		t.Fatal(err)
 	}
-	if rec := post(h.Signup, `{"role":"employer","name":"Boss","company":"Co","email":"boss@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusBadRequest {
-		t.Fatalf("employer without a code: want 400, got %d", rec.Code)
+	if rec := postTo(h.Login, `{"role":"applicant","email":"0917 123 4567","password":"secret-pass"}`); rec.Code != http.StatusOK {
+		t.Fatalf("login: %d %s", rec.Code, rec.Body)
 	}
-	for i := 0; i < maxLoginFailures; i++ {
-		h.crewSignups.fail("signup", "192.0.2.1")
+}
+
+// Forgot password: the emailed code sets a new password, the old one stops
+// working, and a code for an unknown email reveals nothing.
+func TestForgotPassword(t *testing.T) {
+	st, _ := storetest.Open(t)
+	mail := &inbox{}
+	h := &Handler{Store: st, SessionTTL: time.Hour, Mail: mail}
+	hash, _ := bcrypt.GenerateFromPassword([]byte("old-password"), bcrypt.MinCost)
+	if err := st.CreateUser(context.Background(), &store.User{Email: "crew@gmail.com", PasswordHash: string(hash), Role: "applicant", Name: "Crew"}); err != nil {
+		t.Fatal(err)
 	}
-	if rec := post(h.Signup, `{"role":"applicant","name":"Bot","email":"09181234567","password":"secret-pass"}`); rec.Code != http.StatusTooManyRequests {
-		t.Fatalf("signup flood: want 429, got %d", rec.Code)
+	if rec := postTo(h.ForgotPassword, `{"role":"applicant","email":"nobody@gmail.com"}`); rec.Code != http.StatusAccepted || mail.to != "" {
+		t.Fatalf("unknown email: want 202 and no email, got %d to=%q", rec.Code, mail.to)
+	}
+	if rec := postTo(h.ForgotPassword, `{"role":"applicant","email":"crew@gmail.com"}`); rec.Code != http.StatusAccepted || mail.to != "crew@gmail.com" {
+		t.Fatalf("forgot: %d to=%q", rec.Code, mail.to)
+	}
+	reset := func(code string) int {
+		return postTo(h.ResetPassword, `{"role":"applicant","email":"crew@gmail.com","code":"`+code+`","password":"new-password"}`).Code
+	}
+	code := mail.code(t)
+	wrong := "000000"
+	if code == wrong {
+		wrong = "111111"
+	}
+	if got := reset(wrong); got != http.StatusBadRequest {
+		t.Fatalf("wrong code: want 400, got %d", got)
+	}
+	if got := reset(code); got != http.StatusNoContent {
+		t.Fatalf("reset: %d", got)
+	}
+	if got := reset(code); got != http.StatusBadRequest {
+		t.Fatalf("code reused: want 400, got %d", got)
+	}
+	login := func(pw string) int {
+		return postTo(h.Login, `{"role":"applicant","email":"crew@gmail.com","password":"`+pw+`"}`).Code
+	}
+	if login("old-password") != http.StatusUnauthorized || login("new-password") != http.StatusOK {
+		t.Fatal("old password must stop working and the new one must work")
 	}
 }

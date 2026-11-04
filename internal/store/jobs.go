@@ -587,7 +587,9 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64, require
 		}
 		return err
 	}
-	_, _ = tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES($1,$2,'accepted',$3,$4) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now)
+	if _, err := tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES($1,$2,'accepted',$3,$4) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES($1,$2,'accepted') ON CONFLICT DO NOTHING`, jobID, applicantID); err != nil {
 		return err
 	}

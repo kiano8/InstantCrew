@@ -84,7 +84,7 @@ var pages = map[string]bool{
 	"index.html": true, "login.html": true,
 	"employer.html": true, "applicant.html": true,
 	"admin.html": true, "accounting.html": true, "telemetry.html": true,
-	"privacy.html": true, "terms.html": true,
+	"privacy.html": true, "terms.html": true, "sso-error.html": true,
 }
 
 func main() {
@@ -163,6 +163,7 @@ func main() {
 	if !authH.Mail.Configured() {
 		log.Printf("SMTP not configured (SMTP_USERNAME, SMTP_PASSWORD): signup and password reset emails are disabled")
 	}
+
 	googleID, googleSecret := os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET")
 	var googleErr error
 	if googleID != "" || googleSecret != "" {
@@ -251,12 +252,6 @@ func main() {
 			return
 		}
 		if !pages[p] {
-			if strings.HasSuffix(strings.ToLower(p), ".html") {
-				if info, err := os.Stat(p); err == nil && !info.IsDir() {
-					servePage(w, r, p)
-					return
-				}
-			}
 			http.NotFound(w, r)
 			return
 		}

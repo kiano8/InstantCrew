@@ -1,5 +1,5 @@
 /* ================================================================
-   Signup email verification (Gmail only).
+   Signup email verification (Gmail only), for employers and crew alike.
    The first submit of a signup form asks the server to email a 6-digit code
    and shows a code field above the submit button; the next submit returns the
    typed code so it can be sent with POST /api/auth/signup.

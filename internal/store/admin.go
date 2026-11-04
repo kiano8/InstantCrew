@@ -181,7 +181,7 @@ func (s *Store) ListAllPayments(ctx context.Context) ([]AdminPaymentRecord, erro
 			AmountCentavos:  amountCentavos,
 			AmountPesos:     fmt.Sprintf("₱%.2f", float64(amountCentavos)/100),
 			Method:          method,
-			Details:         hiresText(amountCentavos/HirePriceCentavos),
+			Details:         hiresText(amountCentavos / HirePriceCentavos),
 			ProofImage:      proofImage,
 			Status:          displayStatus,
 			IsVerified:      isVerified,
@@ -372,14 +372,6 @@ func (s *Store) SetPaymentStatus(ctx context.Context, pType string, id int64, st
 	}
 
 	return tx.Commit()
-}
-
-func (s *Store) VerifyPayment(ctx context.Context, pType string, id int64, verified bool, verifiedBy string) error {
-	status := "pending"
-	if verified {
-		status = "verified"
-	}
-	return s.SetPaymentStatus(ctx, pType, id, status, verifiedBy, "")
 }
 
 // EnsureAdminUser inserts an admin account when missing. Existing passwords are left unchanged.
