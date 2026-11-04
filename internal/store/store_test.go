@@ -506,6 +506,21 @@ func TestStore_ReleaseUnpaidMatches(t *testing.T) {
 	if open != 0 {
 		t.Fatalf("released crew member must be unassigned, %d still assigned", open)
 	}
+
+	// The released crew member sees the reopened search and can take it again.
+	var releasedCrew int64
+	must("crew id", raw.QueryRow(`SELECT applicant_id FROM job_assignments WHERE job_id=$1`, unpaid).Scan(&releasedCrew))
+	must("crew free", func() error {
+		_, err := raw.Exec(`UPDATE job_assignments SET ended_at=accepted_at WHERE job_id IN ($1,$2)`, paid, fresh)
+		return err
+	}())
+	if _, err := st.ApplicantJob(ctx, releasedCrew, unpaid); err != nil {
+		t.Fatalf("released crew member can't see the reopened search: %v", err)
+	}
+	must("re-accept", st.AcceptJob(ctx, unpaid, releasedCrew, nil))
+	if err := st.AcceptJob(ctx, unpaid, releasedCrew, nil); err == nil {
+		t.Fatal("accepting the same job twice must fail")
+	}
 }
 
 // After a contract ends both sides are asked to rate each other once. The

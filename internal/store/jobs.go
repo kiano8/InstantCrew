@@ -284,7 +284,8 @@ func (s *Store) LatestJobPayments(ctx context.Context, jobIDs []int64) (map[int6
 }
 
 // crewCanTake is the one rule for whether profile p can take job j. Crew who were
-// on this job before (accepted then released, or declined) can't take it again.
+// on this job before (declined it, or turned down by the employer) can't take it
+// again; crew released because the employer didn't pay ('withdrawn') can.
 const crewCanTake = `p.is_active=true AND lower(trim(p.city))=lower(trim(j.city))
 		AND p.employment_type=j.employment_type AND ` + eligibleCrew + `
 		AND EXISTS (SELECT 1 FROM applicant_roles ar WHERE ar.applicant_id=p.user_id AND ar.role_id=j.role_id)
@@ -489,7 +490,11 @@ func (s *Store) releaseUnpaidMatch(ctx context.Context, jobID int64) (bool, erro
 		"The employer didn't pay the search fee for the "+roleLabel+" shift in time, so you're free to take other shifts.", now, jobID); err != nil {
 		return false, err
 	}
-	// The crew member can't accept this same job again (one assignment per job and crew member).
+	// The employer, not the crew member, broke this match: 'withdrawn' keeps the
+	// reopened search visible to them (crewCanTake hides pending/accepted/rejected).
+	if _, err := tx.ExecContext(ctx, `UPDATE job_applications SET status='withdrawn', updated_at=$1 WHERE job_id=$2 AND status='accepted'`, now, jobID); err != nil {
+		return false, err
+	}
 	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments SET ended_at=$1 WHERE job_id=$2 AND ended_at IS NULL`, now, jobID); err != nil {
 		return false, err
 	}
@@ -593,22 +598,33 @@ func (s *Store) AcceptJob(ctx context.Context, jobID, applicantID int64, require
 	if err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO job_assignments (job_id, applicant_id, accepted_at, requirements) VALUES ($1, $2, $3, $4)`,
-		jobID, applicantID, now, string(reqJSON)); err != nil {
-		if strings.Contains(err.Error(), "duplicate key") {
-			return ErrAlreadyAccepted
-		}
+	// A crew member released by an unpaid match (application 'withdrawn') takes the
+	// job again on their old assignment row; any other existing row is a duplicate.
+	res, err = tx.ExecContext(ctx,
+		`INSERT INTO job_assignments (job_id, applicant_id, accepted_at, requirements) VALUES ($1, $2, $3, $4)
+		ON CONFLICT (job_id, applicant_id) DO UPDATE SET accepted_at=excluded.accepted_at, requirements=excluded.requirements,
+			ended_at=NULL, transit_status='none', arrival_deadline_at=NULL, hire_refunded=false
+		WHERE job_assignments.ended_at IS NOT NULL AND EXISTS (SELECT 1 FROM job_applications
+			WHERE job_id=$1 AND applicant_id=$2 AND status='withdrawn')`,
+		jobID, applicantID, now, string(reqJSON))
+	if err != nil {
 		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrAlreadyAccepted
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO job_applications(job_id,applicant_id,status,applied_at,updated_at) VALUES($1,$2,'accepted',$3,$4) ON CONFLICT(job_id,applicant_id) DO UPDATE SET status='accepted',updated_at=excluded.updated_at`, jobID, applicantID, now, now); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES($1,$2,'accepted') ON CONFLICT DO NOTHING`, jobID, applicantID); err != nil {
+	res, err = tx.ExecContext(ctx, `INSERT INTO applicant_rating_events(job_id,applicant_id,outcome) VALUES($1,$2,'accepted') ON CONFLICT DO NOTHING`, jobID, applicantID)
+	if err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=LEAST(500,rating_hundredths+1) WHERE user_id=$1 AND EXISTS(SELECT 1 FROM applicant_rating_events WHERE job_id=$2 AND applicant_id=$3 AND outcome='accepted')`, applicantID, jobID, applicantID); err != nil {
-		return err
+	// Bump once per job: re-accepting a released job must not raise the rating again.
+	if n, _ := res.RowsAffected(); n > 0 {
+		if _, err := tx.ExecContext(ctx, `UPDATE applicant_profiles SET rating_hundredths=LEAST(500,rating_hundredths+1) WHERE user_id=$1`, applicantID); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
