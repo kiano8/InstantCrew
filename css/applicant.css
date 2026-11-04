@@ -7368,7 +7368,7 @@ body.app-sheet-open {
     display: grid;
     gap: 8px;
 }
-.app-referral-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.app-referral-head { display: flex; align-items: center; gap: 8px; }
 .app-referral-label { font-size: 0.78rem; font-weight: 700; color: #475569; }
 .app-referral-chip {
     font-size: 0.9rem; font-weight: 800; letter-spacing: 0.1em; color: var(--ink);
