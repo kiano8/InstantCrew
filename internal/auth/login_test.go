@@ -177,31 +177,31 @@ func TestNormalizePHMobile(t *testing.T) {
 	}
 }
 
-// Crew sign up with a Gmail address and the emailed code, like employers.
-func TestApplicantSignupWithEmail(t *testing.T) {
+// Crew sign up with a contact number and no code, then log in however they type it.
+func TestApplicantSignupWithContactNumber(t *testing.T) {
 	st, _ := storetest.Open(t)
-	mail := &inbox{}
-	h := &Handler{Store: st, SessionTTL: time.Hour, Mail: mail}
-	signup := func(email, code string) int {
-		return postTo(h.Signup, `{"role":"applicant","name":"Crew","email":"`+email+`","password":"secret-pass","code":"`+code+`"}`).Code
+	h := &Handler{Store: st, SessionTTL: time.Hour}
+	signup := `{"role":"applicant","name":"Crew","email":"0917 123 4567","password":"secret-pass"}`
+	if rec := postTo(h.Signup, signup); rec.Code != http.StatusCreated {
+		t.Fatalf("signup: %d %s", rec.Code, rec.Body)
 	}
-	if code := signup("crew@gmail.com", ""); code != http.StatusBadRequest {
-		t.Fatalf("no code: want 400, got %d", code)
+	if rec := postTo(h.Signup, `{"role":"applicant","name":"Twin","email":"+639171234567","password":"secret-pass"}`); rec.Code != http.StatusConflict {
+		t.Fatalf("same number in another format: want 409, got %d", rec.Code)
 	}
-	if rec := postTo(h.SignupCode, `{"role":"applicant","email":"09171234567"}`); rec.Code != http.StatusBadRequest {
-		t.Fatalf("contact number: want 400, got %d", rec.Code)
-	}
-	if rec := postTo(h.SignupCode, `{"role":"applicant","email":"Crew@Gmail.com"}`); rec.Code != http.StatusAccepted {
-		t.Fatalf("signup code: %d %s", rec.Code, rec.Body)
-	}
-	if mail.to != "crew@gmail.com" {
-		t.Fatalf("code emailed to %q", mail.to)
-	}
-	if got := signup("crew@gmail.com", mail.code(t)); got != http.StatusCreated {
-		t.Fatalf("signup: %d", got)
-	}
-	if rec := postTo(h.Login, `{"role":"applicant","email":"crew@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusOK {
+	if rec := postTo(h.Login, `{"role":"applicant","email":"09171234567","password":"secret-pass"}`); rec.Code != http.StatusOK {
 		t.Fatalf("login: %d %s", rec.Code, rec.Body)
+	}
+	if rec := postTo(h.Signup, `{"role":"applicant","name":"Crew","email":"crew@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("email signup for crew: want 400, got %d", rec.Code)
+	}
+	if rec := postTo(h.Signup, `{"role":"employer","name":"Boss","company":"Co","email":"boss@gmail.com","password":"secret-pass"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("employer without a code: want 400, got %d", rec.Code)
+	}
+	for i := 0; i < maxLoginFailures; i++ {
+		h.crewSignups.fail("signup", "192.0.2.1")
+	}
+	if rec := postTo(h.Signup, `{"role":"applicant","name":"Bot","email":"09181234567","password":"secret-pass"}`); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("signup flood: want 429, got %d", rec.Code)
 	}
 }
 

@@ -170,7 +170,7 @@
                             <div class="form-group">
                                 <div class="input-wrapper">
                                     <input type="text" id="appLoginEmail" class="form-input"
-                                        placeholder="Email Address" required autocomplete="username">
+                                        placeholder="Contact Number or Email" required autocomplete="username">
                                     <span class="input-icon-right">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -388,8 +388,8 @@
 
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <input type="email" id="appSignupEmail" class="form-input"
-                                        placeholder="Gmail Address (name@gmail.com)" required autocomplete="email">
+                                    <input type="tel" id="appSignupEmail" class="form-input"
+                                        placeholder="Contact Number (09171234567)" required autocomplete="tel">
                                     <span class="input-icon-right">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2">
@@ -566,7 +566,7 @@
     </div>
 
     <!-- ── Authentication State & Logic Script ── -->
-    <script src="js/email-code.js?v=20261104-crew-email"></script>
+    <script src="js/email-code.js?v=20261030-no-login-code"></script>
     <script>
         (function () {
             'use strict';
@@ -1021,15 +1021,12 @@
             formApplicantSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btnSubmitApplicantSignup');
-                const code = await signupCode(formApplicantSignup, 'appSignupEmail', 'applicant', btn);
-                if (!code) return;
                 const user = await authRequest('/api/auth/signup', {
                     role: 'applicant',
                     name: document.getElementById('appFullName').value,
                     email: document.getElementById('appSignupEmail').value,
                     password: document.getElementById('appSignupPassword').value,
                     referral: document.getElementById('appSignupReferral').value,
-                    code,
                 }, btn, 'Joining Instant Crew...', 'Register');
                 if (!user) return;
                 saveWorkerSession(user);
@@ -1140,7 +1137,7 @@
                     if (!forgotSentTo) {
                         const email = forgotEmailInput.value.trim().toLowerCase();
                         if (/^[\d\s()+-]+$/.test(email)) {
-                            showForgotError("Older crew accounts made with a contact number have no email to send a code to. Please message us on Facebook and we'll reset it for you.");
+                            showForgotError("We can't reset a password by contact number yet. Please message us on Facebook and we'll help you.");
                             return;
                         }
                         if (!email || !email.includes('@')) {

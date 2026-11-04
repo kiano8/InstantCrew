@@ -28,13 +28,14 @@ type Handler struct {
 	IdleTimeout   time.Duration // sign out after this long without user activity; 0 = off
 	MaxUsers      int           // beta cap on distinct testers; 0 = unlimited
 	CookieSecure  bool
-	Mail          Mailer            // emails signup and password reset codes
+	Mail          Mailer            // sends signup and password reset codes
 	DevLogCodes   bool              // dev only: log codes instead of failing when Mail is unset
 	OnUserCreated func(role string) // optional hook invoked after a new user registers
 	google        *googleOAuth
 	facebook      *facebookOAuth
 	codeMail      mailLimiter
 	loginFails    loginLimiter
+	crewSignups   loginLimiter // no code to slow them, so limit how fast accounts can be made
 }
 
 const (
@@ -200,8 +201,8 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, u *store.
 }
 
 // POST /api/auth/signup
-// Employers and crew sign up with a Gmail address and the code SignupCode emailed to it.
-// Crew accounts made earlier with a contact number still log in with it (see normalizeLogin).
+// Employers sign up with a Gmail address and the code SignupCode emailed to them.
+// Applicants sign up with a Philippine mobile number, sent as "email", and no code.
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Role     string `json:"role"`
@@ -224,13 +225,22 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "invalid role")
 		return
 	}
-	if !validEmail(email) {
-		httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
-		return
-	}
-	if !isGmail(email) {
-		httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
-		return
+	if req.Role == "applicant" {
+		phone, ok := normalizePHMobile(req.Email)
+		if !ok {
+			httpx.Error(w, http.StatusBadRequest, "please enter a valid mobile number, like 09171234567")
+			return
+		}
+		email = phone
+	} else {
+		if !validEmail(email) {
+			httpx.Error(w, http.StatusBadRequest, "please enter a valid email address")
+			return
+		}
+		if !isGmail(email) {
+			httpx.Error(w, http.StatusBadRequest, "please sign up with a Gmail address (name@gmail.com)")
+			return
+		}
 	}
 	// bcrypt only uses the first 72 bytes, so reject anything longer.
 	if len(req.Password) < 8 || len(req.Password) > 72 {
@@ -261,18 +271,27 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		}
 		referrerID = id
 	}
-	if strings.TrimSpace(req.Code) == "" {
-		httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
-		return
-	}
-	purpose := "signup:" + req.Role
-	if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
-		if errors.Is(err, store.ErrCodeInvalid) {
-			httpx.Error(w, http.StatusBadRequest, err.Error())
+	if req.Role == "applicant" {
+		ip := clientIP(r)
+		if h.crewSignups.blocked("signup", ip) {
+			httpx.Error(w, http.StatusTooManyRequests, "too many sign-ups from this connection; please try again in 15 minutes")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "something went wrong")
-		return
+		h.crewSignups.fail("signup", ip)
+	} else {
+		if strings.TrimSpace(req.Code) == "" {
+			httpx.Error(w, http.StatusBadRequest, "enter the verification code we emailed you")
+			return
+		}
+		purpose := "signup:" + req.Role
+		if err := h.Store.UseEmailCode(r.Context(), email, purpose, codeHash(purpose, email, req.Code)); err != nil {
+			if errors.Is(err, store.ErrCodeInvalid) {
+				httpx.Error(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+			return
+		}
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
