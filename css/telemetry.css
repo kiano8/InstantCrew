@@ -45,3 +45,5 @@
     .tel-grid { grid-template-columns: minmax(0, 1fr); }
     .tel-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 }
+.tel-users { min-width: 720px; margin-top: 10px; }
+.tel-users td { overflow-wrap: anywhere; }

@@ -171,6 +171,15 @@
     $('routes').innerHTML = r.routes.length ? r.routes.map(function (x) {
       return '<tr><td><code>' + esc(x.route) + '</code></td><td>' + num(x.requests) + '</td><td>' + num(x.client_errors) + '</td><td>' + num(x.server_errors) + '</td><td>' + num(x.avg_ms) + ' ms</td><td>' + num(x.slow) + '</td></tr>';
     }).join('') : '<tr><td colspan="6">No requests in this period.</td></tr>';
+
+    var users = r.users || [];
+    var employers = users.filter(function (u) { return u.role === 'employer'; }).length;
+    $('kUsers').textContent = num(users.length);
+    $('kEmployers').textContent = num(employers);
+    $('kCrew').textContent = num(users.length - employers);
+    $('users').innerHTML = users.length ? users.map(function (u) {
+      return '<tr><td>' + num(u.id) + '</td><td>' + esc(u.name) + '</td><td>' + esc(u.login) + '</td><td>' + (u.role === 'employer' ? 'Employer' : 'Crew') + '</td><td>' + esc(u.company || '—') + '</td><td>' + esc(fmtFull(u.created_at)) + '</td></tr>';
+    }).join('') : '<tr><td colspan="6">No real signups yet.</td></tr>';
   }
 
   // This page is served by the app it monitors, so a failed poll is itself the signal.

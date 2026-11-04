@@ -88,3 +88,34 @@ func TestOutagesFromHeartbeatGaps(t *testing.T) {
 		t.Fatalf("uptime = %v", r.UptimePercent)
 	}
 }
+
+// The users table lists real signups only: no admins, no cmd/seed demo accounts.
+func TestReportUsersSkipsSeedAndAdmin(t *testing.T) {
+	st, _ := storetest.Open(t)
+	ctx := context.Background()
+	for _, u := range []store.User{
+		{Email: "+639171234567", Role: "applicant", Name: "Crew"},
+		{Email: "boss@gmail.com", Role: "employer", Name: "Boss", Company: "Co"},
+		{Email: "cook@seed.instantcrew.test", Role: "applicant", Name: "Seed"},
+		{Email: "admin@instantcrew.com", Role: "admin", Name: "Admin"},
+	} {
+		u.PasswordHash = "x"
+		if err := st.CreateUser(ctx, &u); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r, err := st.TelemetryReport(ctx, time.Now(), 60, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Users) != 2 || r.Users[0].Login != "boss@gmail.com" || r.Users[1].Login != "+639171234567" {
+		t.Fatalf("users = %+v", r.Users)
+	}
+	var signups int64
+	for _, p := range r.Series {
+		signups += p.Signups
+	}
+	if signups != 2 {
+		t.Fatalf("signup chart counted %d, want 2", signups)
+	}
+}

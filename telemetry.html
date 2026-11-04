@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css?v=20261101-telemetry">
-    <link rel="stylesheet" href="css/telemetry.css?v=20261101-telemetry">
+    <link rel="stylesheet" href="css/telemetry.css?v=20261104-users">
     <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
 </head>
 <body>
@@ -47,6 +47,9 @@
             <div class="adm-metric-card"><div class="adm-metric-label">Server errors</div><div class="adm-metric-val" id="kErrors">—</div><div class="adm-metric-sub" id="kErrorsSub"></div></div>
             <div class="adm-metric-card"><div class="adm-metric-label">Avg response</div><div class="adm-metric-val" id="kLatency">—</div><div class="adm-metric-sub" id="kLatencySub"></div></div>
             <div class="adm-metric-card"><div class="adm-metric-label">Visitors today</div><div class="adm-metric-val" id="kVisitors">—</div><div class="adm-metric-sub" id="kVisitorsSub"></div></div>
+            <div class="adm-metric-card"><div class="adm-metric-label">Real signups</div><div class="adm-metric-val" id="kUsers">—</div><div class="adm-metric-sub">All time, no seed data</div></div>
+            <div class="adm-metric-card"><div class="adm-metric-label">Employers</div><div class="adm-metric-val" id="kEmployers">—</div><div class="adm-metric-sub">Signed up</div></div>
+            <div class="adm-metric-card"><div class="adm-metric-label">Crew</div><div class="adm-metric-val" id="kCrew">—</div><div class="adm-metric-sub">Signed up</div></div>
         </div>
 
         <section class="tel-card">
@@ -74,7 +77,18 @@
                 </table>
             </div>
         </section>
+
+        <section class="tel-card">
+            <h2>Real users</h2>
+            <p class="tel-note">Everyone who signed up, newest first. Admins and seeded demo accounts are left out.</p>
+            <div class="adm-table-wrap">
+                <table class="adm-table tel-users">
+                    <thead><tr><th>ID</th><th>Name</th><th>Contact number / email</th><th>Role</th><th>Company</th><th>Signed up</th></tr></thead>
+                    <tbody id="users"></tbody>
+                </table>
+            </div>
+        </section>
     </main>
-    <script src="js/telemetry.js?v=20261101-telemetry"></script>
+    <script src="js/telemetry.js?v=20261104-users"></script>
 </body>
 </html>

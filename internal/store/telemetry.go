@@ -54,6 +54,19 @@ type TelemetryDay struct {
 	Visitors int64 `json:"visitors"`
 }
 
+// TelemetryUser is a real signup shown on the dashboard.
+type TelemetryUser struct {
+	ID        int64  `json:"id"`
+	Login     string `json:"login"` // contact number (+63…) or email, whatever they signed up with
+	Role      string `json:"role"`
+	Name      string `json:"name"`
+	Company   string `json:"company"`
+	CreatedAt int64  `json:"created_at"`
+}
+
+// realUsers leaves out admins and the demo accounts cmd/seed makes.
+const realUsers = `role <> 'admin' AND email NOT LIKE '%@seed.instantcrew.test'`
+
 type TelemetryReport struct {
 	Series          []TelemetryPoint  `json:"series"`
 	Routes          []TelemetryRoute  `json:"routes"`
@@ -62,6 +75,7 @@ type TelemetryReport struct {
 	MonitoringSince int64             `json:"monitoring_since"`
 	Visitors        []TelemetryDay    `json:"visitors"`
 	SignedIn        map[string]int64  `json:"signed_in"`
+	Users           []TelemetryUser   `json:"users"` // every real signup, newest first
 	DBOpenConns     int               `json:"db_open_conns"`
 	DBInUseConns    int               `json:"db_in_use_conns"`
 	DBPingMS        int64             `json:"db_ping_ms"`
@@ -126,6 +140,7 @@ func (s *Store) TelemetryReport(ctx context.Context, now time.Time, step int64, 
 		Outages:  []TelemetryOutage{},
 		Visitors: []TelemetryDay{},
 		SignedIn: map[string]int64{},
+		Users:    []TelemetryUser{},
 	}
 	for i := range r.Series {
 		r.Series[i].T = from + int64(i)*step
@@ -191,7 +206,7 @@ func (s *Store) TelemetryReport(ctx context.Context, now time.Time, step int64, 
 		return nil
 	}, `SELECT kind, (created_at + $1::BIGINT) / $2::BIGINT * $2::BIGINT - $1::BIGINT AS b, COUNT(*)::BIGINT
 		FROM (
-		  SELECT 'signup' AS kind, created_at FROM users WHERE role <> 'admin' AND created_at >= $3
+		  SELECT 'signup' AS kind, created_at FROM users WHERE `+realUsers+` AND created_at >= $3
 		  UNION ALL SELECT 'job', created_at FROM jobs WHERE created_at >= $3
 		  UNION ALL SELECT 'payment', created_at FROM payments WHERE created_at >= $3
 		  UNION ALL SELECT 'payment', created_at FROM applicant_hiring_pass_payments WHERE created_at >= $3
@@ -274,6 +289,19 @@ func (s *Store) TelemetryReport(ctx context.Context, now time.Time, step int64, 
 	}, `SELECT u.role, COUNT(DISTINCT s.user_id)::BIGINT
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		WHERE s.expires_at > $1 AND s.last_seen_at > $2 GROUP BY u.role`, nowUnix, s.idleCutoff(now))
+	if err != nil {
+		return nil, err
+	}
+
+	// shortcut: no paging, fine while the beta caps signups (BETA_MAX_USERS); page it past a few thousand.
+	err = each(func(rows *sql.Rows) error {
+		var u TelemetryUser
+		if err := rows.Scan(&u.ID, &u.Login, &u.Role, &u.Name, &u.Company, &u.CreatedAt); err != nil {
+			return err
+		}
+		r.Users = append(r.Users, u)
+		return nil
+	}, `SELECT id, email, role, name, company, created_at FROM users WHERE `+realUsers+` ORDER BY created_at DESC, id DESC`)
 	if err != nil {
 		return nil, err
 	}
