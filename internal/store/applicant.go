@@ -60,10 +60,11 @@ type HiringPass struct {
 	PaidAmount     int64              `json:"paidAmount"`
 	BatchesPaid    int                `json:"batchesPaid"`
 	PendingPayment *HiringPassPending `json:"pendingPayment,omitempty"`
+	ReferralCode   string             `json:"referralCode"`
 }
 
 func (s *Store) ApplicantHiringPass(ctx context.Context, applicantID int64) (HiringPass, error) {
-	var p HiringPass
+	p := HiringPass{ReferralCode: ReferralCode(applicantID)}
 	err := s.db.QueryRowContext(ctx, `SELECT total_hires,remaining_hires,used_hires,amount_centavos,batches_paid FROM applicant_hiring_passes WHERE applicant_id=$1`, applicantID).
 		Scan(&p.TotalHires, &p.RemainingHires, &p.UsedHires, &p.PaidAmount, &p.BatchesPaid)
 	if err == sql.ErrNoRows {

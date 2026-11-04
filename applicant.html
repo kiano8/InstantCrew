@@ -1609,6 +1609,7 @@
                                     <span class="app-pass-count-text" id="appPassCountText"><strong>5</strong> / 5 hires
                                         remaining (0 achieved)</span>
                                 </div>
+                                <div class="app-pass-count-text" id="appReferralText" style="display:none; margin-top:6px;"></div>
                             </div>
                         </div>
                     </div>
@@ -6543,6 +6544,15 @@
                     } else {
                         countText.innerHTML = `<strong>${remaining}</strong> / ${total} hires remaining (${used} achieved)`;
                     }
+                }
+                const referralEl = document.getElementById('appReferralText');
+                if (referralEl && quota.referralCode) {
+                    referralEl.style.display = '';
+                    referralEl.innerHTML = `Your referral code: <strong>${quota.referralCode}</strong> <button type="button" id="appReferralCopy" style="font:inherit; color:#D97706; background:none; border:0; padding:0; cursor:pointer; text-decoration:underline;">Copy invite link</button><br>Get +1 free hire for every crew member who signs up with it. New crew earn 5 free hires after their first 5 shifts.`;
+                    document.getElementById('appReferralCopy').onclick = (e) => {
+                        const link = `${location.origin}/login.html?role=applicant&mode=signup&ref=${encodeURIComponent(quota.referralCode)}`;
+                        navigator.clipboard.writeText(link).then(() => { e.target.textContent = 'Link copied!'; }, () => window.prompt('Copy your invite link:', link));
+                    };
                 }
                 if (fillEl) {
                     fillEl.style.width = `${pct}%`;

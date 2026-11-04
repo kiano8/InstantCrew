@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"regexp"
@@ -207,9 +208,10 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		Role     string `json:"role"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
-		Name     string `json:"name"`    // applicant full name, or employer contact person
-		Company  string `json:"company"` // employers only
-		Code     string `json:"code"`    // from POST /api/auth/signup-code
+		Name     string `json:"name"`     // applicant full name, or employer contact person
+		Company  string `json:"company"`  // employers only
+		Code     string `json:"code"`     // from POST /api/auth/signup-code
+		Referral string `json:"referral"` // optional crew referral code, applicants only
 	}
 	if !httpx.Decode(w, r, &req) {
 		return
@@ -256,6 +258,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "applicant" {
 		company = ""
 	}
+	var referrerID int64
+	if req.Role == "applicant" && strings.TrimSpace(req.Referral) != "" {
+		id, err := h.Store.ReferrerByCode(r.Context(), req.Referral)
+		if errors.Is(err, store.ErrReferralCode) {
+			httpx.Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "something went wrong")
+			return
+		}
+		referrerID = id
+	}
 	if req.Role == "applicant" {
 		ip := clientIP(r)
 		if h.crewSignups.blocked("signup", ip) {
@@ -300,6 +315,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 	if h.OnUserCreated != nil {
 		h.OnUserCreated(u.Role)
+	}
+	if referrerID != 0 {
+		// The account exists already, so a failed reward must not fail the sign-up.
+		if err := h.Store.CreditReferral(r.Context(), u.ID, referrerID, u.Name); err != nil {
+			log.Printf("referral credit for user %d: %v", u.ID, err)
+		}
 	}
 	if err := h.startSession(w, r, u); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "something went wrong")

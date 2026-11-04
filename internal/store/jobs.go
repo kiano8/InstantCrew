@@ -736,6 +736,9 @@ func (s *Store) EndJob(ctx context.Context, employerID, id int64) error {
 		`UPDATE job_assignments SET ended_at = $1 WHERE job_id = $2 AND ended_at IS NULL`, now, id); err != nil {
 		return err
 	}
+	if err := grantShiftRewards(ctx, tx, id, now); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 

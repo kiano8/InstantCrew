@@ -427,6 +427,14 @@
                                 </div>
                             </div>
 
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <input type="text" id="appSignupReferral" class="form-input"
+                                        placeholder="Referral code (optional)" maxlength="16"
+                                        autocomplete="off" autocapitalize="characters" aria-label="Referral code (optional)">
+                                </div>
+                            </div>
+
                             <button type="submit" class="btn-auth-submit"
                                 id="btnSubmitApplicantSignup">Register</button>
                         </form>
@@ -1008,6 +1016,8 @@
             }
 
             // Applicant sign up 
+            const refParam = new URLSearchParams(location.search).get('ref');
+            if (refParam) document.getElementById('appSignupReferral').value = refParam;
             formApplicantSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('btnSubmitApplicantSignup');
@@ -1016,6 +1026,7 @@
                     name: document.getElementById('appFullName').value,
                     email: document.getElementById('appSignupEmail').value,
                     password: document.getElementById('appSignupPassword').value,
+                    referral: document.getElementById('appSignupReferral').value,
                 }, btn, 'Joining Instant Crew...', 'Register');
                 if (!user) return;
                 saveWorkerSession(user);
