@@ -2948,20 +2948,22 @@ body {
 
 .app-loc-modal-footer {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    align-items: stretch;
     gap: 10px;
-    padding: 16px 22px;
+    padding: 14px 20px;
     background: var(--surface-2, #F8FAFC);
     border-top: 1px solid var(--border);
 }
 
 .app-btn-copy-address {
+    flex: 1 1 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 44px;
-    padding: 0 16px;
+    min-height: 44px;
+    padding: 10px 14px;
     border-radius: 12px;
     border: 1.5px solid var(--border);
     background: #FFFFFF;
@@ -2969,9 +2971,16 @@ body {
     font-family: inherit;
     font-size: 0.84rem;
     font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
     cursor: pointer;
     transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.1s ease;
     white-space: nowrap;
+}
+
+.app-btn-copy-address svg,
+.app-btn-open-google-maps svg {
+    flex-shrink: 0;
 }
 
 .app-btn-copy-address:hover {
@@ -2984,24 +2993,57 @@ body {
 }
 
 .app-btn-open-google-maps {
-    flex: 1;
+    flex: 2 1 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    height: 44px;
-    padding: 0 20px;
+    gap: 7px;
+    min-height: 44px;
+    padding: 10px 16px;
     border-radius: 12px;
     border: none;
     background: #EA4335;
     color: #FFFFFF !important;
     text-decoration: none;
     font-family: inherit;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(28, 28, 30, 0.14);
     transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
+}
+
+@media (max-width: 480px) {
+    .app-modal-overlay {
+        padding: 14px;
+    }
+
+    .app-loc-modal-footer {
+        padding: 12px 14px;
+        gap: 8px;
+    }
+
+    .app-btn-copy-address {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+        gap: 5px;
+    }
+
+    .app-btn-open-google-maps {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 340px) {
+    .app-btn-copy-address,
+    .app-btn-open-google-maps {
+        white-space: normal;
+    }
 }
 
 .app-btn-open-google-maps:hover {
