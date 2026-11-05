@@ -2975,7 +2975,7 @@ function buildBookingItem(b) {
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>${isAutoCancelled ? 'Auto-Cancelled: 1-Hr Arrival Limit Expired (No-Show Penalty)' : (b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract'))}</span>
+                <span>${isAutoCancelled ? 'Auto-Cancelled: 30-Min Limit Expired (No-Show Penalty)' : (b.endedAt ? `Concluded ${b.endedAt}` : (b.bookedAt ? `Concluded ${b.bookedAt}` : 'Concluded contract'))}</span>
             </span>
             <span class="app-job-archived-tag">Archived</span>
             </div>
@@ -3678,7 +3678,7 @@ function updateStep5TransitLiveStatus() {
     if (arrivalDeadline) {
       badgeEl.innerHTML = `<span>Waiting for transit of crew</span>`;
       timeEl.textContent = window.InstantCrewShared.formatArrivalCountdown(arrivalDeadline);
-      bodyEl.innerHTML = `<strong>${window.InstantCrewShared.escHtml(crewName)}</strong> must arrive at <strong>${window.InstantCrewShared.escHtml(venueName)}</strong> and mark arrival within 1 hour, or the shift is auto-cancelled.`;
+      bodyEl.innerHTML = `<strong>${window.InstantCrewShared.escHtml(crewName)}</strong> must tap On the Way to <strong>${window.InstantCrewShared.escHtml(venueName)}</strong> within 30 minutes, or the shift is auto-cancelled.`;
     } else {
       badgeEl.innerHTML = `<span>Preparing for Shift</span>`;
       timeEl.textContent = 'Awaiting Departure';

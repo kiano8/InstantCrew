@@ -5853,16 +5853,30 @@ body.app-sheet-open {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px 12px;
-    flex-wrap: wrap;
+    gap: 12px;
     margin: 8px 0;
-    padding: 9px 12px;
+    padding: 10px 14px;
     border-radius: 12px;
     background: #FFFBEB;
     border: 1px solid #FDE68A;
     color: #92400E;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     line-height: 1.4;
+}
+
+.app-arrival-reminder strong {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #78350F;
+}
+
+.app-arrival-reminder-clock {
+    flex-shrink: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #B45309;
+    font-variant-numeric: tabular-nums;
 }
 
 .app-card-transit-status {

@@ -124,8 +124,8 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 	onTime := bookShift()
 	crewList, err := st.Assignments(ctx, onTime)
 	must("assignments", err)
-	if d := crewList[0].ArrivalDeadlineAt; d == nil || time.Until(*d) < 59*time.Minute || time.Until(*d) > time.Hour {
-		t.Fatalf("expected a 1-hour arrival deadline, got %v", d)
+	if d := crewList[0].ArrivalDeadlineAt; d == nil || time.Until(*d) < 29*time.Minute || time.Until(*d) > 30*time.Minute {
+		t.Fatalf("expected a 30-minute On the Way deadline, got %v", d)
 	}
 	must("en route", st.UpdateApplicantTransit(ctx, onTime, crew.ID, "en_route", "t", "m", "transit"))
 	must("arrived", st.UpdateApplicantTransit(ctx, onTime, crew.ID, "arrived", "t", "m", "arrived"))
@@ -134,6 +134,16 @@ func TestNoShowPenaltyEscalation(t *testing.T) {
 		t.Fatalf("arrived crew must not be penalised: n=%d err=%v", n, err)
 	}
 	must("end job", st.EndJob(ctx, employer.ID, onTime))
+
+	// Crew who tapped On the Way have no limit left: no penalty, and they can still arrive.
+	travelling := bookShift()
+	must("en route", st.UpdateApplicantTransit(ctx, travelling, crew.ID, "en_route", "t", "m", "transit"))
+	expireDeadline(travelling)
+	if n, err := st.ExpireArrivals(ctx); err != nil || n != 0 {
+		t.Fatalf("crew on the way must not be penalised: n=%d err=%v", n, err)
+	}
+	must("arrived after the limit", st.UpdateApplicantTransit(ctx, travelling, crew.ID, "arrived", "t", "m", "arrived"))
+	must("end job", st.EndJob(ctx, employer.ID, travelling))
 
 	// Marking transit after the limit lapsed (before the sweep runs) is refused.
 	late := bookShift()

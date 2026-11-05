@@ -215,7 +215,7 @@ func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID i
 	}
 	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status=$1 WHERE job_id=$2 AND applicant_id=$3 AND ended_at IS NULL
 		AND transit_status=$4
-		AND (arrival_deadline_at IS NULL OR arrival_deadline_at > $6)
+		AND (transit_status<>'none' OR arrival_deadline_at IS NULL OR arrival_deadline_at > $6)
 		AND EXISTS (SELECT 1 FROM jobs WHERE id=$5 AND status='active')`, status, jobID, applicantID, prev, jobID, time.Now().Unix())
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func (s *Store) UpdateApplicantTransit(ctx context.Context, jobID, applicantID i
 		if qerr != nil {
 			return qerr
 		}
-		if transit == "no_show" || (!ended.Valid && deadline.Valid && deadline.Int64 <= time.Now().Unix()) {
+		if transit == "no_show" || (transit == "none" && !ended.Valid && deadline.Valid && deadline.Int64 <= time.Now().Unix()) {
 			return ErrArrivalExpired
 		}
 		if ended.Valid {

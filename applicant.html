@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/employer.css?v=20261104-safearea">
-    <link rel="stylesheet" href="css/applicant.css?v=20261104-promo3">
+    <link rel="stylesheet" href="css/applicant.css?v=20261105-clock">
     <link rel="stylesheet" href="css/pwa-install.css?v=20261029-deslop-merged">
     <link rel="icon" type="image/svg+xml" sizes="any" href="images/logo.svg?v=20261030-2">
     <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png?v=20261030-2">
@@ -2246,7 +2246,7 @@
     </div>
 
     <!-- ════ Application Logic Scripts ════ -->
-    <script src="js/shared-data.js?v=20261103-arrival"></script>
+    <script src="js/shared-data.js?v=20261105-clock"></script>
     <script src="js/location.js"></script>
     <script>
         (function () {
@@ -2879,7 +2879,7 @@
                     html = `
                         <div class="app-quota-warning-content">
                             <h4 style="color:#B91C1C;">Account Permanently Deactivated</h4>
-                            <p style="color:#991B1B;">You missed a shift's 1-hour arrival limit after serving a 5-day suspension, so your account has been permanently deactivated. All shift opportunities are locked. Contact support if you believe this is a mistake.</p>
+                            <p style="color:#991B1B;">You missed a shift's 30-minute On the Way limit after serving a 5-day suspension, so your account has been permanently deactivated. All shift opportunities are locked. Contact support if you believe this is a mistake.</p>
                         </div>`;
                 } else if (lock) {
                     const untilMs = session.deactivatedUntil ? new Date(session.deactivatedUntil).getTime() : (st?.deactivated_until ? Number(st.deactivated_until) * 1000 : 0);
@@ -2977,7 +2977,7 @@
                     `;
                     profileHtml = `
                         <div style="background:#FFF7ED; border:1px solid #FDBA74; border-radius:8px; padding:10px 12px; font-size:0.80rem; color:#9A3412; line-height:1.4;">
-                            <strong>No-Show Strikes: ${strikes}/3</strong> &bull; Arrive within 1 hour of accepting shifts to prevent 5-day deactivation.
+                            <strong>No-Show Strikes: ${strikes}/3</strong> &bull; Tap On the Way within 30 minutes of your shift starting to prevent 5-day deactivation.
                         </div>
                     `;
                 }
@@ -5057,9 +5057,9 @@
                     transitStatus: a.transit_status === 'en_route' ? 'on_the_way' : a.transit_status,
                     acceptedAt: a.accepted_at,
                     arrivalDeadline: window.InstantCrewShared ? InstantCrewShared.arrivalDeadlineFromSeconds(a.arrival_seconds_remaining) : 0,
-                    // The server's arrival limit (set on confirmation, scheduled shifts: from their start) has passed.
+                    // The server's On the Way limit (set on confirmation, scheduled shifts: from their start) has passed.
                     arrivalExpired: !!a.arrival_deadline_at && !a.ended_at && Number(a.arrival_seconds_remaining) <= 0
-                        && (a.transit_status === 'none' || a.transit_status === 'en_route'),
+                        && a.transit_status === 'none',
                     scheduledAt: j.scheduled_at || null,
                     noShow: !!a.no_show
                 };
@@ -5083,8 +5083,11 @@
                 if (!contract.confirmed || contract.transitStatus === 'arrived' || contract.transitStatus === 'on_the_way' || !contract.arrivalDeadline || beforeShiftDay(contract) || !window.InstantCrewShared) return '';
                 return `
                     <div class="app-arrival-reminder">
-                        <span>Arrive on site and tap <strong>Mark Arrived</strong> within 60 minutes, or the shift is auto-cancelled with a no-show penalty.</span>
-                        <span class="app-card-arrival-countdown" data-arrival-deadline="${contract.arrivalDeadline}">${InstantCrewShared.formatArrivalCountdown(contract.arrivalDeadline)}</span>
+                        <div>
+                            <strong>Tap On the Way in time</strong>
+                            <span>Otherwise the shift auto-cancels with a no-show penalty.</span>
+                        </div>
+                        <span class="app-arrival-reminder-clock" data-arrival-deadline="${contract.arrivalDeadline}">${InstantCrewShared.formatArrivalClock(contract.arrivalDeadline)}</span>
                     </div>`;
             }
             function refreshApplicantAssignments(force = false) {
@@ -5182,9 +5185,9 @@
                             <div class="app-contract-transit-group">
                                 <span class="app-contract-transit-status cancelled" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; display:inline-flex; align-items:center; gap:5px;">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                    <span>1-Hr Arrival Limit Expired &bull; Auto-Cancelling</span>
+                                    <span>30-Min On the Way Limit Expired &bull; Auto-Cancelling</span>
                                 </span>
-                                <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
+                                <div style="font-size:0.75rem; color:#DC2626; margin-top:4px;">30-minute limit to tap On the Way lapsed. Booking cancelled and crew rating deducted.</div>
                             </div>
                         `;
                     } else if (contract.transitStatus === 'on_the_way') {
@@ -5999,9 +6002,9 @@
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status cancelled" style="background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; display:inline-flex; align-items:center; gap:5px;">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                <span>1-Hr Arrival Limit Expired &bull; Auto-Cancelling</span>
+                                <span>30-Min On the Way Limit Expired &bull; Auto-Cancelling</span>
                             </span>
-                            <div style="flex-basis:100%; font-size:0.75rem; color:#DC2626;">1-hour arrival window lapsed. Booking cancelled and crew rating deducted.</div>
+                            <div style="flex-basis:100%; font-size:0.75rem; color:#DC2626;">30-minute limit to tap On the Way lapsed. Booking cancelled and crew rating deducted.</div>
                         </div>` : (!item.confirmed ? `<div class="app-card-transit-box"><span class="app-card-transit-status">The employer is paying the search fee. Your booking starts once accounting confirms it; if they don't pay within 3 minutes, you're released automatically.</span></div>` : heldUntilShiftDay ? `<div class="app-card-transit-box">${bookedForHtml(item)}</div>` : item.transitStatus === 'on_the_way' ? `
                         <div class="app-card-transit-box">
                             <span class="app-card-transit-status on-the-way">
@@ -6032,7 +6035,7 @@
                                 <line x1="15" y1="9" x2="9" y2="15"></line>
                                 <line x1="9" y1="9" x2="15" y2="15"></line>
                             </svg>
-                            <span>Auto-Cancelled: 1-Hr Limit Expired (No-Show)</span>
+                            <span>Auto-Cancelled: 30-Min Limit Expired (No-Show)</span>
                         </span>
                         <span class="app-job-archived-tag" style="background:#FEE2E2; color:#DC2626; border-color:#FECACA;">Rating Deducted</span>
                         ` : `
@@ -6041,7 +6044,7 @@
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
-                            <span>${item.noShow ? 'Auto-Cancelled: 1-Hr Arrival Limit Expired (No-Show Penalty)' : (item.endedAt ? `Concluded ${item.endedAt}` : 'Concluded contract')}</span>
+                            <span>${item.noShow ? 'Auto-Cancelled: 30-Min Limit Expired (No-Show Penalty)' : (item.endedAt ? `Concluded ${item.endedAt}` : 'Concluded contract')}</span>
                         </span>
                         <span class="app-job-archived-tag">Archived</span>
                         `}
@@ -8195,7 +8198,7 @@
             renderAcceptedShiftsList();
             renderWorkerNotifications();
 
-            // Live 1-hour arrival countdown ticker for active contracts
+            // Live 30-minute On the Way countdown ticker for active contracts
             setInterval(() => {
                 document.querySelectorAll('.app-transit-countdown-box').forEach(el => {
                     const deadline = parseInt(el.getAttribute('data-deadline'), 10);

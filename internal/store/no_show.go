@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	// ArrivalLimit is how long confirmed crew have to mark arrival on site.
-	ArrivalLimit = time.Hour
+	// DepartureLimit is how long confirmed crew have to tap On the Way. Once they
+	// have, no limit applies. The deadline stays in arrival_deadline_at.
+	DepartureLimit = 30 * time.Minute
 	// NoShowRatingPenalty is subtracted from rating_hundredths (0.20 stars).
 	NoShowRatingPenalty = 20
 	// NoShowSuspendAfter strikes are tolerated; the next one suspends the account.
@@ -22,7 +23,7 @@ const (
 var (
 	ErrAccountSuspended   = errors.New("your account is suspended for 5 days after repeated no-shows; you cannot accept shifts until it unlocks")
 	ErrAccountDeactivated = errors.New("your account has been permanently deactivated after a no-show following a suspension")
-	ErrArrivalExpired     = errors.New("the 1-hour arrival limit for this shift has expired")
+	ErrArrivalExpired     = errors.New("the 30-minute limit to tap On the Way for this shift has expired")
 )
 
 // manila is used for dates shown in notifications.
@@ -118,7 +119,7 @@ func (s *Store) ExpireArrivals(ctx context.Context) (int, error) {
 	}
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT a.job_id, a.applicant_id FROM job_assignments a JOIN jobs j ON j.id=a.job_id
-		WHERE a.ended_at IS NULL AND a.transit_status IN ('none','en_route')
+		WHERE a.ended_at IS NULL AND a.transit_status='none'
 		AND a.arrival_deadline_at IS NOT NULL AND a.arrival_deadline_at <= $1 AND j.status='active'`, now.Unix())
 	if err != nil {
 		return 0, err
@@ -160,7 +161,7 @@ func (s *Store) expireArrival(ctx context.Context, jobID, applicantID int64, now
 
 	// The guards make concurrent sweeps safe: only one can conclude the assignment.
 	res, err := tx.ExecContext(ctx, `UPDATE job_assignments SET transit_status='no_show', ended_at=$1
-		WHERE job_id=$2 AND applicant_id=$3 AND ended_at IS NULL AND transit_status IN ('none','en_route')
+		WHERE job_id=$2 AND applicant_id=$3 AND ended_at IS NULL AND transit_status='none'
 		AND arrival_deadline_at <= $1`, now.Unix(), jobID, applicantID)
 	if err != nil {
 		return false, err
@@ -187,21 +188,21 @@ func (s *Store) expireArrival(ctx context.Context, jobID, applicantID int64, now
 		return false, err
 	}
 
-	crewMsg := fmt.Sprintf("You did not mark arrival within the 1-hour limit for %s. The shift was auto-cancelled and your rating was lowered by 0.20 stars (no-show strike %d).", roleLabel, outcome.Strikes)
+	crewMsg := fmt.Sprintf("You did not tap On the Way within the 30-minute limit for %s. The shift was auto-cancelled and your rating was lowered by 0.20 stars (no-show strike %d).", roleLabel, outcome.Strikes)
 	switch {
 	case outcome.Permanent:
 		crewMsg += " Because this happened after a 5-day suspension, your account has been permanently deactivated."
 	case outcome.SuspendedUntil != nil:
 		crewMsg += fmt.Sprintf(" You have more than %d no-shows, so your account is suspended until %s.", NoShowSuspendAfter, outcome.SuspendedUntil.In(manila).Format("Jan 2, 2006 3:04 PM"))
 	}
-	empMsg := fmt.Sprintf("%s did not mark arrival within the 1-hour limit for %s, so the shift was auto-cancelled and a no-show penalty was applied to the crew member.", crewName, roleLabel)
+	empMsg := fmt.Sprintf("%s did not tap On the Way within the 30-minute limit for %s, so the shift was auto-cancelled and a no-show penalty was applied to the crew member.", crewName, roleLabel)
 
 	for _, n := range []struct {
 		userID         int64
 		title, message string
 	}{
 		{applicantID, "Shift auto-cancelled: no-show penalty", crewMsg},
-		{employerID, "Shift auto-cancelled: crew did not arrive", empMsg},
+		{employerID, "Shift auto-cancelled: crew did not set off", empMsg},
 	} {
 		if _, err := tx.ExecContext(ctx, `INSERT INTO notifications(user_id,title,message,type,payload,created_at)
 			VALUES($1,$2,$3,'no_show',json_build_object('job_id',$4::bigint)::text,$5)`,

@@ -568,20 +568,30 @@
         window.dispatchEvent(new CustomEvent('ic_state_change', { detail }));
     }
 
-    // 1-hour arrival limit countdown. Elements with data-arrival-deadline (epoch ms,
+    // 30-minute On the Way limit countdown. Elements with data-arrival-deadline (epoch ms,
     // derived from the server's seconds remaining) are refreshed every second.
-    const ARRIVAL_LIMIT_SECS = 3600; // matches store.ArrivalLimit
+    const ARRIVAL_LIMIT_SECS = 1800; // matches store.DepartureLimit
 
-    // formatArrivalCountdown counts down the 1-hour arrival limit. The deadline is the
-    // shift's start + 1 hour, so a scheduled shift's limit starts only at its start time.
+    // formatArrivalCountdown counts down the 30-minute limit to tap On the Way. The deadline
+    // is the shift's start + 30 minutes, so a scheduled shift's limit starts at its start time.
     function formatArrivalCountdown(deadlineMs) {
         const left = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
         if (left > ARRIVAL_LIMIT_SECS) {
             const start = new Date(deadlineMs - ARRIVAL_LIMIT_SECS * 1000);
-            return `Shift starts ${start.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · 1-hr arrival limit starts then`;
+            return `Shift starts ${start.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · 30-min limit to tap On the Way starts then`;
         }
-        if (left === 0) return '1-Hr Arrival Limit: time is up';
-        return `1-Hr Arrival Limit: ${Math.floor(left / 60)}m ${left % 60}s left`;
+        if (left === 0) return '30-Min On the Way Limit: time is up';
+        return `30-Min On the Way Limit: ${Math.floor(left / 60)}m ${left % 60}s left`;
+    }
+
+    // formatArrivalClock is the same countdown as just the clock: "29:30".
+    function formatArrivalClock(deadlineMs) {
+        const left = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
+        if (left > ARRIVAL_LIMIT_SECS) {
+            return `Starts ${new Date(deadlineMs - ARRIVAL_LIMIT_SECS * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+        }
+        if (left === 0) return "Time's up";
+        return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
     }
 
     function arrivalDeadlineFromSeconds(seconds) {
@@ -592,7 +602,7 @@
     function tickArrivalCountdowns() {
         document.querySelectorAll('[data-arrival-deadline]').forEach(el => {
             const deadline = Number(el.dataset.arrivalDeadline);
-            if (deadline > 0) el.textContent = formatArrivalCountdown(deadline);
+            if (deadline > 0) el.textContent = el.classList.contains('app-arrival-reminder-clock') ? formatArrivalClock(deadline) : formatArrivalCountdown(deadline);
         });
     }
     setInterval(tickArrivalCountdowns, 1000);
@@ -794,6 +804,7 @@
         startReviewPrompts,
         watchGcashReturn,
         formatArrivalCountdown,
+        formatArrivalClock,
         arrivalDeadlineFromSeconds,
         tickArrivalCountdowns,
         initJobs,

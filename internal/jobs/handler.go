@@ -527,9 +527,9 @@ func toCrewDTO(c store.Assignment) crewDTO {
 	return crewDTO{c.ApplicantID, c.Name, c.AcceptedAt, c.EndedAt, c.Transit, c.ArrivalDeadlineAt, arrivalSecondsRemaining(c), c.Rating, c.Requirements}
 }
 
-// arrivalSecondsRemaining is the time left to mark arrival, or 0 when no limit applies.
+// arrivalSecondsRemaining is the time left to tap On the Way, or 0 when no limit applies.
 func arrivalSecondsRemaining(a store.Assignment) int64 {
-	if a.ArrivalDeadlineAt == nil || a.EndedAt != nil || a.Transit == "arrived" || a.Transit == "no_show" {
+	if a.ArrivalDeadlineAt == nil || a.EndedAt != nil || a.Transit != "none" {
 		return 0
 	}
 	if rem := time.Until(*a.ArrivalDeadlineAt); rem > 0 {

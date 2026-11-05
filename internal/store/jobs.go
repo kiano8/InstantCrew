@@ -699,7 +699,7 @@ func confirmJob(ctx context.Context, tx *sql.Tx, employerID, id, now int64) erro
 	// The arrival clock starts now, or at the scheduled start for later shifts.
 	if _, err := tx.ExecContext(ctx, `UPDATE job_assignments
 		SET arrival_deadline_at = GREATEST($1, COALESCE((SELECT scheduled_at FROM jobs WHERE id=$2), $1)) + $3
-		WHERE job_id=$2 AND ended_at IS NULL`, now, id, int64(ArrivalLimit/time.Second)); err != nil {
+		WHERE job_id=$2 AND ended_at IS NULL`, now, id, int64(DepartureLimit/time.Second)); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE applicant_hiring_passes
